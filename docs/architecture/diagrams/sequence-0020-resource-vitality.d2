@@ -8,7 +8,8 @@
 #   backend/libs/core/src/main/java/ai/helper2/sources/huggingface/HuggingFaceSpacesSource.java, github/GitHubSource.java,
 #   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/SweepRepositories.kt (sweepOneBatch),
 #   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubRepositoryStates.java (of),
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcRepositoryVisits.java (due, record).
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcRepositoryVisits.java (due, record),
+#   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/ForgetGoneLists.java, catalog/internal/JdbcGoneLists.java.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0020-resource-vitality.d2 && d2 sequence-0020-resource-vitality.d2 sequence-0020-resource-vitality.svg
 
 ...@style
@@ -60,5 +61,6 @@ sweep -> catalog: "every 10 minutes: the 50 records with a GitHub\nrepository vi
 catalog -> sweep: "record ids and owner/name"
 sweep -> github: "one GraphQL call: isArchived, stargazerCount,\nparent, latestRelease of every repository"
 github -> sweep: "facts, or NOT_FOUND per repository"
-sweep -> catalog: "visitedAt on every record; archived + checkedAt\n(newest wins), parent, lastReleaseAt;\nstars (extra.popularity) and notFoundAt, then gone\nat the second not found, on the record that\nis the repository"
+sweep -> catalog: "visitedAt on every record; archived + checkedAt\n(newest wins), parent, lastReleaseAt;\nstars (extra.popularity) and notFoundAt, then gone\nat the second not found, on the record that\nis the repository; notFoundVisits counts the\nvisits in a row that did not find it"
+sweep -> catalog: "ForgetGoneLists(the records not found, 3): a curated list whose\nrepository is gone and was not found on 3 visits in a row\nno longer names its resources (awesome_list, awesome_list_entry)"
 catalog -> search: "later searches: index and semantic hits\nstate the stored facts (the source's and the\nvisit's, newest wins); the rule refuses them"

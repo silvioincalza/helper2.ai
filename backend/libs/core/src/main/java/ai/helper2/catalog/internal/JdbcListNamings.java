@@ -15,6 +15,8 @@ class JdbcListNamings implements ListNamings {
     this.jdbc = jdbc;
   }
 
+  // UC-030 BR-012: a list names a resource only while it is in the list index. A list gone at its
+  // source has no row there, so a candidate accepted later is not named by it.
   @Override
   public boolean byCuratedList(
       CanonicalUrl list, UUID resourceId, String text, String headingPath) {
@@ -26,7 +28,9 @@ class JdbcListNamings implements ListNamings {
                        || setweight(to_tsvector('simple', h2_unaccent(h2_name_words(:text))), 'A')
                        || setweight(to_tsvector('english', h2_unaccent(translate(:heading, '/', ' '))), 'B'),
                        now()
-                FROM resource l CROSS JOIN resource r
+                FROM resource l
+                JOIN awesome_list read ON read.list_id = l.id
+                CROSS JOIN resource r
                 WHERE l.id = :list AND r.id = :resource AND l.id <> r.id
                 ON CONFLICT (list_id, resource_id) DO NOTHING
                 """)

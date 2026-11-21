@@ -103,7 +103,7 @@ A resource of observed origin (RESOURCE) that no source has seen for more than 1
 
 ### BR-011: Awesome List Index
 
-An awesome list (AWESOME_LIST), an awesome list entry (AWESOME_LIST_ENTRY) and a directory list entry (DIRECTORY_LIST_ENTRY) have no retention period and no purge job deletes them. What a list named at its last read is kept until the list is read again (UC-030 BR-008), and is deleted with the resource it belongs to (BR-009, BR-010).
+An awesome list (AWESOME_LIST), an awesome list entry (AWESOME_LIST_ENTRY) and a directory list entry (DIRECTORY_LIST_ENTRY) have no retention period and no purge job deletes them. What a list named at its last read is kept until the list is read again (UC-030 BR-008) or, for a curated list on GitHub, until the list is gone at its source (UC-030 BR-012), and is deleted with the resource it belongs to (BR-009, BR-010).
 
 ### BR-012: Scout Runs
 

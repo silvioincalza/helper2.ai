@@ -716,6 +716,7 @@ helper2.scout.pypi.project = ${H2_PYPI_BIGQUERY_PROJECT:}  =>  <empty>
 helper2.scout.repository-sweep.batch = ${H2_SCOUT_REPOSITORY_SWEEP_BATCH:50}  =>  50
 helper2.scout.repository-sweep.enabled = ${H2_SCOUT_REPOSITORY_SWEEP_ENABLED:true}  =>  true
 helper2.scout.repository-sweep.every = ${H2_SCOUT_REPOSITORY_SWEEP_EVERY:PT10M}  =>  PT10M
+helper2.scout.repository-sweep.gone-list-visits = ${H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS:3}  =>  3
 helper2.scout.repository-sweep.initial-delay = PT2M
 helper2.scout.tick = ${H2_SCOUT_TICK:PT10M}  =>  PT10M
 helper2.search.per-source-limit = ${H2_SEARCH_PER_SOURCE_LIMIT:30}  =>  30

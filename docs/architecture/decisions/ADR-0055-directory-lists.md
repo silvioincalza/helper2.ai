@@ -106,6 +106,10 @@ post when a search finds it.
       `DirectoryListIndex.replace` writes the rows of a list at each pass (`ListText.directoryListTitle` marks such
       a list for the Scout's `ListIndex`). No period deletes the rows: they stay until the next read of the list
       writes them again, and a row goes with its resource (`ON DELETE CASCADE`), as in the list index.
+    - **A list that is gone.** A curated list on GitHub whose repository GitHub no longer knows stops naming its
+      resources ([0023](ADR-0023-catalog-full-text-index.md) point 17, UC-030 BR-012). A list page of a directory
+      host does not: it is a web page, and the page reader does not tell a page that is gone from a page it could
+      not read, so its rows stay until its next read.
     - **Every kind.** `GitHubAwesomeCollector.searchEntries` gives the index the repositories, the models, the
       papers and the packages of a list first, then the pages that wait for a person: a product, a course and an
       article, by the address their candidate has (`ListEntryLinks.reviewedPage`). The index keeps the ones that
@@ -115,7 +119,8 @@ post when a search finds it.
       `IndexAcceptedCandidate` hands each list to `NameResourceByList` (port `ListNamings`), which writes one row
       in the relation of that list, in the transaction of the decision. A candidate whose page is in the catalog
       already names that resource. The row of a curated list carries the title of the resource as its words until
-      the next read of the list writes the words of the entry.
+      the next read of the list writes the words of the entry. A curated list that is not in the list index (never
+      read, or gone at its source) names nothing on accept.
 16. **The public page counts, the back office names.**
     - `GET /api/v1/resources/{id}`: `foundIn.directoryLists` is the number of directory lists that name the
       resource, counted in `directory_list_entry`. `foundIn.lists` and `foundIn.more` are the curated lists, as
@@ -213,7 +218,8 @@ post when a search finds it.
 - Retention ([0010](ADR-0010-data-retention.md)): a discovered list stays in `list_seed` until an administrator
   removes it; its last read goes with it. Its audit rows follow the audit trail. What a list named
   (`awesome_list_entry`, `directory_list_entry`) has no period: it stays until the next read of the list writes it
-  again, or until the resource it names goes.
+  again, or until the resource it names goes. What a curated list on GitHub named also goes when its repository is
+  gone ([0023](ADR-0023-catalog-full-text-index.md) point 17); `directory_list_entry` has no such rule.
 
 ### Known limits
 - A product, a course and an article come after the pages a source confirms in the index of a list. In a list
@@ -224,10 +230,13 @@ post when a search finds it.
 - The reads of a day are counted from the last try of each list: a list tried twice in one UTC day counts once.
 - The count on the public page includes a directory list whose switch is off, and a list whose page no longer
   names the resource until its next read. It never falls by time alone.
-- A list that is no longer read keeps naming its resources for good: a curated list whose repository or page no
-  longer exists, a list an administrator removed from the lists to read, a directory list whose switch is off or
-  whose host is never read. Nothing checks that a list still exists, and only a read of the list or the end of the
-  resource removes a row. A clean-up of such lists is an open point.
+- A list that is no longer read keeps naming its resources: a list an administrator removed from the lists to read,
+  a directory list whose switch is off or whose host is never read. Only a read of the list or the end of the
+  resource removes a row.
+- A web page that no longer exists (it answers 404 or 410) keeps naming its resources too, a list page of a
+  directory host and a curated web page alike, and the count on the public page keeps it. The page reader gives no
+  status of the page: a page that is gone and a page that timed out are the same failed read. Telling them apart
+  needs a request of our own to the page, which is not made.
 - A list page of a directory host that waits for review (switch off, or refused) is an `ARTICLE` candidate. When an
   administrator accepts it, it becomes an `ARTICLE` resource like any accepted candidate: a person's decision on
   one page, not a list that is read.

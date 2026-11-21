@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.AwesomeListEntries;
+import ai.helper2.catalog.AwesomeListIndex;
+import ai.helper2.catalog.AwesomeListText;
 import ai.helper2.catalog.DirectoryListIndex;
 import ai.helper2.catalog.ListNamings;
 import ai.helper2.catalog.ResourceDetail;
@@ -25,6 +27,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 class JdbcListNamingsIT {
 
   @Autowired ListNamings namings;
+  @Autowired AwesomeListIndex lists;
   @Autowired DirectoryListIndex directoryLists;
   @Autowired AwesomeListEntries entries;
   @Autowired JdbcClient jdbc;
@@ -96,6 +99,7 @@ class JdbcListNamingsIT {
   void uc030Br008AnAcceptedProductIsNamedByTheCuratedListThatProposedIt() {
     resource(curatedList, "ARTICLE");
     resource(product, "PRODUCT");
+    lists.replace(new AwesomeListText(CanonicalUrl.of(curatedList), "Editors", List.of()));
 
     boolean first =
         namings.byCuratedList(CanonicalUrl.of(curatedList), idOf(product), "Cursor", "Editors");
