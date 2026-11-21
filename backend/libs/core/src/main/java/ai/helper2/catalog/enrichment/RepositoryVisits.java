@@ -15,7 +15,15 @@ public interface RepositoryVisits {
 
   sealed interface Visit {}
 
-  record Found(boolean archived, @Nullable Parent parent, @Nullable Instant lastReleaseAt)
+  /**
+   * What GitHub states of a repository it found. {@code stars} is null when the answer carries no
+   * count: no count is never zero stars.
+   */
+  record Found(
+      boolean archived,
+      @Nullable Parent parent,
+      @Nullable Instant lastReleaseAt,
+      @Nullable Long stars)
       implements Visit {}
 
   record Parent(String repository, boolean archived) {}
