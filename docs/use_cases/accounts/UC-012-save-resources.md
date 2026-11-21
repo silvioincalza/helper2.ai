@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-015, FR-017](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/uc-012-save-resources.md)  
 **API:** [listBookmarks](../../../api/public.yaml#listBookmarks), [addBookmark](../../../api/public.yaml#addBookmark), [deleteBookmark](../../../api/public.yaml#deleteBookmark), [mergeLocalBookmarks](../../../api/public.yaml#mergeLocalBookmarks)
 
 ## Preconditions

@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-039, NFR-012](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/back-office.md)  
 **API:** [listAuditEntries](../../../api/admin.yaml#listAuditEntries)
 
 ## Preconditions

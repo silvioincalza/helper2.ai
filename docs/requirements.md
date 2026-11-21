@@ -61,7 +61,7 @@ describe how.
 | NFR-006 | Guide Rate Limits          | Each client may ask at most 10 questions per minute and 30 new questions per day, with at most 8 questions answered at a time. | Scalability | High | Implemented |
 | NFR-007 | Daily Model Budget         | The language model is called at most 600 times per day in total for the guide. | Scalability | High | Implemented |
 | NFR-008 | Answer Cache               | An AI answer to a repeated question is served from the cache for 24 hours without a new model call. | Performance | Medium | Implemented |
-| NFR-009 | Accessibility              | Keyboard-only and screen-reader users can complete search, ask, evaluate, report and save (UJ-1 to UJ-6), and the public pages meet WCAG 2.2 level AA. | Usability | High | Implemented |
+| NFR-009 | Accessibility              | Keyboard-only and screen-reader users can complete search, ask, evaluate, report and save (UC-001, UC-005, UC-007, UC-009, UC-012), and the public pages meet WCAG 2.2 level AA. | Usability | High | Implemented |
 | NFR-010 | AI Text Marking            | 100% of AI-written text is labeled in the UI and marked machine-readable in the HTML and the API. | Usability | High | Implemented |
 | NFR-011 | Search Quality Gate        | A search change does not let nDCG@10 on the recorded evaluation set fall more than 0.005 below the stored baseline. | Maintainability | High | Implemented |
 | NFR-012 | Back Office Access         | 100% of back office requests come through the VPN and need a signed-in user with the administrator role. | Security | High | Implemented |

@@ -11,6 +11,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-037](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/back-office.md)  
 **API:** [listAdminHomeExamples](../../../api/admin.yaml#listAdminHomeExamples), [addHomeExample](../../../api/admin.yaml#addHomeExample), [draftHomeExamples](../../../api/admin.yaml#draftHomeExamples), [changeHomeExample](../../../api/admin.yaml#changeHomeExample), [removeHomeExample](../../../api/admin.yaml#removeHomeExample)
 
 ## Preconditions

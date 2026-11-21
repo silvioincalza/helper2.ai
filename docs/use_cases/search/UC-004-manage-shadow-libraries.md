@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-036](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/back-office.md)  
 **API:** [listShadowLibraries](../../../api/admin.yaml#listShadowLibraries), [addShadowLibrary](../../../api/admin.yaml#addShadowLibrary), [removeShadowLibrary](../../../api/admin.yaml#removeShadowLibrary)
 
 ## Preconditions

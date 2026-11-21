@@ -1,6 +1,6 @@
 # Helper2.ai
 
-The design system for every part of Helper2.ai: the search box, results, the AI guide, New in the catalog and Coming up, resource pages, saved resources, sign-in, the sources page and admin. From the November 2026 redesign ([ADR 0040](../../../architecture/decisions/ADR-0040-design-system.md)): minimal and editorial, warm paper with one saffron accent, one tech font for the interface and a calm font for reading. The reference is the redesign canvas, saved in [../redesign](../redesign). Every page, its states and the dark theme are drawn there.
+The design system for every part of Helper2.ai: the search box, results, the AI guide, New in the catalog and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Minimal and editorial: warm paper with one saffron accent, one tech font for the interface and a calm font for reading. [ADR 0040](../../docs/architecture/decisions/ADR-0040-design-system.md) is the decision: where this page and the ADR differ, the ADR holds. The boards of every page, its states and the dark theme are in [docs/mockups/boards](../../docs/mockups/boards).
 
 [`tokens.json`](tokens.json) is the one source of the tokens. `frontend/src/styles/tokens.css` writes them as CSS variables under plain names (`--font-mono` Geist Mono, `--font-body` Geist, `--font-code` the system monospace for code, `--box-height`), and `frontend/src/lib/breakpoints.ts` the breakpoints. A test (`frontend/src/styles/tokens.test.ts`) fails when they differ, when a colour is written by its hex value anywhere else, or when a media query uses a width that is not a breakpoint. In the public CSS it also fails on a font size, a `z-index` or a corner radius written as a number, and on `rgba()`. The list pages (Sources, Saved, the back office, Results) use the terminal style. The text pages stay prose: Geist for headings and reading text, Geist Mono only for small interface labels, no terminal look (`ui/text.css`). On every page, Geist for what a person reads or presses, Geist Mono for machine facts (principle 5).
 
@@ -127,7 +127,7 @@ The mark is an ink-stroke radar (outer ring, faint inner ring, one sweep line, o
 The image a shared link shows (`og:image`, 1200×630) is the mark and the wordmark, the home title in Geist, one line on what the search covers, and the search box with its **Search** button, on `bg`. Its source is `assets/social/og-1.html`; the file the site serves is `frontend/public/assets/og-1.png`. To render it, from the repository root after `npm ci` in `frontend`:
 
 ```
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --allow-file-access-from-files --screenshot="$PWD/frontend/public/assets/og-1.png" "file://$PWD/docs/backup/design/system/assets/social/og-1.html"
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --allow-file-access-from-files --screenshot="$PWD/frontend/public/assets/og-1.png" "file://$PWD/frontend/design/assets/social/og-1.html"
 ```
 
 A changed image gets a new file name (`og-2.png`), because the site caches the file for a year (ADR 0041 §3).
@@ -217,7 +217,7 @@ Layout is flex and grid with `gap`. Side menus wrap above the content on phones 
 
 ## Components
 
-The redesign boards in [../redesign](../redesign) and the design canvas "helper2.ai: ui v4" are the reference. The code is in `frontend/src/features/` (one folder per feature), `frontend/src/ui/` (the shared kit) and `frontend/src/shell/` (header, footer, errors).
+The boards in [docs/mockups/boards](../../docs/mockups/boards) are the reference. The code is in `frontend/src/features/` (one folder per feature), `frontend/src/ui/` (the shared kit) and `frontend/src/shell/` (header, footer, errors).
 
 | Component | Used for |
 |---|---|
@@ -272,10 +272,103 @@ New components are added with the page that first needs them.
 
 A style sheet declares each top-level selector once: what an element looks like is in one block, not in two that override each other. A test (`frontend/src/styles/oneRule.test.ts`) fails on a second block and on an empty at-rule.
 
+## Page rules
+
+What each page adds to the rules above.
+
+### Results and the resource page
+
+- One column, no preview. A row opens the resource page; Back comes back to the same place in the list.
+- "Results" over `$ helper2 search · N` (`--timeline` on the timeline), dashed rules between rows.
+- A row: type · host · date, the guide pick, the title with Save on its right, the description, "From" the sources.
+  The host is a link to the resource itself (new tab). The title link covers the row; the host link and Save sit above
+  it. Each source once: the catalog and the catalog searched by meaning are one name. The description is plain text,
+  with no Markdown code fences or backticks.
+- Guide picks stay where the search put them: a picked row shows "Guide pick #1", its reason (AI-written) and its
+  quote highlighted in the source's words. The chips in the picks bar jump to the rows.
+- Type tabs: All, the top 4, More. Filters in place on a wide screen, a drawer on a phone.
+- Some sources did not answer: one quiet line under the heading, "2 of 5 sources did not answer · Which?". Try again
+  only when a retry can help. On a phone the line is "2 sources did not answer · Which? · Try again", on one line.
+- On a phone (up to 520px) the first result starts higher: List / Timeline, Filters and the sort are one row. The
+  heading "Results" and the words "Sort by" are hidden there, not removed: a screen reader reads both. The count is on
+  the All tab. When filters are on, or up to 359px, the sort takes the row below.
+- While a new search runs, the old results stay at full contrast under the "Searching the listed sources…" line.
+  Nothing on this page is faded to say "busy".
+- "Best for" (All, Apps I can use, Build with AI) sits with the use case chips under the type tabs. Up to 720px each
+  row is one line that scrolls sideways. The side with more chips fades out; no scrollbar shows.
+- The resource page: one primary button (Open), Save, Set it up only for things you install or run. Under Set it up, one
+  quiet line says how many AI setups are left today.
+- Show more under the list adds the next page in place; the page is in the URL, so Back and a reload keep it.
+- Timeline: the results with no stated date are one folded group at the end, "Date unknown · N · Show them".
+- The resource page: the date line under the title (type · host · the row's date), and "Where this information
+  comes from" folded, with each source, its mode and when it was read, and the proof: fields with origin, facts
+  with evidence, source records.
+- The resource page shows what is known first: At a glance has only the facts with a value, then one line,
+  "Not stated by any source: …". No section for a missing AI summary.
+- No "Ask the guide about …" bar over the list: the box has the button. An empty result keeps "Ask the guide
+  instead".
+
+### Results: reading and controls
+
+- Easier to read: more space in a row (28px above and below, 8px between lines), text up to about 68 characters a line.
+- With a mouse, the controls are smaller: buttons, tabs, the view switch and the sort 36px (`control-sm`), chips 32px
+  (`chip-sm`). On a touch screen they stay 44px. Buttons, tabs and chips on this page are in Geist; Geist Mono stays for
+  the meta lines, counts, `$ helper2` lines and key hints. Search and Ask the guide in the box are in Geist too.
+- The guide's picks are a small terminal: `$ helper2 guide --picks N`, each pick with its reason (AI-written), and the
+  model that chose them. On a phone it is the same list, one pick under the other, each with its reason: a pick that
+  is not in the result list has its reason nowhere else.
+- In a picked row the reason comes first, then the checked quote in a light box, with a highlighter line under the
+  checked words.
+- One line under the box with the sources: "9 of 9 sources answered · 3 live, slowest 244 ms · 6 from the cache ·
+  Details". Not shown when some sources did not answer: the coverage line says it.
+- The search words are in bold in the description (never in the title, AI text or a quote).
+- Keys, while the focus is in the results: j and k move, Enter opens, / goes to the box, g goes to the Ask the guide
+  button (it asks nothing, so no AI answer is spent on one key), ? lists the
+  keys. Only in the results, so a one-letter key never fires by accident (WCAG 2.1.4).
+
+### News and Events pages
+
+- The header's News and Events open their own pages, `/news` and `/events`.
+- News: a newspaper front page. The date line, "AI news" over `$ helper2 news --7d · N`, site chips, one lead
+  headline, six under it in two columns, a Latest column of five, then the rest of the week in three columns. Headlines, site and date only:
+  no excerpt until the web-search provider confirms in writing that we may show one. Nothing on it is AI-written.
+- Events: the next year, grouped by month. A date column, the kind in accent ink, the title, where, and a pill
+  ("On now", "Today", "In 2 days"). Kind and format chips, only with the values the events have. A row opens the
+  resource page.
+- On Home, New in the catalog and Coming up move like a news ticker (principle 7).
+
+### Radar
+
+- No line above the title. The title is one `h1` on two lines: "helper2.ai" in accent ink, then "The metasearch for the AI ecosystem."
+- Like a navigation radar: full rings around the title, and a beam that turns once every 5 s.
+- Only external sources. Our own index, the search by meaning and the curated list are not on it. The legend
+  counts the same sources.
+- 5 to 10 sources at a time, each in its own spot. It starts with 5, one after another. Then every 1.6 s one step: the
+  next source of the queue comes while it grows, up to 10; the oldest leaves while it shrinks, down to 5. The queue
+  holds every source, shuffled once; a source that leaves goes to the back, so every source of a group is on the
+  radar once before any of them comes back.
+- A dot shows only when the beam passes it: full opacity, a short pop and a glow in its colour, then it fades to
+  about a fifth until the next pass. A source that leaves is not painted again and fades out within 3 s.
+- Every dot is filled with its colour: orange answering, amber slow or limited, red failed.
+- Only the short name under a dot. The timing and the state are in its accessible name and tooltip.
+- The beam and the dots hold still while the mouse is over the radar or the focus is on a dot. Under reduced motion,
+  or with the account setting off, the beam stands still and a fixed set of 7 shows at full opacity.
+- The dots come after the search box in the page: Tab reaches the box first.
+- Under the box: "5-10 of N sources at a time", the three colours, and a link to the Sources page.
+
+### Sources, Saved and the back office
+
+- A `$ helper2 … · N` line next to each list heading, N from the API: `sources --all`, `saved`, `review --open`,
+  `scouts --runs`, `examples`, `audit`.
+- Sources is one table with every source, ours included. Same short names and colours as the radar. One line says
+  the radar shows 5-10 of the external ones at a time.
+- Saved keeps its rows and chips. Loading, sync error and empty are the states of the Home lists.
+- The review queue, the Scout runs, the budgets and the audit trail are tables. Only the look changed.
+
 ## API features the design needs
 
-The first three are in the API (`newThisWeek`, `limits`, `total`); Home uses them. The rest are drawn in the
-redesign and not in the API yet. They are in the backlog:
+The first three are in the API (`newThisWeek`, `limits`, `total`); Home uses them. The rest are drawn on the
+boards and not in the API yet. They are in the backlog:
 [S5.6.1](https://github.com/silvioincalza/helper2.ai/issues/294) and
 [S7.2.3](https://github.com/silvioincalza/helper2.ai/issues/316).
 

@@ -134,7 +134,7 @@ On a review item, accept and reject were not enough:
    of the run holds it, the kind of that one. Quotes come from the sources: each one says
    "Source quote" and is not marked.
    Every text from a source or a model is plain text on the page; a source address is a link only when it is http(s).
-   The review page is a list and the selected item, with keys for a fast review (j/k, a, r, n, ?; UJ-9). The keys
+   The review page is a list and the selected item, with keys for a fast review (j/k, a, r, n, ?; [the back office screens](../../mockups/back-office.md)). The keys
    work only while focus is inside the queue and never in a field (WCAG 2.1.4), and each control names its key
    (`aria-keyshortcuts`). A held key does not repeat: one press is one decision. Decisions stay final: there is no
    undo.

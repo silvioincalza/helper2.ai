@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-038, NFR-012](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/back-office.md)  
 **API:** [getEffectiveConfig](../../../api/admin.yaml#getEffectiveConfig), [listRuntimeSettings](../../../api/admin.yaml#listRuntimeSettings), [changeRuntimeSetting](../../../api/admin.yaml#changeRuntimeSetting), [resetRuntimeSetting](../../../api/admin.yaml#resetRuntimeSetting), [changeRuntimeSwitch](../../../api/admin.yaml#changeRuntimeSwitch), [resetRuntimeSwitch](../../../api/admin.yaml#resetRuntimeSwitch)
 
 ## Preconditions

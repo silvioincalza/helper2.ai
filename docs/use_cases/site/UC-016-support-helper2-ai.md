@@ -11,6 +11,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-022, FR-023, C-007](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/uc-016-support-helper2-ai.md)  
 **API:** [getSite](../../../api/public.yaml#getSite)
 
 ## Preconditions

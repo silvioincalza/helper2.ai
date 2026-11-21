@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-031, FR-032, NFR-012](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/back-office.md)  
 **API:** [getAdminOverview](../../../api/admin.yaml#getAdminOverview), [listReviewItems](../../../api/admin.yaml#listReviewItems), [getReviewEvidence](../../../api/admin.yaml#getReviewEvidence), [resolveReviewItem](../../../api/admin.yaml#resolveReviewItem), [resolveReviewItems](../../../api/admin.yaml#resolveReviewItems), [editCandidate](../../../api/admin.yaml#editCandidate), [editKnownTargetCandidate](../../../api/admin.yaml#editKnownTargetCandidate), [changeRelationshipTarget](../../../api/admin.yaml#changeRelationshipTarget)
 
 ## Preconditions
