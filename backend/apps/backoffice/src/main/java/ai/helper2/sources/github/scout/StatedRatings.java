@@ -45,11 +45,15 @@ final class StatedRatings {
     List<Found> votes = found(VOTES, plain);
     Set<StatedFigures> stated = new LinkedHashSet<>();
     for (Found average : found(AVERAGE, plain)) {
+      Set<Long> counts = new LinkedHashSet<>();
       votes.stream()
           .filter(count -> gap(average, count) <= MAX_GAP)
-          .findFirst()
-          .flatMap(count -> figures(average, count))
-          .ifPresent(stated::add);
+          .forEach(count -> counts.add(count(count.first())));
+      // An average with two different counts next to it is two statements: none is chosen.
+      if (counts.size() > 1) {
+        return Optional.empty();
+      }
+      counts.forEach(count -> figures(average, count).ifPresent(stated::add));
     }
     return stated.size() == 1 ? Optional.of(stated.iterator().next()) : Optional.empty();
   }
@@ -67,14 +71,14 @@ final class StatedRatings {
     return a.end() <= b.start() ? b.start() - a.end() : Math.max(0, a.start() - b.end());
   }
 
-  private static Optional<StatedFigures> figures(Found average, Found votes) {
+  private static Optional<StatedFigures> figures(Found average, long votes) {
     int scale = Integer.parseInt(average.second());
     String stated = average.first().replace(',', '.');
     // A whole number out of 5 or 10 is a step or a page ("3/5") far more often than an average.
     if (scale != 100 && !stated.contains(".")) {
       return Optional.empty();
     }
-    return StatedFigures.checked(Double.parseDouble(stated), scale, count(votes.first()));
+    return StatedFigures.checked(Double.parseDouble(stated), scale, votes);
   }
 
   private static long count(String text) {

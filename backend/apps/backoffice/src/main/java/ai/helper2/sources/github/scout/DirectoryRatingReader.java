@@ -18,8 +18,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,7 +135,12 @@ public final class DirectoryRatingReader {
     String host = list.url().getHost();
     List<Reading> onTheList = new ArrayList<>();
     List<ItemPage> itemPages = new ArrayList<>();
+    Set<CanonicalUrl> rated = new HashSet<>();
     for (Entry entry : list.entries()) {
+      // Two entries of one list that name one resource give one reading: the first.
+      if (!rated.add(entry.resource())) {
+        continue;
+      }
       Optional<StatedFigures> stated = StatedRatings.in(entry.text());
       if (stated.isPresent()) {
         onTheList.add(new Reading(entry.resource(), list.url(), stated.get(), list.readAt()));

@@ -315,6 +315,17 @@ class DirectoryRatingsTest {
   }
 
   @Test
+  void uc030Br010TwoEntriesThatNameOneResourceGiveOneReadingTheFirst() {
+    listSays(
+        "- [Cursor](https://cursor.com) - AI code editor. 4.6/5 (1,234 reviews)",
+        "- [Cursor pricing](https://cursor.com/pricing) - Plans. 4.1/5 (90 reviews)");
+
+    assertThat(ratingsOfThePass().onTheList())
+        .extracting(Reading::resource, Reading::figures)
+        .containsExactly(org.assertj.core.groups.Tuple.tuple(CURSOR, figures(4.6, 5, 1234)));
+  }
+
+  @Test
   void uc030Br010AnEntryThatNamesTwoResourcesIsNotRated() {
     listSays(
         "- [Cursor](https://cursor.com) vs [Windsurf](https://windsurf.com) 4.6/5 (90 reviews)");

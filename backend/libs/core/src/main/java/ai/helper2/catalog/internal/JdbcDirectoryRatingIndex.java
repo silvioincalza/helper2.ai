@@ -114,11 +114,13 @@ class JdbcDirectoryRatingIndex implements DirectoryRatingIndex {
             """
             INSERT INTO directory_rating
                 (list_url, resource_id, host, page_url, average, scale, votes, read_at, tried_at)
-            SELECT :list, r.id, :host, i.page, i.average, i.scale, i.votes, i.read_at, i.read_at
+            SELECT DISTINCT ON (r.id)
+                   :list, r.id, :host, i.page, i.average, i.scale, i.votes, i.read_at, i.read_at
             FROM jsonb_to_recordset(CAST(:readings AS jsonb))
-                 AS i(resource_id uuid, page text, average numeric, scale int, votes int, read_at timestamptz)
+                 AS i(n int, resource_id uuid, page text, average numeric, scale int, votes int, read_at timestamptz)
             JOIN resource r ON r.id = i.resource_id
             WHERE i.average IS NOT NULL
+            ORDER BY r.id, i.n
             ON CONFLICT (list_url, resource_id) DO UPDATE SET
                 host = EXCLUDED.host, page_url = EXCLUDED.page_url, average = EXCLUDED.average,
                 scale = EXCLUDED.scale, votes = EXCLUDED.votes, read_at = EXCLUDED.read_at,
@@ -156,6 +158,7 @@ class JdbcDirectoryRatingIndex implements DirectoryRatingIndex {
   private static void add(ArrayNode rows, Reading reading) {
     var row =
         rows.addObject()
+            .put("n", rows.size())
             .put("resource_id", idOf(reading.resource()).toString())
             .put("page", reading.page().getValue())
             .put("read_at", reading.readAt().toString());

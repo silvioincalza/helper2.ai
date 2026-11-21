@@ -54,6 +54,8 @@ class StatedRatingsTest {
         "$4.99/5 users, 20 reviews",
         "4.6/5 and a lot of other words that go on for a while before 800 reviews",
         "4.6/5 (800 reviews). Alternative: 4.1/5 (90 reviews)", // two statements: which one?
+        "4.6/5 (800 reviews). Alternative: 4.6/5 (90 reviews)", // the same average, two counts
+        "1.2k reviews · 4.5/5 · 300 ratings", // one average between two counts
         "",
       })
   void uc030Br010ATextThatDoesNotStateAllThreeOrStatesTwoRatingsGivesNothing(String text) {

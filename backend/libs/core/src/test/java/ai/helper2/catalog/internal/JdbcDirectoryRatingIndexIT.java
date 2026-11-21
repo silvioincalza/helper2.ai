@@ -160,6 +160,23 @@ class JdbcDirectoryRatingIndexIT {
   }
 
   @Test
+  void uc030Br010TwoReadingsOfOneResourceInOnePassKeepTheFirst() {
+    resource(product);
+
+    index.replace(
+        pass(
+            List.of(product),
+            List.of(
+                new Reading(product, list, figures(4.6, 5, 800), read),
+                new Reading(product, list, figures(4.1, 5, 90), read)),
+            List.of()));
+
+    assertThat(statedFor(product))
+        .extracting(DirectoryRating.Stated::figures)
+        .containsExactly(figures(4.6, 5, 800));
+  }
+
+  @Test
   void uc030Br010TheFiguresGoWithTheResource() {
     resource(product);
     index.replace(
