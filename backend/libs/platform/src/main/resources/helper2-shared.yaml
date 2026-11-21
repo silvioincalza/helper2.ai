@@ -289,6 +289,8 @@ helper2:
     translation:
       daily-calls: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
       ttl: ${H2_SEARCH_TRANSLATION_TTL:24h}
+    ranking:
+      rating-weight: ${H2_SEARCH_RANKING_RATING_WEIGHT:0}
   rate-limit:
     search-per-minute: ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:120}
     report-per-hour: ${H2_RATE_LIMIT_REPORT_PER_HOUR:20}
@@ -381,6 +383,7 @@ helper2:
           consent}
         max-discovered: ${H2_SCOUT_AWESOME_WEB_PAGES_MAX_DISCOVERED:100}
         discovered-reads-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_DISCOVERED_READS_PER_DAY:10}
+        item-page-reads-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_ITEM_PAGE_READS_PER_DAY:100}
     ai-deadlines:
       interval: ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}
     confs-tech:

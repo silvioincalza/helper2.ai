@@ -2899,7 +2899,7 @@ components:
 
     ReviewEvidence:
       type: object
-      required: [item, validationErrors, fields, directoryLists]
+      required: [item, validationErrors, fields, directoryLists, directoryRatings]
       properties:
         item: { $ref: "#/components/schemas/ReviewItem" }
         run:
@@ -2922,6 +2922,13 @@ components:
           description: >-
             The lists on directory hosts that name the item's resource, by title (ADR 0055). The public page gives
             only their number. Empty for an item with no resource.
+        directoryRatings:
+          type: array
+          maxItems: 50
+          items: { $ref: "#/components/schemas/DirectoryRatingSource" }
+          description: >-
+            The figures directories state for the item's resource, by host (ADR 0056). The public page gives only
+            the rating made from them and the number of directories. Empty for an item with no resource.
         relationship:
           oneOf:
             [
@@ -2938,6 +2945,17 @@ components:
           description: >-
             Present when the evidence holds AI-written values (ADR 0033): the run's values, and a drafted example's
             `item.draft.label` and `item.draft.query`, also for an item with no run.
+
+    DirectoryRatingSource:
+      type: object
+      required: [host, page, average, scale, votes, readAt]
+      properties:
+        host: { type: string, description: The directory host. }
+        page: { type: string, format: uri, description: The list page or the page of the item that states the figures. }
+        average: { type: number, description: The average as the page states it. }
+        scale: { type: integer, minimum: 5, maximum: 100, description: "The scale the page states for the average: 5, 10 or 100." }
+        votes: { type: integer, minimum: 1, description: "The number of votes, reviews or ratings the page states." }
+        readAt: { type: string, format: date-time, description: When the page was read. }
 
     DirectoryList:
       type: object

@@ -115,6 +115,23 @@ final class ListEntryLinks {
     };
   }
 
+  /**
+   * UC-030 BR-011: the directory's own page of an item, for a link of one of its lists: a safe
+   * address on the host of the list that is neither the list nor the front page.
+   */
+  @Nullable CanonicalUrl directoryItemPage(AwesomeListParser.Link link, CanonicalUrl list) {
+    CanonicalUrl page = productLinks.page(link.url()).site();
+    boolean ofTheItem =
+        page != null
+            && page.getHost().equals(list.getHost())
+            && !page.equals(list)
+            && !page.getValue().equals("https://" + page.getHost())
+            && page.getValue().length() <= MAX_PAGE_ADDRESS;
+    return ofTheItem ? page : null;
+  }
+
+  static final int MAX_PAGE_ADDRESS = 300;
+
   static String title(AwesomeListParser.Link link, CanonicalUrl page) {
     String words = link.text().strip();
     boolean namesNothing = words.isEmpty() || PLACE_WORDS.contains(words.toLowerCase(Locale.ROOT));

@@ -13,6 +13,7 @@ import ai.helper2.scout.ReadPage;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.sources.github.scout.GitHubAwesomeCollector.ListRepo;
+import ai.helper2.sources.github.scout.GitHubAwesomeCollector.WebPage;
 import ai.helper2.sources.liveweb.scout.ScoutLiveWebCredits;
 import java.net.URI;
 import java.time.Clock;
@@ -21,8 +22,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,6 +124,7 @@ public final class WebPageLists {
   private static final class Reads {
     private final ReadmeBudget budget;
     private int discoveredLeft;
+    private final Set<String> readNow = new HashSet<>();
 
     Reads(ReadmeBudget budget, int discoveredLeft) {
       this.budget = budget;
@@ -160,9 +164,13 @@ public final class WebPageLists {
         // after its host is removed from the directory hosts.
         boolean directory =
             page.getOrigin() == ListOrigin.DISCOVERY || hosts.isDirectory(url.getHost());
+        boolean readNow = reads.readNow.contains(page.getAddress());
+        Instant readAt = readNow || last == null ? now : last.getReadAt();
         lists.add(
             new AwesomeCrawl.Read(
-                ListRepo.webPage(url, page.getAddress(), title(parsed, url), directory),
+                ListRepo.webPage(
+                    url,
+                    new WebPage(page.getAddress(), title(parsed, url), directory, readAt, readNow)),
                 parsed,
                 0));
       }
@@ -217,6 +225,7 @@ public final class WebPageLists {
       }
       AwesomeListParser.Parsed read = readNow(address, now, reads.budget, metrics);
       if (read != null) {
+        reads.readNow.add(address);
         return read;
       }
     } else if (!waits.equals(NOT_DUE)) {

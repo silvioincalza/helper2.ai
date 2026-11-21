@@ -1,5 +1,6 @@
 package ai.helper2.sources.config.scout;
 
+import ai.helper2.catalog.DirectoryRatingIndex;
 import ai.helper2.catalog.Resources;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.platform.config.HttpClientProperties;
@@ -47,6 +48,7 @@ import ai.helper2.sources.events.UndatedEvents;
 import ai.helper2.sources.evidence.LiveWebPageReader;
 import ai.helper2.sources.evidence.PublicSuffixDomains;
 import ai.helper2.sources.evidence.ReadmeEvidence;
+import ai.helper2.sources.github.scout.DirectoryRatingReader;
 import ai.helper2.sources.github.scout.GitHubAwesomeCollector;
 import ai.helper2.sources.github.scout.GitHubRepositoryStates;
 import ai.helper2.sources.github.scout.GitHubSdkCollector;
@@ -311,7 +313,8 @@ class CollectorsConfiguration {
       ShadowLibraries shadowLibraries,
       VitalityPolicy vitality,
       OutboundThrottle throttle,
-      WebPageLists webPageLists) {
+      WebPageLists webPageLists,
+      DirectoryRatingReader directoryRatings) {
     SourceSettings s = p.get("github-awesome");
     ChatModel model = chatModel.getIfAvailable();
     RepoClassifier classifier;
@@ -358,7 +361,8 @@ class CollectorsConfiguration {
             listedModelAdmission(vitality, c.links().modelIndexMinLikes()),
             paperReader(p.get("arxiv"), s, clock, resilience, observations, http, throttle),
             packageReader(p.get("npm"), s, clock, resilience, observations, http)),
-        webPageLists);
+        webPageLists,
+        directoryRatings);
   }
 
   @Bean
@@ -394,6 +398,26 @@ class CollectorsConfiguration {
         c.webPages().readEvery(),
         c.webPages().retryAfter(),
         c.webPages().discoveredReadsPerDay(),
+        clock);
+  }
+
+  @Bean
+  DirectoryRatingReader directoryRatingReader(
+      CollectorProperties.GitHubAwesome c,
+      DirectoryRatingIndex ratings,
+      LiveWebPageReader reader,
+      ScoutLiveWebCredits credits,
+      HostsNeverRead neverRead,
+      MeterRegistry meters,
+      Clock clock) {
+    return new DirectoryRatingReader(
+        ratings,
+        reader,
+        credits,
+        neverRead,
+        c.webPages().readEvery(),
+        c.webPages().itemPageReadsPerDay(),
+        meters,
         clock);
   }
 

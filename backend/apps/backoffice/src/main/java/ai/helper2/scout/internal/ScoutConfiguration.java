@@ -3,6 +3,7 @@ package ai.helper2.scout.internal;
 import ai.helper2.catalog.AwesomeListText;
 import ai.helper2.catalog.CatalogWriter.Forgotten;
 import ai.helper2.catalog.DirectoryListIndex;
+import ai.helper2.catalog.DirectoryRatingIndex;
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.ScoutPolicy;
@@ -99,6 +100,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
@@ -276,8 +278,16 @@ class ScoutConfiguration {
   }
 
   @Bean
-  ListIndex listIndex(IndexAwesomeLists indexAwesomeLists, DirectoryListIndex directoryLists) {
+  ListIndex listIndex(
+      IndexAwesomeLists indexAwesomeLists,
+      DirectoryListIndex directoryLists,
+      DirectoryRatingIndex directoryRatings) {
     return lists -> {
+      // UC-030 BR-010: the figures a directory states are kept with what its list names.
+      lists.stream()
+          .map(ListText::getRatings)
+          .filter(Objects::nonNull)
+          .forEach(directoryRatings::replace);
       // UC-030 BR-009: a list page of a directory host is kept by its address, not as a resource.
       lists.stream()
           .filter(ListText::getOnDirectoryHost)

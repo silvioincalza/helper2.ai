@@ -23,6 +23,7 @@ import ai.helper2.catalog.AwesomeListEntries;
 import ai.helper2.catalog.AwesomeListSuspects;
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.RelationshipTargets;
+import ai.helper2.catalog.ResourceRatings;
 import ai.helper2.catalog.ReviewEvidence;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.enrichment.ValidationIssues;
@@ -134,8 +135,9 @@ class AdminUseCaseConfiguration {
       ReviewQueue queue,
       ReviewEvidence evidence,
       ReviewItemViews views,
-      AwesomeListEntries listEntries) {
-    return new ReadOnlyGetReviewEvidence(queue, evidence, views, listEntries);
+      AwesomeListEntries listEntries,
+      ResourceRatings ratings) {
+    return new ReadOnlyGetReviewEvidence(queue, evidence, views, listEntries, ratings);
   }
 
   static class ReadOnlyGetReviewEvidence extends GetReviewEvidence {
@@ -144,8 +146,9 @@ class AdminUseCaseConfiguration {
         ReviewQueue queue,
         ReviewEvidence evidence,
         ReviewItemViews views,
-        AwesomeListEntries listEntries) {
-      super(queue, evidence, views, listEntries);
+        AwesomeListEntries listEntries,
+        ResourceRatings ratings) {
+      super(queue, evidence, views, listEntries, ratings);
     }
 
     @Override

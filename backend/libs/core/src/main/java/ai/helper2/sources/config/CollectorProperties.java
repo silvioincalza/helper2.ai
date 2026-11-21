@@ -155,7 +155,8 @@ public final class CollectorProperties {
         @NotNull Duration retryAfter,
         @NotNull List<String> neverRead,
         @PositiveOrZero int maxDiscovered,
-        @PositiveOrZero int discoveredReadsPerDay) {
+        @PositiveOrZero int discoveredReadsPerDay,
+        @PositiveOrZero int itemPageReadsPerDay) {
 
       static final Duration LONGEST_READ_EVERY = Duration.ofDays(21);
 
