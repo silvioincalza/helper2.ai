@@ -49,7 +49,6 @@ classify() {
     api/*) echo "frontend $BACKEND web public backoffice" ;;
     deploy/helm/helper2/files/redis-users.acl) echo "$BACKEND backend-architecture chart" ;;
     deploy/k8s/app.env.example) echo "backend-libs chart" ;;
-    docs/backup/design/system/tokens.json) echo "frontend diagrams" ;;
     *.md | docs/* | LICENSE) echo "diagrams" ;;
     .claude/* | .idea/*) echo "" ;;
     deploy/postgres/*) echo "postgres chart" ;;
@@ -196,7 +195,7 @@ deploy/monitoring/helper2-rules.yaml|monitoring chart
 deploy/postgres/Dockerfile|postgres chart
 deploy/embedder/server.py|embedder chart
 docs/architecture/decisions/README.md|diagrams
-docs/backup/design/system/tokens.json|frontend diagrams
+frontend/design/tokens.json|frontend web backoffice
 docs/architecture/diagrams/flow-0044-ci-cd.d2|diagrams
 deploy/k8s/README.md|diagrams
 frontend/README.md|frontend web backoffice

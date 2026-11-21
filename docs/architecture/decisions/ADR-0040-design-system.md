@@ -13,14 +13,14 @@ around them and the rules every page follows. What matters for a user:
 - The site must read well: long text in a monospace font reads slowly, and the tech look must not cost that.
 
 We drew every page, with all its states, the dark theme and the phone layout, and had the drawings reviewed for user
-journeys, accessibility and fit with the API. The boards are in [docs/backup/design/redesign](../../backup/design/redesign); the
-rules are the design system ([docs/backup/design/system](../../backup/design/system/README.md)). For New in the catalog and Coming up we
-drew three options (`TechLists`, `MobileLists` in the same folder). A last canvas ("fonts, home ticker, News and
+journeys, accessibility and fit with the API. The boards are in [docs/mockups/boards](../../mockups/boards); the
+rules are the design system ([frontend/design](../../../frontend/design/README.md)). For New in the catalog and Coming up we
+drew three options. A last canvas ("fonts, home ticker, News and
 Events") set the font rule for every page, the ticker's hold (no Pause button) and the News and Events pages.
 
 ## Decision
 
-1. **One palette, one token source.** Paper, indigo ink, one saffron accent. `docs/backup/design/system/tokens.json`
+1. **One palette, one token source.** Paper, indigo ink, one saffron accent. `frontend/design/tokens.json`
    (version 1) is the one source of the tokens: the colours in light and dark, the semantic aliases (status pills,
    proof quote, source tiles), the type scale, spacing, radius, sizes, shadows, layers, motion and the breakpoints. `tokens.css` writes them as
    CSS variables under plain names (`--bg`, `--ink`, `--accent`, `--font-mono`, `--box-height`, `--header-height`);
@@ -192,7 +192,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
 
 ### Code
 
-- `docs/backup/design/system/tokens.json`, `frontend/src/styles/tokens.css`, `frontend/src/lib/breakpoints.ts`,
+- `frontend/design/tokens.json`, `frontend/src/styles/tokens.css`, `frontend/src/lib/breakpoints.ts`,
   `frontend/src/styles/tokens.test.ts` — the token source, its CSS and the breakpoints, kept in step.
 - `frontend/src/styles/app.css` (the shared controls), `shell.css` (header, footer, page column),
   `frontend/src/styles/classesUsed.test.ts`, `frontend/src/i18n/keysUsed.test.ts`, `controlsContrast.test.ts`,

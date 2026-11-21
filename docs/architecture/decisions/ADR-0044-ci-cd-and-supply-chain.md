@@ -218,7 +218,6 @@ Harbor could put an image under a tag first.
    - `deploy/helm/helper2/files/redis-users.acl` → the three backend chains and the architecture job (the Redis
      test container mounts it) and chart;
    - `deploy/k8s/app.env.example` → the libs chain (`EnvGuidesTest` reads it) and chart;
-   - `docs/backup/design/system/tokens.json` → frontend jobs (the token test reads it) and diagrams;
    - any other `*.md`, `docs/`, `LICENSE` → diagrams job only; `.claude/`, `.idea/` → nothing;
    - `deploy/postgres/` → the Postgres tag check and chart; `deploy/monitoring/` → monitoring and chart;
      `deploy/helm/`, `deploy/k8s/`, `deploy/grafana/` → chart only. No app image for these;
