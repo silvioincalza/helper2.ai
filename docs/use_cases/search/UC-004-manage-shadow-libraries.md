@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Keep the list of shadow libraries (sites that share copyrighted books and papers without permission) so that no result, answer or document from them is ever shown  
 **Trigger:** The administrator opens the shadow library list in the back office settings  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-036](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  

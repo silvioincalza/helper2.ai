@@ -8,7 +8,7 @@
 **Secondary Actors:** Language Model, Source Provider  
 **Goal:** Keep a pool of example searches on the home page where every shown example finds a clearly fitting result near the top  
 **Trigger:** The administrator opens the home examples in the back office, or the time of a scheduled check arrives  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-037](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  

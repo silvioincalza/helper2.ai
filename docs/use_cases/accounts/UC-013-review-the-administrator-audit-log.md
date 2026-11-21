@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** See who changed what in the back office, when, why and with which outcome, so that every administrator action can be traced  
 **Trigger:** The administrator opens the audit page of the back office  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-039, NFR-012](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  
