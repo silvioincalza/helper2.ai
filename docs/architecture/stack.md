@@ -37,7 +37,7 @@ feature folders of the frontend). The project has no browser test layer.
 | System            | Contract | Location |
 |-------------------|----------|----------|
 | Language Model    | –        | `ai.helper2.platform.llm` |
-| Source Provider   | –        | `ai.helper2.sources` (one package per source: `github`, `huggingface`, `arxiv`, `npm`, `pypi`, `hackernews`, `tavily`, `feeds`, ...) |
+| Source Provider   | [sources.md](sources.md) | `ai.helper2.sources` (one package per source: `github`, `huggingface`, `arxiv`, `npm`, `pypi`, `hackernews`, `tavily`, `feeds`, ...) |
 | Embedding Service | –        | `ai.helper2.catalog.internal` (`NvidiaEmbedder`) |
 | Search Engine     | –        | `ai.helper2.catalog` (IndexNow: `catalog.schedule`, `catalog.config`) |
 
