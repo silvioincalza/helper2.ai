@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** See the configuration both applications run with, and change a daily limit or a switch at runtime without a new release, with every change recorded  
 **Trigger:** The administrator opens the settings page of the back office  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-038, NFR-012](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  
@@ -35,8 +35,9 @@
 **Trigger:** The administrator asks to reset a limit or a switch to its default (step 4)  
 **Flow:**
 
-1. System stores a change without a value, so that the default applies again, and records the reset in the administrator audit log.
-2. Use case continues at step 7.
+1. System checks the reason (A2).
+2. System stores a change without a value as the next version of the setting, so that the default applies again, and records the reset in the administrator audit log.
+3. Use case continues at step 7.
 
 ### A2: The Reason Contains Hidden Characters
 
@@ -48,15 +49,16 @@
 
 ### A3: The Value Is Out of Range
 
-**Trigger:** The value is below 0 or above the maximum of the setting (step 5)  
+**Trigger:** The value is above the maximum of the setting, or below 0 (step 5)  
 **Flow:**
 
-1. System refuses the change, says the allowed range, and records the refused attempt in the administrator audit log.
-2. Use case ends.
+1. System refuses the change and says the allowed range.
+2. System records an attempt above the maximum in the administrator audit log; an attempt below 0 is refused without an entry.
+3. Use case ends.
 
 ### A4: Someone Changed the Setting First
 
-**Trigger:** The setting has a newer version than the one the administrator changed (step 6)  
+**Trigger:** The setting has a newer version than the one the administrator changed or reset (step 6)  
 **Flow:**
 
 1. System refuses the change, records the conflict in the administrator audit log, and asks the administrator to load the setting again and repeat the change.
@@ -72,7 +74,7 @@
 
 ### A6: The Public Application Has Not Published Its Settings
 
-**Trigger:** No published settings of the public application can be shown (step 2)  
+**Trigger:** The public application has published no settings, or more than 500 (step 2)  
 **Flow:**
 
 1. System shows only the groups of the back office, without a publication time.
@@ -102,7 +104,7 @@ A limit takes a whole number from 0 to its maximum; 0 turns the limited work off
 
 ### BR-003: Default Value
 
-Without a change, a setting has the value configured for the application at start, through the variable shown with it. A reset brings that default back.
+Without a change, a setting has the value configured for the application at start, through the variable shown with it. A reset brings that default back. The live web credits have their maximum as default when none is configured. An application does not start with a configured default outside the allowed range.
 
 ### BR-004: Change on the Version Seen
 
@@ -110,11 +112,11 @@ A change or a reset names the version of the setting it was made on. It is refus
 
 ### BR-005: Reason
 
-The reason is optional, at most 500 characters, and may not contain control or format characters. A blank reason is stored as no reason.
+The reason is optional, at most 500 characters, and may not contain control or format characters; a reason that breaks one of these is refused. A blank reason is stored as no reason.
 
 ### BR-006: Every Attempt Is Audited
 
-Every change and reset with a plain reason is recorded in the administrator audit log under the action of changing a setting, with the value before, the value after, the reason and the outcome: changed, reset, out of range or conflict. The log is read in UC-013.
+Every change and reset of an existing setting with a valid reason and a value of 0 or more is recorded in the administrator audit log under the action of changing a setting, with the value before, the value after, the reason and the outcome: changed, reset, out of range or conflict. The log is read in UC-013.
 
 ### BR-007: Change History
 
@@ -126,4 +128,4 @@ Each application reads the runtime settings again every 20 seconds by default (`
 
 ### BR-009: Published Settings
 
-The public application publishes its effective settings each time it starts. At most 500 published settings are shown. A value longer than 500 characters or with characters outside letters, digits, spaces and common punctuation is shown as "(hidden)".
+The public application publishes its effective settings each time it starts, in place of the ones it published before. A group both applications have is shown once, with the values of the back office. Published settings are shown only when there are at most 500 of them. A value longer than 500 characters or with characters outside letters, digits, spaces and common punctuation is shown as "(hidden)".

@@ -7,7 +7,7 @@
 **Primary Actor:** Scheduler  
 **Goal:** Remove every record that is past its retention period, so that helper2.ai keeps data no longer than its privacy notice states  
 **Trigger:** The daily retention time is reached (03:17 UTC by default)  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-040, C-006](../../requirements.md)  
 **Layers:** Service
@@ -63,7 +63,7 @@
 
 ### BR-001: Daily Retention Time
 
-The purge jobs run once a day at 03:17 UTC by default (`H2_RETENTION_CRON`). Each job runs on one instance only, and a failing job never stops another one.
+The purge jobs run once a day at 03:17 UTC by default (`H2_RETENTION_CRON`). Each job runs on one instance only, and a failing job never stops another one. The public application runs the jobs for accounts, live web results, remembered guide questions and the shared AI cache; the back office runs the jobs for the administrator audit entries, the runtime setting changes, the catalog records, the Scout runs and the review research.
 
 ### BR-002: Inactive Accounts
 
@@ -83,7 +83,7 @@ A review item (REVIEW_ITEM) resolved more than 180 days ago by default (`H2_RETE
 
 ### BR-006: Handled Issue Reports
 
-An issue report (ISSUE_REPORT) is deleted when all its review items were resolved more than 365 days ago by default (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`). A report with an open review item is kept.
+An issue report (ISSUE_REPORT) is deleted when all its review items were resolved more than 365 days ago by default (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`). A report with an open review item is kept, and so is a report that has no review item.
 
 ### BR-007: Enrichment Runs
 
