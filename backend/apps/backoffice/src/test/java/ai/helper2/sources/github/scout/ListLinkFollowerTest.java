@@ -320,6 +320,39 @@ class ListLinkFollowerTest {
     assertThat(count(ListLinkFollower.REQUESTS, "host", HOST, "outcome", "4xx")).isEqualTo(1);
   }
 
+  @ParameterizedTest
+  @ValueSource(strings = {"DAILY_CAP", "NOT_ASKED"})
+  void aStatusRequestACapOrTheOpenCircuitRefusedLeavesTheLinkWaitingAndCountsNoStep(String reason) {
+    statuses.put(OUT, new PageStatus.Refused(Reason.valueOf(reason)));
+
+    ListLinkFollower.Result result =
+        followed(
+            "- [Cursor](" + OUT + ") - AI code editor.",
+            "- [Zed](https://futurepedia.io/out/zed) - Editor.");
+
+    assertThat(result.followed()).isEmpty();
+    assertThat(result.changed()).isFalse();
+    assertThat(statusAsked).containsExactly(OUT);
+    assertThat(stepsOfTheDay()).isZero();
+    assertThat(count(ListLinkFollower.WAITS, "reason", "status-" + Reason.valueOf(reason).getTag()))
+        .isEqualTo(1);
+  }
+
+  @Test
+  void theCapOfOneHostLeavesItsLinksWaitingAndTheLinksToOtherHostsAreFollowed() {
+    statuses.put(OUT, new PageStatus.Refused(Reason.HOST_CAP));
+    redirects("https://t.co/zed", "https://zed.dev");
+
+    ListLinkFollower.Result result =
+        followed(
+            "- [Cursor](" + OUT + ") - AI code editor.", "- [Zed](https://t.co/zed) - Editor.");
+
+    assertThat(result.followed())
+        .containsExactly(new Followed("https://t.co/zed", "https://zed.dev", 1, "code"));
+    assertThat(count(ListLinkFollower.WAITS, "reason", ListLinkFollower.HOST_CAP_WAIT))
+        .isEqualTo(1);
+  }
+
   @Test
   void aRepositoryReachedBecomesAnEntryOfTheListForItsSourceToConfirm() {
     pages.markdown.put(

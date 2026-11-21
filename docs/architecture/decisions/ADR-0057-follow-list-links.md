@@ -134,7 +134,9 @@ What exists to follow a link:
     average, and its other entries wait for the next day. `H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_DAY`,
     `…_PER_HOST_PER_DAY`.
 13. **The pass.** Every read counts on the time and size budget of the collector's pass. When a cap, the credits or
-    the pass budget is spent, the link is not recorded as tried and waits for a later pass.
+    the pass budget is spent, the link is not recorded as tried and waits for a later pass. A status request that a
+    cap or the open circuit refused was not made: it is no step, and the link waits too. The cap of one host stops
+    the links to that host only.
 
 ### What is kept
 14. **With the last read of the list.** `list_seed_last_read.followed` (`V2026.11.9.4__list_seed_followed.sql`): for

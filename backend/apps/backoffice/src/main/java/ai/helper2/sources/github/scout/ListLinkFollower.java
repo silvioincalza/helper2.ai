@@ -20,6 +20,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -67,6 +68,13 @@ public final class ListLinkFollower {
   static final String BY_CODE = "code";
 
   static final String BY_MODEL = "model";
+
+  /** Refusals of a status request that was not made: they say nothing about the link. */
+  private static final Set<PageStatus.Reason> NOT_MADE =
+      EnumSet.of(
+          PageStatus.Reason.DAILY_CAP, PageStatus.Reason.HOST_CAP, PageStatus.Reason.NOT_ASKED);
+
+  static final String HOST_CAP_WAIT = "status-" + PageStatus.Reason.HOST_CAP.getTag();
 
   /** The most links of one page of an item that are looked at. */
   static final int MAX_PAGE_LINKS = 500;
@@ -189,6 +197,10 @@ public final class ListLinkFollower {
         Followed tried = followOne(link, list, hosts, way);
         if (tried == null) {
           meters.counter(WAITS, "reason", way.waits).increment();
+          // The cap of one host stops the links to that host only.
+          if (way.waits.equals(HOST_CAP_WAIT)) {
+            continue;
+          }
           break;
         }
         followed.put(link.url(), tried);
@@ -266,10 +278,20 @@ public final class ListLinkFollower {
           none = "no-link-to-the-item";
         }
         case Redirect redirect -> {
-          if (!takeStep(way, "status", false)) {
+          if (!mayStep(way, false)) {
             return stopped(link, way, "no-redirect");
           }
-          address = locationOf(redirect.address(), way);
+          PageStatus status = statuses.status(redirect.address());
+          meters.counter(REQUESTS, "host", way.host, "outcome", outcomeOf(status)).increment();
+          // UC-030 BR-013: a request a cap or the open circuit refused was not made: the link
+          // waits and no step is counted.
+          if (status instanceof PageStatus.Refused refused
+              && NOT_MADE.contains(refused.getReason())) {
+            way.waits = "status-" + refused.getReason().getTag();
+            return null;
+          }
+          stepTaken(way, "status");
+          address = locationOf(status, redirect.address());
           none = "no-redirect";
         }
       }
@@ -313,9 +335,7 @@ public final class ListLinkFollower {
     return ofADirectory ? new Nowhere("directory-host") : new Reached(page, null);
   }
 
-  private @Nullable String locationOf(URI address, Way way) {
-    PageStatus status = statuses.status(address);
-    meters.counter(REQUESTS, "host", way.host, "outcome", outcomeOf(status)).increment();
+  private static @Nullable String locationOf(PageStatus status, URI address) {
     if (!(status instanceof PageStatus.Answered answer)
         || answer.getCode() / 100 != 3
         || answer.getLocation() == null) {
@@ -439,9 +459,10 @@ public final class ListLinkFollower {
 
   /** The text of a page through the page reader, as one step; null when it gave none. */
   private @Nullable String read(CanonicalUrl page, String kind, Way way) {
-    if (!takeStep(way, kind, true)) {
+    if (!mayStep(way, true)) {
       return null;
     }
+    stepTaken(way, kind);
     credits.spent(MissingNode.getInstance(), READ_DEPTH);
     try {
       String markdown = pages.markdown(page.getValue());
@@ -453,22 +474,23 @@ public final class ListLinkFollower {
     }
   }
 
-  // UC-030 BR-013: at most three steps for an entry, and every step counts on the steps of the
-  // day; a read also needs the page reader and a credit of the Scout.
-  private boolean takeStep(Way way, String kind, boolean read) {
+  // UC-030 BR-013: at most three steps for an entry, inside the steps of the day; a read also
+  // needs the page reader and a credit of the Scout.
+  private boolean mayStep(Way way, boolean read) {
     way.lastStepTaken = false;
     if (way.steps >= MAX_STEPS) {
       return false;
     }
     way.waits = waitsBecause(way, read);
-    if (way.waits != null) {
-      return false;
-    }
+    return way.waits == null;
+  }
+
+  // UC-030 BR-013: every step counts on the steps of the day.
+  private void stepTaken(Way way, String kind) {
     way.lastStepTaken = true;
     way.steps++;
     counter.add(stepsOfTheDay(), 1);
     meters.counter(STEPS, "host", way.host, "kind", kind).increment();
-    return true;
   }
 
   private @Nullable String waitsBecause(Way way, boolean read) {
