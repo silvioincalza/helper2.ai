@@ -1011,7 +1011,7 @@ class JdbcCatalogWriterIT {
     writer.upsert(merge(repository(url, new Vitality(false, false))), DataOrigin.INDEXED, LIVE);
 
     assertThat(statedInTheIndex(url)).isEqualTo(new Vitality(false, false));
-    // UC-030 BR-010: a source that states the repository again starts the count of visits again.
+    // UC-030 BR-012: a source that states the repository again starts the count of visits again.
     assertThat(
             jdbc.sql(
                     """

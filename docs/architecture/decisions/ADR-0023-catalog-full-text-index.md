@@ -159,7 +159,7 @@ whether a query finds a resource there:
    list. A list that is no longer read because it left the top lists or an administrator removed it keeps the rows of
    its last read for as long as the list and the resource are in the catalog. A list on GitHub whose repository is
    gone loses its rows (point 17).
-17. **A list gone at its source no longer names its resources** (UC-030 BR-010).
+17. **A list gone at its source no longer names its resources** (UC-030 BR-012).
    - **How "gone" is known, for a list on GitHub.** The repository sweep of
      [0020](ADR-0020-resource-vitality.md) §7 already asks GitHub about every record that is a repository, so about
      the own record of every curated list on GitHub, whoever found the list: an administrator, the collector's search

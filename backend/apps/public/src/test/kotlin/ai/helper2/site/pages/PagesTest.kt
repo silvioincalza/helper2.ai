@@ -1,5 +1,6 @@
 package ai.helper2.site.pages
 
+import ai.helper2.catalog.DirectoryRating
 import ai.helper2.catalog.Slug
 import ai.helper2.catalog.resourcePath
 import ai.helper2.shared.Pricing
@@ -30,6 +31,7 @@ class PagesTest {
     license: String? = "MIT",
     related: List<Related> = emptyList(),
     foundIn: List<Related> = emptyList(),
+    rating: DirectoryRating? = null,
   ) =
     ResourceView(
       id = id,
@@ -48,7 +50,20 @@ class PagesTest {
       sources = listOf(Link("GitHub", URI.create("https://github.com/acme/postgres-mcp"))),
       related = related,
       foundIn = foundIn,
+      rating = rating,
     )
+
+  @Test
+  fun `UC-007 BR-011 the page for crawlers gives the rating and the number of directories`() {
+    assertTrue(
+      Pages.facts(resource(rating = DirectoryRating(4.66, 2)))
+        .contains(Fact("Rating", "4.7 out of 5, from 2 directories"))
+    )
+    assertTrue(
+      Pages.facts(resource(rating = DirectoryRating(3.32, 1)))
+        .contains(Fact("Rating", "3.3 out of 5, from 1 directory"))
+    )
+  }
 
   @Test
   fun `a resource page has its own title, the source's description and an absolute canonical`() {
@@ -137,7 +152,10 @@ class PagesTest {
     val related = listOf(Related(UUID.randomUUID(), "pgvector"))
     val body = pages.resource(resource(related = related)).body!!
     assertEquals("postgres-mcp", body.heading)
-    assertEquals(listOf(Fact("Type", "MCP server"), Fact("License", "MIT")), body.facts)
+    assertEquals(
+      listOf(Fact("Type", "MCP server"), Fact("Rating", "Not rated yet"), Fact("License", "MIT")),
+      body.facts,
+    )
     assertEquals(related, body.related)
     assertEquals(emptyList(), body.foundIn)
   }

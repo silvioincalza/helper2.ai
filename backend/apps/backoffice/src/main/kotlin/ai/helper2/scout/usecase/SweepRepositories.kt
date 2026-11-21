@@ -14,7 +14,7 @@ fun interface RepositoryStates {
   fun of(repositories: Collection<String>): Map<String, Visit>
 }
 
-/** What a curated list named goes once its repository is gone at GitHub (UC-030 BR-010). */
+/** What a curated list named goes once its repository is gone at GitHub (UC-030 BR-012). */
 fun interface GoneListRule {
   fun forget(notFoundRecords: Collection<UUID>)
 }
@@ -40,7 +40,7 @@ class SweepRepositories(
       count(visit)
       if (visit is Gone) notFound += record.recordId
     }
-    // UC-030 BR-010: only a visit GitHub answers with "not found" can make a list gone; a
+    // UC-030 BR-012: only a visit GitHub answers with "not found" can make a list gone; a
     // repository without an answer and a failed question hand nothing over.
     if (notFound.isNotEmpty()) goneLists.forget(notFound)
     return due.size

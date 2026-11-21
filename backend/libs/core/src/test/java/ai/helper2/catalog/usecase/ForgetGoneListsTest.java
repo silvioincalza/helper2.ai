@@ -49,7 +49,7 @@ class ForgetGoneListsTest {
     }
   }
 
-  // UC-030 BR-010: the count of visits is the one of the configuration, and it reaches the rule.
+  // UC-030 BR-012: the count of visits is the one of the configuration, and it reaches the rule.
   @Test
   void theRecordsNotFoundAreAskedWithTheNumberOfVisitsThatMakeAListGone() {
     List<Object> asked = new ArrayList<>();
@@ -66,7 +66,7 @@ class ForgetGoneListsTest {
     assertThat(asked).containsExactly(List.of(LIST_RECORD), 3);
   }
 
-  // UC-030 BR-010: a resource a gone list named loses the categories the list gave it.
+  // UC-030 BR-012: a resource a gone list named loses the categories the list gave it.
   @Test
   void aResourceAGoneListNamedGetsItsCategoriesRefreshed() {
     RefreshedCategories categories = new RefreshedCategories();
@@ -78,7 +78,7 @@ class ForgetGoneListsTest {
     assertThat(categories.refreshed).containsExactly(NAMED);
   }
 
-  // UC-030 BR-010: the rows of the list and the categories of what it named change together, so
+  // UC-030 BR-012: the rows of the list and the categories of what it named change together, so
   // a failed refresh leaves the list as it was and the next visit tries again.
   @Test
   void whatTheListNamedAndTheCategoriesChangeInOneUnitOfWork() {

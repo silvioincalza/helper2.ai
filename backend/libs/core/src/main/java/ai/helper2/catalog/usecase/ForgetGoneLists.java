@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Removes what a curated list named once its repository is gone at GitHub (UC-030 BR-010), and
+ * Removes what a curated list named once its repository is gone at GitHub (UC-030 BR-012), and
  * refreshes the categories of the resources it named.
  */
 public class ForgetGoneLists {
@@ -41,7 +41,7 @@ public class ForgetGoneLists {
     return forgotten.lists();
   }
 
-  // UC-030 BR-010: the rows of a list and the categories of what it named change together. A
+  // UC-030 BR-012: the rows of a list and the categories of what it named change together. A
   // refresh that fails leaves the rows, so the next visit that does not find the list tries again.
   private GoneLists.Forgotten forgetAndRefresh(Collection<UUID> notFoundRecords, int visits) {
     GoneLists.Forgotten forgotten = lists.forget(notFoundRecords, visits);

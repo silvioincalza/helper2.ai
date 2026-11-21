@@ -87,7 +87,7 @@ The message is required and holds 5 to 2,000 characters after leading and traili
 
 ### BR-003: Optional Field
 
-The field the report is about is optional and holds at most 60 characters; an empty or blank field counts as none.
+The field the report is about is optional and holds at most 60 characters; an empty or blank field counts as none. A report started from the rating of a resource (UC-007 BR-011) has the field "rating" filled in; the visitor can change it.
 
 ### BR-004: A Report Changes Nothing by Itself
 

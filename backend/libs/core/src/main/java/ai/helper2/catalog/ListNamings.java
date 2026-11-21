@@ -11,7 +11,7 @@ public interface ListNamings {
 
   /**
    * False when the list is not in the list index (never read, or gone at its source: UC-030
-   * BR-010), the resource is not in the catalog, or the list names it already.
+   * BR-012), the resource is not in the catalog, or the list names it already.
    */
   boolean byCuratedList(CanonicalUrl list, UUID resourceId, String text, String headingPath);
 

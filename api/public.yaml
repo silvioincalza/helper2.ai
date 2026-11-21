@@ -660,6 +660,12 @@ components:
         sourceRecords: { type: array, items: { $ref: '#/components/schemas/SourceRecordInfo' } }
         enrichmentStatus: { type: string, enum: [NOT_RUN, VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE] }
         foundIn: { $ref: '#/components/schemas/FoundIn' }
+        rating:
+          oneOf: [{ $ref: '#/components/schemas/DirectoryRating' }, { type: 'null' }]
+          description: |
+            One rating from 1 to 5, made from the average and the number of votes directories state for the resource
+            (ADR 0056). Null when no directory states them: the resource is not rated yet. A stated figure and a
+            formula, not AI-written, so `aiContent` never names it.
         aiContent:
           oneOf: [{ $ref: './common.yaml#/components/schemas/AiContentMarker' }, { type: 'null' }]
           description: |
@@ -695,6 +701,20 @@ components:
           type: integer
           minimum: 0
           description: How many lists on directory hosts name the resource; their names and addresses are not given.
+
+    DirectoryRating:
+      type: object
+      required: [score, directories]
+      properties:
+        score:
+          type: number
+          minimum: 1
+          maximum: 5
+          description: The rating, with one decimal. The number of votes weighs it; few votes stay near 3.
+        directories:
+          type: integer
+          minimum: 1
+          description: How many directories state the figures; their names and addresses are not given.
 
     FoundInList:
       type: object

@@ -17,7 +17,8 @@ public record ResourceDetail(
     Summary summary,
     List<SourceRecordInfo> sourceRecords,
     String enrichmentStatus,
-    FoundIn foundIn) {
+    FoundIn foundIn,
+    @Nullable DirectoryRating rating) {
 
   public record ListEntry(UUID listId, String listTitle, String headingPath) {}
 

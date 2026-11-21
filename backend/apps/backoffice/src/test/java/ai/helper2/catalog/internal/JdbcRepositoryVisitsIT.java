@@ -181,7 +181,7 @@ class JdbcRepositoryVisitsIT {
         .contains("\"notFoundAt\": \"" + T0 + "\"");
   }
 
-  // UC-030 BR-010: each visit that does not find the repository is counted, in a row.
+  // UC-030 BR-012: each visit that does not find the repository is counted, in a row.
   @Test
   void eachVisitThatDoesNotFindTheRepositoryIsCounted() {
     UUID repo = record("https://github.com/aa-visits/counted", null);
@@ -194,7 +194,7 @@ class JdbcRepositoryVisitsIT {
     assertThat(vitalityOf(repo)).contains("\"notFoundVisits\": 3").contains("\"gone\": true");
   }
 
-  // UC-030 BR-010: a visit that finds the repository starts the count again.
+  // UC-030 BR-012: a visit that finds the repository starts the count again.
   @Test
   void aRepositoryFoundInBetweenStartsTheCountAgain() {
     UUID repo = record("https://github.com/aa-visits/back-in-between", null);
@@ -208,7 +208,7 @@ class JdbcRepositoryVisitsIT {
     assertThat(vitalityOf(repo)).contains("\"notFoundVisits\": 1").doesNotContain("gone");
   }
 
-  // UC-030 BR-010: a visit without an answer is no "not found": it neither counts nor starts the
+  // UC-030 BR-012: a visit without an answer is no "not found": it neither counts nor starts the
   // count again.
   @Test
   void aVisitWithoutAnAnswerKeepsTheCountAsItIs() {

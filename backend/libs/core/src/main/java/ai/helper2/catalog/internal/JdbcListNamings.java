@@ -15,7 +15,7 @@ class JdbcListNamings implements ListNamings {
     this.jdbc = jdbc;
   }
 
-  // UC-030 BR-010: a list names a resource only while it is in the list index. A list gone at its
+  // UC-030 BR-012: a list names a resource only while it is in the list index. A list gone at its
   // source has no row there, so a candidate accepted later is not named by it.
   @Override
   public boolean byCuratedList(

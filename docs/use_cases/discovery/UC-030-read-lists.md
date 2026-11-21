@@ -28,7 +28,7 @@
 7. System indexes what the Source Provider confirms, by the admission rules (UC-018).
 8. System proposes the other links (product sites, course pages, articles, and items under the index floor) as candidates in the review queue (UC-024), within the daily cap.
 9. System adds each list as a resource of the catalog, except a list page of a directory host.
-10. System records which list names which resource, with the headings above the entry, in place of what the list named before.
+10. System records which list names which resource, with the headings above the entry, in place of what the list named before, and the rating a directory states for it (BR-010, BR-011).
 
 ## Alternative Flows
 
@@ -90,12 +90,13 @@
 - Every list that was read is a resource of the catalog, except a list page of a directory host.
 - Every repository, model, paper and package a list names and its source confirms is in the catalog; every other kept link waits in the review queue.
 - The catalog holds which list names which resource.
+- The catalog holds the rating figures the directory hosts state for the resources their lists name.
 - The text of the last read of each web page is kept for the passes until its next read.
 
 ### Failure Postconditions
 
 - A list that could not be read keeps what its last read gave.
-- A curated list on GitHub that is gone at its source names no resource any more (BR-010).
+- A curated list on GitHub that is gone at its source names no resource any more (BR-012).
 - No item enters the catalog from a link alone.
 
 ## Business Rules
@@ -122,7 +123,7 @@ A list discovery added is read only while the switch of its host is on. When the
 
 ### BR-006: Each Link Follows the Rule of Its Kind
 
-A link of a list never enters the catalog by itself. A GitHub repository, a Hugging Face model, an arXiv paper and an npm package are asked of their own source by id, and indexed when the source confirms them and the admission rules allow (UC-018 BR-005, BR-006). A course page on a known learning platform and a product's own site become candidates in the review queue. A link that redirects, a link to a directory host and a link to an excluded domain are skipped. No page of a directory host other than an added list page is read. New candidates stay within the daily cap of the collector (UC-018 BR-011).
+A link of a list never enters the catalog by itself. A GitHub repository, a Hugging Face model, an arXiv paper and an npm package are asked of their own source by id, and indexed when the source confirms them and the admission rules allow (UC-018 BR-005, BR-006). A course page on a known learning platform and a product's own site become candidates in the review queue. A link that redirects, a link to a directory host and a link to an excluded domain are skipped. No page of a directory host other than an added list page is read, with one exception: the directory's own page of an item that a read list names, and only for its rating (BR-011). Nothing else of that page is kept and no link on it is followed. New candidates stay within the daily cap of the collector (UC-018 BR-011).
 
 ### BR-007: Links to Articles
 
@@ -130,12 +131,20 @@ A link of a list that reads as an article by the rule of discovery (a post on a 
 
 ### BR-008: Which List Names Which Resource
 
-For each list that was read, the catalog keeps the resources it names that are in the catalog, whatever their kind, with the headings above each entry: a repository, a model, a paper and a package, and also a product, a course and an article its links point to. A candidate a list proposed keeps the list that named it; when an administrator accepts it (UC-024), the resource is named by that list from that moment, unless the list is gone at its source (BR-010). The record of a list is replaced at each pass that covers the list and has no retention period: when a list is no longer read because an administrator removed it, its reading is turned off or its host is never read, what it named at its last read stays. A record is removed only with the resource it names, for a curated list with the list's own resource, or when the list is gone at its source (BR-010). A curated list (an awesome list on GitHub, or a web page that is not on a directory host) is itself a resource; the public page of a resource names the curated lists that name it (UC-007 BR-008).
+For each list that was read, the catalog keeps the resources it names that are in the catalog, whatever their kind, with the headings above each entry: a repository, a model, a paper and a package, and also a product, a course and an article its links point to. A candidate a list proposed keeps the list that named it; when an administrator accepts it (UC-024), the resource is named by that list from that moment, unless the list is gone at its source (BR-012). The record of a list is replaced at each pass that covers the list and has no retention period: when a list is no longer read because an administrator removed it, its reading is turned off or its host is never read, what it named at its last read stays. A record is removed only with the resource it names, for a curated list with the list's own resource, or when the list is gone at its source (BR-012). A curated list (an awesome list on GitHub, or a web page that is not on a directory host) is itself a resource; the public page of a resource names the curated lists that name it (UC-007 BR-008).
 
 ### BR-009: A List Page of a Directory Host Is Never a Resource
 
 A list page of a directory host is never a resource of the catalog, whoever added it, and a list discovery added stays one after its host is removed from the directory hosts: it has no page, it is in no search result and it is not counted among the resources. The catalog keeps only its address, its title and the resources it names. The public page of a resource gives the number of such lists that name it (UC-007 BR-008); the back office names them (UC-024 BR-019).
 
-### BR-010: A List Gone at Its Source
+### BR-010: The Rating a Directory States
+
+For each entry of a list page of a directory host that names exactly one resource of the catalog, the system takes the aggregated rating the page states in the text of the entry: the average, its scale (5, 10 or 100) and the number of votes, reviews or ratings. All three must be stated; a figure with no stated scale is dropped, and a count of upvotes or likes alone is not a rating. A value outside its range is dropped: the average above 0 and at most its scale, the count from 1 to 100,000,000. Code reads the figures by fixed patterns, never a model. No text of a review and no name of a reviewer is read or kept. The catalog keeps the host, the address of the page that states the figures, the average, the scale, the count and the time of the read. A record is replaced when its page is read again, removed when the list no longer names the resource, and removed with the resource.
+
+### BR-011: Reading the Directory's Page of an Item
+
+When an entry states no rating and links to exactly one page of the same directory host about the item, the system reads that page through the live web page reader and takes only the rating figures from it (BR-010). Such a page is read only when the switch of its host is on (UC-019 BR-007), the host is not one never read (UC-020 BR-002) and the resource is in the catalog. At most 100 such pages are tried per day by default, apart from the reads of lists (BR-004); every try counts, also one that fails or states nothing. A page is tried again no more often than its list is read (7 days by default). A read costs one live web credit of the Scout's daily limit; when the limit is spent, the pages wait. A visit to a page of helper2.ai never starts a read.
+
+### BR-012: A List Gone at Its Source
 
 A curated list on GitHub is gone at its source when GitHub answers that its repository does not exist. The repository sweep asks this for the repository of every such list, whoever found the list (UC-018 BR-009). When the sweep does not find the repository on 3 visits in a row by default, and the repository is marked gone (UC-018 BR-009), what the list named is removed: the list names no resource any more, on the public page of a resource (UC-007 BR-008) and in search. Only the answer "not found" counts. A visit that fails for another reason (no answer, a limit on calls, an error) removes nothing and does not count. A visit that finds the repository starts the count again, and a renamed repository is found under its new name. The list's own resource follows the rule of a repository that is gone (UC-018 BR-009) and is not deleted. A candidate the list proposed that an administrator accepts after that is not named by it (BR-008). When the repository exists again, the next read of the list records again what it names. A web page is never gone by this rule, on a directory host or not: the live web page reader does not say that a page no longer exists, so a page that cannot be read keeps what its last read gave (BR-002).

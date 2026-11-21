@@ -45,7 +45,7 @@ class JdbcGoneLists implements GoneLists {
     return new Forgotten(lists.size(), List.copyOf(named));
   }
 
-  // UC-030 BR-010: a list is gone when the record that is its repository is marked gone
+  // UC-030 BR-012: a list is gone when the record that is its repository is marked gone
   // (UC-018 BR-009) and GitHub did not find it on the set number of visits in a row. A record
   // that only links the repository never counts.
   private UUID[] goneRepositories(Collection<UUID> notFoundRecords, int notFoundVisits) {

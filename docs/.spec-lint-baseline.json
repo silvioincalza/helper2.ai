@@ -772,6 +772,20 @@
       "message": "ADR-0055 has no **Status:** line"
     },
     {
+      "fingerprint": "6733917c780e14df0e08360597b88e033af852fc",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0056-directory-rating.md",
+      "element": "ADR-0056",
+      "message": "ADR-0056 has no **Date:** line"
+    },
+    {
+      "fingerprint": "bd97f67c19bccd632cd49506b6ed9af881b7f085",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0056-directory-rating.md",
+      "element": "ADR-0056",
+      "message": "ADR-0056 has no **Status:** line"
+    },
+    {
       "fingerprint": "44d3e597349cb1850f8906f8a356ce1bd44124cb",
       "code": "REQ_STATUS_DRIFT",
       "path": "requirements.md",

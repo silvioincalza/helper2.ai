@@ -105,7 +105,7 @@ class JdbcGoneListsIT {
         .single();
   }
 
-  // UC-030 BR-010: a list gone at its source on the set number of visits names nothing any more.
+  // UC-030 BR-012: a list gone at its source on the set number of visits names nothing any more.
   @Test
   void aListGoneOnEnoughVisitsInARowNoLongerNamesItsResources() {
     UUID record = aListThatNamesOneResource("{\"gone\":true,\"notFoundVisits\":3}");
@@ -118,7 +118,7 @@ class JdbcGoneListsIT {
     assertThat(listRow()).isFalse();
   }
 
-  // UC-030 BR-010: the list's own resource follows the rule of a repository that is gone
+  // UC-030 BR-012: the list's own resource follows the rule of a repository that is gone
   // (UC-018 BR-009); it is not deleted here.
   @Test
   void theOwnResourceOfAGoneListStays() {
@@ -135,7 +135,7 @@ class JdbcGoneListsIT {
         .isEqualTo(2);
   }
 
-  // UC-030 BR-010: fewer visits than the set number remove nothing.
+  // UC-030 BR-012: fewer visits than the set number remove nothing.
   @Test
   void aListNotFoundOnTooFewVisitsKeepsWhatItNamed() {
     UUID record = aListThatNamesOneResource("{\"gone\":true,\"notFoundVisits\":2}");
@@ -148,7 +148,7 @@ class JdbcGoneListsIT {
     assertThat(listRow()).isTrue();
   }
 
-  // UC-030 BR-010: visits inside one day do not make a repository gone (UC-018 BR-009), so they
+  // UC-030 BR-012: visits inside one day do not make a repository gone (UC-018 BR-009), so they
   // remove nothing, however many they are.
   @Test
   void aListNotFoundManyTimesButNotConfirmedGoneKeepsWhatItNamed() {
@@ -160,7 +160,7 @@ class JdbcGoneListsIT {
     assertThat(entries()).isEqualTo(1);
   }
 
-  // UC-030 BR-010: only the record that is the repository of the list counts, never a record that
+  // UC-030 BR-012: only the record that is the repository of the list counts, never a record that
   // links it.
   @Test
   void aRecordThatOnlyLinksAGoneRepositoryRemovesNothing() {
@@ -178,7 +178,7 @@ class JdbcGoneListsIT {
     assertThat(entries()).isEqualTo(1);
   }
 
-  // UC-030 BR-010: a candidate the list proposed, accepted after the list is gone, is not named
+  // UC-030 BR-012: a candidate the list proposed, accepted after the list is gone, is not named
   // by it; a list that is read again names it.
   @Test
   void aListGoneAtItsSourceDoesNotNameACandidateAcceptedLater() {
@@ -192,7 +192,7 @@ class JdbcGoneListsIT {
     assertThat(entries()).isZero();
   }
 
-  // UC-030 BR-010: only the lists whose record was not found at this visit are looked at.
+  // UC-030 BR-012: only the lists whose record was not found at this visit are looked at.
   @Test
   void aGoneListWhoseRecordIsNotAmongTheOnesAskedKeepsWhatItNamed() {
     aListThatNamesOneResource("{\"gone\":true,\"notFoundVisits\":3}");

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * The curated lists whose own repository is gone at GitHub (UC-030 BR-010). A list that is gone is
+ * The curated lists whose own repository is gone at GitHub (UC-030 BR-012). A list that is gone is
  * never read again, so nothing else would remove what it named.
  */
 public interface GoneLists {

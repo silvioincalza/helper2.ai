@@ -58,7 +58,8 @@ post when a search finds it.
 8. **The reader of added web pages.** `WebPageLists` reads a discovered list like any added web page: through the
    live web page reader, at most once in `H2_SCOUT_AWESOME_WEB_PAGES_EVERY` (7 days), one credit a read, the last
    read kept in `list_seed_last_read` and used between two reads. No page of a directory other than an added list
-   page is read: not its item pages, and no link that redirects is followed.
+   page is read, and no link that redirects is followed. The one exception is the directory's page of an item, read
+   for its rating only ([0056](ADR-0056-directory-rating.md) point 6).
 9. **A budget of its own inside the Scout's.** A read costs one credit of the Scout's daily cap
    (`H2_SCOUT_DAILY_CREDITS`, 40 by default), the cap the category searches, LinkedIn, the events scout, the courses
    and the research assistant's web search also count on ([0013](ADR-0013-discovery.md) point 10). So that the
@@ -106,7 +107,7 @@ post when a search finds it.
       a list for the Scout's `ListIndex`). No period deletes the rows: they stay until the next read of the list
       writes them again, and a row goes with its resource (`ON DELETE CASCADE`), as in the list index.
     - **A list that is gone.** A curated list on GitHub whose repository GitHub no longer knows stops naming its
-      resources ([0023](ADR-0023-catalog-full-text-index.md) point 17, UC-030 BR-010). A list page of a directory
+      resources ([0023](ADR-0023-catalog-full-text-index.md) point 17, UC-030 BR-012). A list page of a directory
       host does not: it is a web page, and the page reader does not tell a page that is gone from a page it could
       not read, so its rows stay until its next read.
     - **Every kind.** `GitHubAwesomeCollector.searchEntries` gives the index the repositories, the models, the

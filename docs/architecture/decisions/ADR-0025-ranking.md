@@ -45,7 +45,9 @@ The index query must also stay well inside its 3 s timeout on the production cat
    +0.01 audience match and +0.005 type match for the chosen path; +0.005 when the type is a type hint.
    The weights are one record, `RankingWeights`; the evaluation replays the variants of §7 with it.
    The values stay in the code: the evaluation's baseline and its variants are the code's values, so a weight in a
-   settings file would be a second source that the evaluation does not measure. The Settings page shows them
+   settings file would be a second source that the evaluation does not measure. The one exception is the weight
+   of the directory rating, a setting that is 0 until it is measured ([0056](ADR-0056-directory-rating.md) points
+   22 and 23). The Settings page shows them
    read-only, in a group "Ranking" (`RankingSettingsConfiguration`): k, each weight as a whole number of thousandths
    (0.02 is 20), the lane window and the popularity references (`Ranking.POPULARITY_REFERENCE`). The group reads the
    `Ranking` bean the search uses, in both apps. A weight changes with a pull request and the evaluation of §7.

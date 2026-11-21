@@ -24,6 +24,7 @@ RELATIONSHIP_EVIDENCE: {class: data}
 AWESOME_LIST: {class: data}
 AWESOME_LIST_ENTRY: {class: data}
 DIRECTORY_LIST_ENTRY: {class: data}
+DIRECTORY_RATING: {class: data}
 KNOWN_TARGET: {class: data}
 KNOWN_TARGET_NAME: {class: data}
 ISSUE_REPORT: {class: data}
@@ -86,6 +87,10 @@ RESOURCE <-> AWESOME_LIST_ENTRY: "is listed in" {
   target-arrowhead.shape: cf-many
 }
 RESOURCE <-> DIRECTORY_LIST_ENTRY: "is named by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> DIRECTORY_RATING: "is rated by" {
   source-arrowhead.shape: cf-one-required
   target-arrowhead.shape: cf-many
 }

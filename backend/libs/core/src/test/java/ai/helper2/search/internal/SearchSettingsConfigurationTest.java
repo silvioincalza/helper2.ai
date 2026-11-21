@@ -16,6 +16,7 @@ class SearchSettingsConfigurationTest {
           30,
           Duration.ofMillis(2500),
           new SearchProperties.Translation(300, Duration.ofHours(24)),
+          new SearchProperties.RankingSignals(0),
           new SearchProperties.Web(
               Duration.ofHours(24),
               Duration.ofHours(48),

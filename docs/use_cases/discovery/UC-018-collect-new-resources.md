@@ -126,7 +126,7 @@
 2. System asks the Source Provider for the current state of each repository.
 3. System records for each record whether its repository was found, is archived, or was not found, and when it was visited; a record whose repository did not answer keeps its state and gets only the time of the visit.
 4. System stores the stars of each repository found on the record that is the repository itself, and the popularity of its resource follows.
-5. System removes what a curated list named when its repository is gone at its source (UC-030 BR-010).
+5. System removes what a curated list named when its repository is gone at its source (UC-030 BR-012).
 6. Use case ends.
 
 ## Postconditions

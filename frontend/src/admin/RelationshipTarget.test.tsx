@@ -25,6 +25,7 @@ const evidence = (
     fields: [],
     validationErrors: [],
     directoryLists: [],
+    directoryRatings: [],
     relationship: {
       kind: 'ABOUT',
       target: 'Gemini 4 Carbon',

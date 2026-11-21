@@ -108,7 +108,7 @@ class JdbcRepositoryVisits implements RepositoryVisits {
     return facts;
   }
 
-  // UC-030 BR-010: the visits in a row that did not find the repository are counted; a visit that
+  // UC-030 BR-012: the visits in a row that did not find the repository are counted; a visit that
   // finds it, or a source that states it again, starts the count again.
   private void recordNotFound(UUID recordId, Instant visitedAt) {
     jdbc.sql(

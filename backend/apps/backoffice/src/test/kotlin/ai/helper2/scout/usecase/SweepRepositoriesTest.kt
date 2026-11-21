@@ -102,7 +102,7 @@ class SweepRepositoriesTest {
     assertEquals(1.0, counted("unanswered"))
   }
 
-  // UC-030 BR-010: only a definite "not found" reaches the rule of the lists that are gone, after
+  // UC-030 BR-012: only a definite "not found" reaches the rule of the lists that are gone, after
   // the visit is stored.
   @Test
   fun `the records GitHub did not find are handed to the rule of gone lists`() {
@@ -119,7 +119,7 @@ class SweepRepositoriesTest {
     assertEquals(3, catalog.recorded.size)
   }
 
-  // UC-030 BR-010: a read that fails for another reason removes nothing.
+  // UC-030 BR-012: a read that fails for another reason removes nothing.
   @Test
   fun `a batch where every repository is found or silent hands nothing to the rule of gone lists`() {
     val catalog =

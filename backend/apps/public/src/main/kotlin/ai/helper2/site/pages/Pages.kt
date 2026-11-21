@@ -1,5 +1,6 @@
 package ai.helper2.site.pages
 
+import ai.helper2.catalog.DirectoryRating
 import ai.helper2.catalog.resourcePath
 import ai.helper2.shared.Pricing
 import ai.helper2.shared.ResourceType
@@ -212,7 +213,7 @@ class Pages(private val base: String) {
     const val BRAND = "helper2.ai"
     const val TITLE_MAX = 60
     const val DESCRIPTION_MAX = 155
-    const val MAX_FACTS = 6
+    const val MAX_FACTS = 7
     const val MAX_SOURCES = 5
     const val MAX_RELATED = 8
     const val MAX_LISTED = 20
@@ -290,9 +291,18 @@ class Pages(private val base: String) {
       return cut("${r.title}: ${parts.joinToString(", ")}$found.", DESCRIPTION_MAX)
     }
 
+    // UC-007 BR-011: the page a crawler gets says what the page of a visitor says.
+    private fun ratingInWords(rating: DirectoryRating?): String =
+      when {
+        rating == null -> "Not rated yet"
+        rating.directories == 1 -> "${rating.shownScore()} out of 5, from 1 directory"
+        else -> "${rating.shownScore()} out of 5, from ${rating.directories} directories"
+      }
+
     fun facts(r: ResourceView): List<Fact> =
       listOfNotNull(
           Fact("Type", typeInWords(r.type)),
+          Fact("Rating", ratingInWords(r.rating)),
           r.license?.let { Fact("License", it) },
           r.pricing?.let { Fact("Pricing", pricingInWords(it)) },
           r.platforms

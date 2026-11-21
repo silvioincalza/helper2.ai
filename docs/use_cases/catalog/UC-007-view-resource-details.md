@@ -25,7 +25,7 @@
 4. System gathers every stated fact with its origin, its verification and its evidence: the facts each source record states, and the facts an AI model read with the quotes that support them.
 5. System gathers the relationships of the resource to other resources, vendors, services and tools, keeping verified relationships apart from unverified candidates, each with its evidence.
 6. System gathers the AI summary of the resource, each claim with its citations.
-7. System gathers the curated lists that name the resource, with the headings above its entry in each list, and counts the lists on directory hosts that name it.
+7. System gathers the curated lists that name the resource, with the headings above its entry in each list, counts the lists on directory hosts that name it, and makes its rating from the figures directory hosts state (BR-011).
 8. System shows the page: the title, type, host and dates, a link to open the resource on its host, the facts at a glance, the AI summary, the relationships, and, one click away, where the information comes from (each source with its mode and when it was read, every field with its origin, the evidence and the source records). Every AI-written value carries a visible label and a machine-readable mark.
 9. Visitor follows the link to the original on its host.
 
@@ -131,3 +131,7 @@ Every value an AI model wrote (an extracted fact, a relationship found by a mode
 ### BR-010: General Rate Limit
 
 A visitor may make at most 120 requests per minute to the public interface by default.
+
+### BR-011: Rating from Directories
+
+The page shows one rating from 1 to 5 for the resource, with one decimal, and next to it the number of directories it comes from; it never names the directories. The rating is made from the average and the number of votes each directory states (UC-030 BR-010): each average is put on the scale from 1 to 5, and the result is `(20 × 3.0 + Σ votes × average) / (20 + Σ votes)` over the directories, so a rating with few votes stays near 3. Two lists of one directory count once, with the figures read last. A resource for which no directory states figures is shown as "Not rated yet", with no figure. The rating is a stated figure and a formula, not AI-written text, and carries no AI label. The page offers to report a wrong rating (UC-009).

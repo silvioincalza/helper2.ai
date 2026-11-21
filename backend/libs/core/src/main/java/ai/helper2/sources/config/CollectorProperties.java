@@ -155,7 +155,8 @@ public final class CollectorProperties {
         @NotNull Duration retryAfter,
         @NotNull List<String> neverRead,
         @PositiveOrZero int maxDiscovered,
-        @PositiveOrZero int discoveredReadsPerDay) {
+        @PositiveOrZero int discoveredReadsPerDay,
+        @PositiveOrZero int itemPageReadsPerDay) {
 
       public WebPages {
         neverRead = clean(neverRead);
