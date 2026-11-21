@@ -2,8 +2,12 @@
 
 ## Claude Code
 
+The workflow, the reading list, the commands and the rules are in `AGENTS.md`. This file holds only what is specific
+to Claude Code.
+
 - Specialist agents are in `.claude/agents/`, slash commands in `.claude/commands/`, skills in `.claude/skills/`.
-  Each file says in its `description` when to use it.
+  Each file says in its `description` when to use it. The skills hold the detail of the rules: load the one that
+  names your work before you start (the index is in `AGENTS.md`, "Detail lives in").
 - `.claude/hooks/guard-bash.py` stops a merge, a push to main, a plain force push, a change to prod and AI
   attribution before the command runs. Do not work around it: ask the human in the loop.
 - Never let a commit, PR, issue or comment carry a "Generated with Claude Code" footer or a

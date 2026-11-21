@@ -1,7 +1,7 @@
 # Review
 
 How a change to helper2.ai is reviewed, by the `reviewer` agent, by an automated review and by the human in the loop.
-Severity levels are the ones in `AGENTS.md` (section Severity). The human in the loop approves and merges; nobody else does.
+Severity levels are the ones of the skill `facts-and-sources` (`.claude/skills/facts-and-sources/SKILL.md`). The human in the loop approves and merges; nobody else does.
 
 ## Before the review
 
@@ -31,7 +31,7 @@ Severity levels are the ones in `AGENTS.md` (section Severity). The human in the
 - Every AI-written text is labelled in the UI and marked in the API and the HTML (EU AI Act Art. 50).
 - A lasting decision has its ADR with diagrams. The specification (`docs/`) matches the code.
 - No dead code and no dead docs: nothing unused or unread is left behind. No page carries a revision history until the
-  migration to the AI Unified Process is complete (`AGENTS.md`).
+  migration to the AI Unified Process is complete (`AGENTS.md`, Hard rules).
 - A drawback the change accepts was approved by the human in the loop before it was built, and the pull request names it.
 - No AI attribution anywhere. Notes, plans and reviews are not in the diff (they live in `.private/`).
 

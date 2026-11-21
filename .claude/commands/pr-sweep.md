@@ -1,5 +1,5 @@
 ---
-description: Bring a pull request to "only the human in the loop's approval is missing": fix review comments and failing checks
+description: "Bring a pull request to \"only the human in the loop's approval is missing\": fix review comments and failing checks"
 argument-hint: <pull request number>
 ---
 Sweep pull request #$ARGUMENTS until only the human in the loop's review is left. Never merge it.

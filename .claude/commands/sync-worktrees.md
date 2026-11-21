@@ -1,6 +1,6 @@
 ---
 description: After a PR merges, update the worktrees that depend on it, then clean up merged ones
-argument-hint: [merged PR number or branch]
+argument-hint: "[merged PR number or branch]"
 ---
 Merged: $ARGUMENTS (if empty: everything merged into origin/main since the last sync)
 
