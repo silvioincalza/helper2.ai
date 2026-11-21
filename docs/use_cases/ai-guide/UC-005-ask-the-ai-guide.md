@@ -8,7 +8,7 @@
 **Secondary Actors:** Language Model, Embedding Service, Source Provider  
 **Goal:** Get a short answer to a need in plain words, built only from retrieved catalog results, with every claim backed by a quote that code has found word for word in the source  
 **Trigger:** The visitor chooses "Ask the guide" (or Shift+Enter) for the words in the search box  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-007, FR-008, FR-009, NFR-002, NFR-004, NFR-006, NFR-007, NFR-008, NFR-010, NFR-013, NFR-015, C-001, C-003, C-005](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-005-ask-the-ai-guide.md)  
@@ -128,7 +128,7 @@
 **Trigger:** No model is configured, a model call fails, or the guide's model calls of the day are spent (step 5)  
 **Flow:**
 
-1. System uses the visitor's own words as the search query and shows the top 3 search results, with a notice when the daily budget is spent.
+1. System uses the visitor's own words as the search query and shows the top 3 search results, with a notice when the budget is spent that says when AI answers are back.
 2. System counts no AI answer for the visitor.
 3. Use case ends.
 
@@ -178,7 +178,7 @@ A visitor asks at most 10 questions a minute by default, counted per network add
 
 ### BR-003: Questions at Once
 
-A visitor has at most 2 questions running at once per server, and a server answers at most 8 questions at once, by default. A question that finds no free place is refused at once as busy. A stored or shared answer needs no place.
+A visitor has at most 2 questions running at once per server, and a server answers at most 8 questions at once, by default. A question that finds no free place is refused at once as busy. A stored or shared answer counts among the visitor's 2 questions while it is served, and takes none of the server's 8 places.
 
 ### BR-004: Deadline
 
@@ -190,7 +190,7 @@ A visitor gets 30 AI answers per UTC day and a network 300 per UTC day, by defau
 
 ### BR-006: Daily Model Budget
 
-The guide makes at most 600 model calls a day by default, for all visitors together, spread over 12 slots of the day so that the budget is not spent early. When the budget is spent, the guide answers as in A11.
+The guide makes at most 600 model calls a day by default, for all visitors together, spread over 12 slots of the day so that the budget is not spent early. When the budget of the day or of the current slot is spent, the guide answers as in A11 and says when AI answers are back: at the start of the next slot, or after 00:00 UTC.
 
 ### BR-007: Quote Rule
 
@@ -247,3 +247,11 @@ The guide answers only when the visitor asks it. A search never asks the guide, 
 ### BR-020: One Question at a Time on the Page
 
 A new question replaces the question being answered. New words in the search box drop the question and its picks, because the picks answered the earlier words.
+
+### BR-021: Question Nobody Waits For
+
+When the live stream of the model's reasoning is on (off by default), a question is stopped 3 seconds after the last visitor waiting for its answer has left. It gives no answer and costs no AI answer.
+
+### BR-022: Answer Sizes
+
+A comparison names at most 3 subjects and holds at most 8 aspects. An explanation holds at most 4 sentences. A date answer lists at most 5 events.

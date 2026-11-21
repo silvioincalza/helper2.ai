@@ -8,7 +8,7 @@
 **Secondary Actors:** Language Model, Source Provider  
 **Goal:** Install, configure and connect a resource to the visitor's AI tools, with setup facts and steps taken only from the resource's own source data and documentation  
 **Trigger:** The visitor opens the setup part of a resource page, or asks for its step-by-step guide  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-011, NFR-010, C-005](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-007-view-resource-details.md)  
@@ -76,10 +76,10 @@
 
 ### A6: Guide Already Written
 
-**Trigger:** A guide was written from the same documents before (step 7)  
+**Trigger:** A guide was written from the same documents before, or is being written for another visitor right now (step 7)  
 **Flow:**
 
-1. System sends the stored guide without counting it against the visitor.
+1. System sends the stored guide, or waits for the guide in progress and shares it, without counting it against the visitor.
 2. Use case ends.
 
 ### A7: Guide Cannot Be Written Now
@@ -148,7 +148,7 @@ Documents are read only from fixed hosts, with a time limit of 10 seconds per do
 
 ### BR-005: Step Checks
 
-A section holds at most 8 steps. A step's text holds at most 280 characters and no link outside code. A quote holds at most 500 characters and at least 30 characters and 5 words, and is found in the cited document. A command holds at most 40 lines and is whole lines of one code block, or one inline code span, of the cited document, exactly as written.
+A section holds at most 8 steps. A step's text holds at most 280 characters and no link outside code. A quote holds at most 500 characters and at least 30 characters and 5 words, or is a whole line of the document of at least 3 words, and is found in the cited document. A command holds at most 40 lines and is whole lines of one code block, or one inline code span, of the cited document, exactly as written.
 
 ### BR-006: Step Texts
 
@@ -169,3 +169,7 @@ Setup data is read at most 120 times a minute per visitor by default. The step-b
 ### BR-010: Shadow Libraries
 
 A document on a shadow library is never read, as UC-004 BR-006 states.
+
+### BR-011: Commands That Need Care
+
+A step whose command runs a downloaded script at once, runs with administrator rights, opens a file to everyone or deletes folders is marked, so the page warns the visitor before the command is copied.
