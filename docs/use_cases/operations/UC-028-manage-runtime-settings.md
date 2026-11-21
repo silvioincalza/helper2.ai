@@ -96,7 +96,7 @@
 
 ### BR-001: Runtime Settings
 
-The runtime limits, each with its maximum, are: enrichments per Scout run (3,000), enrichment calls a day (3,000), gap rounds a day (2,000), guide model calls a day for all visitors (3,000), query translations a day (2,000), live web credits a day for all of helper2.ai (2,000) and review research model calls a day (20,000). The runtime switch is Google ads (on or off). A day is a UTC day.
+The runtime limits, each with its maximum, are: enrichments per Scout run (3,000), enrichment calls a day (3,000), gap rounds a day (2,000), guide model calls a day for all visitors (3,000), query translations a day (2,000), live web credits a day for all of helper2.ai (2,000), live web credits a day for the Scout's searches (3,000), page-read credits a day for product pages (3,000) and review research model calls a day (20,000). The runtime switch is Google ads (on or off). A day is a UTC day.
 
 ### BR-002: Allowed Range
 
@@ -104,7 +104,7 @@ A limit takes a whole number from 0 to its maximum; 0 turns the limited work off
 
 ### BR-003: Default Value
 
-Without a change, a setting has the value configured for the application at start, through the variable shown with it. A reset brings that default back. The live web credits have their maximum as default when none is configured. An application does not start with a configured default outside the allowed range.
+Without a change, a setting has the value configured for the application at start, through the variable shown with it. A reset brings that default back. The live web credits for all of helper2.ai, the live web credits for the Scout's searches and the page-read credits have their maximum as default when none is configured. An application does not start with a configured default outside the allowed range.
 
 ### BR-004: Change on the Version Seen
 

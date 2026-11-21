@@ -64,7 +64,7 @@ helper2:
     daily-enrichment-calls: ${H2_SCOUT_DAILY_ENRICHMENT_CALLS:500}
     gap-daily-calls: ${H2_SCOUT_GAP_DAILY_CALLS:400}
     evidence:
-      daily-page-read-credits: ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:20}
+      daily-page-read-credits: ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:}
     enrich-max-tokens: ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}
     enrichment-model: ${H2_SCOUT_ENRICHMENT_MODEL:FAST}
     known-targets:

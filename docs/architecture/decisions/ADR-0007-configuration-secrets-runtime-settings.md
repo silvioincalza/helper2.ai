@@ -78,7 +78,7 @@ are different: they only say how much we spend, and the right number changes wit
    `@ConditionalOnProperty` and `@ConditionalOnExpression` still use placeholders, and only for keys a record owns. Env names never follow a record path: the yaml mapping is the
    contract, so renaming a field never renames an `H2_` variable. The database password has no default
    in the base document; only the `dev` profile has the local one from `compose.yaml`.
-9. **Seven limits and one switch change at runtime.** For the settings in `RuntimeSetting` (§10), the `H2_` value is the
+9. **Nine limits and one switch change at runtime.** For the settings in `RuntimeSetting` (§10), the `H2_` value is the
    default, not a ceiling: an administrator can change it from the back office, between 0 and a maximum in code.
    The record still binds the value at startup; the module reads the limit through a supplier (§14). Every other
    setting changes only with a deploy.
@@ -88,7 +88,9 @@ are different: they only say how much we spend, and the right number changes wit
     (`H2_SCOUT_MAX_ENRICHMENTS`, at most 3,000), enrichment calls a day (`H2_SCOUT_DAILY_ENRICHMENT_CALLS`, 3,000),
     gap rounds a day (`H2_SCOUT_GAP_DAILY_CALLS`, 2,000), the guide's model calls a day
     (`H2_GUIDE_DAILY_MODEL_CALLS`, 3,000), translations a day (`H2_SEARCH_DAILY_TRANSLATIONS`, 2,000), Tavily
-    credits a day for all of Helper2 (`H2_LIVE_WEB_DAILY_CREDITS`, 2,000), research model calls a day
+    credits a day for all of Helper2 (`H2_LIVE_WEB_DAILY_CREDITS`, 2,000), Tavily credits a day for the Scout's
+    searches (`H2_SCOUT_DAILY_CREDITS`, 3,000), Tavily Extract credits a day for product pages
+    (`H2_SCOUT_PAGE_READER_DAILY_CREDITS`, 3,000), research model calls a day
     (`H2_RESEARCH_DAILY_MODEL_CALLS`, 20,000). Each limit has a key, a unit, a line of help and
     that absolute maximum. One switch is in the same list as kind `SWITCH`: the Google ads
     (`ads.enabled`, `H2_ADS_ENABLED`, `true` or `false`: [0042](ADR-0042-monetisation.md) §1). A switch is
@@ -102,7 +104,12 @@ are different: they only say how much we spend, and the right number changes wit
     code; going above it needs a pull request. A value outside 0 to the maximum is refused by the server (400) and
     blocked in the form. A default above the maximum stops startup with the variable's name. Every runtime setting is
     a finite number: an empty `H2_LIVE_WEB_DAILY_CREDITS` (no cap) applies as the code maximum, 2,000 credits a
-    day. So "Reset to default" never removes the global Tavily cap. The other choice, refusing a reset when the
+    day. So "Reset to default" never removes the global Tavily cap. The Scout's two credit limits work the same
+    way: `H2_SCOUT_DAILY_CREDITS` and `H2_SCOUT_PAGE_READER_DAILY_CREDITS` are empty by default and apply as
+    3,000 credits a day each, so neither holds the Scout back until an administrator lowers it. The maximum
+    stops a fault that would spend without end. A page read also takes a credit of the global cap, so the
+    global cap bounds the page reads too; the Scout's searches count on the global counter but are stopped only
+    by their own limit ([0013](ADR-0013-discovery.md) §10). The other choice, refusing a reset when the
     default is empty, still leaves no cap on a fresh install and makes "reset" mean two things; the code maximum is
     the safer of the two.
 12. **Postgres, append-only.** Table `runtime_setting` (`V1__schema.sql`): one row per change, with the value, who,

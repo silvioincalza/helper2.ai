@@ -17,17 +17,21 @@ public class ScoutLiveWebCredits {
 
   private final QuotaCounter counter;
   private final QuotaKeys keys;
-  private final long dailyCap;
+  private final Supplier<Long> dailyCap;
   private final MeterRegistry meters;
   private final String feature;
 
   public ScoutLiveWebCredits(
-      QuotaCounter counter, QuotaKeys keys, long dailyCap, MeterRegistry meters) {
+      QuotaCounter counter, QuotaKeys keys, Supplier<Long> dailyCap, MeterRegistry meters) {
     this(counter, keys, dailyCap, meters, FEATURE);
   }
 
   private ScoutLiveWebCredits(
-      QuotaCounter counter, QuotaKeys keys, long dailyCap, MeterRegistry meters, String feature) {
+      QuotaCounter counter,
+      QuotaKeys keys,
+      Supplier<Long> dailyCap,
+      MeterRegistry meters,
+      String feature) {
     this.counter = counter;
     this.keys = keys;
     this.dailyCap = dailyCap;
@@ -40,12 +44,13 @@ public class ScoutLiveWebCredits {
   }
 
   public long dailyCap() {
-    return dailyCap;
+    return dailyCap.get();
   }
 
+  // UC-028 BR-002: the Scout's searches stop at the limit applied now; 0 turns them off.
   public boolean capReached() {
     try {
-      return counter.used(scout()) >= dailyCap;
+      return counter.used(scout()) >= dailyCap.get();
     } catch (RuntimeException e) {
       log.warn("Scout live web credits unreadable: {}", e.getClass().getSimpleName());
       return true;

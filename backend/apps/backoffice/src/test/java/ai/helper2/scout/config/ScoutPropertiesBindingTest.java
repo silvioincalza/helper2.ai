@@ -39,7 +39,7 @@ class ScoutPropertiesBindingTest {
                   400,
                   8192,
                   ModelTier.FAST,
-                  new ScoutProperties.Evidence(20),
+                  new ScoutProperties.Evidence(null),
                   new ScoutProperties.KnownTargets(5, 25),
                   new ScoutProperties.RepositorySweep(
                       true, Duration.ofMinutes(10), Duration.ofMinutes(2), 50)));
@@ -71,7 +71,7 @@ class ScoutPropertiesBindingTest {
         .run(c -> {
           ScoutProperties scout = c.getBean(ScoutProperties.class);
           assertThat(scout.enabled()).isTrue();
-          assertThat(scout.evidence().dailyPageReadCredits()).isEqualTo(7);
+          assertThat(scout.evidence().dailyPageReadCredits()).isEqualTo(7L);
           assertThat(scout.knownTargets()).isEqualTo(new ScoutProperties.KnownTargets(8, 0));
           assertThat(scout.cron()).isEqualTo("0 30 4 * * *");
           assertThat(scout.maxEnrichmentsPerRun()).isEqualTo(5);

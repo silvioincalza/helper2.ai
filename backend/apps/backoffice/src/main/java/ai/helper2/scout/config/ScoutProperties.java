@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.validation.annotation.Validated;
 
@@ -26,7 +27,7 @@ public record ScoutProperties(
     @PositiveOrZero int gapDailyCalls,
     @Positive int enrichMaxTokens,
     @NotNull ModelTier enrichmentModel,
-    @Valid @NotNull Evidence evidence,
+    @Valid @NotNull @DefaultValue Evidence evidence,
     @Valid @NotNull KnownTargets knownTargets,
     @Valid @NotNull RepositorySweep repositorySweep) {
   public record RepositorySweep(
@@ -37,7 +38,7 @@ public record ScoutProperties(
 
   public record KnownTargets(@Positive int ownerMinResources, @PositiveOrZero int perDay) {}
 
-  public record Evidence(@PositiveOrZero int dailyPageReadCredits) {}
+  public record Evidence(@PositiveOrZero Long dailyPageReadCredits) {}
 
   @AssertTrue(message = "must be a Spring cron expression")
   public boolean isCronReadable() {

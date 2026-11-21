@@ -12,6 +12,8 @@ import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.platform.settings.RuntimeSetting;
+import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.DiscoveryHostStore;
@@ -182,8 +184,14 @@ class CollectorsConfiguration {
       CollectorProperties.ScoutCredits c,
       QuotaCounter counter,
       QuotaKeys keys,
+      RuntimeSettings runtime,
       MeterRegistry meters) {
-    return new ScoutLiveWebCredits(counter, keys, c.dailyCredits(), meters);
+    // UC-028 BR-003: without a configured value the limit is its maximum.
+    return new ScoutLiveWebCredits(
+        counter,
+        keys,
+        runtime.declareCap(RuntimeSetting.SCOUT_SEARCH_DAILY_CREDITS, c.dailyCredits()),
+        meters);
   }
 
   @Bean
@@ -268,7 +276,7 @@ class CollectorsConfiguration {
         "Scout sources",
         SettingsGroup.SCOUT_SOURCES,
         List.of(
-            Setting.count(
+            Setting.cap(
                 "scoutSources.dailyCredits",
                 "Live web credits a day, Scout searches",
                 credits.dailyCredits(),

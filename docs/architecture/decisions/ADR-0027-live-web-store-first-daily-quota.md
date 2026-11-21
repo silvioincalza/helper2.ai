@@ -83,7 +83,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    daily cap (250, `app.dailyLimits.webSearchCredits`). The plan has 14,000 credits a month for prod, staging (cap
    180 a day) and the Scout (~506 a month); a 31-day month at both caps stays about 80 under it. The Scout's
    discovery and LinkedIn searches count on the global daily counter and in the alert too (features `scout-discovery`
-   and `scout-linkedin`, and `scout-list-pages` for the web pages an administrator added as lists, at most 40 a day
+   and `scout-linkedin`, and `scout-list-pages` for the web pages an administrator added as lists, under the Scout's daily limit
    together, [0013](ADR-0013-discovery.md),
    [0012](ADR-0012-scout-collectors-and-events.md)).
 9. **Retention** ([0010](ADR-0010-data-retention.md)): stored sets are deleted 7 days after `fetched_at`

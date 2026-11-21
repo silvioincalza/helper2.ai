@@ -9,8 +9,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 class RuntimeSettingTest {
 
+  // UC-028 BR-001: the runtime limits and the switch.
   @Test
-  void onlyTheSevenSpendingLimitsAndTheAdsSwitchMayChange() {
+  void onlyTheNineSpendingLimitsAndTheAdsSwitchMayChange() {
     assertThat(Arrays.stream(RuntimeSetting.values()).map(RuntimeSetting::key))
         .containsExactly(
             "scout.maxEnrichmentsPerRun",
@@ -19,6 +20,8 @@ class RuntimeSettingTest {
             "guide.dailyModelCalls",
             "search.dailyTranslations",
             "search.webGlobalDailyCredits",
+            "scoutSources.dailyCredits",
+            "scout.evidenceDailyExtractCredits",
             "research.dailyModelCalls",
             "ads.enabled");
   }
@@ -51,6 +54,17 @@ class RuntimeSettingTest {
     assertThat(setting.label() + " " + setting.help())
         .as("the product is helper2.ai, in lower case and in full")
         .doesNotContainPattern("Helper2|helper2(?!\\.ai)");
+  }
+
+  // UC-028 BR-001: each of the Scout's two credit limits stops at 3,000 a day.
+  @Test
+  void theScoutCreditLimitsStopAtThreeThousandADay() {
+    assertThat(RuntimeSetting.SCOUT_SEARCH_DAILY_CREDITS.max()).isEqualTo(3_000);
+    assertThat(RuntimeSetting.SCOUT_PAGE_READ_DAILY_CREDITS.max()).isEqualTo(3_000);
+    assertThat(RuntimeSetting.SCOUT_SEARCH_DAILY_CREDITS.variable())
+        .isEqualTo("H2_SCOUT_DAILY_CREDITS");
+    assertThat(RuntimeSetting.SCOUT_PAGE_READ_DAILY_CREDITS.variable())
+        .isEqualTo("H2_SCOUT_PAGE_READER_DAILY_CREDITS");
   }
 
   @Test

@@ -87,7 +87,7 @@ public final class CollectorProperties {
 
   @Validated
   @ConfigurationProperties("helper2.scout")
-  public record ScoutCredits(@PositiveOrZero long dailyCredits) {}
+  public record ScoutCredits(@PositiveOrZero Long dailyCredits) {}
 
   @Validated
   @ConfigurationProperties("helper2.scout.discovery")

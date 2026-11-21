@@ -21,6 +21,8 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class RuntimeSettingsTest {
 
@@ -143,22 +145,47 @@ class RuntimeSettingsTest {
     assertThat(runtime.overrideCount()).isZero();
   }
 
-  @Test
-  void aCapWithAnEmptyDefaultIsTheCodeMaximumAndAResetNeverRemovesIt() {
-    RuntimeSetting global = RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS;
-    var credits = runtime.declareCap(global, null);
-    assertThat(credits.get()).as("no H2_ value: the code maximum").isEqualTo(global.max());
-    assertThat(runtime.defaultValue(global)).isEqualTo(global.max());
+  // UC-028 BR-003: a credit limit has its maximum as default when none is configured.
+  @ParameterizedTest
+  @EnumSource(
+      value = RuntimeSetting.class,
+      names = {
+        "SEARCH_WEB_GLOBAL_DAILY_CREDITS",
+        "SCOUT_SEARCH_DAILY_CREDITS",
+        "SCOUT_PAGE_READ_DAILY_CREDITS"
+      })
+  void aCapWithAnEmptyDefaultIsTheCodeMaximumAndAResetNeverRemovesIt(RuntimeSetting cap) {
+    var credits = runtime.declareCap(cap, null);
+    assertThat(credits.get()).as("no H2_ value: the code maximum").isEqualTo(cap.max());
+    assertThat(runtime.defaultValue(cap)).isEqualTo(cap.max());
 
-    store.set(global, 120L);
+    store.set(cap, 120L);
     runtime.reloadIfChanged();
     assertThat(credits.get()).isEqualTo(120L);
 
-    store.set(global, null);
+    store.set(cap, null);
     runtime.reloadIfChanged();
     assertThat(credits.get())
         .as("reset: back to the code maximum, not to no cap")
-        .isEqualTo(global.max());
+        .isEqualTo(cap.max());
+  }
+
+  // UC-028 BR-003: the configured value is the default of a credit limit, 0 included.
+  @Test
+  void aCapWithAConfiguredDefaultKeepsItAndAResetBringsItBack() {
+    RuntimeSetting pages = RuntimeSetting.SCOUT_PAGE_READ_DAILY_CREDITS;
+    var credits = runtime.declareCap(pages, 0L);
+    assertThat(credits.get())
+        .as("H2_ value 0: page reads off until an administrator raises it")
+        .isZero();
+
+    store.set(pages, 300L);
+    runtime.reloadIfChanged();
+    assertThat(credits.get()).isEqualTo(300L);
+
+    store.set(pages, null);
+    runtime.reloadIfChanged();
+    assertThat(credits.get()).isZero();
   }
 
   @Test

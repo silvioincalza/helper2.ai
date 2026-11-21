@@ -211,7 +211,7 @@ class ScoutConfiguration {
                 scout.gapDailyCalls(),
                 "calls a day",
                 "H2_SCOUT_GAP_DAILY_CALLS"),
-            Setting.count(
+            Setting.cap(
                 "scout.evidenceDailyExtractCredits",
                 "Page reads a day, product pages",
                 scout.evidence().dailyPageReadCredits(),
@@ -362,6 +362,10 @@ class ScoutConfiguration {
         runtime.declare(RuntimeSetting.SCOUT_MAX_ENRICHMENTS_PER_RUN, scout.maxEnrichmentsPerRun());
     IntSupplier gapDailyCalls =
         runtime.declare(RuntimeSetting.SCOUT_GAP_DAILY_CALLS, scout.gapDailyCalls());
+    // UC-028 BR-003: without a configured value the limit is its maximum.
+    Supplier<Long> dailyPageReadCredits =
+        runtime.declareCap(
+            RuntimeSetting.SCOUT_PAGE_READ_DAILY_CREDITS, scout.evidence().dailyPageReadCredits());
     OfficialPages pages =
         officialPages(
             pageReader.getIfAvailable(),
@@ -369,7 +373,7 @@ class ScoutConfiguration {
             webSearchQuota.getIfAvailable(),
             sharedCaches.getIfAvailable(),
             pageTextCache(redis.getIfAvailable(), json, resilience, scoutPolicy.pageText()),
-            scout.evidence(),
+            () -> Math.toIntExact(dailyPageReadCredits.get()),
             scoutPolicy.pageRead(),
             clock,
             budgetCounter,
@@ -409,20 +413,18 @@ class ScoutConfiguration {
       @Nullable WebSearchQuota quota,
       @Nullable SharedCaches caches,
       PageTextCache textCache,
-      ScoutProperties.Evidence evidence,
+      IntSupplier dailyPageReadCredits,
       Duration pageReadTtl,
       Clock clock,
       CallCounter counter,
       MeterRegistry meters) {
-    if (reader == null
-        || !reader.getAvailable()
-        || roots == null
-        || evidence.dailyPageReadCredits() <= 0) {
-      log.info("Evidence ladder: product pages off (no reader, no key or no credits)");
+    if (reader == null || !reader.getAvailable() || roots == null) {
+      log.info("Evidence ladder: product pages off (no reader or no key)");
       return null;
     }
+    // UC-028 BR-002: the limit is read at each page read; 0 turns the reads off until it is raised.
     DailyBudget credits =
-        new DailyBudget(evidence.dailyPageReadCredits(), clock, "scout-evidence-extract", counter);
+        new DailyBudget(dailyPageReadCredits, clock, "scout-evidence-extract", counter);
     Gauge.builder("helper2.scout.evidence.credits.remaining", credits, DailyBudget::remaining)
         .description("Page reads left for product pages under today's cap (UTC day)")
         .register(meters);
@@ -432,7 +434,7 @@ class ScoutConfiguration {
             : new SharedCachePageLedger(caches.named(SharedCachePageLedger.CACHE), pageReadTtl);
     log.info(
         "Evidence ladder: product pages on, {} Extract credits a day",
-        evidence.dailyPageReadCredits());
+        dailyPageReadCredits.getAsInt());
     return new OfficialPages(
         reader,
         new PageReaderCreditBudget(credits, quota, meters),
