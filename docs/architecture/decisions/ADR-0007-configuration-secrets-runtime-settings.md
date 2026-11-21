@@ -88,7 +88,7 @@ are different: they only say how much we spend, and the right number changes wit
     (`H2_SCOUT_MAX_ENRICHMENTS`, at most 3,000), enrichment calls a day (`H2_SCOUT_DAILY_ENRICHMENT_CALLS`, 3,000),
     gap rounds a day (`H2_SCOUT_GAP_DAILY_CALLS`, 2,000), the guide's model calls a day
     (`H2_GUIDE_DAILY_MODEL_CALLS`, 3,000), translations a day (`H2_SEARCH_DAILY_TRANSLATIONS`, 2,000), Tavily
-    credits a day for all of Helper2 (`H2_LIVE_WEB_DAILY_CREDITS`, 2,000), Tavily credits a day for the Scout's
+    credits a day for all of Helper2 (`H2_LIVE_WEB_DAILY_CREDITS`, 3,000), Tavily credits a day for the Scout's
     searches (`H2_SCOUT_DAILY_CREDITS`, 3,000), Tavily Extract credits a day for product pages
     (`H2_SCOUT_PAGE_READER_DAILY_CREDITS`, 3,000), research model calls a day
     (`H2_RESEARCH_DAILY_MODEL_CALLS`, 20,000). Each limit has a key, a unit, a line of help and
@@ -103,7 +103,7 @@ are different: they only say how much we spend, and the right number changes wit
 11. **The `H2_` value is the default, not a ceiling.** The minimum is 0, which turns the use off. The maximum is in
     code; going above it needs a pull request. A value outside 0 to the maximum is refused by the server (400) and
     blocked in the form. A default above the maximum stops startup with the variable's name. Every runtime setting is
-    a finite number: an empty `H2_LIVE_WEB_DAILY_CREDITS` (no cap) applies as the code maximum, 2,000 credits a
+    a finite number: an empty `H2_LIVE_WEB_DAILY_CREDITS` (no cap) applies as the code maximum, 3,000 credits a
     day. So "Reset to default" never removes the global Tavily cap. The Scout's two credit limits have
     a default below their maximum: `H2_SCOUT_DAILY_CREDITS` and `H2_SCOUT_PAGE_READER_DAILY_CREDITS` are 1,000
     credits a day each, and an administrator can raise each to 3,000. The default is far above a normal day, so

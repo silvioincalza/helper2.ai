@@ -56,9 +56,10 @@ class RuntimeSettingTest {
         .doesNotContainPattern("Helper2|helper2(?!\\.ai)");
   }
 
-  // UC-028 BR-001: each of the Scout's two credit limits stops at 3,000 a day.
+  // UC-028 BR-001: each of the three credit limits stops at 3,000 a day.
   @Test
-  void theScoutCreditLimitsStopAtThreeThousandADay() {
+  void theCreditLimitsStopAtThreeThousandADay() {
+    assertThat(RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS.max()).isEqualTo(3_000);
     assertThat(RuntimeSetting.SCOUT_SEARCH_DAILY_CREDITS.max()).isEqualTo(3_000);
     assertThat(RuntimeSetting.SCOUT_PAGE_READ_DAILY_CREDITS.max()).isEqualTo(3_000);
     assertThat(RuntimeSetting.SCOUT_SEARCH_DAILY_CREDITS.variable())

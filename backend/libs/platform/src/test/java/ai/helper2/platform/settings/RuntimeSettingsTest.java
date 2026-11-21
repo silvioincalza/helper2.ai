@@ -164,6 +164,18 @@ class RuntimeSettingsTest {
         .isEqualTo(global.max());
   }
 
+  // UC-028 BR-003: the live web credits of production, 3,000 a day, are inside the allowed range,
+  // so the application starts with them; one more stops the start with the variable's name.
+  @Test
+  void theLiveWebCreditsOfProductionAreInsideTheRangeAndOneMoreStopsTheStart() {
+    RuntimeSetting global = RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS;
+
+    assertThat(runtime.declareCap(global, 3_000L).get()).isEqualTo(3_000L);
+    assertThatThrownBy(() -> new RuntimeSettings(store, clock, REFRESH).declareCap(global, 3_001L))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("H2_LIVE_WEB_DAILY_CREDITS");
+  }
+
   // UC-028 BR-002, BR-003: a Scout credit limit starts at its configured default, takes a change up
   // to its maximum, and a reset brings the default back.
   @ParameterizedTest

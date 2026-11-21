@@ -45,7 +45,7 @@ public enum RuntimeSetting {
       "search.webGlobalDailyCredits",
       "Live web credits a day, all of helper2.ai",
       "credits a day",
-      2_000,
+      3_000,
       "H2_LIVE_WEB_DAILY_CREDITS",
       "Live web calls a UTC day for all of helper2.ai. 0: no live call, stored results only."),
   SCOUT_SEARCH_DAILY_CREDITS(
