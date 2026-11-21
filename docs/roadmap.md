@@ -199,6 +199,10 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E11 Spec-driven docs with the AI Unified Process
 
+### Now
+
+- [S11.7.7 The session opens its pull request once verify.sh passes](https://github.com/silvioincalza/helper2.ai/issues/949)
+
 ### Next
 
 - [S11.1.2 Spec-lint as a CI check](https://github.com/silvioincalza/helper2.ai/issues/925)
