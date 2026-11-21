@@ -167,4 +167,67 @@ class ResourceFoundInApiIT extends ApiTestBase {
           .update();
     }
   }
+
+  private void rated(UUID resource, String host, double average, int scale, int votes) {
+    owner
+        .sql(
+            """
+            INSERT INTO directory_rating
+                (list_url, resource_id, host, page_url, average, scale, votes, read_at, tried_at)
+            VALUES (:url, :resource, :host, :url, :average, :scale, :votes, now(), now())
+            """)
+        .param("url", "https://" + host + "/best-translation-apps")
+        .param("resource", resource)
+        .param("host", host)
+        .param("average", average)
+        .param("scale", scale)
+        .param("votes", votes)
+        .update();
+  }
+
+  @Test
+  void uc007Br011TheRatingIsOneScoreWithTheNumberOfDirectoriesAndNeverTheirNames()
+      throws Exception {
+    UUID resource = curated("https://deepl.com/translator");
+    String first = "directory-a-" + run + ".example";
+    String second = "directory-b-" + run + ".example";
+    rated(resource, first, 4.0, 5, 100);
+    rated(resource, second, 10.0, 10, 300);
+
+    String body =
+        mvc.perform(get("/api/v1/resources/" + resource))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.rating.score").value(4.7))
+            .andExpect(jsonPath("$.rating.directories").value(2))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    ContractValidator.assertMatches("ResourceDetail", body);
+    assertThat(body).doesNotContain(first, second, "best-translation-apps");
+  }
+
+  @Test
+  void uc007Br011AResourceNoDirectoryRatesHasNoRatingAndNoInventedFigure() throws Exception {
+    UUID resource = curated("https://deepl.com/translator");
+    owner
+        .sql(
+            """
+            INSERT INTO directory_rating (list_url, resource_id, host, page_url, tried_at)
+            VALUES (:url, :resource, 'directory.example', :url, now())
+            """)
+        .param("url", "https://directory-" + run + ".example/tool/deepl")
+        .param("resource", resource)
+        .update();
+
+    String body =
+        mvc.perform(get("/api/v1/resources/" + resource))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.rating").value(org.hamcrest.Matchers.nullValue()))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    ContractValidator.assertMatches("ResourceDetail", body);
+  }
 }
