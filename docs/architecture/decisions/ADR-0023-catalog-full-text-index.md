@@ -174,8 +174,11 @@ whether a query finds a resource there:
      (`SweepRepositories.sweepOneBatch`). `JdbcGoneLists.forget` takes the ones that are the repository itself
      (`repository_url IS NULL`), are marked `gone` (two visits at least 24 hours apart, 0020 §7) and were not found
      on `H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS` (3) visits in a row. It deletes the `awesome_list_entry` rows and
-     the `awesome_list` row of each such list, in one transaction; `ForgetGoneLists` then refreshes the categories of
-     the resources the list named.
+     the `awesome_list` row of each such list, and `ForgetGoneLists` refreshes the categories of the resources the
+     list named, in one unit of work: a refresh that fails leaves the rows, and the next visit tries again.
+   - **A candidate accepted later.** A list names a resource on accept ([0055](ADR-0055-directory-lists.md) point
+     15) only while it has its row in `awesome_list` (`JdbcListNamings.byCuratedList`). A list that is gone has
+     none, so a candidate it proposed, accepted after that, is not named by it.
    - **Why 3.** One "not found" is not believed anywhere in the Scout: a wrong answer of GitHub would wipe a list.
      Two is the rule that marks a repository `gone`, and that mark is undone by the next visit that finds it. Deleting
      the rows is undone only by the next read of the list, so it asks for one visit more. The mark `gone` stays a

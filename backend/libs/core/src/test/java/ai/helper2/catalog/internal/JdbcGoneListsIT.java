@@ -6,6 +6,7 @@ import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.catalog.AwesomeListIndex;
 import ai.helper2.catalog.AwesomeListText;
 import ai.helper2.catalog.GoneLists;
+import ai.helper2.catalog.ListNamings;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceId;
 import ai.helper2.testing.AsBackOffice;
@@ -29,6 +30,7 @@ class JdbcGoneListsIT {
 
   @Autowired GoneLists gone;
   @Autowired AwesomeListIndex index;
+  @Autowired ListNamings namings;
   @Autowired JdbcClient jdbc;
 
   private final String run = UUID.randomUUID().toString().substring(0, 8);
@@ -174,6 +176,20 @@ class JdbcGoneListsIT {
     gone.forget(List.of(linking), VISITS);
 
     assertThat(entries()).isEqualTo(1);
+  }
+
+  // UC-030 BR-010: a candidate the list proposed, accepted after the list is gone, is not named
+  // by it; a list that is read again names it.
+  @Test
+  void aListGoneAtItsSourceDoesNotNameACandidateAcceptedLater() {
+    UUID record = aListThatNamesOneResource("{\"gone\":true,\"notFoundVisits\":3}");
+    gone.forget(List.of(record), VISITS);
+
+    boolean named =
+        namings.byCuratedList(CanonicalUrl.of(list), idOf(this.named), "a tool", "Agents");
+
+    assertThat(named).isFalse();
+    assertThat(entries()).isZero();
   }
 
   // UC-030 BR-010: only the lists whose record was not found at this visit are looked at.

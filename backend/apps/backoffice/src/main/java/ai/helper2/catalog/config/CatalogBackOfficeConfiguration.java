@@ -132,8 +132,8 @@ public class CatalogBackOfficeConfiguration {
   }
 
   @Bean
-  ForgetGoneLists forgetGoneLists(GoneLists lists, CategoryLabels labels) {
-    return new ForgetGoneLists(lists, labels);
+  ForgetGoneLists forgetGoneLists(GoneLists lists, CategoryLabels labels, UnitOfWork unitOfWork) {
+    return new ForgetGoneLists(lists, labels, unitOfWork);
   }
 
   @Bean

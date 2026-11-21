@@ -118,7 +118,8 @@ post when a search finds it.
       `IndexAcceptedCandidate` hands each list to `NameResourceByList` (port `ListNamings`), which writes one row
       in the relation of that list, in the transaction of the decision. A candidate whose page is in the catalog
       already names that resource. The row of a curated list carries the title of the resource as its words until
-      the next read of the list writes the words of the entry.
+      the next read of the list writes the words of the entry. A curated list that is not in the list index (never
+      read, or gone at its source) names nothing on accept.
 16. **The public page counts, the back office names.**
     - `GET /api/v1/resources/{id}`: `foundIn.directoryLists` is the number of directory lists that name the
       resource, counted in `directory_list_entry`. `foundIn.lists` and `foundIn.more` are the curated lists, as
