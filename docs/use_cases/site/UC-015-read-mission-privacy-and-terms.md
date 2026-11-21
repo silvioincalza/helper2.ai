@@ -9,7 +9,7 @@
 **Trigger:** The visitor opens Mission, Privacy or Terms from the footer  
 **Status:** Draft  
 
-**Requirements:** [FR-021](../../requirements.md)  
+**Requirements:** [FR-021, C-016](../../requirements.md)  
 **API:** [getPolicy](../../../api/public.yaml#getPolicy)
 
 ## Preconditions

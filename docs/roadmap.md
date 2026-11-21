@@ -199,12 +199,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E11 Spec-driven docs with the AI Unified Process
 
-### Now
-
-- [S11.1.1 The docs folder in the AI Unified Process layout](https://github.com/silvioincalza/helper2.ai/issues/924)
-- [S11.7.5 Guardrails, verification and review for coding assistants](https://github.com/silvioincalza/helper2.ai/issues/943)
-- [S11.7.6 A D2 twin and its SVG for every specification diagram](https://github.com/silvioincalza/helper2.ai/issues/944)
-
 ### Next
 
 - [S11.1.2 Spec-lint as a CI check](https://github.com/silvioincalza/helper2.ai/issues/925)

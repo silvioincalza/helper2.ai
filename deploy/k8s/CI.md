@@ -57,7 +57,7 @@ runner must never run pull-request code: `cd.yml` has no `pull_request` trigger 
 Nothing long-lived is stored in GitHub.
 
 **GitHub** (repo settings, as files in [`.github/settings`](../../.github/settings); applied in order by
-[docs/backup/recreate.md](../../docs/backup/recreate.md))
+[RUNBOOK-new-repository.md](RUNBOOK-new-repository.md))
 - Environments `staging` (deployment branch `main` only) and `prod` (branch `main` and tags `v*`, for manual runs and
   releases); `prod` has a required reviewer.
   A missing environment is auto-created *without* protection rules, so they must exist first.

@@ -10,7 +10,7 @@
 **Trigger:** The visitor types words in the search box, or picks an example search, and starts the search  
 **Status:** Draft  
 
-**Requirements:** [FR-001, FR-002, FR-003, FR-004, FR-006, NFR-001, NFR-003, NFR-005, C-015](../../requirements.md)  
+**Requirements:** [FR-001, FR-002, FR-003, FR-004, FR-006, NFR-001, NFR-003, NFR-005, NFR-015, C-015](../../requirements.md)  
 **API:** [search](../../../api/common.yaml#search), [listCategories](../../../api/common.yaml#listCategories), [listHomeExamples](../../../api/public.yaml#listHomeExamples)
 
 ## Preconditions

@@ -1,12 +1,12 @@
-# Set up from zero
+# Runbook: set up from zero
 
 These steps set up helper2.ai on a new GitHub repository, from zero: the repository and its settings, the CI
 variables, the OpenBao roles, the self-hosted runner, the first deploy. The platform (cluster, OpenBao, Harbor,
 the runner VM) still runs: only what is bound to the repository changes.
 
 The GitHub settings are files in [`.github/settings`](../../.github/settings). This page says in which order to apply
-them. The deploy itself is in [deploy/k8s/README.md](../../deploy/k8s/README.md), CI/CD and its security model in
-[deploy/k8s/CI.md](../../deploy/k8s/CI.md), the decisions in [ADR 0044](../architecture/decisions/ADR-0044-ci-cd-and-supply-chain.md).
+them. The deploy itself is in [deploy/k8s/README.md](README.md), CI/CD and its security model in
+[deploy/k8s/CI.md](CI.md), the decisions in [ADR 0044](../../docs/architecture/decisions/ADR-0044-ci-cd-and-supply-chain.md).
 
 A new repository has a new id. Three things are bound to that id, so they are made again: the OIDC subject the
 OpenBao roles accept, the runner's token, and the rulesets.
@@ -21,7 +21,7 @@ Keep a copy of these before you start. Git cannot give them back.
 | Each environment's settings and passwords | `deploy/k8s/staging/app.env`, `deploy/k8s/prod/app.env` | OpenBao `helper2/kv`, `ci/<env>` (`app_env`) |
 | Terraform backend and variables | `deploy/k8s/terraform/backend.hcl`, `terraform.tfvars` | nowhere |
 | Local settings | `.env`, `.claude/settings.local.json`, `CLAUDE.local.md` | nowhere |
-| The database | the Postgres PVC and the nightly dump | the off-site bucket ([Backups](../../deploy/k8s/README.md#backups)) |
+| The database | the Postgres PVC and the nightly dump | the off-site bucket ([Backups](README.md#backups)) |
 | The signing key `helper2-images` | OpenBao Transit `helper2/transit` (not exportable) | its public half is `deploy/k8s/cosign.pub` |
 
 Repository secrets: optional, read only by the weekly `live` workflow: `H2_GITHUB_TOKEN`, `H2_HF_TOKEN`,
@@ -180,8 +180,8 @@ after this run, with `release-prepare`. Check:
 - the pull request showed the check `ci-ok`, and the merge button offered squash only;
 - the next nightly `guide-eval` run reaches staging.
 
-Prod gets the next release: [CI.md, Releases](../../deploy/k8s/CI.md), step by step in
-[RUNBOOK-release.md](../../deploy/k8s/RUNBOOK-release.md).
+Prod gets the next release: [CI.md, Releases](CI.md), step by step in
+[RUNBOOK-release.md](RUNBOOK-release.md).
 
 ## 11. The workstation
 
@@ -200,59 +200,7 @@ works in its own worktree under `.claude/worktrees/` ([AGENTS.md](../../AGENTS.m
 
 ## 12. The backlog and the Project
 
-The backlog is the issues of the repository and one GitHub Project of the owner. Both are made from a backlog file
-by [`scripts/backlog.py`](../../scripts/backlog.py). The file is kept in `.private/plans/` and not in git: it can hold
-the text of items that stay private.
-
-```bash
-gh auth refresh -s project
-python3 scripts/backlog.py import .private/plans/backlog.json
-python3 scripts/backlog.py import .private/plans/backlog.json --write
-```
-
-The first command writes nothing: it prints each change it would make. Read it, then run the second.
-
-What the import does:
-
-- One issue per epic, feature, story and task, with the label of its kind. A feature is a sub-issue of its epic, a
-  story or a task of its feature.
-- An issue is found again by the line `<!-- backlog:ID -->` at the end of its body. So a second run changes nothing,
-  and an entry whose title or text changed updates its issue and never makes a second one.
-- Only an issue written by the owner, a member or a collaborator counts. The same line in an issue of anybody else is
-  ignored, and the run says so. One ID on two issues stops the run.
-- Every issue is an item of the Project. The import sets the fields Context, Priority, Release and Replay PR, and
-  clears one whose value was taken out of the file. Status
-  is the Project's own field: the import checks that it is there and never sets it, because the Project's workflow
-  closes an issue whose Status becomes Done.
-- A built story stays open. The pull request that builds it closes it with a `Closes #n` line.
-- An entry with `"private": "security"` or `"private": "legal"` becomes an issue that says only "Tracked privately",
-  with its ID. Its title, text and criteria are never sent to GitHub. A security finding or a point for a lawyer is
-  written this way, or stays out of the file.
-
-The backlog file is one JSON object:
-
-| Key | Holds |
-|---|---|
-| `repo`, `project` | `owner/name` of the repository; the title of the Project |
-| `slices` | number of a replay pull request → its name |
-| `epics` | `id`, `kind` (`epic`), `title`, `context` |
-| `features` | `id`, `kind` (`feature`), `parent`, `title`, `source`, `context` |
-| `stories`, `tasks` | `id`, `kind`, `parent`, `title`, `story`, `criteria`, `needs`, `context`, `priority`, `release`, `replay_pr`, and `private` for an item that stays private |
-
-`priority` is one of Replay, Now, Next, Later, Parked, Accepted. Replay means built: the story waits for its pull
-request.
-
-Two commands read GitHub and write nothing there:
-
-```bash
-python3 scripts/backlog.py roadmap
-python3 scripts/backlog.py pr-stories <pull request number>
-```
-
-`roadmap` writes [docs/backup/roadmap.md](roadmap.md) from the open issues that have the label story or task; its output
-goes into a pull request.
-`pr-stories` is run before a replay pull request is merged: it passes only when the pull request closes every story
-whose Replay PR field is the number in its branch name (`replay/NN-name`), and no other issue.
+The issues and the Project are made from the backlog file: [docs/architecture/backlog.md](../../docs/architecture/backlog.md).
 
 ## Change a setting
 

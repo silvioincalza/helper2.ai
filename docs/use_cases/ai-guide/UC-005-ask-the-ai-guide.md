@@ -10,7 +10,7 @@
 **Trigger:** The visitor chooses "Ask the guide" (or Shift+Enter) for the words in the search box  
 **Status:** Draft  
 
-**Requirements:** [FR-007, FR-008, FR-009, NFR-002, NFR-004, NFR-006, NFR-007, NFR-008, NFR-010, NFR-013, C-001, C-003, C-005](../../requirements.md)  
+**Requirements:** [FR-007, FR-008, FR-009, NFR-002, NFR-004, NFR-006, NFR-007, NFR-008, NFR-010, NFR-013, NFR-015, C-001, C-003, C-005](../../requirements.md)  
 **API:** [askGuideStream](../../../api/public.yaml#askGuideStream)
 
 ## Preconditions

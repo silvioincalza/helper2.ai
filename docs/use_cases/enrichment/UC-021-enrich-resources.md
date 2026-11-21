@@ -10,7 +10,7 @@
 **Trigger:** A Scout run reaches a resource that changed or the next resource of the enrichment backlog, or the embedding indexer's interval passes.  
 **Status:** Draft  
 
-**Requirements:** [FR-028, C-002, C-005](../../requirements.md)  
+**Requirements:** [FR-028, NFR-014, C-002, C-005](../../requirements.md)  
 **Layers:** Service
 
 ## Preconditions

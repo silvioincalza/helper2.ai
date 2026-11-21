@@ -336,7 +336,7 @@ Harbor could put an image under a tag first.
 ### GitHub settings as files
 21. **The repository's settings are in `.github/settings`.** JSON bodies for the GitHub API (the repository, its
     topics, the three rulesets, the environments, the workflow permissions, fork pull request approval, the OIDC
-    subject) and `variables.env`. [docs/backup/recreate.md](../../backup/recreate.md) applies them in order, on a new repository or
+    subject) and `variables.env`. [deploy/k8s/RUNBOOK-new-repository.md](../../../deploy/k8s/RUNBOOK-new-repository.md) applies them in order, on a new repository or
     after a change. A setting changes by pull request, like code. Squash merges only; every pull request from an
     outside collaborator waits for an approval before its workflows run; secret scanning with push protection;
     Dependabot alerts and security-update pull requests beside the weekly version updates and the Grype scan.
@@ -367,7 +367,7 @@ Harbor could put an image under a tag first.
   `install-cosign/action.yml` — Syft and Grype, the database cached per build, the code scanning upload, cosign.
 - `.github/actions/go-tool/action.yml` — helm, kubeconform, d2 and Grype: `go install` once per version, then cached.
 - `.github/dependabot.yml` — base images and actions by digest and SHA.
-- `.github/settings/` — the repository's GitHub settings; `docs/backup/recreate.md` applies them.
+- `.github/settings/` — the repository's GitHub settings; `deploy/k8s/RUNBOOK-new-repository.md` applies them.
 - `.grype.yaml` — exceptions.
 - `deploy/k8s/Makefile` — `image`, `ci-images`, `postgres-image` (`PUSHED`), `sbom`, `backoffice-sbom`, `web-sbom`,
   `postgres-sbom`, `sign`, `sign-existing`, `verify-images`, `verified`, `cosign-pub`, `chart-check`,

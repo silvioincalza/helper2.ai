@@ -17,7 +17,7 @@ as scope creep.
 - `deploy/` — Helm charts for staging and prod
 - `docs/architecture/decisions/ADR-NNNN-<slug>.md` — one ADR per decision, numbered in the order the system is built,
   grouped by context in its README
-- The backlog is the GitHub issues of this repository (epics, features, stories, tasks). `docs/backup/roadmap.md` is generated
+- The backlog is the GitHub issues of this repository (epics, features, stories, tasks). `docs/roadmap.md` is generated
   from the open issues (`python3 scripts/backlog.py roadmap`): never edit it by hand
 - LLMs: NVIDIA models only (Nemotron on Nebius Token Factory)
 

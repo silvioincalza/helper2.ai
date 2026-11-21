@@ -5,7 +5,7 @@ papers and news — with **one page and one box**. Typing searches every source;
 on the same page. The guide runs on **NVIDIA Nemotron on Nebius Token Factory** and can only recommend
 what it actually found, with a quote that code has checked word for word.
 
-helper2.ai searches a **disclosed set of sources** ([docs/backup/sources.md](docs/backup/sources.md)), shows what
+helper2.ai searches a **disclosed set of sources** ([docs/architecture/sources.md](docs/architecture/sources.md)), shows what
 happened to each one on every search, and never fills in dates, popularity or facts that no source stated.
 
 helper2.ai is a product, built and run by Silvio Incalza. The only instance is **https://helper2.ai**
@@ -16,11 +16,11 @@ of the system.
 
 | | |
 |---|---|
-| What is built and why | [ADRs, one per decision](docs/architecture/decisions/README.md) · [architecture and diagrams](docs/backup/architecture.md) |
-| What is still open | [the roadmap](docs/backup/roadmap.md), generated from [the backlog](https://github.com/silvioincalza/helper2.ai/issues): epics, features and stories |
+| What is built and why | [ADRs, one per decision](docs/architecture/decisions/README.md) · [the stack](docs/architecture/stack.md) · [diagrams](docs/architecture/diagrams/README.md) |
+| What is still open | [the roadmap](docs/roadmap.md), generated from [the backlog](https://github.com/silvioincalza/helper2.ai/issues): epics, features and stories |
 | What changed | [CHANGELOG](CHANGELOG.md) |
-| Product | [user journeys](docs/backup/user-journeys.md) · [sources](docs/backup/sources.md) · [processors and transfers](docs/backup/processors.md) · [costs](docs/backup/cost-analysis.md) |
-| Quality | [testing](docs/backup/testing.md) · [evaluation](docs/backup/evaluation.md) · [AI literacy](docs/backup/ai-literacy.md) |
+| Product | [user journeys](docs/backup/user-journeys.md) · [sources](docs/architecture/sources.md) · [recipients and transfers](docs/architecture/data-processing.md) · [costs](docs/architecture/costs.md) |
+| Quality | [testing](docs/backup/testing.md) · [evaluation](docs/backup/evaluation.md) · [AI literacy](docs/architecture/ai-literacy.md) |
 | Stack | Spring Boot 4.1, Spring AI 2.0, Spring Modulith, Java 25 + Kotlin · React 19, Vite · PostgreSQL 18 (full-text + pgvector) · Redis 8 · contract-first [OpenAPI 3.1](api/public.yaml) |
 
 ## How the models are used
@@ -96,7 +96,7 @@ Details and known gaps: [docs/backup/testing.md](docs/backup/testing.md).
 
 The Helm chart runs on any Kubernetes cluster ([deploy/k8s/README.md](deploy/k8s/README.md)). helper2.ai's
 staging and production use it, deployed by GitHub Actions ([deploy/k8s/CI.md](deploy/k8s/CI.md)). To set up the repository and its
-bindings from zero: [docs/backup/recreate.md](docs/backup/recreate.md).
+bindings from zero: [deploy/k8s/RUNBOOK-new-repository.md](deploy/k8s/RUNBOOK-new-repository.md).
 
 ## License
 

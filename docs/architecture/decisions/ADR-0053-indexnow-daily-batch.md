@@ -51,7 +51,7 @@ The catalog changes mostly once a day, when the Scout runs in the back office.
 - One `POST` a day at most, to one more host from the back office (port 443, allowed by its network policy).
 - Two settings: `H2_INDEXNOW_KEY` and `H2_INDEXNOW_CRON`.
 - A new recipient: IndexNow receives public page addresses only, nothing about a visitor. The Privacy page names it
-  ("Who receives data"), and `docs/backup/processors.md` lists it.
+  ("Who receives data"), and `docs/architecture/data-processing.md` lists it.
 - Off until `H2_INDEXNOW_KEY` is set.
 
 ### Security (STRIDE)
