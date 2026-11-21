@@ -1,0 +1,3 @@
+DROP INDEX awesome_list_entry_updated_idx;
+DROP INDEX awesome_list_updated_idx;
+DROP INDEX directory_list_entry_updated_idx;

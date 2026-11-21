@@ -16,10 +16,8 @@ CREATE TABLE directory_list_entry (
     PRIMARY KEY (list_url, resource_id)
 );
 CREATE INDEX directory_list_entry_resource_idx ON directory_list_entry (resource_id);
+CREATE INDEX directory_list_entry_updated_idx ON directory_list_entry (updated_at);
 GRANT SELECT ON directory_list_entry TO h2_public;
-
-DROP INDEX awesome_list_entry_updated_idx;
-DROP INDEX awesome_list_updated_idx;
 
 ALTER TABLE admin_audit DROP CONSTRAINT admin_audit_action_check;
 ALTER TABLE admin_audit ADD CONSTRAINT admin_audit_action_check CHECK (action IN

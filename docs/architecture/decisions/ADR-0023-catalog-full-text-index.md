@@ -162,6 +162,7 @@ whether a query finds a resource there:
 
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `h2_unaccent`, `h2_ts_config`, `h2_name_words`,
   `search_vector`, `awesome_list`, `awesome_list_entry`.
+  `V2026.11.9.2__list_index_without_period.sql` — no index on `updated_at` of the list tables: no purge reads it.
 - `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogSearch.java` — `plainWords`, `searchSql`,
   `searchFound`, the language stemmer in the index query; `JdbcAwesomeListIndex.java` — the list index;
   `CatalogSearchSource.java`.
