@@ -25,7 +25,9 @@ The rule: every pull request closes at least one story, and every story is an it
      `**Status:**` is `Approved`: when it is not, create the story with `needs` set to the approval and say so in your
      return. A bug fix, a task (`T…`) and work with no use case (tooling, operations, docs) name none;
    - `context`: the Context of its epic; `priority`: Now for work in progress, else Next, Later or Parked;
-   - `release`: empty until a release takes it; `needs`: what it waits for; `replay_pr`: null; `state`: open.
+   - `release`: empty until a release takes it; `needs`: what it waits for; `replay_pr`: null; `state`: open;
+   - `docs`: only when the story needs a doc to be understood or built (the ADR it changes, the use case or the
+     journey it implements): their repository paths. Leave it out otherwise.
    A security finding or a point for a lawyer is `"private": "security"` or `"private": "legal"`: its text never
    goes to GitHub.
 3. Import. Run `python3 scripts/backlog.py import <file>` and read every line. It must change only the entries
