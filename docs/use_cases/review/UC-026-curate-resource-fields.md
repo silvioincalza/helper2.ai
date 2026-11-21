@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Fix a resource's field once and for all, by setting the resource's own value over every source and every enrichment run, or by dropping what the AI said about it.  
 **Trigger:** The Administrator sees a wrong value next to a field in the evidence of an enrichment check.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-033](../../requirements.md)  
 **API:** [setResourceField](../../../api/admin.yaml#setResourceField), [dropResourceField](../../../api/admin.yaml#dropResourceField)

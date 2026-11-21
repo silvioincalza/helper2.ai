@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor  
 **Goal:** Tell the team that a fact on a resource page is wrong, outdated or broken, so a person reviews and corrects it.  
 **Trigger:** The visitor chooses "Report a problem" on the page of a resource.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-014](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-009-report-wrong-information.md)  

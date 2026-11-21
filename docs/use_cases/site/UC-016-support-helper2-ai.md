@@ -8,7 +8,7 @@
 **Secondary Actors:** Payment Provider  
 **Goal:** Give money to help run helper2.ai through a payment provider's own page, while the site shows support, analytics and ads only where they are switched on  
 **Trigger:** The visitor opens the support page from the footer  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-022, FR-023, C-007](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-016-support-helper2-ai.md)  

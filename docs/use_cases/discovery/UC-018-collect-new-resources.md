@@ -8,7 +8,7 @@
 **Secondary Actors:** Source Provider  
 **Goal:** Bring the new and changed AI resources of every source into the catalog, or into the review queue when a person must decide, so that search finds them without anyone adding them by hand.  
 **Trigger:** The daily run time of the Scout has passed, or an administrator asks to start a run for all sources or for one source.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-025, C-008](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  
