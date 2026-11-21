@@ -32,7 +32,8 @@ cd frontend && npm run format        # Prettier (CI runs format:check)
 cd frontend && npm run knip          # dead code and unused dependencies, strict (CI runs it)
 ```
 
-Run the relevant tests before calling a change done.
+Run the relevant tests before calling a change done. `scripts/verify.sh [backend|frontend|docs|all]` runs what CI
+runs and fails on the first error; the `verifier` agent runs it and reports.
 
 ## How to work
 
@@ -52,7 +53,7 @@ domain or architecture decision, read:
 
 Rules:
 
-- A use case is built only when its `UC-*.md` exists and its `**Status:**` is `Approved`. Silvio sets `Approved`.
+- A use case is built only when its `UC-*.md` exists and its `**Status:**` is `Approved`. The human in the loop sets `Approved`.
 - Requirement, use case and test case IDs never change once published. Code and tests name the IDs they build.
 - A requirement change updates the entity model and the use case diagram in the same change.
 - Build and test a use case with `/use-case-implement` and `/use-case-test`, which follow `docs/architecture/stack.md`.
@@ -60,6 +61,15 @@ Rules:
 - An architecture decision is an ADR in `docs/architecture/decisions/` (the `/adr` command, not `/architecture-decision`). It
   names the `NFR-*` and `C-*` it serves.
 - `/next` gives the next step; `/spec-review` checks the specification.
+- Until the migration to the AI Unified Process is complete (the issues, the Project, the backlog and `docs/` all
+  follow it: epic E11), every page is written as the final text: no revision table, no version or change log in a
+  page, no "previously" or "moved from". When the human in the loop says the migration is complete, revision history starts in
+  the specification pages only: `docs/vision.md`, `docs/requirements.md`, the use cases and the entity model.
+  ADRs and code stay free of history, then as now: an ADR that no longer holds is `Superseded`.
+- Every diagram the process writes in PlantUML or Mermaid also has a D2 twin with its SVG and PNG in
+  `docs/architecture/diagrams/` (skill `aiup-diagrams`).
+- A change is reviewed against `REVIEW.md` by the `reviewer` agent, never by the session that designed it.
+  `/pr-sweep <n>` fixes review comments and failing checks until only the human in the loop's approval is missing.
 
 ### Architecture and code
 
@@ -85,16 +95,19 @@ Rules:
 - Clean code: a use case reads top-down as the business action. Small methods with one level of
   abstraction each, names that say the intent, early returns, no flag arguments. Split a long
   method into named steps instead of adding comments.
+- No dead code and no dead docs: a file, a function, a setting, a page or a section that nothing uses or reads is
+  deleted in the change that makes it unused. Nothing is kept "for later" or as a backup copy.
 - No comments in code, config or scripts: names, small methods and ADRs say why. Only tool directives stay
   (shebangs, `# syntax=`, `eslint-disable-next-line`, `shellcheck disable`, the Makefile's `## ` help lines).
   Env files (`.env.example`, `deploy/k8s/app.env.example` and other dot files) are setup guides for people: their
   comments say what each key is and how to make its value.
-- Code and docs state the rule in force, never who decided it or when, and never what it replaced. Decision history
-  goes to memory in `.private/`.
+- Code, ADRs and docs state the rule in force, never who decided it or when, and never what it replaced. Decision
+  history goes to memory in `.private/`. The one exception is the revision history of the specification pages, once
+  the migration to the AI Unified Process is complete (section Specification).
 
 ### Choices and decisions
 
-- Versions: use the latest compatible release of every dependency and tool. Ask Silvio before
+- Versions: use the latest compatible release of every dependency and tool. Ask the human in the loop before
   picking a version, and say why when the latest does not work.
 - Before adding a library or tool: compare 2-3 candidates (fit, maintenance, licence, lock-in,
   operational cost), recommend one, state the trade-off. Revisit an existing feature's choice
@@ -181,17 +194,20 @@ Every review finding has one level, so findings from different agents can be com
 - Medium: a feature works worse, and there is a workaround.
 - Low: polish, naming, a small inconsistency.
 
-## Working with Silvio
+## Working with the human in the loop
 
 - Specialist agents (`.claude/agents/`: architect, backlog, metasearch, performance, security,
   privacy-legal, ux-journeys, ui-design) can work on one task together. One coordinator gives them the task,
   shares their findings, resolves conflicts and merges the result. Use several agents only for
   work that crosses roles; a small task stays with one agent.
-- Silvio is always in the loop: present the plan, trade-offs and open questions, and wait for his
+- A human is always in the loop: present the plan, trade-offs and open questions, and wait for his
   decision before implementing anything that is not trivial or that is hard to undo.
-- Keep working when the next step does not need Silvio's input. Do not stop to ask for a go-ahead
+- A choice with a drawback needs the human in the loop's approval before it is done: something lost, weakened, made slower, made
+  dearer, left out or done differently from what he asked. Say the drawback and what it costs, then wait.
+  Reporting it after the fact is not approval.
+- Keep working when the next step does not need the human in the loop's input. Do not stop to ask for a go-ahead
   on routine steps.
-- Stop and ask Silvio before:
+- Stop and ask the human in the loop before:
   - deleting important data;
   - force-pushing (this includes `--force-with-lease` after a rebase);
   - modifying external systems;
@@ -199,7 +215,7 @@ Every review finding has one level, so findings from different agents can be com
   - making a decision that needs his approval.
 - Fix the review comments on a PR (automated review findings included) without waiting to be asked.
 - Explain everything in simple words first, then the technical detail.
-- Write documentation as Silvio would write it: his voice, plain short sentences, the style and
+- Write documentation as the human in the loop would write it: his voice, plain short sentences, the style and
   structure of the existing docs.
 
 ## Branches and worktrees
@@ -218,11 +234,11 @@ Every review finding has one level, so findings from different agents can be com
   `Depends on #N`.
 - After a PR merges, update every open worktree that depends on it, direct dependents first:
   - clean worktree: rebase onto `origin/main` (a stacked branch after a squash merge:
-    `git rebase --onto origin/main <old-base>`), run its tests, ask Silvio, then push with `--force-with-lease`
+    `git rebase --onto origin/main <old-base>`), run its tests, ask the human in the loop, then push with `--force-with-lease`
     and retarget its PR to `main`;
   - worktree with uncommitted work, or owned by a running session: do not touch it; add a line
     to `.private/notes/worktrees.md` so its owner rebases at a safe point.
-- When Silvio has merged a branch, remove its worktree (`git worktree remove`) and delete the branch.
+- When the human in the loop has merged a branch, remove its worktree (`git worktree remove`) and delete the branch.
 - `/sync-worktrees` does the update steps above.
 
 ## AI architecture check
@@ -258,16 +274,16 @@ deferred (safe for now, say why).
 - No backward compatibility with removed code or migrations unless asked.
 - Never add AI attribution, "Generated with" footers or Co-Authored-By to commits, PRs,
   comments, docs or code.
-- Every change reaches `main` through a pull request. Open it with `gh` from Silvio's machine
+- Every change reaches `main` through a pull request. Open it with `gh` from the human in the loop's machine
   (never through a tool that adds an AI footer). Its description closes the stories it builds, one `Closes #n`
-  line each. Silvio reviews and merges it himself: never
+  line each. The human in the loop reviews and merges it himself: never
   merge to `main`, never push to `main` directly, never deploy to prod.
-- This holds even when Silvio asks for a merge in a session ("merge", "merge all"). Get the PR
+- This holds even when the human in the loop asks for a merge in a session ("merge", "merge all"). Get the PR
   ready (checks green, review threads answered), then give him the command to run, one line per
   PR: `gh pr merge <n> --squash --delete-branch`. For a stack, give the order. Never use
   `gh pr merge`, `gh stack merge` or auto-merge yourself.
 - AI-tool setup and settings are committed (`AGENTS.md`, `CLAUDE.md`, `.claude/settings.json`,
-  `.claude/agents/`, `.claude/commands/`). AI notes, reviews, plans, memory and machine-local
+  `.claude/agents/`, `.claude/commands/`, `.claude/skills/`, `.claude/hooks/`). AI notes, reviews, plans, memory and machine-local
   settings never are: they go in the git-ignored `.private/` folder (or `CLAUDE.local.md`,
   `.claude/settings.local.json`). Plans, including the refactor plan and the AI scaffold map,
   live in `.private/plans/`. Product prompts the app runs are code and stay in the repo.

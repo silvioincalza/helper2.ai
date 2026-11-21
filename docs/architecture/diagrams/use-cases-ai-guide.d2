@@ -1,0 +1,39 @@
+# Use cases of the AI Guide module: its actors and the use cases each one starts or serves.
+# D2 twin of docs/use_cases/ai-guide/use_cases.puml: that file is the source of truth (AI Unified Process). Change it first,
+# then this file, in the same pull request. Same actors, use cases, entities and relations: nothing added.
+# Render: cd docs/architecture/diagrams && d2 fmt use-cases-ai-guide.d2 && d2 use-cases-ai-guide.d2 use-cases-ai-guide.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+visitor: "Visitor" {class: person}
+llm: "Language Model" {class: ai}
+embedder: "Embedding Service" {class: ai}
+source_provider: "Source Provider" {class: ext}
+
+module: "AI Guide" {
+  class: group
+  UC005: "UC-005\nAsk the AI Guide" {
+    class: app
+    shape: oval
+  }
+  UC006: "UC-006\nSet Up a Resource" {
+    class: app
+    shape: oval
+  }
+}
+
+visitor -> module.UC005
+visitor -> module.UC006
+module.UC005 -> llm
+module.UC005 -> embedder
+module.UC005 -> source_provider
+module.UC006 -> llm
+module.UC006 -> source_provider
