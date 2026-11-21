@@ -53,6 +53,10 @@ Rules:
 - The human in the loop reviews and merges: never merge to `main`, never push to `main`, never force-push without
   his OK, never deploy to or change prod. This holds even when he asks for a merge: get the pull request ready and give
   him `gh pr merge <n> --squash --delete-branch`. `.claude/hooks/guard-bash.py` enforces this and the next rule.
+- Every comment, every review and every conflict on a pull request is resolved without being asked, by the session
+  that opened it: after each push, when `main` moves, and again before it calls the pull request ready. A finding is
+  fixed in that pull request, with a test when it is about behaviour; a conflict is resolved by merging `main` in.
+  Only what needs the human in the loop's decision stays open, and the session names it.
 - Never add AI attribution, "Generated with" footers or Co-Authored-By to commits, PRs, comments, docs or code.
 - A choice with a drawback needs the human in the loop's approval before it is done: something lost, weakened, made
   slower, made dearer, left out or done differently from what he asked. Say the drawback and what it costs, then
