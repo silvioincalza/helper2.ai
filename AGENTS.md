@@ -61,8 +61,10 @@ Rules:
 - An architecture decision is an ADR in `docs/architecture/decisions/` (the `/adr` command, not `/architecture-decision`). It
   names the `NFR-*` and `C-*` it serves.
 - `/next` gives the next step; `/spec-review` checks the specification.
-- While `docs/` moves to the AI Unified Process layout, every page is written as the final text: no revision
-  table, no version or change log in a page, no "previously" or "moved from". Git holds the history.
+- Until the migration to the AI Unified Process is complete (the issues, the Project, the backlog and `docs/` all
+  follow it: epic E11), every page is written as the final text: no revision table, no version or change log in a
+  page, no "previously" or "moved from". Revision history in the pages starts when Silvio says the migration is
+  complete, not before.
 - Every diagram the process writes in PlantUML or Mermaid also has a D2 twin with its SVG in
   `docs/architecture/diagrams/` (skill `aiup-diagrams`).
 - A change is reviewed against `REVIEW.md` by the `reviewer` agent, never by the session that designed it.

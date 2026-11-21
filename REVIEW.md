@@ -29,7 +29,8 @@ Severity levels are the ones in `AGENTS.md` (section Severity). Silvio approves 
   in the same pull request. A new rule for users changes the Terms page.
 - Every AI-written text is labelled in the UI and marked in the API and the HTML (EU AI Act Art. 50).
 - A lasting decision has its ADR with diagrams. The specification (`docs/`) matches the code.
-- No dead code and no dead docs: nothing unused or unread is left behind. No page carries a revision history.
+- No dead code and no dead docs: nothing unused or unread is left behind. No page carries a revision history until the
+  migration to the AI Unified Process is complete (`AGENTS.md`).
 - A drawback the change accepts was approved by Silvio before it was built, and the pull request names it.
 - No AI attribution anywhere. Notes, plans and reviews are not in the diff (they live in `.private/`).
 
