@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor  
 **Goal:** Understand what helper2.ai is for, what data it keeps and for how long, and which terms apply, with the numbers the code really applies  
 **Trigger:** The visitor opens Mission, Privacy or Terms from the footer  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-021, C-016](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-015-read-mission-privacy-and-terms.md)  

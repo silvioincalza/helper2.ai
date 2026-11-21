@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor  
 **Goal:** See what is new in the catalog and which AI events are coming up, so the visitor can keep up and plan without searching.  
 **Trigger:** The visitor opens the home page, the News page or the Events page.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-012, FR-013](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-008-follow-new-resources-and-events.md)  

@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Decide which resources the Scout enriches next, which it leaves out, and which it tries again, and re-check the stored answers against the current rules, so that the daily model budget goes to the resources that matter.  
 **Trigger:** An administrator opens the enrichment queue of the back office.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-029](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  

@@ -8,7 +8,7 @@
 **Secondary Actors:** Source Provider, Embedding Service, Language Model  
 **Goal:** Find tools, models, MCP servers, libraries, papers and news that fit a need with one query, and see which sources answered  
 **Trigger:** The visitor types words in the search box, or picks an example search, and starts the search  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-001, FR-002, FR-003, FR-004, FR-006, NFR-001, NFR-003, NFR-005, NFR-015, C-015](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-001-search-the-ai-ecosystem.md)  
