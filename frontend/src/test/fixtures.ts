@@ -153,7 +153,7 @@ export function makeDetail(over: Partial<ResourceDetail> = {}): ResourceDetail {
       },
     ],
     enrichmentStatus: 'NOT_RUN',
-    foundIn: { lists: [], more: 0 },
+    foundIn: { lists: [], more: 0, directoryLists: 0 },
     ...over,
   };
 }
@@ -371,6 +371,7 @@ export function makeReviewEvidence(
       extraEvidence: 'github-readme:acme/tool',
     },
     validationErrors: ['pricing: the quotes disagree'],
+    directoryLists: [],
     fields: [
       {
         field: 'pricing',

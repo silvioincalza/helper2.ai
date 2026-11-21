@@ -1,5 +1,6 @@
 package ai.helper2.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -130,5 +131,34 @@ class ResourceFoundInApiIT extends ApiTestBase {
             .getResponse()
             .getContentAsString();
     ContractValidator.assertMatches("ResourceDetail", body);
+  }
+
+  @Test
+  void uc007Br008AListOnADirectoryHostIsCountedAndNeverNamed() throws Exception {
+    UUID resource = curated("https://deepl.com/translator");
+    UUID curatedList = list("awesome-translation", 1200);
+    UUID directoryList = list("best-translation-apps", 90000);
+    names(curatedList, resource, "Apps");
+    names(directoryList, resource, "Top 10");
+    owner
+        .sql(
+            """
+            INSERT INTO awesome_list (list_id, search_vector, directory)
+            VALUES (:list, to_tsvector('english', 'best translation apps'), true)
+            """)
+        .param("list", directoryList)
+        .update();
+
+    String body =
+        mvc.perform(get("/api/v1/resources/" + resource))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.foundIn.lists", hasSize(1)))
+            .andExpect(jsonPath("$.foundIn.lists[0].listId").value(curatedList.toString()))
+            .andExpect(jsonPath("$.foundIn.more").value(0))
+            .andExpect(jsonPath("$.foundIn.directoryLists").value(1))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    assertThat(body).doesNotContain("best-translation-apps");
   }
 }

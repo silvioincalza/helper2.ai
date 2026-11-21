@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.scout.ListKind;
+import ai.helper2.scout.ListOrigin;
 import ai.helper2.scout.ListReading;
 import ai.helper2.scout.ListSeed;
 import java.time.Instant;
@@ -145,5 +146,31 @@ class JdbcListSeedStoreIT {
 
   private ListSeed page() {
     return store.all().stream().filter(s -> s.getAddress().equals(PAGE)).findFirst().orElseThrow();
+  }
+
+  @Test
+  void uc020Br008AListDiscoveryAddedKeepsItsOriginAndOnlyAWebPageCanHaveIt() {
+    ListSeed found =
+        new ListSeed(
+            ListKind.WEB_PAGE, PAGE, "discovery-coding", T0, null, null, 0, ListOrigin.DISCOVERY);
+
+    assertThat(store.add(found)).isTrue();
+
+    assertThat(store.all())
+        .filteredOn(s -> s.getAddress().equals(PAGE))
+        .singleElement()
+        .satisfies(s -> assertThat(s.getOrigin()).isEqualTo(ListOrigin.DISCOVERY));
+    assertThatThrownBy(() ->
+            store.add(
+                new ListSeed(
+                    ListKind.GITHUB_REPOSITORY,
+                    "it-acme/awesome-rag",
+                    "discovery-coding",
+                    T0,
+                    null,
+                    null,
+                    0,
+                    ListOrigin.DISCOVERY)))
+        .isInstanceOf(DataIntegrityViolationException.class);
   }
 }

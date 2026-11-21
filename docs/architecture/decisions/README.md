@@ -62,3 +62,4 @@ Contexts, one per record: `foundation`, `scout`, `search`, `guide`, `identity`, 
 | [0052](ADR-0052-hub-pages-per-resource-type.md) | Hub pages per resource type | `frontend` | [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89) | 0003, 0023, 0039, 0040, 0041, 0050 |
 | [0053](ADR-0053-indexnow-daily-batch.md) | IndexNow: a daily batch of changed pages | `frontend` | [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89) | 0006, 0007, 0041, 0043 |
 | [0054](ADR-0054-embedding-model-in-the-cluster.md) | The embedding model runs in the cluster | `operations` | [F3.3](https://github.com/silvioincalza/helper2.ai/issues/49) | 0006, 0024, 0043, 0044 |
+| [0055](ADR-0055-directory-lists.md) | Lists of directory hosts | `scout` | [F2.3](https://github.com/silvioincalza/helper2.ai/issues/33) | 0007, 0010, 0012, 0013, 0023, 0027, 0036, 0038 |

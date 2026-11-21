@@ -13,6 +13,7 @@ const entry = (address: string, reason: string | null = null): ListSeedEntry => 
     ? '6f1c3a52-8d0e-3b7a-9c41-2e5d7f8a9b10'
     : '0b6e2d4f-1a3c-3e5f-8a7b-9c0d1e2f3a4b',
   kind: address.startsWith('https://') ? 'WEB_PAGE' : 'GITHUB_REPOSITORY',
+  origin: 'ADMINISTRATOR',
   address,
   addedBy: '42',
   addedAt: '2026-11-19T21:00:00Z',
@@ -215,5 +216,28 @@ describe('Feature: an admin adds the GitHub lists and web pages the Scout reads 
     await user.click(within(panel).getByRole('button', { name: /again/i }));
 
     expect(await screen.findByRole('table', { name: 'Added lists (1 of 50)' })).toBeInTheDocument();
+  });
+
+  it('Scenario: UC-020 BR-008 a list discovery found says so and does not count against the added lists', async () => {
+    const found: ListSeedEntry = {
+      ...entry('https://futurepedia.io/best-ai-coding-tools'),
+      origin: 'DISCOVERY',
+      addedBy: 'discovery-coding',
+    };
+    const { container } = open({
+      'GET /admin/list-seeds': () => ({ max: 50, lists: [...SEED.lists, found] }),
+    });
+
+    const table = await screen.findByRole('table', { name: 'Added lists (1 of 50)' });
+    expect(
+      within(table)
+        .getByRole('rowheader', { name: 'https://futurepedia.io/best-ai-coding-tools' })
+        .closest('tr'),
+    ).toHaveTextContent(/Web page · found by discovery-coding on a directory host · /);
+    expect(
+      screen.getByText(/1 more list was found by discovery on a directory host/),
+    ).toBeInTheDocument();
+    await settle();
+    expect(await axeViolations(container)).toEqual([]);
   });
 });

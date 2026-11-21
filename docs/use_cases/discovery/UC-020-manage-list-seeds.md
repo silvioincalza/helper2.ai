@@ -19,7 +19,7 @@
 ## Main Success Scenario
 
 1. Administrator opens the added lists.
-2. System shows every added list, oldest first, with its kind, who added it, when, and why.
+2. System shows every added list, oldest first, with its kind, who added it (an administrator, or discovery on a directory host), when, and why.
 3. Administrator enters the address of a GitHub repository or of a web page, and may give a reason.
 4. System checks the reason and the address and brings the address to its plain form.
 5. System checks that a web page is not on a host that is never read.
@@ -106,7 +106,7 @@ A web page on a host the configuration names as never read is refused, with the 
 
 ### BR-003: Number of Lists
 
-At most 50 lists can be added.
+An administrator can add at most 50 lists. The lists discovery adds have their own number (BR-008) and do not count.
 
 ### BR-004: Reason
 
@@ -123,3 +123,15 @@ An added web page is read through the live web page reader at most once every 7 
 ### BR-007: Audit
 
 Every attempt to add a list whose reason, address and host pass the checks, and every attempt to remove a list with a valid reason, is recorded in the audit trail with the administrator, the address, the result and the reason.
+
+### BR-008: Lists Discovery Adds
+
+Discovery adds a list page it finds on a directory host whose lists are read (UC-019 BR-007) as a web page to read. The page follows the rules of a web page an administrator adds: an accepted address (BR-001) and a host that is not one never read (BR-002). The list is stored with the discovery collector that found it and no reason. At most 100 such lists are added by default. A page these rules refuse, and a page found when the 100 are added, waits in the review list as an article candidate. A page that is a list to read already is not added again. An administrator removes such a list like any other.
+
+### BR-009: Reading the Lists Discovery Added
+
+A list discovery added is read like an added web page (BR-006), and only while the switch of its host is on (UC-019 BR-008). In each pass the web pages an administrator added are read first. At most 10 lists discovery added are read per day by default; the others wait for the next day and use the text of their last read meanwhile.
+
+### BR-010: Links to Articles
+
+A link of a list that reads as an article by the rule of discovery (a post on a writing host or below a writing place of a site) becomes an article candidate in the review list, within the limits of the collector for new candidates. A blog's index, an author's page, a page on a directory host and a page on an excluded domain are skipped.

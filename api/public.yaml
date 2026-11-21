@@ -682,8 +682,9 @@ components:
       type: object
       description: |
         The curated lists that name this resource (ADR 0023): the most popular list first, then by title. The lists'
-        own words, not AI-written.
-      required: [lists, more]
+        own words, not AI-written. A list on a directory host is never in `lists` or `more`: `directoryLists` counts
+        it (ADR 0055).
+      required: [lists, more, directoryLists]
       properties:
         lists:
           type: array
@@ -691,6 +692,10 @@ components:
           description: At most 10 lists; empty when no list names the resource.
           items: { $ref: '#/components/schemas/FoundInList' }
         more: { type: integer, minimum: 0, description: The lists that name the resource and are not in `lists`. }
+        directoryLists:
+          type: integer
+          minimum: 0
+          description: How many lists on directory hosts name the resource; their names and addresses are not given.
 
     FoundInList:
       type: object

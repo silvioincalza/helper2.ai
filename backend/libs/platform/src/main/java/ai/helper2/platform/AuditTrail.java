@@ -31,7 +31,8 @@ public interface AuditTrail {
     REMOVE_SHADOW_LIBRARY,
     REMOVE_RESOURCE,
     ADD_LIST_SEED,
-    REMOVE_LIST_SEED
+    REMOVE_LIST_SEED,
+    READ_DIRECTORY_LISTS
   }
 
   record Change(@Nullable String before, @Nullable String after, @Nullable String reason) {}

@@ -152,6 +152,8 @@ public class JdbcCatalogSearch {
       SELECT lr.title AS list_title, e.heading_path
       FROM awesome_list_entry e JOIN resource lr ON lr.id = e.list_id
       WHERE pre.via_list AND e.resource_id = pre.id AND e.search_vector @@ q.any_terms
+        -- UC-007 BR-008: a list on a directory host is never named.
+        AND NOT EXISTS (SELECT 1 FROM awesome_list a WHERE a.list_id = e.list_id AND a.directory)
       ORDER BY (e.search_vector @@ q.all_terms) DESC, lr.popularity DESC, lr.title
       LIMIT 1
     ) f ON true

@@ -1141,6 +1141,8 @@
     "foundInUnder": "under {{heading}}",
     "foundInMore_one": "and {{count}} more list",
     "foundInMore_other": "and {{count}} more lists",
+    "foundInDirectories_one": "Named in {{count}} directory list",
+    "foundInDirectories_other": "Named in {{count}} directory lists",
     "whereFrom": "Where this information comes from",
     "readAt": "read {{date}}",
     "allSources": "All sources and their last check"

@@ -24,6 +24,7 @@ const evidence = (
   makeReviewEvidence(item, {
     fields: [],
     validationErrors: [],
+    directoryLists: [],
     relationship: {
       kind: 'ABOUT',
       target: 'Gemini 4 Carbon',

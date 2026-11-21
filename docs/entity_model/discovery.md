@@ -54,7 +54,7 @@ The position where a collector resumes its pass over a source in the next run.
 
 ### DISCOVERY_HOST
 
-A host that an administrator names for discovery as a writing site, whose posts become article candidates, or as a directory, whose pages are never kept.
+A host that an administrator names for discovery as a writing site, whose posts become article candidates, or as a directory, whose pages are never kept and whose list pages are read as lists only when an administrator turns that on.
 
 | Attribute | Description                                                                    | Data Type | Length/Precision | Validation Rules                  |
 |-----------|--------------------------------------------------------------------------------|-----------|------------------|-----------------------------------|
@@ -63,16 +63,22 @@ A host that an administrator names for discovery as a writing site, whose posts 
 | added_by  | Administrator who added the host                                               | String    | -                | Not Null                          |
 | added_at  | When the host was added                                                        | DateTime  | -                | Not Null                          |
 | reason    | Why the host was added; at most 500 characters                                 | String    | -                | Optional                          |
+| reads_lists | Whether the list pages of the host are read as lists; false by default       | Boolean   | -                | Not Null                          |
+
+#### Constraints
+
+- reads_lists is true only for a directory host.
 
 ### LIST_SEED
 
-A curated list, a GitHub repository or a web page, that an administrator added for the Scout to read on every pass of the awesome-list collector.
+A curated list, a GitHub repository or a web page, that the Scout reads on every pass of the awesome-list collector. An administrator added it, or discovery found the page on a directory host whose lists are read.
 
 | Attribute     | Description                                                                                                  | Data Type | Length/Precision | Validation Rules                               |
 |---------------|--------------------------------------------------------------------------------------------------------------|-----------|------------------|------------------------------------------------|
 | address       | The repository as "owner/name" in lower case, or the https address of the web page (at most 300 characters)  | String    | -                | Primary Key                                    |
 | kind          | Whether the list is a GitHub repository or a web page                                                        | String    | -                | Not Null, Values: GITHUB_REPOSITORY, WEB_PAGE  |
-| added_by      | Administrator who added the list                                                                             | String    | -                | Not Null                                       |
+| origin        | Who added the list                                                                                           | String    | -                | Not Null, Values: ADMINISTRATOR, DISCOVERY     |
+| added_by      | Administrator who added the list, or the discovery collector that found it                                   | String    | -                | Not Null                                       |
 | added_at      | When the list was added                                                                                      | DateTime  | -                | Not Null                                       |
 | reason        | Why the list was added; at most 500 characters                                                               | String    | -                | Optional                                       |
 | read_tried_at | When the last read of a web page started; empty for a GitHub repository                                      | DateTime  | -                | Optional                                       |
@@ -82,10 +88,11 @@ A curated list, a GitHub repository or a web page, that an administrator added f
 
 - A GitHub repository address matches "owner/name" (owner of 1 to 39 lower-case letters, digits or hyphens, name of 1 to 100 lower-case letters, digits, dots, underscores or hyphens); a web page address is an https address with a host name and no fragment, of at most 300 characters.
 - read_tried_at is set only for a web page.
+- A list discovery added is a web page.
 
 ### LIST_SEED_LAST_READ
 
-The text of the last successful read of an added web page, used while the page is not due to be read again.
+The text of the last successful read of an added web page, used while the page is not due to be read again or is no longer read.
 
 | Attribute    | Description                                                                 | Data Type | Length/Precision | Validation Rules                         |
 |--------------|-----------------------------------------------------------------------------|-----------|------------------|------------------------------------------|

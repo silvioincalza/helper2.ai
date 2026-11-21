@@ -104,6 +104,13 @@ fun interface CandidateReview {
     propose(sourceId, candidates)
 }
 
-data class ListText(val url: CanonicalUrl, val headings: String, val entries: List<ListEntryText>)
+data class ListText
+@JvmOverloads
+constructor(
+  val url: CanonicalUrl,
+  val headings: String,
+  val entries: List<ListEntryText>,
+  val onDirectoryHost: Boolean = false,
+)
 
 data class ListEntryText(val url: CanonicalUrl, val text: String, val headingPath: String)

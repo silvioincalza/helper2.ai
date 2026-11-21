@@ -33,6 +33,7 @@ export function ListSeedsPanel() {
 
   const loaded = seeds.data ?? seeds.previous;
   const all = loaded?.lists ?? [];
+  const discovered = all.filter((s) => s.origin === 'DISCOVERY').length;
 
   const add = (e: FormEvent) => {
     e.preventDefault();
@@ -171,8 +172,14 @@ export function ListSeedsPanel() {
       ) : (
         <section aria-labelledby="ls-list-h">
           <h4 id="ls-list-h" ref={focus.fallback(FALLBACK)} tabIndex={-1} className="h2-admin__h">
-            {t('admin.settings.lists.listTitle', { count: all.length, max: loaded?.max ?? 0 })}
+            {t('admin.settings.lists.listTitle', {
+              count: all.length - discovered,
+              max: loaded?.max ?? 0,
+            })}
           </h4>
+          {discovered > 0 && (
+            <p className="muted">{t('admin.settings.lists.discovered', { count: discovered })}</p>
+          )}
           {all.length === 0 ? (
             <p className="muted">{t('admin.settings.lists.none')}</p>
           ) : (
@@ -194,7 +201,7 @@ export function ListSeedsPanel() {
                       <td>
                         {t(`admin.settings.lists.kind.${s.kind}`)}
                         {' · '}
-                        {t('admin.settings.lists.addedBy', {
+                        {t(`admin.settings.lists.by.${s.origin}`, {
                           who: s.addedBy,
                           at: formatDate(s.addedAt, 'INSTANT'),
                         })}

@@ -127,6 +127,9 @@ class JdbcResourceDetailReads implements EnrichmentFacts, AwesomeListEntries {
                 SELECT e.list_id, l.title, e.heading_path, count(*) OVER () AS total
                 FROM awesome_list_entry e JOIN resource l ON l.id = e.list_id
                 WHERE e.resource_id = :id
+                  -- UC-007 BR-008: a list on a directory host is counted, never named.
+                  AND NOT EXISTS (SELECT 1 FROM awesome_list a
+                                  WHERE a.list_id = e.list_id AND a.directory)
                 ORDER BY l.popularity DESC, l.title, e.list_id
                 LIMIT :limit
                 """)
@@ -140,11 +143,40 @@ class JdbcResourceDetailReads implements EnrichmentFacts, AwesomeListEntries {
                         rs.getString("heading_path")),
                     rs.getInt("total")))
             .list();
-    if (rows.isEmpty()) {
-      return ResourceDetail.FoundIn.NO_LIST;
-    }
+    int more = rows.isEmpty() ? 0 : rows.getFirst().total() - rows.size();
     return new ResourceDetail.FoundIn(
-        rows.stream().map(ListRow::entry).toList(), rows.getFirst().total() - rows.size());
+        rows.stream().map(ListRow::entry).toList(), more, directoryLists(resourceId));
+  }
+
+  private int directoryLists(UUID resourceId) {
+    return jdbc.sql(
+            """
+            SELECT count(*) FROM awesome_list_entry e JOIN awesome_list a ON a.list_id = e.list_id
+            WHERE e.resource_id = :id AND a.directory
+            """)
+        .param("id", resourceId)
+        .query(Integer.class)
+        .single();
+  }
+
+  @Override
+  public List<DirectoryList> directoryListsNaming(UUID resourceId) {
+    return jdbc.sql(
+            """
+            SELECT l.title, l.url, e.heading_path
+            FROM awesome_list_entry e
+            JOIN awesome_list a ON a.list_id = e.list_id
+            JOIN resource l ON l.id = e.list_id
+            WHERE e.resource_id = :id AND a.directory
+            ORDER BY l.title, e.list_id
+            LIMIT :limit
+            """)
+        .param("id", resourceId)
+        .param("limit", MAX_DIRECTORY_LISTS)
+        .query((rs, n) ->
+            new DirectoryList(
+                rs.getString("title"), rs.getString("url"), rs.getString("heading_path")))
+        .list();
   }
 
   private record ListRow(ResourceDetail.ListEntry entry, int total) {}

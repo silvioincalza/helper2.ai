@@ -11,7 +11,7 @@ import org.jspecify.annotations.Nullable;
 
 final class ListEntryLinks {
 
-  sealed interface Route permits Model, Paper, Package, Course, Product, Skipped {}
+  sealed interface Route permits Model, Paper, Package, Course, Product, Article, Skipped {}
 
   record Model(String id, CanonicalUrl page) implements Route {}
 
@@ -24,6 +24,8 @@ final class ListEntryLinks {
   record Readers(boolean models, boolean papers, boolean packages) {}
 
   record Product(CanonicalUrl site) implements Route {}
+
+  record Article(CanonicalUrl page) implements Route {}
 
   record Skipped(String reason) implements Route {}
 
@@ -68,7 +70,13 @@ final class ListEntryLinks {
       return new Course(page, platform.get());
     }
     ProductLinks.Checked product = productLinks.product(page, pages);
-    return product.site() == null ? new Skipped(product.skip().tag()) : new Product(product.site());
+    if (product.site() != null) {
+      return new Product(product.site());
+    }
+    // UC-020 BR-010: a link that reads as an article by the rule of discovery is an article.
+    boolean article =
+        product.skip() == ProductLinks.Skip.NOT_A_PRODUCT_PAGE && pages.isWritingPage(page);
+    return article ? new Article(page) : new Skipped(product.skip().tag());
   }
 
   private @Nullable Route confirmable(CanonicalUrl page) {

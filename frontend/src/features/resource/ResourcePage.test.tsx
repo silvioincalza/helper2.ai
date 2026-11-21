@@ -909,6 +909,7 @@ describe('resource detail', () => {
               { listId: LIST_B, listTitle: 'acme/awesome-rag', headingPath: '' },
             ],
             more: 0,
+            directoryLists: 0,
           },
         }),
     });
@@ -940,11 +941,47 @@ describe('resource detail', () => {
           foundIn: {
             lists: [{ listId: LIST_A, listTitle: 'acme/awesome-llm', headingPath: 'Tools' }],
             more: 2,
+            directoryLists: 0,
           },
         }),
     });
     renderApp(`/resource/${ID}`);
     expect(await screen.findByText('and 2 more lists')).toBeInTheDocument();
+  });
+
+  it('Scenario: UC-007 BR-008 directory lists that name a resource are counted, never named', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          foundIn: {
+            lists: [{ listId: LIST_A, listTitle: 'acme/awesome-llm', headingPath: 'Tools' }],
+            more: 0,
+            directoryLists: 3,
+          },
+        }),
+    });
+    const { container } = renderApp(`/resource/${ID}`);
+    const lists = (await screen.findByRole('heading', { name: 'Found in these lists' })).closest(
+      'section',
+    ) as HTMLElement;
+    expect(within(lists).getByText('Named in 3 directory lists')).toBeInTheDocument();
+    expect(within(lists).getAllByRole('link')).toHaveLength(1);
+    await settle();
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('Scenario: UC-007 BR-008 a resource only directory lists name shows their number alone', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ foundIn: { lists: [], more: 0, directoryLists: 1 } }),
+    });
+    renderApp(`/resource/${ID}`);
+    const lists = (await screen.findByRole('heading', { name: 'Found in these lists' })).closest(
+      'section',
+    ) as HTMLElement;
+    expect(within(lists).getByText('Named in 1 directory list')).toBeInTheDocument();
+    expect(within(lists).queryByRole('list')).not.toBeInTheDocument();
+    expect(within(lists).queryByRole('link')).not.toBeInTheDocument();
   });
 
   it('Scenario: a resource no list names has no lists section at all', async () => {

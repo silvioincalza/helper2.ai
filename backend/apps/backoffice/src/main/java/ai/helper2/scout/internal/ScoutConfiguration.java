@@ -284,7 +284,8 @@ class ScoutConfiguration {
         list.getHeadings(),
         list.getEntries().stream()
             .map(e -> new AwesomeListText.Entry(e.getUrl(), e.getText(), e.getHeadingPath()))
-            .toList());
+            .toList(),
+        list.getOnDirectoryHost());
   }
 
   @Bean

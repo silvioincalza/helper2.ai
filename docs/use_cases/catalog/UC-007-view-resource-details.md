@@ -25,7 +25,7 @@
 4. System gathers every stated fact with its origin, its verification and its evidence: the facts each source record states, and the facts an AI model read with the quotes that support them.
 5. System gathers the relationships of the resource to other resources, vendors, services and tools, keeping verified relationships apart from unverified candidates, each with its evidence.
 6. System gathers the AI summary of the resource, each claim with its citations.
-7. System gathers the curated lists that name the resource, with the headings above its entry in each list.
+7. System gathers the curated lists that name the resource, with the headings above its entry in each list, and counts the lists on directory hosts that name it.
 8. System shows the page: the title, type, host and dates, a link to open the resource on its host, the facts at a glance, the AI summary, the relationships, and, one click away, where the information comes from (each source with its mode and when it was read, every field with its origin, the evidence and the source records). Every AI-written value carries a visible label and a machine-readable mark.
 9. Visitor follows the link to the original on its host.
 
@@ -122,7 +122,7 @@ The AI summary comes from the latest enrichment of the resource that was validat
 
 ### BR-008: Curated Lists Shown
 
-The page names at most 10 curated lists that list the resource, the most popular list first, then by title, and counts the lists it does not name.
+The page names at most 10 curated lists that list the resource, the most popular list first, then by title, and counts the lists it does not name. A list on a directory host is never named and is not among them: the page gives only the number of such lists that name the resource.
 
 ### BR-009: AI-Written Values Are Labelled
 

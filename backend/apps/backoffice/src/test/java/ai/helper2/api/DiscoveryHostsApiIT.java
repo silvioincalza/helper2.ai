@@ -151,4 +151,65 @@ class DiscoveryHostsApiIT extends ApiTestBase {
     assertThat(audit()).isEmpty();
     assertThat(store.lists().getWriting()).contains("medium.com").doesNotContain(HOST);
   }
+
+  @Test
+  void uc019Br007AnAdminTurnsTheReadingOfADirectoryHostsListsOnAndOffAndEachChangeIsAudited()
+      throws Exception {
+    String directory = "g2.com";
+    try {
+      String on =
+          mvc.perform(
+                  post(BASE + "/" + directory + "/list-reading")
+                      .with(admin)
+                      .with(csrf().asHeader())
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .content("{\"read\":true,\"reason\":\"checked the host\"}"))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$.readsLists").value(true))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      ContractValidator.assertMatches("DiscoveryHostEntry", on);
+      assertThat(store.lists().getDirectoryListsRead()).contains(directory);
+
+      mvc.perform(
+              post(BASE + "/medium.com/list-reading")
+                  .with(admin)
+                  .with(csrf().asHeader())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"read\":true}"))
+          .andExpect(status().isBadRequest());
+      mvc.perform(
+              post(BASE + "/unknown.example/list-reading")
+                  .with(admin)
+                  .with(csrf().asHeader())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"read\":true}"))
+          .andExpect(status().isNotFound());
+      mvc.perform(
+              post(BASE + "/" + directory + "/list-reading")
+                  .with(oauth2Login())
+                  .with(csrf().asHeader())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"read\":true}"))
+          .andExpect(status().isForbidden());
+      mvc.perform(
+              post(BASE + "/" + directory + "/list-reading")
+                  .with(admin)
+                  .with(csrf().asHeader())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"read\":false}"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.readsLists").value(false));
+
+      assertThat(audit())
+          .containsExactly(
+              "READ_DIRECTORY_LISTS " + directory + " ON OFF ON checked the host",
+              "READ_DIRECTORY_LISTS medium.com NOT_A_DIRECTORY OFF ON -",
+              "READ_DIRECTORY_LISTS unknown.example NOT_FOUND - ON -",
+              "READ_DIRECTORY_LISTS " + directory + " OFF ON OFF -");
+    } finally {
+      store.readLists(directory, false);
+    }
+  }
 }

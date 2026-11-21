@@ -183,6 +183,7 @@ The full-text index of a curated list ("awesome list") that is itself a resource
 | list_id       | Resource that is the list                            | String    | 36               | Primary Key, Foreign Key (RESOURCE.id) |
 | search_vector | Full-text index of the list's own words              | String    | -                | Not Null                               |
 | updated_at    | When the list was last read                          | DateTime  | -                | Not Null                               |
+| directory     | Whether the list is a page of a directory host; false by default | Boolean | -      | Not Null                               |
 
 ### AWESOME_LIST_ENTRY
 

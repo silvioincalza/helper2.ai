@@ -4,6 +4,7 @@ import ai.helper2.platform.AuditTrail
 import ai.helper2.scout.HostsNeverRead
 import ai.helper2.scout.ListAddresses
 import ai.helper2.scout.ListKind
+import ai.helper2.scout.ListOrigin
 import ai.helper2.scout.ListSeed
 import ai.helper2.scout.ListSeedStore
 import ai.helper2.shared.UnitOfWork
@@ -99,7 +100,8 @@ class ManageListSeeds(
       ?.let {
         return Added.AlreadyListed(it)
       }
-    if (all.size >= MAX_SEEDS) {
+    // UC-020 BR-003: the lists discovery added have their own number (BR-008).
+    if (all.count { it.origin == ListOrigin.ADMINISTRATOR } >= MAX_SEEDS) {
       return Added.Full
     }
     val seed = ListSeed(list.kind, list.address, adminId, clock.instant(), reason)

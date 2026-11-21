@@ -79,12 +79,20 @@ function EvidenceBody({
   onChanged: () => void;
 }) {
   const { t } = useTranslation();
-  const { item, run, relationship, fields, validationErrors } = evidence;
+  const { item, run, relationship, fields, validationErrors, directoryLists } = evidence;
   const retargetable = item.status === 'OPEN' && item.kind === 'RELATIONSHIP_CANDIDATE';
   const targetCurated = relationship?.targetOrigin === 'CURATED';
-  if (!run && !relationship) return <p className="muted">{t('admin.evidence.none')}</p>;
+  if (!run && !relationship) {
+    return (
+      <>
+        <DirectoryLists lists={directoryLists} />
+        <p className="muted">{t('admin.evidence.none')}</p>
+      </>
+    );
+  }
   return (
     <>
+      <DirectoryLists lists={directoryLists} />
       {run && (
         <dl className="h2-admin__run">
           <dt>{t('admin.evidence.model')}</dt>
@@ -172,6 +180,40 @@ function EvidenceBody({
       {!relationship && fields.length === 0 && (
         <p className="muted">{t('admin.evidence.noFields')}</p>
       )}
+    </>
+  );
+}
+
+function DirectoryLists({ lists }: { lists: ReviewEvidence['directoryLists'] }) {
+  const { t } = useTranslation();
+  if (lists.length === 0) return null;
+  return (
+    <>
+      <p id="rq-directory-lists" className="h2-admin__h3">
+        {t('admin.evidence.directoryLists', { count: lists.length })}
+      </p>
+      <ul aria-labelledby="rq-directory-lists">
+        {lists.map((list) => {
+          const href = safeHref(list.page);
+          return (
+            <li key={list.page}>
+              {href ? (
+                <a href={href} target="_blank" rel="noopener noreferrer nofollow">
+                  {list.title}
+                </a>
+              ) : (
+                list.title
+              )}
+              {list.headingPath && (
+                <span className="muted">
+                  {' '}
+                  {t('admin.evidence.directoryListUnder', { heading: list.headingPath })}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </>
   );
 }

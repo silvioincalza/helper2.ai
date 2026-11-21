@@ -128,6 +128,7 @@ class ResourceAiFieldsTest {
           "enrichmentStatus",
           "foundIn.lists[].listId",
           "foundIn.more",
+          "foundIn.directoryLists",
           "aiContent.aiGenerated",
           "aiContent.provider",
           "aiContent.models[]",
