@@ -46,6 +46,16 @@ final class PinnedTransport implements LivePageStatusReader.Transport {
       Executors.newSingleThreadScheduledExecutor(
           Thread.ofPlatform().daemon().name("page-status-deadline").factory());
 
+  private final Duration wholeCall;
+
+  PinnedTransport() {
+    this(WHOLE_CALL);
+  }
+
+  PinnedTransport(Duration wholeCall) {
+    this.wholeCall = wholeCall;
+  }
+
   @Override
   public LivePageStatusReader.Answer send(
       String method, URI url, List<InetAddress> checked, int maxBodyBytes) throws IOException {
@@ -54,7 +64,7 @@ final class PinnedTransport implements LivePageStatusReader.Transport {
       request.setHeader("User-Agent", ObservedHttp.USER_AGENT);
       request.setHeader("Accept", "*/*");
       ScheduledFuture<?> cancel =
-          DEADLINES.schedule(request::cancel, WHOLE_CALL.toMillis(), TimeUnit.MILLISECONDS);
+          DEADLINES.schedule(request::cancel, wholeCall.toMillis(), TimeUnit.MILLISECONDS);
       ClassicHttpResponse response = http.executeOpen(null, request, null);
       try {
         Header location = response.getFirstHeader("Location");

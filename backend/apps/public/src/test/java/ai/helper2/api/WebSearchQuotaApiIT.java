@@ -69,15 +69,15 @@ class WebSearchQuotaApiIT extends ApiTestBase {
     String run = UUID.randomUUID().toString();
     int before = WEB_CALLS.get();
 
-    for (int left = 2; left >= 0; left--) {
+    for (int left = 9; left >= 0; left--) {
       String json = search("agents " + run + " " + left);
-      assertThat(read(json, "$.webSearches.limit")).isEqualTo(3);
+      assertThat(read(json, "$.webSearches.limit")).isEqualTo(10);
       assertThat(read(json, "$.webSearches.remaining")).isEqualTo(left);
       ContractValidator.assertMatches("SearchResponse", json);
     }
     String over = search("agents " + run + " over");
 
-    assertThat(WEB_CALLS.get() - before).isEqualTo(3);
+    assertThat(WEB_CALLS.get() - before).isEqualTo(10);
     assertThat(read(over, "$.webSearches.remaining")).isEqualTo(0);
     assertThat(read(over, "$.sources[?(@.sourceId == 'fake-web')].outcome"))
         .asList()
@@ -123,8 +123,8 @@ class WebSearchQuotaApiIT extends ApiTestBase {
                 "{\"request\":\"open source agent frameworks " + UUID.randomUUID() + "\"}",
                 csrf().asHeader(),
                 visitor)
-            .value("$.webSearches.limit", 3)
-            .value("$.webSearches.remaining", 2)
+            .value("$.webSearches.limit", 10)
+            .value("$.webSearches.remaining", 9)
             .json();
     ContractValidator.assertMatches("GuideResponse", json);
   }
@@ -143,9 +143,9 @@ class WebSearchQuotaApiIT extends ApiTestBase {
   @Test
   void theAccountShowsWhatIsLeftTodayWithoutCountingAndWithoutTheAddress() throws Exception {
     String fresh = me();
-    assertThat(read(fresh, "$.limits.webSearches.search.limit")).isEqualTo(3);
-    assertThat(read(fresh, "$.limits.webSearches.search.remaining")).isEqualTo(3);
-    assertThat(read(fresh, "$.limits.webSearches.guide.remaining")).isEqualTo(3);
+    assertThat(read(fresh, "$.limits.webSearches.search.limit")).isEqualTo(10);
+    assertThat(read(fresh, "$.limits.webSearches.search.remaining")).isEqualTo(10);
+    assertThat(read(fresh, "$.limits.webSearches.guide.remaining")).isEqualTo(10);
     assertThat(read(fresh, "$.limits.guideQuestions")).as("no guide model here").isNull();
     assertThat(java.time.OffsetDateTime.parse(read(fresh, "$.limits.resetsAt").toString()))
         .isEqualTo(
@@ -156,7 +156,7 @@ class WebSearchQuotaApiIT extends ApiTestBase {
     assertThat(fresh).doesNotContain(address);
     assertThat(read(me(), "$.limits.webSearches.search.remaining"))
         .as("reading does not count")
-        .isEqualTo(3);
+        .isEqualTo(10);
 
     search("agents " + UUID.randomUUID());
     GuideAnswers.ask(
@@ -166,8 +166,8 @@ class WebSearchQuotaApiIT extends ApiTestBase {
         visitor);
 
     String after = me();
-    assertThat(read(after, "$.limits.webSearches.search.remaining")).isEqualTo(2);
-    assertThat(read(after, "$.limits.webSearches.guide.remaining")).isEqualTo(2);
+    assertThat(read(after, "$.limits.webSearches.search.remaining")).isEqualTo(9);
+    assertThat(read(after, "$.limits.webSearches.guide.remaining")).isEqualTo(9);
   }
 
   private Number creditsToday() throws Exception {

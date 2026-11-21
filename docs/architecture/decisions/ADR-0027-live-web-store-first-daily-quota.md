@@ -34,7 +34,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    fresh, whatever class fetched it.
    Served as `CACHE`. A live answer overwrites the set (and its rows in the catalog get a new `last_seen_at`).
 3. **Daily web searches per feature, the same for every visitor.** Before a live call `WebSearchQuota` takes one
-   web search for the asker: 3 a day for search and 3 for the guide. Every visitor, signed in or not, is counted under
+   web search for the asker: 10 a day for search and 10 for the guide. Every visitor, signed in or not, is counted under
    `h2:v1:quota:guest:<HMAC-SHA256(day key, client)>` (a Redis hash, field = feature), day key = HMAC-SHA256(secret,
    UTC date). An account never changes the limits or the counter. The client is `ClientKey` (IPv6 by /64,
    [0032](ADR-0032-guide-cost-guard-and-answer-cache.md)); no address is stored and the keys of two days cannot be linked without the secret. A key expires 24 h after its first count. One user action is one web
