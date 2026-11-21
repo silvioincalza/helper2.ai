@@ -133,7 +133,7 @@ constructor(
 
   private fun recheck(resourceId: UUID): RecheckResult {
     val stored = answers.stored(resourceId)
-    val failing = stored.fields.filter { failsTheNewRules(it) || notKeptBy(stored.type, it) }
+    val failing = stored.fields.filter { doesNotStateItsValue(it) || notKeptBy(stored.type, it) }
     val dropped =
       stored.claims.filter {
         EvidenceRules.claimProblem(it.text, it.excerpts, stored.title) != null
@@ -147,10 +147,10 @@ constructor(
     return RecheckResult(1, rejected, gone, if (rerun) 1 else 0)
   }
 
-  private fun failsTheNewRules(f: StoredFieldAnswer): Boolean =
+  private fun doesNotStateItsValue(f: StoredFieldAnswer): Boolean =
     f.verification == Verification.VERIFIED &&
       f.origin in AI_FACTS &&
-      f.field in EvidenceRules.NEWLY_STATED &&
+      f.field in EvidenceRules.MUST_STATE_VALUE &&
       f.excerpts.none { EvidenceRules.statesValue(it, f.field, f.value) }
 
   private fun notKeptBy(type: ResourceType, f: StoredFieldAnswer): Boolean =

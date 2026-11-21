@@ -71,6 +71,11 @@ class InMemoryDiscoveryHostStore : DiscoveryHostStore {
   override fun add(host: DiscoveryHost): Boolean = hosts.putIfAbsent(host.host, host) == null
 
   override fun remove(host: String): DiscoveryHost? = hosts.remove(host)
+
+  override fun readLists(host: String, on: Boolean): DiscoveryHost? =
+    hosts.computeIfPresent(host) { _, listed ->
+      if (listed.kind == HostKind.DIRECTORY) listed.copy(readsLists = on) else listed
+    }
 }
 
 class InMemoryListSeedStore : ListSeedStore {

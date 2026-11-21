@@ -1,5 +1,6 @@
 package ai.helper2.sources.config.scout;
 
+import ai.helper2.catalog.DirectoryRatingIndex;
 import ai.helper2.catalog.Resources;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.platform.config.HttpClientProperties;
@@ -12,14 +13,18 @@ import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.platform.settings.RuntimeSetting;
+import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
+import ai.helper2.scout.DiscoveredLists;
 import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.admission.AdmissionPolicy;
 import ai.helper2.scout.admission.AdmissionRules;
 import ai.helper2.scout.admission.IndexFloor;
+import ai.helper2.scout.usecase.AddDiscoveredList;
 import ai.helper2.search.DescribedSource;
 import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceDescriptor;
@@ -43,6 +48,7 @@ import ai.helper2.sources.events.UndatedEvents;
 import ai.helper2.sources.evidence.LiveWebPageReader;
 import ai.helper2.sources.evidence.PublicSuffixDomains;
 import ai.helper2.sources.evidence.ReadmeEvidence;
+import ai.helper2.sources.github.scout.DirectoryRatingReader;
 import ai.helper2.sources.github.scout.GitHubAwesomeCollector;
 import ai.helper2.sources.github.scout.GitHubRepositoryStates;
 import ai.helper2.sources.github.scout.GitHubSdkCollector;
@@ -74,6 +80,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.IntSupplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -182,8 +189,11 @@ class CollectorsConfiguration {
       CollectorProperties.ScoutCredits c,
       QuotaCounter counter,
       QuotaKeys keys,
+      RuntimeSettings runtime,
       MeterRegistry meters) {
-    return new ScoutLiveWebCredits(counter, keys, c.dailyCredits(), meters);
+    IntSupplier dailyCredits =
+        runtime.declare(RuntimeSetting.SCOUT_SEARCH_DAILY_CREDITS, c.dailyCredits());
+    return new ScoutLiveWebCredits(counter, keys, dailyCredits::getAsInt, meters);
   }
 
   @Bean
@@ -303,7 +313,8 @@ class CollectorsConfiguration {
       ShadowLibraries shadowLibraries,
       VitalityPolicy vitality,
       OutboundThrottle throttle,
-      WebPageLists webPageLists) {
+      WebPageLists webPageLists,
+      DirectoryRatingReader directoryRatings) {
     SourceSettings s = p.get("github-awesome");
     ChatModel model = chatModel.getIfAvailable();
     RepoClassifier classifier;
@@ -350,7 +361,8 @@ class CollectorsConfiguration {
             listedModelAdmission(vitality, c.links().modelIndexMinLikes()),
             paperReader(p.get("arxiv"), s, clock, resilience, observations, http, throttle),
             packageReader(p.get("npm"), s, clock, resilience, observations, http)),
-        webPageLists);
+        webPageLists,
+        directoryRatings);
   }
 
   @Bean
@@ -385,7 +397,37 @@ class CollectorsConfiguration {
         neverRead,
         c.webPages().readEvery(),
         c.webPages().retryAfter(),
+        c.webPages().discoveredReadsPerDay(),
         clock);
+  }
+
+  @Bean
+  DirectoryRatingReader directoryRatingReader(
+      CollectorProperties.GitHubAwesome c,
+      DirectoryRatingIndex ratings,
+      LiveWebPageReader reader,
+      ScoutLiveWebCredits credits,
+      HostsNeverRead neverRead,
+      MeterRegistry meters,
+      Clock clock) {
+    return new DirectoryRatingReader(
+        ratings,
+        reader,
+        credits,
+        neverRead,
+        c.webPages().readEvery(),
+        c.webPages().itemPageReadsPerDay(),
+        meters,
+        clock);
+  }
+
+  @Bean
+  DiscoveredLists discoveredLists(
+      CollectorProperties.GitHubAwesome c,
+      ListSeedStore addedLists,
+      HostsNeverRead neverRead,
+      Clock clock) {
+    return new AddDiscoveredList(addedLists, neverRead, c.webPages().maxDiscovered(), clock);
   }
 
   private static final String AWESOME_POLICY = "collector-" + CollectorIds.GITHUB_AWESOME;

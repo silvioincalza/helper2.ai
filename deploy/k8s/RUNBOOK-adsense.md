@@ -1,11 +1,11 @@
 # AdSense go-live runbook
 
 How the Google ads start on prod, step by step, and how to stop them.
-[ADR 0042](../../docs/adr/money/0042-monetisation.md) says why each rule is there, and
+[ADR 0042](../../docs/architecture/decisions/ADR-0042-monetisation.md) says why each rule is there, and
 [RUNBOOK-release.md](RUNBOOK-release.md) is the release itself. Story:
 [S8.6.3](https://github.com/silvioincalza/helper2.ai/issues/872).
 
-**(Silvio)** marks a step only the owner can do. Commands run from the repository root, with `gh` signed in as the
+**(Owner)** marks a step only the owner can do. Commands run from the repository root, with `gh` signed in as the
 owner.
 
 ## What turns the ads on
@@ -33,13 +33,13 @@ Each line must be true. The script asks for the three that only the AdSense acco
 
 | What | Check | Who |
 |---|---|---|
-| The pull requests that add the search and guide settings are merged | `yq '.app.monetisation' deploy/helm/helper2/values.yaml` lists `adsenseSlotSearch` and `adsenseSlotGuide` | **(Silvio)** |
-| Google approved the site | AdSense > Sites: helper2.ai shows "Ready" | **(Silvio)** |
-| Auto ads and overlay formats are off | AdSense > Ads > By site: helper2.ai shows "OFF" | **(Silvio)** |
-| The European regulations message is published | AdSense > Privacy and messaging > European regulations: the message "helper2.ai consent" is "Published", with "Consent" and "Do not consent" the same size | **(Silvio)** |
-| Consent mode is on for Google Analytics, when the prod Analytics ID is set | The same page, Settings. Without it Google Analytics stays off for every visitor in Europe | **(Silvio)** |
-| The ad networks' rules are read | [S8.4.1](https://github.com/silvioincalza/helper2.ai/issues/332) | **(Silvio)** |
-| The Privacy and Terms text is confirmed by a lawyer, or the owner releases with the points open | The lawyer brief | **(Silvio)** |
+| The pull requests that add the search and guide settings are merged | `yq '.app.monetisation' deploy/helm/helper2/values.yaml` lists `adsenseSlotSearch` and `adsenseSlotGuide` | **(Owner)** |
+| Google approved the site | AdSense > Sites: helper2.ai shows "Ready" | **(Owner)** |
+| Auto ads and overlay formats are off | AdSense > Ads > By site: helper2.ai shows "OFF" | **(Owner)** |
+| The European regulations message is published | AdSense > Privacy and messaging > European regulations: the message "helper2.ai consent" is "Published", with "Consent" and "Do not consent" the same size | **(Owner)** |
+| Consent mode is on for Google Analytics, when the prod Analytics ID is set | The same page, Settings. Without it Google Analytics stays off for every visitor in Europe | **(Owner)** |
+| The ad networks' rules are read | [S8.4.1](https://github.com/silvioincalza/helper2.ai/issues/332) | **(Owner)** |
+| The Privacy and Terms text is confirmed by a lawyer, or the owner releases with the points open | The lawyer brief | **(Owner)** |
 
 ## 2. The pull request
 
@@ -55,7 +55,7 @@ never merges and never deploys.
 To start with fewer places, empty an ad unit: `UNIT_GUIDE= deploy/k8s/adsense-go-live.sh` leaves the guide answer
 without an ad.
 
-**(Silvio)** Review and merge the pull request.
+**(Owner)** Review and merge the pull request.
 
 ## 3. The release, then the switch
 
@@ -63,7 +63,7 @@ The values reach prod with a release: [RUNBOOK-release.md](RUNBOOK-release.md), 
 yet: `curl -s https://helper2.ai/api/v1/site | jq .monetisation` still has no ad unit. Staging does not change: it
 has no ad unit, and Google serves ads only on the approved domain.
 
-**(Silvio)** On `https://admin.helper2.ai/settings`, row "Google ads": **Set to true**, check that the review says
+**(Owner)** On `https://admin.helper2.ai/settings`, row "Google ads": **Set to true**, check that the review says
 `false → true`, give the reason, **Confirm change**. The ads start within about 20 seconds.
 
 ## 4. Checks on prod

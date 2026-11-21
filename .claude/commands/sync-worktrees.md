@@ -1,6 +1,6 @@
 ---
 description: After a PR merges, update the worktrees that depend on it, then clean up merged ones
-argument-hint: [merged PR number or branch]
+argument-hint: "[merged PR number or branch]"
 ---
 Merged: $ARGUMENTS (if empty: everything merged into origin/main since the last sync)
 
@@ -11,7 +11,7 @@ Merged: $ARGUMENTS (if empty: everything merged into origin/main since the last 
 3. For each open worktree, in that order:
    - clean: rebase onto `origin/main` (stacked after a squash merge:
      `git rebase --onto origin/main <old-base>`). On conflict: stop, `git rebase --abort`,
-     report. Otherwise run the tests the branch touches, ask Silvio, then push with `--force-with-lease`
+     report. Otherwise run the tests the branch touches, ask the human in the loop, then push with `--force-with-lease`
      and `gh pr edit <n> --base main` if its PR targeted the merged branch;
    - not clean or owned by a running session: do not touch it; append a line to
      `.private/notes/worktrees.md` (date, worktree, what it needs to rebase onto).

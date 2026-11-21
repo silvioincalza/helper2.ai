@@ -35,8 +35,10 @@ class SweepRepositoriesTest {
     }
   }
 
+  private val handedToGoneLists = mutableListOf<Collection<UUID>>()
+
   private fun sweep(catalog: Catalog, states: RepositoryStates) =
-    SweepRepositories(catalog, states, clock, 50, meters)
+    SweepRepositories(catalog, states, clock, 50, meters) { handedToGoneLists += it }
 
   private fun counted(outcome: String) =
     meters.counter("helper2.scout.repository_sweep", "outcome", outcome).count()
@@ -49,8 +51,8 @@ class SweepRepositoriesTest {
     val catalog = Catalog(listOf(living, archived, gone))
     val answers: Map<String, Visit> =
       mapOf(
-        "acme/living" to Found(false, null, null),
-        "acme/archived" to Found(true, null, null),
+        "acme/living" to Found(false, null, null, null),
+        "acme/archived" to Found(true, null, null, null),
         "acme/gone" to Gone(),
       )
 
@@ -79,7 +81,7 @@ class SweepRepositoriesTest {
 
     sweep(Catalog(listOf(npm, pypi))) {
         asked += it
-        mapOf("acme/tool" to Found(false, null, null))
+        mapOf("acme/tool" to Found(false, null, null, null))
       }
       .sweepOneBatch()
 
@@ -100,6 +102,34 @@ class SweepRepositoriesTest {
     assertEquals(1.0, counted("unanswered"))
   }
 
+  // UC-030 BR-012: only a definite "not found" reaches the rule of the lists that are gone, after
+  // the visit is stored.
+  @Test
+  fun `the records GitHub did not find are handed to the rule of gone lists`() {
+    val living = Due(UUID.randomUUID(), "acme/living")
+    val gone = Due(UUID.randomUUID(), "acme/awesome-gone")
+    val silent = Due(UUID.randomUUID(), "acme/silent")
+    val catalog = Catalog(listOf(living, gone, silent))
+    val answers: Map<String, Visit> =
+      mapOf("acme/living" to Found(false, null, null, null), "acme/awesome-gone" to Gone())
+
+    sweep(catalog) { answers }.sweepOneBatch()
+
+    assertEquals(listOf<Collection<UUID>>(listOf(gone.recordId)), handedToGoneLists)
+    assertEquals(3, catalog.recorded.size)
+  }
+
+  // UC-030 BR-012: a read that fails for another reason removes nothing.
+  @Test
+  fun `a batch where every repository is found or silent hands nothing to the rule of gone lists`() {
+    val catalog =
+      Catalog(listOf(Due(UUID.randomUUID(), "acme/living"), Due(UUID.randomUUID(), "acme/silent")))
+
+    sweep(catalog) { mapOf("acme/living" to Found(false, null, null, null)) }.sweepOneBatch()
+
+    assertEquals(emptyList<Collection<UUID>>(), handedToGoneLists)
+  }
+
   @Test
   fun `nothing due asks nothing`() {
     val visited = sweep(Catalog(emptyList())) { error("not asked") }.sweepOneBatch()
@@ -116,5 +146,6 @@ class SweepRepositoriesTest {
     }
 
     assertEquals(emptyList<Triple<UUID, Visit, Instant>>(), catalog.recorded)
+    assertEquals(emptyList<Collection<UUID>>(), handedToGoneLists)
   }
 }

@@ -1,0 +1,25 @@
+@startuml Enrichment
+left to right direction
+
+actor "Administrator" as admin
+actor "Scheduler" as scheduler
+actor "Language Model" as llm
+actor "Embedding Service" as embedder
+actor "Source Provider" as source_provider
+
+rectangle "Enrichment" {
+    usecase "UC-021\nEnrich Resources" as UC021
+    usecase "UC-022\nManage the Enrichment Queue" as UC022
+    usecase "UC-023\nKeep the Catalog About AI" as UC023
+}
+
+scheduler --> UC021
+admin --> UC022
+admin --> UC023
+scheduler --> UC023
+UC021 --> llm
+UC021 --> embedder
+UC021 --> source_provider
+UC023 --> source_provider
+
+@enduml

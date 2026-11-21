@@ -909,6 +909,7 @@ describe('resource detail', () => {
               { listId: LIST_B, listTitle: 'acme/awesome-rag', headingPath: '' },
             ],
             more: 0,
+            directoryLists: 0,
           },
         }),
     });
@@ -940,11 +941,105 @@ describe('resource detail', () => {
           foundIn: {
             lists: [{ listId: LIST_A, listTitle: 'acme/awesome-llm', headingPath: 'Tools' }],
             more: 2,
+            directoryLists: 0,
           },
         }),
     });
     renderApp(`/resource/${ID}`);
     expect(await screen.findByText('and 2 more lists')).toBeInTheDocument();
+  });
+
+  it('Scenario: UC-007 BR-008 directory lists that name a resource are counted, never named', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({
+          foundIn: {
+            lists: [{ listId: LIST_A, listTitle: 'acme/awesome-llm', headingPath: 'Tools' }],
+            more: 0,
+            directoryLists: 3,
+          },
+        }),
+    });
+    const { container } = renderApp(`/resource/${ID}`);
+    const lists = (await screen.findByRole('heading', { name: 'Found in these lists' })).closest(
+      'section',
+    ) as HTMLElement;
+    expect(within(lists).getByText('Named in 3 directory lists')).toBeInTheDocument();
+    expect(within(lists).getAllByRole('link')).toHaveLength(1);
+    await settle();
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('Scenario: UC-007 BR-008 a resource only directory lists name shows their number alone', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () =>
+        makeDetail({ foundIn: { lists: [], more: 0, directoryLists: 1 } }),
+    });
+    renderApp(`/resource/${ID}`);
+    const lists = (await screen.findByRole('heading', { name: 'Found in these lists' })).closest(
+      'section',
+    ) as HTMLElement;
+    expect(within(lists).getByText('Named in 1 directory list')).toBeInTheDocument();
+    expect(within(lists).queryByRole('list')).not.toBeInTheDocument();
+    expect(within(lists).queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('Scenario: UC-007 BR-011 the rating is one score with the number of directories, never their names', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () => makeDetail({ rating: { score: 4.7, directories: 2 } }),
+    });
+    const { container } = renderApp(`/resource/${ID}`);
+    const rating = (
+      await screen.findByRole('heading', { name: 'Rating from directories' })
+    ).closest('section') as HTMLElement;
+    expect(rating).toHaveTextContent('4.7 out of 5 from 2 directories');
+    expect(within(rating).queryByText('Not rated yet')).not.toBeInTheDocument();
+    expect(rating.querySelector('[data-ai-generated]')).toBeNull();
+    await settle();
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it('Scenario: UC-007 BR-011 a score that ends in .0 keeps its decimal and one directory is singular', async () => {
+    mockApi({
+      [`GET /resources/${ID}`]: () => makeDetail({ rating: { score: 4, directories: 1 } }),
+    });
+    renderApp(`/resource/${ID}`);
+    const rating = (
+      await screen.findByRole('heading', { name: 'Rating from directories' })
+    ).closest('section') as HTMLElement;
+    expect(rating).toHaveTextContent('4.0 out of 5 from 1 directory');
+  });
+
+  it('Scenario: UC-007 BR-011 a resource no directory rates says "Not rated yet" and shows no figure', async () => {
+    mockApi({ [`GET /resources/${ID}`]: () => makeDetail({ rating: null }) });
+    renderApp(`/resource/${ID}`);
+    const rating = (
+      await screen.findByRole('heading', { name: 'Rating from directories' })
+    ).closest('section') as HTMLElement;
+    expect(within(rating).getByText('Not rated yet')).toBeInTheDocument();
+    expect(rating).not.toHaveTextContent('out of 5');
+    expect(within(rating).queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('Scenario: UC-009 BR-003 a report from the rating names the rating as the wrong detail', async () => {
+    const m = mockApi({
+      [`GET /resources/${ID}`]: () => makeDetail({ rating: { score: 4.7, directories: 2 } }),
+      [`POST /resources/${ID}/reports`]: () =>
+        new Response(JSON.stringify({ reportId: '55555555-5555-5555-8555-555555555555' }), {
+          status: 202,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    });
+    renderApp(`/resource/${ID}`);
+    await userEvent.click(await screen.findByRole('link', { name: 'Report a wrong rating' }));
+    expect(screen.getByLabelText(/Which detail is wrong/)).toHaveValue('rating');
+    await userEvent.type(screen.getByLabelText(/Describe the problem/), 'The directory says 3.9.');
+    await userEvent.click(screen.getByRole('button', { name: 'Send report' }));
+    await waitFor(() =>
+      expect(m.callsTo('POST', `/resources/${ID}/reports`)[0]?.body).toMatchObject({
+        field: 'rating',
+      }),
+    );
   });
 
   it('Scenario: a resource no list names has no lists section at all', async () => {

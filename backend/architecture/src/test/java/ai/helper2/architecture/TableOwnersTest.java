@@ -29,6 +29,8 @@ class TableOwnersTest {
           Map.entry("resource_embedding", "catalog"),
           Map.entry("resource_embedding_refused", "catalog"),
           Map.entry("awesome_list_entry", "catalog"),
+          Map.entry("directory_list_entry", "catalog"),
+          Map.entry("directory_rating", "catalog"),
           Map.entry("awesome_list", "catalog"),
           Map.entry("evidence", "catalog"),
           Map.entry("enrichment_run", "catalog"),

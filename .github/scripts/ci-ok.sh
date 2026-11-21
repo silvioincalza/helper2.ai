@@ -18,7 +18,8 @@ SELECTED_BY='{
   "monitoring": "monitoring",
   "postgres-tag": "postgres",
   "embedder": "embedder",
-  "diagrams": "diagrams"
+  "diagrams": "diagrams",
+  "spec-lint": "diagrams"
 }'
 PULL_REQUEST_ONLY='["postgres-tag"]'
 FULL_RUN_ONLY='{"package": ["frontend", "backend-public", "backend-backoffice"]}'

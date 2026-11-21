@@ -1,6 +1,7 @@
 package ai.helper2.admin.web;
 
 import ai.helper2.api.generated.DiscoveryHostsApi;
+import ai.helper2.api.generated.model.DirectoryListReadingDto;
 import ai.helper2.api.generated.model.DiscoveryHostAddDto;
 import ai.helper2.api.generated.model.DiscoveryHostEntryDto;
 import ai.helper2.api.generated.model.DiscoveryHostKindDto;
@@ -74,6 +75,22 @@ class DiscoveryHostsController implements DiscoveryHostsApi {
     };
   }
 
+  @Override
+  public ResponseEntity<DiscoveryHostEntryDto> readDirectoryLists(
+      String host, DirectoryListReadingDto body) {
+    return switch (hosts.readLists(Admins.id(), host, body.getRead(), body.getReason())) {
+      case ManageDiscoveryHosts.ListReading.Done d -> ResponseEntity.ok(dto(d.getHost()));
+      case ManageDiscoveryHosts.ListReading.NotADirectory n ->
+          throw new ApiProblem(
+              ProblemType.INVALID_REQUEST,
+              n.getHost().getHost()
+                  + " is a writing host: only a directory host has lists to read.");
+      case ManageDiscoveryHosts.ListReading.NotFound n ->
+          throw new NotFoundException(host + " is in no list.");
+      case ManageDiscoveryHosts.ListReading.BadReason r -> throw badReason();
+    };
+  }
+
   private static ApiProblem invalid(HostNames.Problem problem) {
     return new ApiProblem(
         ProblemType.INVALID_REQUEST,
@@ -102,6 +119,7 @@ class DiscoveryHostsController implements DiscoveryHostsApi {
     return new DiscoveryHostEntryDto(
             h.getHost(),
             DiscoveryHostKindDto.fromValue(h.getKind().name()),
+            h.getReadsLists(),
             h.getAddedBy(),
             UtcTimes.odt(h.getAddedAt()))
         .reason(h.getReason());

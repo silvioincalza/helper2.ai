@@ -1,6 +1,7 @@
 package ai.helper2.scout.internal;
 
 import ai.helper2.scout.ListKind;
+import ai.helper2.scout.ListOrigin;
 import ai.helper2.scout.ListReading;
 import ai.helper2.scout.ListSeed;
 import ai.helper2.scout.ListSeedStore;
@@ -24,7 +25,7 @@ import tools.jackson.databind.node.ArrayNode;
 class JdbcListSeedStore implements ListSeedStore {
 
   private static final String COLUMNS =
-      "kind, address, added_by, added_at, reason, read_tried_at, read_failures";
+      "kind, address, added_by, added_at, reason, read_tried_at, read_failures, origin";
 
   private final JdbcClient jdbc;
   private final ObjectMapper json;
@@ -45,8 +46,8 @@ class JdbcListSeedStore implements ListSeedStore {
   public boolean add(ListSeed seed) {
     return jdbc.sql(
                 """
-                INSERT INTO list_seed (kind, address, added_by, added_at, reason)
-                VALUES (:kind, :address, :by, :at, :reason)
+                INSERT INTO list_seed (kind, address, added_by, added_at, reason, origin)
+                VALUES (:kind, :address, :by, :at, :reason, :origin)
                 ON CONFLICT (address) DO NOTHING
                 """)
             .param("kind", seed.getKind().name())
@@ -54,6 +55,7 @@ class JdbcListSeedStore implements ListSeedStore {
             .param("by", seed.getAddedBy())
             .param("at", Timestamp.from(seed.getAddedAt()))
             .param("reason", seed.getReason())
+            .param("origin", seed.getOrigin().name())
             .update()
         == 1;
   }
@@ -194,6 +196,7 @@ class JdbcListSeedStore implements ListSeedStore {
         rs.getTimestamp("added_at").toInstant(),
         rs.getString("reason"),
         tried == null ? null : tried.toInstant(),
-        rs.getInt("read_failures"));
+        rs.getInt("read_failures"),
+        ListOrigin.valueOf(rs.getString("origin")));
   }
 }

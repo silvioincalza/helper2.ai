@@ -926,7 +926,8 @@ paths:
       summary: The hosts discovery knows by name, with who added each and why.
       description: >-
         WRITING hosts publish articles about many products (a post there is an ARTICLE candidate); DIRECTORY hosts
-        list products (a page there is never kept). Discovery reads the lists at the start of each run (ADR 0013).
+        list products (a page there is never kept). A DIRECTORY host with `readsLists` has its list pages read as
+        lists (ADR 0055). Discovery reads the lists at the start of each run (ADR 0013).
       responses:
         "200":
           description: Every host, by kind and name.
@@ -985,12 +986,47 @@ paths:
         "403": { $ref: "./common.yaml#/components/responses/Problem" }
         "404": { $ref: "./common.yaml#/components/responses/Problem" }
 
+  /admin/discovery-hosts/{host}/list-reading:
+    parameters:
+      - {
+          name: host,
+          in: path,
+          required: true,
+          schema: { type: string, maxLength: 260 },
+        }
+    post:
+      tags: [discovery-hosts]
+      operationId: readDirectoryLists
+      summary: Turn the reading of a directory host's list pages on or off.
+      description: >-
+        Off for every host until an administrator turns it on, after checking the host. With the switch on, a list
+        page discovery finds on the host is added as a list to read (ADR 0055); with it off, the page waits for
+        review and the lists discovery added from the host are no longer read. 400 when the host is a WRITING host
+        or the reason is not one plain line; 404 when the host is in no list. Recorded in the audit trail.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DirectoryListReading" }
+      responses:
+        "200":
+          description: The host with its switch; the next discovery run uses it.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DiscoveryHostEntry" }
+        "400": { $ref: "./common.yaml#/components/responses/Problem" }
+        "401": { $ref: "./common.yaml#/components/responses/Problem" }
+        "403": { $ref: "./common.yaml#/components/responses/Problem" }
+        "404": { $ref: "./common.yaml#/components/responses/Problem" }
+
   /admin/list-seeds:
     get:
       tags: [list-seeds]
       operationId: listListSeeds
-      summary: The lists an administrator added for the Scout to read, with who added each and why.
+      summary: The lists the Scout reads on every pass, with who added each and why.
       description: >-
+        An administrator adds a list; discovery adds a list page it finds on a directory host whose lists are read
+        (`origin`, ADR 0055).
         The awesome-list collector reads these GitHub repositories at the start of every pass, before the lists its
         own search finds, whatever their stars and name. It reads an added web page through the live web page reader,
         at most once in the days set by H2_SCOUT_AWESOME_WEB_PAGES_EVERY (ADR 0012).
@@ -2053,10 +2089,15 @@ components:
 
     DiscoveryHostEntry:
       type: object
-      required: [host, kind, addedBy, addedAt]
+      required: [host, kind, readsLists, addedBy, addedAt]
       properties:
         host: { type: string, maxLength: 253 }
         kind: { $ref: "#/components/schemas/DiscoveryHostKind" }
+        readsLists:
+          {
+            type: boolean,
+            description: Whether the list pages of this DIRECTORY host are read as lists; always false for a WRITING host.,
+          }
         addedBy:
           {
             type: string,
@@ -2096,6 +2137,18 @@ components:
             description: "One plain line; a control or format character is a 400.",
           }
 
+    DirectoryListReading:
+      type: object
+      required: [read]
+      properties:
+        read: { type: boolean, description: True to read the host's list pages, false to stop. }
+        reason:
+          {
+            type: [string, "null"],
+            maxLength: 500,
+            description: "One plain line; a control or format character is a 400.",
+          }
+
     DiscoveryHostRemove:
       type: object
       properties:
@@ -2108,16 +2161,26 @@ components:
 
     ListSeedEntry:
       type: object
-      required: [id, kind, address, addedBy, addedAt]
+      required: [id, kind, origin, address, addedBy, addedAt]
       properties:
         id: { type: string, format: uuid, description: The same for the same address; the remove path takes it. }
         kind: { type: string, enum: [GITHUB_REPOSITORY, WEB_PAGE] }
+        origin:
+          type: string
+          enum: [ADMINISTRATOR, DISCOVERY]
+          description: >-
+            ADMINISTRATOR = an administrator added it. DISCOVERY = discovery found the page on a directory host
+            whose lists are read; such a list does not count against `max`.
         address:
           {
             type: string,
             description: 'A GitHub repository as "owner/name" in lower case, or the https address of a web page.',
           }
-        addedBy: { type: string, description: The administrator who added it. }
+        addedBy:
+          {
+            type: string,
+            description: The administrator who added it, or the id of the discovery collector that found it.,
+          }
         addedAt: { type: string, format: date-time }
         reason: { type: [string, "null"] }
 
@@ -2836,7 +2899,7 @@ components:
 
     ReviewEvidence:
       type: object
-      required: [item, validationErrors, fields]
+      required: [item, validationErrors, fields, directoryLists, directoryRatings]
       properties:
         item: { $ref: "#/components/schemas/ReviewItem" }
         run:
@@ -2852,6 +2915,20 @@ components:
           maxItems: 50
           items: { $ref: "#/components/schemas/ReviewField" }
           description: The fields the run stored, CONFLICTING first, then UNVERIFIED, VERIFIED and REJECTED. Empty for a relationship candidate.
+        directoryLists:
+          type: array
+          maxItems: 50
+          items: { $ref: "#/components/schemas/DirectoryList" }
+          description: >-
+            The lists on directory hosts that name the item's resource, by title (ADR 0055). The public page gives
+            only their number. Empty for an item with no resource.
+        directoryRatings:
+          type: array
+          maxItems: 50
+          items: { $ref: "#/components/schemas/DirectoryRatingSource" }
+          description: >-
+            The figures directories state for the item's resource, by host (ADR 0056). The public page gives only
+            the rating made from them and the number of directories. Empty for an item with no resource.
         relationship:
           oneOf:
             [
@@ -2868,6 +2945,30 @@ components:
           description: >-
             Present when the evidence holds AI-written values (ADR 0033): the run's values, and a drafted example's
             `item.draft.label` and `item.draft.query`, also for an item with no run.
+
+    DirectoryRatingSource:
+      type: object
+      required: [host, page, average, scale, votes, readAt]
+      properties:
+        host: { type: string, description: The directory host. }
+        page: { type: string, format: uri, description: The list page or the page of the item that states the figures. }
+        average: { type: number, description: The average as the page states it. }
+        scale: { type: integer, minimum: 5, maximum: 100, description: "The scale the page states for the average: 5, 10 or 100." }
+        votes: { type: integer, minimum: 1, description: "The number of votes, reviews or ratings the page states." }
+        readAt: { type: string, format: date-time, description: When the page was read. }
+
+    DirectoryList:
+      type: object
+      required: [title, page, headingPath]
+      properties:
+        title: { type: string, description: "The list's title in the catalog." }
+        page: { type: string, format: uri, description: The address of the list page on the directory host. }
+        headingPath:
+          {
+            type: string,
+            maxLength: 200,
+            description: The headings above the entry; empty when the entry has none.,
+          }
 
     ReviewRun:
       type: object
@@ -3015,6 +3116,7 @@ components:
                 REMOVE_RESOURCE,
                 ADD_LIST_SEED,
                 REMOVE_LIST_SEED,
+                READ_DIRECTORY_LISTS,
               ],
           }
         targetId:

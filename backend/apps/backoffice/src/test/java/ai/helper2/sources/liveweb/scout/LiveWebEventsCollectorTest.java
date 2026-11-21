@@ -143,7 +143,7 @@ class LiveWebEventsCollectorTest {
         new RunInterval(Duration.ofDays(7)),
         List.of("AI hackathons", "AI conferences and summits"),
         20,
-        new ScoutLiveWebCredits(counter, keys, creditCap, new SimpleMeterRegistry()),
+        new ScoutLiveWebCredits(counter, keys, () -> creditCap, new SimpleMeterRegistry()),
         reader,
         undated,
         SourceFixtures.SHADOW_LIBRARIES);

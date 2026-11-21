@@ -1,0 +1,22 @@
+@startuml Accounts
+left to right direction
+
+actor "Visitor" as visitor
+actor "Signed-in User" as user
+actor "Administrator" as admin
+actor "Identity Provider" as idp
+
+rectangle "Accounts" {
+    usecase "UC-011\nSign In and Manage Account" as UC011
+    usecase "UC-012\nSave Resources" as UC012
+    usecase "UC-013\nReview the Administrator Audit Log" as UC013
+}
+
+visitor --> UC011
+user --> UC011
+UC011 --> idp
+visitor --> UC012
+user --> UC012
+admin --> UC013
+
+@enduml

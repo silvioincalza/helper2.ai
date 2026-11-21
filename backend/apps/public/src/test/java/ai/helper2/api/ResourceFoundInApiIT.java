@@ -1,5 +1,6 @@
 package ai.helper2.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -129,6 +130,104 @@ class ResourceFoundInApiIT extends ApiTestBase {
             .andReturn()
             .getResponse()
             .getContentAsString();
+    ContractValidator.assertMatches("ResourceDetail", body);
+  }
+
+  @Test
+  void uc007Br008AListOnADirectoryHostIsCountedAndNeverNamed() throws Exception {
+    UUID resource = curated("https://deepl.com/translator");
+    UUID curatedList = list("awesome-translation", 1200);
+    String directoryList = "https://directory-" + run + ".example/best-translation-apps";
+    names(curatedList, resource, "Apps");
+    owner
+        .sql(
+            """
+            INSERT INTO directory_list_entry (list_url, resource_id, list_title, heading_path)
+            VALUES (:url, :resource, 'Best translation apps', 'Top 10')
+            """)
+        .param("url", directoryList)
+        .param("resource", resource)
+        .update();
+    try {
+      String body =
+          mvc.perform(get("/api/v1/resources/" + resource))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$.foundIn.lists", hasSize(1)))
+              .andExpect(jsonPath("$.foundIn.lists[0].listId").value(curatedList.toString()))
+              .andExpect(jsonPath("$.foundIn.more").value(0))
+              .andExpect(jsonPath("$.foundIn.directoryLists").value(1))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      assertThat(body).doesNotContain("best-translation-apps", "Best translation apps");
+    } finally {
+      owner
+          .sql("DELETE FROM directory_list_entry WHERE list_url = :url")
+          .param("url", directoryList)
+          .update();
+    }
+  }
+
+  private void rated(UUID resource, String host, double average, int scale, int votes) {
+    owner
+        .sql(
+            """
+            INSERT INTO directory_rating
+                (list_url, resource_id, host, page_url, average, scale, votes, read_at, tried_at)
+            VALUES (:url, :resource, :host, :url, :average, :scale, :votes, now(), now())
+            """)
+        .param("url", "https://" + host + "/best-translation-apps")
+        .param("resource", resource)
+        .param("host", host)
+        .param("average", average)
+        .param("scale", scale)
+        .param("votes", votes)
+        .update();
+  }
+
+  @Test
+  void uc007Br011TheRatingIsOneScoreWithTheNumberOfDirectoriesAndNeverTheirNames()
+      throws Exception {
+    UUID resource = curated("https://deepl.com/translator");
+    String first = "directory-a-" + run + ".example";
+    String second = "directory-b-" + run + ".example";
+    rated(resource, first, 4.0, 5, 100);
+    rated(resource, second, 10.0, 10, 300);
+
+    String body =
+        mvc.perform(get("/api/v1/resources/" + resource))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.rating.score").value(4.7))
+            .andExpect(jsonPath("$.rating.directories").value(2))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    ContractValidator.assertMatches("ResourceDetail", body);
+    assertThat(body).doesNotContain(first, second, "best-translation-apps");
+  }
+
+  @Test
+  void uc007Br011AResourceNoDirectoryRatesHasNoRatingAndNoInventedFigure() throws Exception {
+    UUID resource = curated("https://deepl.com/translator");
+    owner
+        .sql(
+            """
+            INSERT INTO directory_rating (list_url, resource_id, host, page_url, tried_at)
+            VALUES (:url, :resource, 'directory.example', :url, now())
+            """)
+        .param("url", "https://directory-" + run + ".example/tool/deepl")
+        .param("resource", resource)
+        .update();
+
+    String body =
+        mvc.perform(get("/api/v1/resources/" + resource))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.rating").value(org.hamcrest.Matchers.nullValue()))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
     ContractValidator.assertMatches("ResourceDetail", body);
   }
 }

@@ -13,6 +13,7 @@ const entry = (
 ): DiscoveryHostEntry => ({
   host,
   kind,
+  readsLists: false,
   addedBy: 'migration',
   addedAt: '2026-11-06T22:00:00Z',
   reason,
@@ -289,5 +290,62 @@ describe('Feature: an admin manages the hosts discovery knows by name (ADR 0013)
     });
     expect(await screen.findByText('Could not load the discovery hosts.')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /try again/i }).length).toBeGreaterThan(0);
+  });
+
+  it("Scenario: UC-019 BR-007 an admin turns the reading of a directory host's lists on after a review, and off again", async () => {
+    let hosts = SEED;
+    const { api, container } = open({
+      'GET /admin/discovery-hosts': () => hosts,
+      'POST /admin/discovery-hosts/producthunt.com/list-reading': () => {
+        const now = hosts.hosts.find((h) => h.host === 'producthunt.com')!;
+        const saved = { ...now, readsLists: !now.readsLists };
+        hosts = { ...hosts, hosts: hosts.hosts.map((h) => (h === now ? saved : h)) };
+        return saved;
+      },
+    });
+    const user = userEvent.setup();
+    const directories = await screen.findByRole('table', { name: 'Directories (1)' });
+    expect(within(directories).getByText(/its lists are not read/)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('table', { name: 'Writing sites (1)' })).queryByRole('button', {
+        name: /lists of/,
+      }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Read the lists of producthunt.com' }));
+    const review = screen.getByRole('group', { name: 'Read the lists of producthunt.com?' });
+    expect(within(review).getByText(/Check the host first/)).toBeInTheDocument();
+    expect(api.calls.some((c) => c.method === 'POST')).toBe(false);
+    await settle();
+    expect(await axeViolations(container)).toEqual([]);
+    await user.type(
+      within(review).getByRole('textbox', { name: 'Reason (optional)' }),
+      'checked the host',
+    );
+    await user.click(within(review).getByRole('button', { name: 'Read its lists' }));
+
+    expect(
+      await screen.findByText('The lists of producthunt.com are read from the next run.'),
+    ).toBeInTheDocument();
+    expect(api.calls.find((c) => c.method === 'POST')?.body).toEqual({
+      read: true,
+      reason: 'checked the host',
+    });
+    expect(await screen.findByText(/its lists are read/)).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Stop reading the lists of producthunt.com' }),
+    );
+    const stop = screen.getByRole('group', { name: 'Stop reading the lists of producthunt.com?' });
+    expect(within(stop).getByText(/What they already named stays/)).toBeInTheDocument();
+    await user.click(within(stop).getByRole('button', { name: 'Stop reading' }));
+
+    expect(
+      await screen.findByText('The lists of producthunt.com are no longer read.'),
+    ).toBeInTheDocument();
+    expect(api.calls.filter((c) => c.method === 'POST').at(-1)?.body).toEqual({
+      read: false,
+      reason: null,
+    });
   });
 });

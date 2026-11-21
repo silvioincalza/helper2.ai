@@ -83,7 +83,7 @@ class LiveWebNewsCollectorTest {
         resilience,
         new RunInterval(Duration.ofDays(5)),
         queries,
-        new ScoutLiveWebCredits(counter, keys, 40, meters),
+        new ScoutLiveWebCredits(counter, keys, () -> 40L, meters),
         SourceFixtures.SHADOW_LIBRARIES);
   }
 

@@ -1,0 +1,30 @@
+@startuml Search
+left to right direction
+
+actor "Visitor" as visitor
+actor "Administrator" as admin
+actor "Scheduler" as scheduler
+actor "Language Model" as llm
+actor "Embedding Service" as embedder
+actor "Source Provider" as source_provider
+
+rectangle "Search" {
+    usecase "UC-001\nSearch the AI Ecosystem" as UC001
+    usecase "UC-002\nCheck Source Coverage" as UC002
+    usecase "UC-003\nManage Home Examples" as UC003
+    usecase "UC-004\nManage Shadow Libraries" as UC004
+}
+
+visitor --> UC001
+visitor --> UC002
+admin --> UC003
+scheduler --> UC003
+admin --> UC004
+
+UC001 --> source_provider
+UC001 --> embedder
+UC001 --> llm
+UC003 --> llm
+UC003 --> source_provider
+
+@enduml

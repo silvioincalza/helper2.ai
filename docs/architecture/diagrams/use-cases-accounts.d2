@@ -1,0 +1,42 @@
+# Use cases of the Accounts module: its actors and the use cases each one starts or serves.
+# D2 twin of docs/use_cases/accounts/use_cases.puml: that file is the source of truth (AI Unified Process). Change it first,
+# then this file, in the same pull request. Same actors, use cases, entities and relations: nothing added.
+# Render: cd docs/architecture/diagrams && d2 fmt use-cases-accounts.d2 && d2 use-cases-accounts.d2 use-cases-accounts.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+visitor: "Visitor" {class: person}
+user: "Signed-in User" {class: person}
+admin: "Administrator" {class: person}
+idp: "Identity Provider" {class: ext}
+
+module: "Accounts" {
+  class: group
+  UC011: "UC-011\nSign In and Manage Account" {
+    class: app
+    shape: oval
+  }
+  UC012: "UC-012\nSave Resources" {
+    class: app
+    shape: oval
+  }
+  UC013: "UC-013\nReview the Administrator Audit Log" {
+    class: app
+    shape: oval
+  }
+}
+
+visitor -> module.UC011
+user -> module.UC011
+module.UC011 -> idp
+visitor -> module.UC012
+user -> module.UC012
+admin -> module.UC013

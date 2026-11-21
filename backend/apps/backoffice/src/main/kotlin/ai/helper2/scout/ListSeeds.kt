@@ -14,6 +14,15 @@ enum class ListKind {
   WEB_PAGE,
 }
 
+/**
+ * Who added a list to read: an administrator, or discovery on a directory host whose lists are
+ * read.
+ */
+enum class ListOrigin {
+  ADMINISTRATOR,
+  DISCOVERY,
+}
+
 data class ListSeed
 @JvmOverloads
 constructor(
@@ -24,6 +33,7 @@ constructor(
   val reason: String?,
   val readTriedAt: Instant? = null,
   val readFailures: Int = 0,
+  val origin: ListOrigin = ListOrigin.ADMINISTRATOR,
 ) {
   val id: UUID
     get() = ListAddresses.idOf(address)
@@ -69,6 +79,18 @@ interface ListSeedStore {
   fun readSucceeded(address: String, reading: ListReading)
 
   fun lastReads(): Map<String, ListReading>
+}
+
+/** Where discovery hands a list page it found on a directory host whose lists are read. */
+fun interface DiscoveredLists {
+
+  enum class Outcome {
+    ADDED,
+    ALREADY_ADDED,
+    WAITS_FOR_REVIEW,
+  }
+
+  fun add(page: CanonicalUrl, foundBy: String): Outcome
 }
 
 class HostsNeverRead(reasons: Map<String, String>) {

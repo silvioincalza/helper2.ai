@@ -1,0 +1,75 @@
+# Infrastructure, the workloads: what runs in the namespace helper2-prod, how each workload is sized and
+# rolled out, which ports it serves, and what the per-workload network policies let it accept and reach
+# (ingress and egress are denied by default; ADR 0043), the one embedder that production and staging share
+# (ADR 0054), and what differs on staging.
+# Not here: passwords (infrastructure-secrets.d2), images and the canary (infrastructure-delivery.d2),
+# backups and monitoring (infrastructure-data.d2).
+# Source of truth: deploy/helm/helper2/values.yaml, values-prod.yaml, values-staging.yaml,
+#   templates/app.yaml, web.yaml, backoffice.yaml, embedder.yaml, postgres.yaml, redis.yaml, migrate.yaml,
+#   networkpolicy.yaml, serviceaccount.yaml; the platform repo outside this repo (ingress-nginx, the Ingresses).
+# Render: cd docs/architecture/diagrams && d2 fmt infrastructure-workloads.d2 && d2 infrastructure-workloads.d2 infrastructure-workloads.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+nginx: "ingress-nginx (ns ingress-nginx)\nIngress helper2-public: the public app's addresses → Service helper2,\nthe rest → Service helper2-web\nIngress helper2-admin → Service helper2-admin (private ranges only)" {class: app}
+
+prod: "ns helper2-prod · ingress + egress default-deny · one policy per workload\nServiceAccount helper2: no RBAC, no token" {
+  class: group
+
+  front: "SERVE REQUESTS" {
+    class: group
+    web: "helper2-web Deployment (nginx) · 2 pods\nPDB minAvailable 1 · read-only root, user 101\n:8080 the web app's files (Service helper2-web)\n:8081 /healthz (in no Service)\nno egress" {class: app}
+    java: "egress: DNS, Postgres, Redis, Alloy, and TCP 443 outside" {
+      class: group
+      app: "helper2 Deployment (public app) · 3 pods\nRollingUpdate: maxSurge 1, maxUnavailable 0\nPDB minAvailable 2 · spread by node\nJava 25 JRE, heap 60% of 1Gi\n:8080 site + /api/v1 (Service helper2)\n:8081 Actuator (in no Service)\nschema check only" {class: app}
+      bo: "helper2-backoffice Deployment · 1 pod\nadmin API + admin web app, Scout, catalog jobs\n:8080 (Service helper2-admin)\n:8081 Actuator (in no Service)\nschema check only" {class: app}
+    }
+  }
+
+  stores: STORES {
+    class: group
+    postgres: "postgres StatefulSet\nPostgreSQL 18.6 + pgvector 0.8.6\nPVC 5Gi local-path" {
+      shape: cylinder
+      class: data
+    }
+    redis: "redis StatefulSet · Redis 8.10.2\nAOF everysec, no RDB · 128mb LRU\nlimit 448Mi (3.5× maxmemory: fork + page cache)\nPVC 1Gi local-path\ncache, sessions, rate limits" {
+      shape: cylinder
+      class: data
+    }
+  }
+
+  embedder: "helper2-embedder Deployment · 1 pod (ADR 0054)\nnvidia/nemotron-3.5-embed-1b on CPU, weights in the image\nrequests 1 CPU, 6Gi · limit 8Gi · read-only root, user 10001\n:8080 /v1/embeddings (Service helper2-embedder, ClusterIP)\nin: the public app and the back office of prod,\nand of staging with its canary · no egress, no Ingress" {class: ai}
+
+  migrate: "helper2-migrate-<revision> Job\npublic image `migrate`: Flyway as the owner,\nthen the roles' logins · once per release" {class: app}
+
+  front.java -> stores.postgres: "JDBC :5432\n(the public app: data + shedlock locks)"
+  front.java -> stores.redis: ":6379\n(the back office: own session namespace)"
+  migrate -> stores.postgres: "JDBC :5432"
+  front.java -> embedder: "embeddings :8080\n(queries; the indexer every 3 s,\nstaging's every minute)" {class: ai-call}
+}
+
+staging: "ns helper2-staging · what differs from prod" {
+  class: group
+  sizes: "1 web pod, 1 public pod, 1 back office pod\nno disruption budget · no backup\nstaging host, noindex\nno embedder of its own" {class: app}
+}
+
+outside: "INTERNET · app egress TCP 443 only (private ranges excluded)" {
+  class: group
+  nebius: "Nebius Token Factory · NVIDIA Nemotron\nthe public app: chat completions\nthe back office: enrichment" {class: ai}
+  sources: "Public sources\nGitHub · Hugging Face · npm · arXiv\nTavily · MCP Registry\nthe public app: search\nthe back office: Scout + admin search" {class: ext}
+}
+
+nginx -> prod.front.web: ":8080 (files: /assets/, /theme.js,\n/favicon.svg, /favicon.ico; else 404)" {class: hot}
+nginx -> prod.front.java.app: ":8080\n(only allowed caller)" {class: hot}
+nginx -> prod.front.java.bo: ":8080 (admin hosts)"
+nginx -> staging.sizes: ":8080"
+staging.sizes -> prod.embedder: "embeddings :8080\n(staging's apps only)" {class: ai-call}
+prod.front.java -> outside: "TCP 443" {class: ai-call}

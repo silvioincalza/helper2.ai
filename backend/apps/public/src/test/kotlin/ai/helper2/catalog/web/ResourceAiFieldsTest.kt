@@ -128,6 +128,9 @@ class ResourceAiFieldsTest {
           "enrichmentStatus",
           "foundIn.lists[].listId",
           "foundIn.more",
+          "foundIn.directoryLists",
+          "rating.score",
+          "rating.directories",
           "aiContent.aiGenerated",
           "aiContent.provider",
           "aiContent.models[]",
@@ -289,6 +292,7 @@ class ResourceAiFieldsTest {
       emptyList(),
       "NOT_RUN",
       ResourceDetail.FoundIn.NO_LIST,
+      null,
     )
 
   private fun card(

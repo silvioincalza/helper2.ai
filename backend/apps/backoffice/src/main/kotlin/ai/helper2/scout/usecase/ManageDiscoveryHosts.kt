@@ -43,6 +43,16 @@ class ManageDiscoveryHosts(
     data object BadReason : Removed
   }
 
+  sealed interface ListReading {
+    data class Done(val host: DiscoveryHost) : ListReading
+
+    data class NotADirectory(val host: DiscoveryHost) : ListReading
+
+    data object NotFound : ListReading
+
+    data object BadReason : ListReading
+  }
+
   fun list(): List<DiscoveryHost> = store.all()
 
   fun add(adminId: String, rawHost: String?, kind: HostKind, reason: String?): Added {
@@ -81,6 +91,42 @@ class ManageDiscoveryHosts(
       outcome
     }
   }
+
+  /** Turns the reading of a directory host's list pages on or off. */
+  fun readLists(adminId: String, rawHost: String?, on: Boolean, reason: String?): ListReading {
+    val note = clean(reason) ?: return ListReading.BadReason
+    val host = (HostNames.check(rawHost) as? HostNames.Checked.Valid)?.host ?: rawHost.orEmpty()
+    return unitOfWork.run {
+      val listed = store.all().firstOrNull { it.host == host }
+      val outcome = switched(listed, on)
+      audit.record(
+        adminId,
+        AuditTrail.Action.READ_DIRECTORY_LISTS,
+        host.take(HostNames.MAX_LENGTH),
+        recorded(outcome),
+        AuditTrail.Change(listed?.readsLists?.let(::switch), switch(on), note.text),
+      )
+      outcome
+    }
+  }
+
+  // UC-019 BR-007: only a directory host has the switch.
+  private fun switched(listed: DiscoveryHost?, on: Boolean): ListReading =
+    when {
+      listed == null -> ListReading.NotFound
+      listed.kind != HostKind.DIRECTORY -> ListReading.NotADirectory(listed)
+      else -> store.readLists(listed.host, on)?.let { ListReading.Done(it) } ?: ListReading.NotFound
+    }
+
+  private fun switch(on: Boolean): String = if (on) "ON" else "OFF"
+
+  private fun recorded(outcome: ListReading): String =
+    when (outcome) {
+      is ListReading.Done -> if (outcome.host.readsLists) "ON" else "OFF"
+      is ListReading.NotADirectory -> "NOT_A_DIRECTORY"
+      ListReading.NotFound -> "NOT_FOUND"
+      ListReading.BadReason -> "BAD_REASON"
+    }
 
   private fun tryAdd(adminId: String, host: String, kind: HostKind, reason: String?): Added {
     val all = store.all()

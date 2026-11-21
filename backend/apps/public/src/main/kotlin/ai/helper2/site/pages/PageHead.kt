@@ -1,5 +1,6 @@
 package ai.helper2.site.pages
 
+import ai.helper2.catalog.DirectoryRating
 import ai.helper2.catalog.IndexRule
 import ai.helper2.shared.Pricing
 import ai.helper2.shared.ResourceType
@@ -63,6 +64,7 @@ data class ResourceView(
   val sources: List<Link>,
   val related: List<Related>,
   val foundIn: List<Related> = emptyList(),
+  val rating: DirectoryRating? = null,
 ) {
   val sourceDescription: String?
     get() =

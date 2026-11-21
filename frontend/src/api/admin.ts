@@ -234,6 +234,12 @@ export const adminApi = {
     request<void>('POST', `/admin/discovery-hosts/${encodeURIComponent(host)}/remove`, {
       body: { reason },
     }),
+  readDirectoryLists: (host: string, read: boolean, reason: string | null) =>
+    request<DiscoveryHostEntry>(
+      'POST',
+      `/admin/discovery-hosts/${encodeURIComponent(host)}/list-reading`,
+      { body: { read, reason } },
+    ),
   listListSeeds: (signal?: AbortSignal) =>
     request<ListSeeds>('GET', '/admin/list-seeds', { signal }),
   addListSeed: (body: { address: string; reason: string | null }) =>

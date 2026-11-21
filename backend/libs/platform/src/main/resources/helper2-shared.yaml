@@ -289,6 +289,8 @@ helper2:
     translation:
       daily-calls: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
       ttl: ${H2_SEARCH_TRANSLATION_TTL:24h}
+    ranking:
+      rating-weight: ${H2_SEARCH_RANKING_RATING_WEIGHT:0}
   rate-limit:
     search-per-minute: ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:120}
     report-per-hour: ${H2_RATE_LIMIT_REPORT_PER_HOUR:20}
@@ -308,7 +310,7 @@ helper2:
     evidence:
       page-read-ttl: ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}
       page-text-ttl: ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}
-    daily-credits: ${H2_SCOUT_DAILY_CREDITS:40}
+    daily-credits: ${H2_SCOUT_DAILY_CREDITS:1000}
     admission:
       github-topic-leaders:
         index-min-stars: ${H2_SCOUT_TOPIC_LEADERS_INDEX_MIN_STARS:1000}
@@ -379,6 +381,9 @@ helper2:
         never-read: >-
           ${H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ:coursera.org=its terms forbid automated reading without written
           consent}
+        max-discovered: ${H2_SCOUT_AWESOME_WEB_PAGES_MAX_DISCOVERED:100}
+        discovered-reads-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_DISCOVERED_READS_PER_DAY:10}
+        item-page-reads-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_ITEM_PAGE_READS_PER_DAY:100}
     ai-deadlines:
       interval: ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}
     confs-tech:
@@ -703,7 +708,6 @@ helper2:
   retention:
     cron: ${H2_RETENTION_CRON:0 17 3 * * *}
     observed-unseen: ${H2_RETENTION_OBSERVED_UNSEEN:P180D}
-    list-index: ${H2_RETENTION_LIST_INDEX:P30D}
     enrichment-runs: ${H2_RETENTION_ENRICHMENT_RUNS:P90D}
     resolved-review-items: ${H2_RETENTION_RESOLVED_REVIEW_ITEMS:P180D}
     resolved-issue-reports: ${H2_RETENTION_RESOLVED_ISSUE_REPORTS:P365D}

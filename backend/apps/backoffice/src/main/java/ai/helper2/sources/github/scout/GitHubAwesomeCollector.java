@@ -1,10 +1,12 @@
 package ai.helper2.sources.github.scout;
 
+import ai.helper2.catalog.DirectoryRatingIndex;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.scout.DiscoveryHostStore;
+import ai.helper2.scout.HostLists;
 import ai.helper2.scout.ListEntryText;
 import ai.helper2.scout.ListKind;
 import ai.helper2.scout.ListSeed;
@@ -129,6 +131,7 @@ public class GitHubAwesomeCollector implements Collector {
   private final AwesomeMetrics metrics;
   private final ListReader readmes;
   private final WebPageLists webPages;
+  private final DirectoryRatingReader ratings;
 
   public GitHubAwesomeCollector(
       SourceSettings settings,
@@ -182,6 +185,45 @@ public class GitHubAwesomeCollector implements Collector {
       ShadowLibraries shadowLibraries,
       LinkRules linkRules,
       WebPageLists webPages) {
+    this(
+        settings,
+        builder,
+        clock,
+        resilience,
+        interval,
+        topicQueries,
+        limits,
+        deep,
+        classifier,
+        categories,
+        meters,
+        hosts,
+        addedLists,
+        shadowLibraries,
+        linkRules,
+        webPages,
+        DirectoryRatingReader.listPagesOnly(meters, clock));
+  }
+
+  public GitHubAwesomeCollector(
+      SourceSettings settings,
+      RestClient.Builder builder,
+      Clock clock,
+      Resilience resilience,
+      RunInterval interval,
+      List<String> topicQueries,
+      Limits limits,
+      Deep deep,
+      RepoClassifier classifier,
+      CategoryMatcher categories,
+      MeterRegistry meters,
+      DiscoveryHostStore hosts,
+      ListSeedStore addedLists,
+      ShadowLibraries shadowLibraries,
+      LinkRules linkRules,
+      WebPageLists webPages,
+      DirectoryRatingReader ratings) {
+    this.ratings = ratings;
     this.clock = clock;
     this.resilience = resilience;
     if (settings.enabled()) {
@@ -239,8 +281,9 @@ public class GitHubAwesomeCollector implements Collector {
     if (!interval.allowsPass(cursor.getCheckpoint(), cursor.getResumeCursor(), startedAt)) {
       return CollectedBatch.notDue();
     }
-    DiscoveryPages pages = new DiscoveryPages(hosts.lists());
-    Pass pass = read(addedLists(), discoverListRepos());
+    HostLists hostLists = hosts.lists();
+    DiscoveryPages pages = new DiscoveryPages(hostLists);
+    Pass pass = read(addedLists(), discoverListRepos(), hostLists);
     List<AwesomeListParser.Entry> all =
         pass.entries().stream().sorted(Comparator.comparing(GitHubAwesomeCollector::key)).toList();
     int offset = firstAfter(all, resumeKey(cursor.getOwnResume()));
@@ -254,7 +297,7 @@ public class GitHubAwesomeCollector implements Collector {
           null,
           startedAt,
           links.candidates(),
-          searchTexts(pass.crawl(), links.listedAs()),
+          searchTexts(pass, links.listedAs(), pages, hostLists),
           List.of());
     }
     int end =
@@ -280,7 +323,7 @@ public class GitHubAwesomeCollector implements Collector {
         end < all.size() ? RESUME_AFTER + key(all.get(end - 1)) : null,
         startedAt,
         links.candidates(),
-        searchTexts(pass.crawl(), links.listedAs()),
+        searchTexts(pass, links.listedAs(), pages, hostLists),
         withdrawn);
   }
 
@@ -358,7 +401,8 @@ public class GitHubAwesomeCollector implements Collector {
     return discoverListRepos().stream().map(ListRepo::fullName).toList();
   }
 
-  record WebPage(String address, String title) {}
+  record WebPage(
+      String address, String title, boolean directory, Instant readAt, boolean readInThisPass) {}
 
   record ListRepo(String fullName, JsonNode facts, @Nullable WebPage page) {
 
@@ -366,8 +410,12 @@ public class GitHubAwesomeCollector implements Collector {
       this(fullName, facts, null);
     }
 
-    static ListRepo webPage(CanonicalUrl url, String address, String title) {
-      return new ListRepo(url.getValue(), MissingNode.getInstance(), new WebPage(address, title));
+    static ListRepo webPage(CanonicalUrl url, WebPage page) {
+      return new ListRepo(url.getValue(), MissingNode.getInstance(), page);
+    }
+
+    boolean isOnADirectoryHost() {
+      return page != null && page.directory();
     }
 
     @Nullable CanonicalUrl url() {
@@ -440,13 +488,13 @@ public class GitHubAwesomeCollector implements Collector {
 
   private static final String GITHUB = "https://github.com/";
 
-  private Pass read(List<String> added, List<ListRepo> seeds) {
+  private Pass read(List<String> added, List<ListRepo> seeds, HostLists hostLists) {
     AwesomeCrawl.Limits crawlLimits = crawlLimits();
     ReadmeBudget budget = AwesomeCrawl.budget(crawlLimits, clock);
     List<AwesomeCrawl.Read> crawl =
         AwesomeCrawl.crawl(
             added,
-            webPages.read(budget, metrics),
+            webPages.read(hostLists, budget, metrics),
             seeds,
             gitHubLists(),
             crawlLimits,
@@ -511,7 +559,10 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   private record ModelLink(
-      ListEntryLinks.Model model, AwesomeListParser.Link link, CanonicalUrl list) {}
+      ListEntryLinks.Model model, AwesomeListParser.Link link, NamingList list) {}
+
+  /** The list a link was found in; a list page of a directory host carries its title. */
+  private record NamingList(CanonicalUrl url, @Nullable String directoryListTitle) {}
 
   private RoutedLinks links(Pass pass, DiscoveryPages pages, Instant now) {
     Map<String, Candidate> found = new LinkedHashMap<>();
@@ -519,10 +570,11 @@ public class GitHubAwesomeCollector implements Collector {
     Map<String, String> papers = new LinkedHashMap<>();
     Map<String, String> packages = new LinkedHashMap<>();
     for (AwesomeCrawl.Read r : pass.crawl()) {
-      CanonicalUrl list = r.list().url();
-      if (list == null) {
+      CanonicalUrl listUrl = r.list().url();
+      if (listUrl == null) {
         continue;
       }
+      NamingList list = new NamingList(listUrl, directoryListTitle(r.list()));
       for (AwesomeListParser.Link link : r.parsed().links()) {
         switch (entryLinks.route(link, pages)) {
           case ListEntryLinks.Skipped skipped -> metrics.skipped("link-" + skipped.reason());
@@ -535,6 +587,8 @@ public class GitHubAwesomeCollector implements Collector {
           case ListEntryLinks.Course course -> propose(found, courseCandidate(course, link, list));
           case ListEntryLinks.Product product ->
               propose(found, candidate(product.site(), link, list, ResourceType.PRODUCT));
+          case ListEntryLinks.Article article ->
+              propose(found, candidate(article.page(), link, list, ResourceType.ARTICLE));
         }
       }
     }
@@ -698,7 +752,7 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   private Candidate courseCandidate(
-      ListEntryLinks.Course course, AwesomeListParser.Link link, CanonicalUrl list) {
+      ListEntryLinks.Course course, AwesomeListParser.Link link, NamingList list) {
     String title =
         WebPageTitle.of(ListEntryLinks.title(link, course.page()), course.page().getHost())
             .getTitle();
@@ -712,15 +766,24 @@ public class GitHubAwesomeCollector implements Collector {
         Map.of(FOUND_IN, foundIn(link, list)));
   }
 
-  private static Map<String, Object> foundIn(AwesomeListParser.Link link, CanonicalUrl list) {
+  // UC-030 BR-008: a candidate keeps the list that named it, so that the list names it once
+  // accepted.
+  private static Map<String, Object> foundIn(AwesomeListParser.Link link, NamingList list) {
     Map<String, Object> awesome = new LinkedHashMap<>();
-    awesome.put("list", list.getValue());
+    awesome.put("list", list.url().getValue());
     awesome.put("section", link.headingPath());
+    if (list.directoryListTitle() != null) {
+      awesome.put("directoryList", list.directoryListTitle());
+    }
     return awesome;
   }
 
+  private static @Nullable String directoryListTitle(ListRepo list) {
+    return list.isOnADirectoryHost() ? list.page().title() : null;
+  }
+
   private Candidate candidate(
-      CanonicalUrl site, AwesomeListParser.Link link, CanonicalUrl list, ResourceType type) {
+      CanonicalUrl site, AwesomeListParser.Link link, NamingList list, ResourceType type) {
     String title =
         type == ResourceType.MODEL ? site.getHuggingFaceModel() : ListEntryLinks.title(link, site);
     Set<String> tags =
@@ -745,20 +808,108 @@ public class GitHubAwesomeCollector implements Collector {
   static final String FOUND_IN = "awesome";
 
   private List<ListText> searchTexts(
-      List<AwesomeCrawl.Read> crawl, Map<String, CanonicalUrl> listedAs) {
+      Pass pass, Map<String, CanonicalUrl> listedAs, DiscoveryPages pages, HostLists hostLists) {
     List<ListText> texts = new ArrayList<>();
-    for (AwesomeCrawl.Read r : crawl) {
+    List<DirectoryRatingReader.DirectoryList> directoryLists = new ArrayList<>();
+    for (AwesomeCrawl.Read r : pass.crawl()) {
       CanonicalUrl url = r.list().url();
-      if (url != null) {
-        texts.add(
-            new ListText(url, r.parsed().headingsText(), searchEntries(r.parsed(), listedAs)));
+      if (url == null) {
+        continue;
+      }
+      List<ListEntryText> entries = searchEntries(r.parsed(), listedAs, pages);
+      texts.add(
+          new ListText(url, r.parsed().headingsText(), entries, directoryListTitle(r.list())));
+      if (r.list().isOnADirectoryHost()) {
+        directoryLists.add(
+            directoryList(url, r, entries, ratedEntries(r.parsed(), listedAs, pages, url)));
       }
     }
-    return texts;
+    // UC-030 BR-010: the rating a directory states travels with what its list names.
+    Map<CanonicalUrl, DirectoryRatingIndex.ListRatings> ratingsOf = new HashMap<>();
+    ratings
+        .read(directoryLists, hostLists, pass.readmeBudget())
+        .forEach(rated -> ratingsOf.put(rated.list(), rated));
+    return texts.stream()
+        .map(text -> ratingsOf.containsKey(text.getUrl()) ? withRatings(text, ratingsOf) : text)
+        .toList();
+  }
+
+  private static ListText withRatings(
+      ListText text, Map<CanonicalUrl, DirectoryRatingIndex.ListRatings> ratingsOf) {
+    return new ListText(
+        text.getUrl(),
+        text.getHeadings(),
+        text.getEntries(),
+        text.getDirectoryListTitle(),
+        ratingsOf.get(text.getUrl()));
+  }
+
+  private static DirectoryRatingReader.DirectoryList directoryList(
+      CanonicalUrl url,
+      AwesomeCrawl.Read read,
+      List<ListEntryText> entries,
+      List<DirectoryRatingReader.Entry> rated) {
+    Set<CanonicalUrl> named = new LinkedHashSet<>();
+    entries.forEach(entry -> named.add(entry.getUrl()));
+    rated.forEach(entry -> named.add(entry.resource()));
+    WebPage page = read.list().page();
+    return new DirectoryRatingReader.DirectoryList(
+        url, page.readAt(), page.readInThisPass(), List.copyOf(named), rated);
+  }
+
+  /**
+   * UC-030 BR-010: the entries of a list that name exactly one resource, each with its text and,
+   * when the entry links to exactly one page of the same directory, that page of the item.
+   */
+  private List<DirectoryRatingReader.Entry> ratedEntries(
+      AwesomeListParser.Parsed parsed,
+      Map<String, CanonicalUrl> listedAs,
+      DiscoveryPages pages,
+      CanonicalUrl list) {
+    Map<String, Set<CanonicalUrl>> resources = new LinkedHashMap<>();
+    Map<String, Set<CanonicalUrl>> itemPages = new HashMap<>();
+    for (AwesomeListParser.Entry e : parsed.entries()) {
+      CanonicalUrl repository = CanonicalUrl.of(GITHUB + e.fullName());
+      if (repository != null && !e.text().isBlank()) {
+        resources.computeIfAbsent(e.text(), text -> new LinkedHashSet<>()).add(repository);
+      }
+    }
+    for (AwesomeListParser.Link link : parsed.links()) {
+      if (link.entryText().isBlank()) {
+        continue;
+      }
+      CanonicalUrl named = namedPage(link, listedAs, pages);
+      CanonicalUrl itemPage = named == null ? entryLinks.directoryItemPage(link, list) : null;
+      if (named != null) {
+        resources.computeIfAbsent(link.entryText(), text -> new LinkedHashSet<>()).add(named);
+      } else if (itemPage != null) {
+        itemPages.computeIfAbsent(link.entryText(), text -> new LinkedHashSet<>()).add(itemPage);
+      }
+    }
+    List<DirectoryRatingReader.Entry> rated = new ArrayList<>();
+    resources.forEach((text, named) -> {
+      Set<CanonicalUrl> ofTheItem = itemPages.getOrDefault(text, Set.of());
+      if (named.size() == 1) {
+        rated.add(
+            new DirectoryRatingReader.Entry(
+                named.iterator().next(),
+                text,
+                ofTheItem.size() == 1 ? ofTheItem.iterator().next() : null));
+      }
+    });
+    return rated;
+  }
+
+  private @Nullable CanonicalUrl namedPage(
+      AwesomeListParser.Link link, Map<String, CanonicalUrl> listedAs, DiscoveryPages pages) {
+    CanonicalUrl confirmed = entryLinks.confirmablePage(link);
+    return confirmed == null
+        ? entryLinks.reviewedPage(link, pages)
+        : listedAs.getOrDefault(confirmed.getValue(), confirmed);
   }
 
   private List<ListEntryText> searchEntries(
-      AwesomeListParser.Parsed parsed, Map<String, CanonicalUrl> listedAs) {
+      AwesomeListParser.Parsed parsed, Map<String, CanonicalUrl> listedAs, DiscoveryPages pages) {
     AwesomeListParser.SearchBudget budget =
         new AwesomeListParser.SearchBudget(limits.maxEntriesPerPass(), MAX_LIST_TEXT_BYTES);
     List<ListEntryText> entries = new ArrayList<>();
@@ -775,12 +926,24 @@ public class GitHubAwesomeCollector implements Collector {
         entries.add(new ListEntryText(resource, link.entryText(), link.headingPath()));
       }
     }
+    // UC-030 BR-008: a list names the product, the course and the article its links point to;
+    // they come after the pages a source confirms, so they never take their place in the budget.
+    for (AwesomeListParser.Link link : parsed.links()) {
+      CanonicalUrl reviewed = entryLinks.reviewedPage(link, pages);
+      if (reviewed != null && budget.keeps(link.entryText(), link.headingPath())) {
+        entries.add(new ListEntryText(reviewed, link.entryText(), link.headingPath()));
+      }
+    }
     return entries;
   }
 
   private static List<SourceHit> listHits(List<AwesomeCrawl.Read> lists, Instant now) {
     List<SourceHit> hits = new ArrayList<>();
     for (AwesomeCrawl.Read read : lists) {
+      // UC-030 BR-009: a list page of a directory host is never a resource of the catalog.
+      if (read.list().isOnADirectoryHost()) {
+        continue;
+      }
       SourceHit hit =
           read.list().page() == null
               ? listHit(read.list(), typeOfRepository(read), now)

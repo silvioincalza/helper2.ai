@@ -83,6 +83,26 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcGoneLists jdbcGoneLists(JdbcClient jdbc) {
+    return new JdbcGoneLists(jdbc);
+  }
+
+  @Bean
+  JdbcDirectoryListIndex jdbcDirectoryListIndex(JdbcClient jdbc, ObjectMapper json) {
+    return new JdbcDirectoryListIndex(jdbc, json);
+  }
+
+  @Bean
+  JdbcListNamings jdbcListNamings(JdbcClient jdbc) {
+    return new JdbcListNamings(jdbc);
+  }
+
+  @Bean
+  JdbcDirectoryRatingIndex jdbcDirectoryRatingIndex(JdbcClient jdbc, ObjectMapper json) {
+    return new JdbcDirectoryRatingIndex(jdbc, json);
+  }
+
+  @Bean
   JdbcReviewEvidence jdbcReviewEvidence(JdbcClient jdbc) {
     return new JdbcReviewEvidence(jdbc);
   }

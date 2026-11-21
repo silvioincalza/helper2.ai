@@ -103,7 +103,8 @@ public class RenderPage {
         aiRead ? null : card.getLocation(),
         card.getSources().stream().map(s -> new Link(s.getSourceName(), s.getUrl())).toList(),
         related(detail.relationships()),
-        lists(detail.foundIn()));
+        lists(detail.foundIn()),
+        detail.rating());
   }
 
   private static List<Related> lists(ResourceDetail.FoundIn foundIn) {

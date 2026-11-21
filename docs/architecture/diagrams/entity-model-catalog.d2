@@ -1,0 +1,104 @@
+# Entity model of the catalog module: its entities and the relationships between them, no attributes.
+# D2 twin of docs/entity_model/catalog.md: that file is the source of truth (AI Unified Process). Change it first,
+# then this file, in the same pull request. Same actors, use cases, entities and relations: nothing added.
+# Render: cd docs/architecture/diagrams && d2 fmt entity-model-catalog.d2 && d2 entity-model-catalog.d2 entity-model-catalog.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+SOURCE: {class: data}
+RESOURCE: {class: data}
+RESOURCE_LABEL: {class: data}
+SOURCE_RECORD: {class: data}
+EVIDENCE: {class: data}
+RELATIONSHIP: {class: data}
+ENRICHMENT_RUN: {class: data}
+RELATIONSHIP_EVIDENCE: {class: data}
+AWESOME_LIST: {class: data}
+AWESOME_LIST_ENTRY: {class: data}
+DIRECTORY_LIST_ENTRY: {class: data}
+DIRECTORY_RATING: {class: data}
+KNOWN_TARGET: {class: data}
+KNOWN_TARGET_NAME: {class: data}
+ISSUE_REPORT: {class: data}
+REMOVED_RESOURCE: {class: data}
+
+SOURCE <-> RESOURCE: "states the publication date of" {
+  source-arrowhead.shape: cf-one
+  target-arrowhead.shape: cf-many
+}
+SOURCE <-> RESOURCE: "states the update date of" {
+  source-arrowhead.shape: cf-one
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> RESOURCE_LABEL: "is labelled by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+SOURCE <-> SOURCE_RECORD: "provides" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> SOURCE_RECORD: "is listed by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+SOURCE_RECORD <-> EVIDENCE: "is quoted by" {
+  source-arrowhead.shape: cf-one
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> RELATIONSHIP: "relates from" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> RELATIONSHIP: "is the target of" {
+  source-arrowhead.shape: cf-one
+  target-arrowhead.shape: cf-many
+}
+ENRICHMENT_RUN <-> RELATIONSHIP: "found" {
+  source-arrowhead.shape: cf-one
+  target-arrowhead.shape: cf-many
+}
+RELATIONSHIP <-> RELATIONSHIP_EVIDENCE: "is supported by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+EVIDENCE <-> RELATIONSHIP_EVIDENCE: "supports" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> AWESOME_LIST: "is indexed as" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-one
+}
+RESOURCE <-> AWESOME_LIST_ENTRY: "lists as a list" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> AWESOME_LIST_ENTRY: "is listed in" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> DIRECTORY_LIST_ENTRY: "is named by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> DIRECTORY_RATING: "is rated by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+KNOWN_TARGET <-> KNOWN_TARGET_NAME: "is meant by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> ISSUE_REPORT: "is reported by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}

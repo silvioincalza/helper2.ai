@@ -71,7 +71,8 @@ class PageHtmlTest {
             new Link(HOSTILE, URI.create("https://github.com/acme/x")),
             new Link("bad", URI.create("javascript:alert(1)"))),
         List.of(new Related(UUID.randomUUID(), HOSTILE)),
-        List.of(new Related(LIST_ID, HOSTILE)));
+        List.of(new Related(LIST_ID, HOSTILE)),
+        null);
   }
 
   @Test

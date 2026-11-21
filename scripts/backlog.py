@@ -29,6 +29,7 @@ PRIVATE_TITLE = "Tracked privately ({})"
 PRIVATE_BODY = "Tracked privately ({}). The text is not in this public repository."
 ATTRIBUTION = ("Co-Authored-By", "Generated with")
 ROADMAP_PAGE = "docs/roadmap.md"
+DOCS_BRANCH = "main"
 IMPORT_LOCK_WAIT = 600.0
 GH_ATTEMPTS = 5
 THROTTLED = ("rate limit", "secondary", "unknown owner type")
@@ -493,19 +494,39 @@ def problems(doc: dict) -> list[str]:
     ]
 
 
+def missing_docs(doc: dict, root: str) -> list[str]:
+    top = os.path.realpath(root)
+    found = []
+    for x in entries(doc):
+        for link in x.get("docs", []):
+            path = os.path.realpath(os.path.join(top, link.split("#")[0]))
+            inside = not os.path.isabs(link) and os.path.commonpath([top, path]) == top
+            if not (inside and os.path.isfile(path)):
+                found.append(f"{x['id']} links {link}, which is not a file of the repository")
+    return found
+
+
+def docs_of(x: dict, repo: str) -> list[str]:
+    if not x.get("docs"):
+        return []
+    links = [f"- [{link}](https://github.com/{repo}/blob/{DOCS_BRANCH}/{link})" for link in x["docs"]]
+    return ["### Docs", *links, ""]
+
+
 def title_of(x: dict) -> str:
     name = PRIVATE_TITLE.format(x["private"]) if x.get("private") else x["title"]
     return f"{x['id']} {name}"
 
 
-def body_of(x: dict, slices: dict) -> str:
+def body_of(x: dict, slices: dict, repo: str) -> str:
     marker = f"<!-- backlog:{x['id']} -->"
     if x.get("private"):
         return f"{PRIVATE_BODY.format(x['private'])}\n\n{marker}"
+    docs = "\n".join(docs_of(x, repo) + [""]) if x.get("docs") else ""
     if x["kind"] == "epic":
-        return f"Epic. Context: **{x['context']}**.\n\n{marker}"
+        return f"Epic. Context: **{x['context']}**.\n\n{docs}{marker}"
     if x["kind"] == "feature":
-        return f"Feature of {x['parent']}.\n\nSource: {x['source']}\n\n{marker}"
+        return f"Feature of {x['parent']}.\n\nSource: {x['source']}\n\n{docs}{marker}"
     lines = [x["story"], ""]
     if x.get("criteria"):
         lines += ["### Acceptance criteria", x["criteria"], ""]
@@ -517,6 +538,7 @@ def body_of(x: dict, slices: dict) -> str:
             "That pull request closes this issue.",
             "",
         ]
+    lines += docs_of(x, repo)
     return "\n".join(lines) + marker
 
 
@@ -539,9 +561,10 @@ def same(current, value) -> bool:
 
 
 class Import:
-    def __init__(self, doc: dict, github):
+    def __init__(self, doc: dict, github, root: str | None = None):
         self.doc = doc
         self.github = github
+        self.root = root
         self.repo = doc["repo"]
         self.owner = doc["repo"].split("/")[0]
         self.field_kinds = {
@@ -552,7 +575,7 @@ class Import:
         }
 
     def run(self) -> None:
-        found = problems(self.doc)
+        found = problems(self.doc) + (missing_docs(self.doc, self.root) if self.root else [])
         if found:
             sys.exit("\n".join(found))
         for name, color in LABELS.items():
@@ -567,7 +590,7 @@ class Import:
         issues = self.marked_issues()
         created = updated = 0
         for x in entries(self.doc):
-            title, body = title_of(x), body_of(x, self.doc["slices"])
+            title, body = title_of(x), body_of(x, self.doc["slices"], self.repo)
             if x["id"] not in issues:
                 issues[x["id"]] = self.github.create_issue(self.repo, title, body, x["kind"])
                 created += 1
@@ -777,12 +800,17 @@ def one_import_at_a_time(file: str, wait: float = IMPORT_LOCK_WAIT, poll: float 
         lock.close()
 
 
+def repository_root() -> str:
+    root = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True)
+    return root.stdout.strip()
+
+
 def command_import(args) -> None:
     if not args.write:
         with open(args.file, encoding="utf-8") as source:
             doc = json.load(source)
         github = GhCli(write=False, pause=args.pause)
-        Import(doc, github).run()
+        Import(doc, github, repository_root()).run()
         github.report()
         print("dry run: nothing was written. Add --write to write to GitHub")
         return
@@ -790,7 +818,7 @@ def command_import(args) -> None:
         with open(args.file, encoding="utf-8") as source:
             doc = json.load(source)
         github = GhCli(write=True, pause=args.pause)
-        Import(doc, github).run()
+        Import(doc, github, repository_root()).run()
     github.report()
     print("done")
 
@@ -1216,6 +1244,45 @@ def self_test() -> None:
         7, "S2.1.1 To browse", ["story"], "E2 Catalog", "Next", 3
     ) | {"url": "u"}
 
+    linked = copy.deepcopy(SAMPLE)
+    linked["features"][0]["docs"] = ["docs/adr/README.md"]
+    linked["stories"][2]["docs"] = ["docs/user-journeys.md#browse", "docs/design/browse.md"]
+    linked["stories"][1]["docs"] = ["docs/security/card-grant.md"]
+    story_body = body_of(linked["stories"][2], linked["slices"], linked["repo"])
+    cases["a story links its docs on GitHub, in the order of the file"] = (
+        "### Docs\n"
+        "- [docs/user-journeys.md#browse](https://github.com/example/shop/blob/main/docs/user-journeys.md#browse)\n"
+        "- [docs/design/browse.md](https://github.com/example/shop/blob/main/docs/design/browse.md)\n"
+    ) in story_body and story_body.endswith("<!-- backlog:S2.1.1 -->")
+    cases["a feature links its docs"] = (
+        "- [docs/adr/README.md](https://github.com/example/shop/blob/main/docs/adr/README.md)"
+        in body_of(linked["features"][0], linked["slices"], linked["repo"])
+    )
+    cases["an entry without docs keeps its body"] = (
+        body_of(SAMPLE["stories"][2], SAMPLE["slices"], SAMPLE["repo"])
+        == "As a buyer, I want to browse by category.\n\n**Needs:** S1.1.1\n<!-- backlog:S2.1.1 -->"
+    )
+    cases["a private entry links no docs"] = "card-grant" not in body_of(
+        linked["stories"][1], linked["slices"], linked["repo"]
+    )
+
+    with tempfile.TemporaryDirectory() as root:
+        os.makedirs(os.path.join(root, "docs"))
+        open(os.path.join(root, "docs", "user-journeys.md"), "w").close()
+        open(os.path.join(root, "outside.md"), "w").close()
+        named = copy.deepcopy(SAMPLE)
+        named["stories"][2]["docs"] = ["docs/user-journeys.md#browse", "docs/gone.md"]
+        cases["a doc that is not in the repository is a problem, an anchor is not"] = missing_docs(named, root) == [
+            "S2.1.1 links docs/gone.md, which is not a file of the repository"
+        ]
+        escaped = copy.deepcopy(SAMPLE)
+        escaped["stories"][2]["docs"] = ["docs/../../outside.md", "/etc/hosts", "https://example.test/a.md"]
+        cases["a doc outside the repository or a full address is a problem"] = len(missing_docs(escaped, root)) == 3
+        stopped = FakeGitHub()
+        cases["an import with a missing doc stops before it writes"] = (
+            exits(lambda: quiet(lambda: Import(named, stopped, root).run())) and stopped.writes == []
+        )
+
     failed = [name for name, ok in cases.items() if not ok]
     for name, ok in cases.items():
         print(f"{'ok  ' if ok else 'FAIL'} {name}")
@@ -1518,8 +1585,7 @@ def main() -> None:
     if not args.command:
         parser.error("a command is required: import, roadmap or pr-stories")
     if args.command == "roadmap" and args.output is None:
-        root = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True)
-        args.output = os.path.join(root.stdout.strip(), ROADMAP_PAGE)
+        args.output = os.path.join(repository_root(), ROADMAP_PAGE)
     args.run(args)
 
 

@@ -87,7 +87,7 @@ public final class CollectorProperties {
 
   @Validated
   @ConfigurationProperties("helper2.scout")
-  public record ScoutCredits(@PositiveOrZero long dailyCredits) {}
+  public record ScoutCredits(@PositiveOrZero int dailyCredits) {}
 
   @Validated
   @ConfigurationProperties("helper2.scout.discovery")
@@ -153,9 +153,10 @@ public final class CollectorProperties {
     public record WebPages(
         @NotNull Duration readEvery,
         @NotNull Duration retryAfter,
-        @NotNull List<String> neverRead) {
-
-      static final Duration LONGEST_READ_EVERY = Duration.ofDays(21);
+        @NotNull List<String> neverRead,
+        @PositiveOrZero int maxDiscovered,
+        @PositiveOrZero int discoveredReadsPerDay,
+        @PositiveOrZero int itemPageReadsPerDay) {
 
       public WebPages {
         neverRead = clean(neverRead);
@@ -171,11 +172,9 @@ public final class CollectorProperties {
         return reasons;
       }
 
-      @AssertTrue(message = "must be between one day and 21 days")
-      boolean isReadEveryWithinTheListIndexRetention() {
-        return readEvery == null
-            || (readEvery.compareTo(Duration.ofDays(1)) >= 0
-                && readEvery.compareTo(LONGEST_READ_EVERY) <= 0);
+      @AssertTrue(message = "must be at least one day")
+      boolean isReadEveryAtLeastADay() {
+        return readEvery == null || readEvery.compareTo(Duration.ofDays(1)) >= 0;
       }
 
       @AssertTrue(message = "must be positive and not longer than read-every")

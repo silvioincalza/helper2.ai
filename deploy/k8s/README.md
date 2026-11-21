@@ -37,7 +37,7 @@ podman push $REGISTRY/helper2-backoffice:$TAG
 podman push $REGISTRY/helper2-postgres:$PG_TAG
 ```
 
-Three images, one tag ([ADR 0043](../../docs/adr/operations/0043-runtime-topology-helm-chart-three-deployables.md)): `helper2-web` holds the
+Three images, one tag ([ADR 0043](../../docs/architecture/decisions/ADR-0043-runtime-topology-helm-chart-three-deployables.md)): `helper2-web` holds the
 public web app's files (nginx) and the HTML shell, `helper2` is the public app (search, guide, the pages, sign-in
 for users), `helper2-backoffice` the back office (admin, Scout, collectors, enrichment). Each public pod copies the
 shell from `helper2-web` of the same tag when it starts, so build and push all three. Both apps use the same
@@ -50,7 +50,7 @@ moved: one commit, one image.
 example gains keys later, `scripts/env-align.sh deploy/k8s/app.env.example app.env` appends only the ones app.env
 does not have yet, with their comments; it never changes a key that is there (`--dry-run` lists them first). It must
 contain eight different passwords of 32+ characters (`openssl rand -hex 32`;
-[ADR 0004](../../docs/adr/foundation/0004-persistence-and-the-schema.md)). The four database ones may also hold base64 characters
+[ADR 0004](../../docs/architecture/decisions/ADR-0004-persistence-and-the-schema.md)). The four database ones may also hold base64 characters
 (`+ / = _ -`); the four Redis ones only letters and digits: `H2_DATABASE_PASSWORD` (the owner's: Postgres, the
 backup and the migrate Job only), `H2_DATABASE_PUBLIC_PASSWORD` and `H2_DATABASE_BACKOFFICE_PASSWORD` (each app's
 own role), `H2_DATABASE_MONITOR_PASSWORD` (the Postgres exporter's role `h2_monitor`, statistics only), `H2_REDIS_PASSWORD` (Redis' default user, the admin), and `H2_REDIS_PUBLIC_PASSWORD` and
@@ -187,7 +187,7 @@ spec:
 ```
 
 The back office (`/admin`) is its own Deployment, `helper2-backoffice`, behind the Service `helper2-admin`,
-port 80 ([ADR 0036](../../docs/adr/identity/0036-identity-and-the-admin-host.md), [ADR 0043](../../docs/adr/operations/0043-runtime-topology-helm-chart-three-deployables.md)).
+port 80 ([ADR 0036](../../docs/architecture/decisions/ADR-0036-identity-and-the-admin-host.md), [ADR 0043](../../docs/architecture/decisions/ADR-0043-runtime-topology-helm-chart-three-deployables.md)).
 Route it from a host that only your own network can reach (for example an Ingress with a source allow-list),
 never from the public host. The public app has no admin code and answers 404 on `/admin`. Sign in to the
 back office on that host: its GitHub App (or OAuth app) needs the callback
@@ -324,11 +324,11 @@ helper2.ai runs on this chart with [`values-staging.yaml`](../helm/helper2/value
 follows [RUNBOOK-release.md](RUNBOOK-release.md): the checks before, each step and its check, the way back.
 For the nightly guide evaluation, `values-staging.yaml` keeps guide answers one second (`app.guideCacheTtl`) and caps
 guide model calls at 600 a day, the prod cap (`app.dailyLimits.guideModelCalls`: a run, a rerun and checks by hand)
-([ADR 0046](../../docs/adr/operations/0046-evaluation-guide-and-search.md)); prod keeps the defaults.
+([ADR 0046](../../docs/architecture/decisions/ADR-0046-evaluation-guide-and-search.md)); prod keeps the defaults.
 
 The hosted images are signed with a key in OpenBao Transit, and a deploy runs them only after it checked each
 signature, pinned by digest (`image.digest`, `web.image.digest`, `backoffice.image.digest`, `postgres.image.digest`;
-[ADR 0044](../../docs/adr/operations/0044-ci-cd-and-supply-chain.md)). `make diff`, `env-secret` and
+[ADR 0044](../../docs/architecture/decisions/ADR-0044-ci-cd-and-supply-chain.md)). `make diff`, `env-secret` and
 `deploy` check the signatures themselves first (`make verified`, into `<env>/digests.env`) and take the digests only
 from that check. By hand, from the workstation (cosign installed, `BAO_ADDR` set to your OpenBao, a token that reads
 `ci/harbor`):

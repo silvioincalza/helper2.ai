@@ -156,4 +156,56 @@ class ManageDiscoveryHostsTest {
       hosts.add("42", "one-more.example", HostKind.WRITING, null),
     )
   }
+
+  @Test
+  fun `UC-019 BR-007 a directory host does not have its lists read until an administrator says so`() {
+    assertEquals(emptySet(), store.lists().directoryListsRead)
+
+    val on = hosts.readLists("42", "Futurepedia.io", true, "checked the host")
+
+    assertIs<ManageDiscoveryHosts.ListReading.Done>(on)
+    assertTrue(on.host.readsLists)
+    assertEquals(setOf("futurepedia.io"), store.lists().directoryListsRead)
+    assertTrue(store.lists().readsListsOf("www.futurepedia.io"))
+    assertEquals(
+      listOf("42 READ_DIRECTORY_LISTS futurepedia.io ON OFF ON checked the host"),
+      audit,
+    )
+    assertEquals(1, transactions)
+  }
+
+  @Test
+  fun `UC-019 BR-007 the switch goes off again, and the audit keeps both states`() {
+    hosts.readLists("42", "futurepedia.io", true, null)
+
+    val off = hosts.readLists("43", "futurepedia.io", false, null)
+
+    assertIs<ManageDiscoveryHosts.ListReading.Done>(off)
+    assertEquals(emptySet(), store.lists().directoryListsRead)
+    assertEquals("43 READ_DIRECTORY_LISTS futurepedia.io OFF ON OFF null", audit.last())
+  }
+
+  @Test
+  fun `UC-019 BR-007 a writing host has no switch, and the refused attempt is audited`() {
+    val refused = hosts.readLists("42", "medium.com", true, null)
+
+    assertIs<ManageDiscoveryHosts.ListReading.NotADirectory>(refused)
+    assertEquals(emptySet(), store.lists().directoryListsRead)
+    assertEquals(listOf("42 READ_DIRECTORY_LISTS medium.com NOT_A_DIRECTORY OFF ON null"), audit)
+  }
+
+  @Test
+  fun `UC-019 BR-007 a host in no list has no switch, and a bad reason changes nothing`() {
+    assertEquals(
+      ManageDiscoveryHosts.ListReading.NotFound,
+      hosts.readLists("42", "unknown.ai", true, null),
+    )
+    assertEquals(listOf("42 READ_DIRECTORY_LISTS unknown.ai NOT_FOUND null ON null"), audit)
+    assertEquals(
+      ManageDiscoveryHosts.ListReading.BadReason,
+      hosts.readLists("42", "futurepedia.io", true, "a\nb"),
+    )
+    assertEquals(emptySet(), store.lists().directoryListsRead)
+    assertEquals(1, audit.size)
+  }
 }

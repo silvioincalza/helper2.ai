@@ -606,7 +606,6 @@ helper2.retention.backups = ${H2_RETENTION_BACKUPS:P7D}  =>  P7D
 helper2.retention.cron = ${H2_RETENTION_CRON:0 17 3 * * *}  =>  0 17 3 * * *
 helper2.retention.enrichment-runs = ${H2_RETENTION_ENRICHMENT_RUNS:P90D}  =>  P90D
 helper2.retention.inactive-accounts = ${H2_RETENTION_INACTIVE_ACCOUNTS:P730D}  =>  P730D
-helper2.retention.list-index = ${H2_RETENTION_LIST_INDEX:P30D}  =>  P30D
 helper2.retention.live-web-results = ${H2_RETENTION_LIVE_WEB_RESULTS:P7D}  =>  P7D
 helper2.retention.observed-unseen = ${H2_RETENTION_OBSERVED_UNSEEN:P180D}  =>  P180D
 helper2.retention.past-events = ${H2_RETENTION_PAST_EVENTS:P3650D}  =>  P3650D
@@ -627,7 +626,7 @@ helper2.scout.courses.interval = ${H2_SCOUT_COURSES_INTERVAL:P7D}  =>  P7D
 helper2.scout.courses.platforms = coursera.org=Coursera, oreilly.com=O'Reilly, edx.org=edX, udemy.com=Udemy, deeplearning.ai=DeepLearning.AI, huggingface.co/learn=Hugging Face Learn, cloud.google.com/learn=Google Cloud, aws.amazon.com/certification=AWS, learn.microsoft.com/en-us/credentials=Microsoft Learn, nvidia.com=NVIDIA
 helper2.scout.courses.query = new artificial intelligence course or certification
 helper2.scout.cron = ${H2_SCOUT_CRON:0 7 3 * * *}  =>  0 7 3 * * *
-helper2.scout.daily-credits = ${H2_SCOUT_DAILY_CREDITS:40}  =>  40
+helper2.scout.daily-credits = ${H2_SCOUT_DAILY_CREDITS:1000}  =>  1000
 helper2.scout.daily-enrichment-calls = ${H2_SCOUT_DAILY_ENRICHMENT_CALLS:500}  =>  500
 helper2.scout.discovery.exclude-domains = youtube.com, reddit.com, x.com, twitter.com, facebook.com, instagram.com, tiktok.com, linkedin.com, pinterest.com, quora.com, producthunt.com, theresanaiforthat.com, futurepedia.io, futuretools.io, toolify.ai, topai.tools, aitools.fyi, g2.com, capterra.com, getapp.com, softwareadvice.com, trustradius.com, trustpilot.com, alternativeto.net, saasworthy.com
 helper2.scout.discovery.interval = ${H2_SCOUT_DISCOVERY_INTERVAL:P7D}  =>  P7D
@@ -637,7 +636,7 @@ helper2.scout.discovery.search-depth = ${H2_SCOUT_DISCOVERY_DEPTH:advanced}  => 
 helper2.scout.enabled = ${H2_SCOUT_ENABLED:false}  =>  false
 helper2.scout.enrich-max-tokens = ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}  =>  8192
 helper2.scout.enrichment-model = ${H2_SCOUT_ENRICHMENT_MODEL:FAST}  =>  FAST
-helper2.scout.evidence.daily-page-read-credits = ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:20}  =>  20
+helper2.scout.evidence.daily-page-read-credits = ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:1000}  =>  1000
 helper2.scout.evidence.page-read-ttl = ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}  =>  P30D
 helper2.scout.evidence.page-text-ttl = ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}  =>  PT24H
 helper2.scout.gap-daily-calls = ${H2_SCOUT_GAP_DAILY_CALLS:400}  =>  400
@@ -662,6 +661,9 @@ helper2.scout.github-awesome.min-repo-stars = 50
 helper2.scout.github-awesome.nested.max-depth = ${H2_SCOUT_AWESOME_NESTED_DEPTH:2}  =>  2
 helper2.scout.github-awesome.nested.max-lists-per-run = ${H2_SCOUT_AWESOME_NESTED_LISTS:30}  =>  30
 helper2.scout.github-awesome.topic-queries = topic:awesome-list topic:llm, topic:awesome topic:llm, topic:awesome-list topic:artificial-intelligence, topic:awesome-list topic:ai-agents, topic:awesome topic:mcp, topic:awesome topic:generative-ai
+helper2.scout.github-awesome.web-pages.discovered-reads-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_DISCOVERED_READS_PER_DAY:10}  =>  10
+helper2.scout.github-awesome.web-pages.item-page-reads-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_ITEM_PAGE_READS_PER_DAY:100}  =>  100
+helper2.scout.github-awesome.web-pages.max-discovered = ${H2_SCOUT_AWESOME_WEB_PAGES_MAX_DISCOVERED:100}  =>  100
 helper2.scout.github-awesome.web-pages.never-read = ${H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ:coursera.org=its terms forbid automated reading without written consent}  =>  coursera.org=its terms forbid automated reading without written consent
 helper2.scout.github-awesome.web-pages.read-every = ${H2_SCOUT_AWESOME_WEB_PAGES_EVERY:P7D}  =>  P7D
 helper2.scout.github-awesome.web-pages.retry-after = ${H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER:PT1H}  =>  PT1H
@@ -714,9 +716,11 @@ helper2.scout.pypi.project = ${H2_PYPI_BIGQUERY_PROJECT:}  =>  <empty>
 helper2.scout.repository-sweep.batch = ${H2_SCOUT_REPOSITORY_SWEEP_BATCH:50}  =>  50
 helper2.scout.repository-sweep.enabled = ${H2_SCOUT_REPOSITORY_SWEEP_ENABLED:true}  =>  true
 helper2.scout.repository-sweep.every = ${H2_SCOUT_REPOSITORY_SWEEP_EVERY:PT10M}  =>  PT10M
+helper2.scout.repository-sweep.gone-list-visits = ${H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS:3}  =>  3
 helper2.scout.repository-sweep.initial-delay = PT2M
 helper2.scout.tick = ${H2_SCOUT_TICK:PT10M}  =>  PT10M
 helper2.search.per-source-limit = ${H2_SEARCH_PER_SOURCE_LIMIT:30}  =>  30
+helper2.search.ranking.rating-weight = ${H2_SEARCH_RANKING_RATING_WEIGHT:0}  =>  0
 helper2.search.stale-for = ${H2_SEARCH_STALE_FOR:24h}  =>  24h
 helper2.search.translate-timeout = ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}  =>  2500
 helper2.search.translation.daily-calls = ${H2_SEARCH_DAILY_TRANSLATIONS:300}  =>  300

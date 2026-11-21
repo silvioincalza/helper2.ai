@@ -100,6 +100,7 @@ class ListSeedsController implements ListSeedsApi {
     return new ListSeedEntryDto(
             s.getId(),
             ListSeedEntryDto.KindEnum.fromValue(s.getKind().name()),
+            ListSeedEntryDto.OriginEnum.fromValue(s.getOrigin().name()),
             s.getAddress(),
             s.getAddedBy(),
             UtcTimes.odt(s.getAddedAt()))

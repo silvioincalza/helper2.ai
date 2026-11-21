@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.search.ShadowLibraries;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.sources.github.scout.ListEntryLinks.Article;
 import ai.helper2.sources.github.scout.ListEntryLinks.Course;
 import ai.helper2.sources.github.scout.ListEntryLinks.Model;
 import ai.helper2.sources.github.scout.ListEntryLinks.Product;
@@ -66,6 +67,83 @@ class ListEntryLinksTest {
             new Course(
                 CanonicalUrl.of("https://huggingface.co/learn/agents-course"),
                 "Hugging Face Learn"));
+  }
+
+  @Test
+  void uc030Br008AProductACourseAndAnArticleAreNamedByTheAddressTheirCandidateHas() {
+    assertThat(
+            links.reviewedPage(
+                link(
+                    "https://www.coursera.org/learn/generative-ai-for-everyone",
+                    "Generative AI for everyone",
+                    "Courses"),
+                PAGES))
+        .isEqualTo(CanonicalUrl.of("https://coursera.org/learn/generative-ai-for-everyone"));
+    assertThat(
+            links.reviewedPage(
+                link("https://acme.ai/blog/how-we-built-our-rag-stack", "A post", "R"), PAGES))
+        .isEqualTo(CanonicalUrl.of("https://acme.ai/blog/how-we-built-our-rag-stack"));
+    assertThat(links.reviewedPage(link("https://cursor.com/?ref=list", "Cursor", "E"), PAGES))
+        .isEqualTo(CanonicalUrl.of("https://cursor.com"));
+  }
+
+  @Test
+  void uc030Br008APageASourceConfirmsAndASkippedLinkAreNoReviewedPage() {
+    assertThat(
+            links.reviewedPage(
+                link("https://huggingface.co/acme/voice-model", "Voice", "M"), PAGES))
+        .isNull();
+    assertThat(
+            links(false)
+                .reviewedPage(link("https://huggingface.co/acme/voice-model", "Voice", "M"), PAGES))
+        .isNull();
+    assertThat(links.reviewedPage(link("https://acme.ai/blog", "The blog", "R"), PAGES)).isNull();
+    assertThat(links.reviewedPage(link("http://10.0.0.1/admin", "Admin", "R"), PAGES)).isNull();
+  }
+
+  @Test
+  void uc030Br011TheDirectorysPageOfAnItemIsASafePageOnTheHostOfTheListAndNotTheListItself() {
+    CanonicalUrl list = CanonicalUrl.of("https://futurepedia.io/best-ai-coding-tools");
+
+    assertThat(
+            links.directoryItemPage(
+                link("https://www.futurepedia.io/tool/cursor?ref=list", "Details", "E"), list))
+        .isEqualTo(CanonicalUrl.of("https://futurepedia.io/tool/cursor"));
+    assertThat(
+            List.of(
+                "https://futurepedia.io/best-ai-coding-tools",
+                "https://futurepedia.io",
+                "https://other-directory.io/tool/cursor",
+                "https://app.futurepedia.io/tool/cursor",
+                "http://futurepedia.io/tool/cursor",
+                "https://futurepedia.io/go/cursor",
+                "https://futurepedia.io/tool/cursor?url=https://cursor.com",
+                "https://10.0.0.1/tool/cursor"))
+        .allSatisfy(address ->
+            assertThat(links.directoryItemPage(link(address, "Details", "E"), list)).isNull());
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "https://acme.ai/blog/how-we-built-our-rag-stack",
+    "https://medium.com/@someone/a-guide-to-ai-agents",
+    "https://newsletter.ai/how-we-built-our-ai-stack",
+  })
+  void uc030Br007ALinkThatReadsAsAnArticleByTheRuleOfDiscoveryIsAnArticleForReview(String url) {
+    assertThat(route(url + "?utm_source=list", "How we built it", "Reading"))
+        .isEqualTo(new Article(CanonicalUrl.of(url)));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "https://acme.ai/blog, not-a-product-page",
+    "https://medium.com/@someone, not-a-product-page",
+    "https://producthunt.com/stories/how-we-rank-ai-tools, not-a-product-page",
+    "https://arxiv.org/list/cs.AI/recent-papers-of-the-week, excluded-domain",
+  })
+  void uc030Br007ABlogIndexAnAuthorPageADirectoryPageAndAnExcludedDomainAreNoArticle(
+      String url, String reason) {
+    assertThat(route(url, "Read more", "Reading")).isEqualTo(new Skipped(reason));
   }
 
   @Test
