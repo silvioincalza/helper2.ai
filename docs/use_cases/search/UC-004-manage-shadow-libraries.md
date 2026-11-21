@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Keep the list of shadow libraries (sites that share copyrighted books and papers without permission) so that no result, answer or document from them is ever shown  
 **Trigger:** The administrator opens the shadow library list in the back office settings  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-036](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  
@@ -23,15 +23,15 @@
 2. System shows every listed name with who added it, when, and why, and the largest number of names the list can hold.
 3. Administrator enters a name and, optionally, a reason.
 4. System checks the reason and the name, stores the name, and records the action in the audit trail with the reason.
-5. System applies the new list at once, so the next search, guide answer and setup guide leave the site out.
+5. System applies the new list as BR-007 states, so searches, guide answers and setup guides leave the site out.
 6. Administrator removes a name, optionally with a reason.
-7. System deletes the name, records the action in the audit trail with the reason, and applies the new list at once.
+7. System deletes the name, records the action in the audit trail with the reason, and applies the new list as BR-007 states.
 
 ## Alternative Flows
 
 ### A1: Invalid Reason
 
-**Trigger:** The reason holds control or hidden characters, or is longer than 500 characters (step 4)  
+**Trigger:** The reason holds control or hidden characters, or is longer than 500 characters (step 4 or step 7)  
 **Flow:**
 
 1. System refuses the change and says a reason is one plain line of at most 500 characters.
@@ -83,7 +83,7 @@
 
 - The list holds the added name, or no longer holds the removed one.
 - The change is recorded in the audit trail with the administrator, the name, the outcome and the reason.
-- Results, cached guide answers and setup documents on a listed site are hidden from then on.
+- Results, cached guide answers and setup documents on a listed site are hidden once every server has read the new list (BR-007).
 
 ### Failure Postconditions
 
@@ -121,4 +121,4 @@ A change applies at once on the server that made it, and every server reads the 
 
 ### BR-008: Audit
 
-Every add and remove whose reason and name format pass their checks is recorded in the audit trail with the administrator, the name, the outcome (added, already listed, list full, removed, not found) and the reason.
+Every add whose reason and name pass their checks, and every remove whose reason passes its check, is recorded in the audit trail with the administrator, the name, the outcome (added, already listed, list full, removed, not found) and the reason.

@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor  
 **Goal:** Understand which sources helper2.ai searches, what each covers and how well each works right now, so the visitor can judge the results  
 **Trigger:** The visitor opens the Sources page  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-005, C-015](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-002-check-source-coverage.md)  
@@ -20,7 +20,7 @@
 ## Main Success Scenario
 
 1. Visitor opens the Sources page.
-2. System lists every configured source, ordered by priority and then by name.
+2. System lists every configured source, ordered by priority and then by identifier.
 3. System shows for each source its mode, whether it is enabled and metered, the types of resources it covers, its homepage, its terms, its attribution and its family.
 4. System shows for each source its last outcome and when it was checked, from the last searches or from the last catalog collection runs.
 5. System shows for each called source its response time, and for an enabled source whose calls are paused after repeated failures, since when it is paused or that it is trying again.
@@ -101,3 +101,11 @@ Today's web credits are shown only for a metered source that is enabled; they co
 ### BR-005: Refresh on Return
 
 The page reads the list again when the visitor returns to it after a minute or more, and keeps the old list on screen meanwhile.
+
+### BR-006: Response Time
+
+The response time of a source is the middle value of its last 20 calls, failed and timed-out calls included. An answer from a stored answer and a skipped call are not calls.
+
+### BR-007: Measured per Server
+
+The outcome of the last search, the response time and the pause state are those of the server that answers the page. The outcomes of the catalog collection runs and the web credits are the same on every server.
