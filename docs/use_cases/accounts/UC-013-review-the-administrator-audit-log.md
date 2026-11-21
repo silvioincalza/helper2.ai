@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** See who changed what in the back office, when, why and with which outcome, so that every administrator action can be traced  
 **Trigger:** The administrator opens the audit page of the back office  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-039, NFR-012](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  
@@ -35,6 +35,22 @@
 1. System refuses the request.
 2. Use case ends.
 
+### A2: The Log Cannot Be Loaded
+
+**Trigger:** The audit entries cannot be read (step 2)  
+**Flow:**
+
+1. System says that the log could not be loaded and offers to try again.
+2. Use case ends.
+
+### A3: The Log Is Empty
+
+**Trigger:** No administrator action is recorded yet (step 2)  
+**Flow:**
+
+1. System says that there is no entry yet.
+2. Use case ends.
+
 ## Postconditions
 
 ### Success Postconditions
@@ -53,12 +69,12 @@ The log records these administrator actions: resolving a review item, starting a
 
 ### BR-002: The Log Cannot Be Changed
 
-An audit entry is never changed after it is written. Entries are removed only after their retention period (UC-029 BR-003).
+An audit entry is never changed after it is written: the database refuses a change for every application. Entries are removed only after their retention period (UC-029 BR-003), and they stay when the administrator's account is deleted (UC-011 BR-007).
 
 ### BR-003: Pages
 
-Entries are shown the newest first, 20 per page by default and at most 100 per page.
+Entries are shown the newest first, 20 per page by default and at most 100 per page. The audit page shows 20 per page.
 
 ### BR-004: Entry Content
 
-The value before and the value after are at most 100 characters each, and the reason at most 500 characters.
+An entry names the administrator by the identifier at the identity provider, never by name. The value before and the value after are at most 100 characters each, and the reason at most 500 characters. The outcome says how the action ended, a refused attempt included.
