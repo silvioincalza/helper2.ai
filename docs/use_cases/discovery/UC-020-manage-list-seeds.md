@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Choose curated lists of AI resources, on GitHub or on the web, that the Scout reads on every pass whatever its own search finds, so that good lists the search misses still feed the catalog.  
 **Trigger:** An administrator opens the added lists of the back office to look at them, add a list or stop reading one.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-027](../../requirements.md)  
 **API:** [listListSeeds](../../../api/admin.yaml#listListSeeds), [addListSeed](../../../api/admin.yaml#addListSeed), [removeListSeed](../../../api/admin.yaml#removeListSeed)

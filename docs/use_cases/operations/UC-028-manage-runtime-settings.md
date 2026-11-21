@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** See the configuration both applications run with, and change a daily limit or a switch at runtime without a new release, with every change recorded  
 **Trigger:** The administrator opens the settings page of the back office  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-038, NFR-012](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  

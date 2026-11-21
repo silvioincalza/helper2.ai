@@ -8,7 +8,7 @@
 **Secondary Actors:** Scheduler, Language Model, Source Provider  
 **Goal:** Have an AI research agent check resource and course candidates on the web and propose a verdict and a value for each attribute with its source quotes, so the Administrator decides faster without anything reaching the catalog unconfirmed.  
 **Trigger:** The Administrator starts research for picked candidates, for a page of the review queue, or for every open candidate.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-034](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  

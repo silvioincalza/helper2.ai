@@ -8,7 +8,7 @@
 **Secondary Actors:** Search Engine  
 **Goal:** Tell search engines once a day which resource pages changed, so that they index new and changed pages soon  
 **Trigger:** The daily notification time is reached (05:47 UTC by default)  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-024](../../requirements.md)  
 **Layers:** Service

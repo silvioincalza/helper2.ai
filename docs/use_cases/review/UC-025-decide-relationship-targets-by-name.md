@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Answer once what a target name means (a resource of the catalog, a vendor, a service, a tool, or no real target) and so decide every open relationship candidate that names it.  
 **Trigger:** The Administrator opens the review queue for relationship candidates.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-032](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  
