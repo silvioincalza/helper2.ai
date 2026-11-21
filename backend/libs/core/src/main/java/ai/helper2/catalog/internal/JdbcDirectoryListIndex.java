@@ -10,7 +10,7 @@ import tools.jackson.databind.node.ArrayNode;
 
 class JdbcDirectoryListIndex implements DirectoryListIndex {
 
-  private static final int MAX_TITLE = 300;
+  static final int MAX_TITLE = 300;
 
   private final JdbcClient jdbc;
   private final ObjectMapper json;

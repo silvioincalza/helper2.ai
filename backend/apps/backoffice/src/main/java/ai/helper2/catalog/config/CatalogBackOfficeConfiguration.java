@@ -10,6 +10,7 @@ import ai.helper2.catalog.JobMarkers;
 import ai.helper2.catalog.KnownTarget;
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.KnownTargetList;
+import ai.helper2.catalog.ListNamings;
 import ai.helper2.catalog.RelationshipTargets;
 import ai.helper2.catalog.ResourceRemoval;
 import ai.helper2.catalog.Resources;
@@ -29,6 +30,7 @@ import ai.helper2.catalog.usecase.ListReviewItems;
 import ai.helper2.catalog.usecase.ListWellKnownResources;
 import ai.helper2.catalog.usecase.LookUpResourceTitles;
 import ai.helper2.catalog.usecase.ManageKnownTargets;
+import ai.helper2.catalog.usecase.NameResourceByList;
 import ai.helper2.catalog.usecase.PurgeExpiredData;
 import ai.helper2.catalog.usecase.RemoveResource;
 import ai.helper2.catalog.usecase.ResolveReviewItem;
@@ -125,6 +127,11 @@ public class CatalogBackOfficeConfiguration {
   @Bean
   IndexAwesomeLists indexAwesomeLists(AwesomeListIndex index, CategoryLabels labels) {
     return new IndexAwesomeLists(index, labels);
+  }
+
+  @Bean
+  NameResourceByList nameResourceByList(ListNamings namings, CategoryLabels labels) {
+    return new NameResourceByList(namings, labels);
   }
 
   @Bean

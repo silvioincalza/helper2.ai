@@ -128,7 +128,9 @@ whether a query finds a resource there:
    row (`awesome_list`: a tsvector of its headings, `/` as a space, so "CI/CD" is two words). The entries travel as one bind parameter
    (`jsonb_to_recordset`), never spliced into SQL. The text is never written to a column, a cache or a log. The heading
    path is the only list text kept as text (at most 200 characters), for the explanation in point 14. A list not in the
-   catalog writes nothing; an entry not yet in the catalog waits for the next pass. A failing index is logged and the
+   catalog writes nothing; an entry not yet in the catalog waits for the next pass. An entry is a repository, a
+   model, a paper or a package of the list, or a product, a course or an article one of its links points to
+   ([0055](ADR-0055-directory-lists.md) point 15). A failing index is logged and the
    pass goes on; the next pass rebuilds it.
 13. **Search.** The index query ([0025](ADR-0025-ranking.md)) also retrieves rows whose own text does not match but an entry
    line or a list's headings do, each on its own GIN index (`awesome_list_entry_search_idx`,

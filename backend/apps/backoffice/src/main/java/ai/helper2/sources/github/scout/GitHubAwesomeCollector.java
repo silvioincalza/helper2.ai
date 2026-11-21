@@ -256,7 +256,7 @@ public class GitHubAwesomeCollector implements Collector {
           null,
           startedAt,
           links.candidates(),
-          searchTexts(pass.crawl(), links.listedAs()),
+          searchTexts(pass.crawl(), links.listedAs(), pages),
           List.of());
     }
     int end =
@@ -282,7 +282,7 @@ public class GitHubAwesomeCollector implements Collector {
         end < all.size() ? RESUME_AFTER + key(all.get(end - 1)) : null,
         startedAt,
         links.candidates(),
-        searchTexts(pass.crawl(), links.listedAs()),
+        searchTexts(pass.crawl(), links.listedAs(), pages),
         withdrawn);
   }
 
@@ -518,7 +518,10 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   private record ModelLink(
-      ListEntryLinks.Model model, AwesomeListParser.Link link, CanonicalUrl list) {}
+      ListEntryLinks.Model model, AwesomeListParser.Link link, NamingList list) {}
+
+  /** The list a link was found in; a list page of a directory host carries its title. */
+  private record NamingList(CanonicalUrl url, @Nullable String directoryListTitle) {}
 
   private RoutedLinks links(Pass pass, DiscoveryPages pages, Instant now) {
     Map<String, Candidate> found = new LinkedHashMap<>();
@@ -526,10 +529,11 @@ public class GitHubAwesomeCollector implements Collector {
     Map<String, String> papers = new LinkedHashMap<>();
     Map<String, String> packages = new LinkedHashMap<>();
     for (AwesomeCrawl.Read r : pass.crawl()) {
-      CanonicalUrl list = r.list().url();
-      if (list == null) {
+      CanonicalUrl listUrl = r.list().url();
+      if (listUrl == null) {
         continue;
       }
+      NamingList list = new NamingList(listUrl, directoryListTitle(r.list()));
       for (AwesomeListParser.Link link : r.parsed().links()) {
         switch (entryLinks.route(link, pages)) {
           case ListEntryLinks.Skipped skipped -> metrics.skipped("link-" + skipped.reason());
@@ -707,7 +711,7 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   private Candidate courseCandidate(
-      ListEntryLinks.Course course, AwesomeListParser.Link link, CanonicalUrl list) {
+      ListEntryLinks.Course course, AwesomeListParser.Link link, NamingList list) {
     String title =
         WebPageTitle.of(ListEntryLinks.title(link, course.page()), course.page().getHost())
             .getTitle();
@@ -721,15 +725,24 @@ public class GitHubAwesomeCollector implements Collector {
         Map.of(FOUND_IN, foundIn(link, list)));
   }
 
-  private static Map<String, Object> foundIn(AwesomeListParser.Link link, CanonicalUrl list) {
+  // UC-030 BR-008: a candidate keeps the list that named it, so that the list names it once
+  // accepted.
+  private static Map<String, Object> foundIn(AwesomeListParser.Link link, NamingList list) {
     Map<String, Object> awesome = new LinkedHashMap<>();
-    awesome.put("list", list.getValue());
+    awesome.put("list", list.url().getValue());
     awesome.put("section", link.headingPath());
+    if (list.directoryListTitle() != null) {
+      awesome.put("directoryList", list.directoryListTitle());
+    }
     return awesome;
   }
 
+  private static @Nullable String directoryListTitle(ListRepo list) {
+    return list.isOnADirectoryHost() ? list.page().title() : null;
+  }
+
   private Candidate candidate(
-      CanonicalUrl site, AwesomeListParser.Link link, CanonicalUrl list, ResourceType type) {
+      CanonicalUrl site, AwesomeListParser.Link link, NamingList list, ResourceType type) {
     String title =
         type == ResourceType.MODEL ? site.getHuggingFaceModel() : ListEntryLinks.title(link, site);
     Set<String> tags =
@@ -754,7 +767,7 @@ public class GitHubAwesomeCollector implements Collector {
   static final String FOUND_IN = "awesome";
 
   private List<ListText> searchTexts(
-      List<AwesomeCrawl.Read> crawl, Map<String, CanonicalUrl> listedAs) {
+      List<AwesomeCrawl.Read> crawl, Map<String, CanonicalUrl> listedAs, DiscoveryPages pages) {
     List<ListText> texts = new ArrayList<>();
     for (AwesomeCrawl.Read r : crawl) {
       CanonicalUrl url = r.list().url();
@@ -763,15 +776,15 @@ public class GitHubAwesomeCollector implements Collector {
             new ListText(
                 url,
                 r.parsed().headingsText(),
-                searchEntries(r.parsed(), listedAs),
-                r.list().isOnADirectoryHost() ? r.list().page().title() : null));
+                searchEntries(r.parsed(), listedAs, pages),
+                directoryListTitle(r.list())));
       }
     }
     return texts;
   }
 
   private List<ListEntryText> searchEntries(
-      AwesomeListParser.Parsed parsed, Map<String, CanonicalUrl> listedAs) {
+      AwesomeListParser.Parsed parsed, Map<String, CanonicalUrl> listedAs, DiscoveryPages pages) {
     AwesomeListParser.SearchBudget budget =
         new AwesomeListParser.SearchBudget(limits.maxEntriesPerPass(), MAX_LIST_TEXT_BYTES);
     List<ListEntryText> entries = new ArrayList<>();
@@ -786,6 +799,14 @@ public class GitHubAwesomeCollector implements Collector {
       if (linked != null && budget.keeps(link.entryText(), link.headingPath())) {
         CanonicalUrl resource = listedAs.getOrDefault(linked.getValue(), linked);
         entries.add(new ListEntryText(resource, link.entryText(), link.headingPath()));
+      }
+    }
+    // UC-030 BR-008: a list names the product, the course and the article its links point to;
+    // they come after the pages a source confirms, so they never take their place in the budget.
+    for (AwesomeListParser.Link link : parsed.links()) {
+      CanonicalUrl reviewed = entryLinks.reviewedPage(link, pages);
+      if (reviewed != null && budget.keeps(link.entryText(), link.headingPath())) {
+        entries.add(new ListEntryText(reviewed, link.entryText(), link.headingPath()));
       }
     }
     return entries;

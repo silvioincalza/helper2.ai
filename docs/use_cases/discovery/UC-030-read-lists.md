@@ -130,7 +130,7 @@ A link of a list that reads as an article by the rule of discovery (a post on a 
 
 ### BR-008: Which List Names Which Resource
 
-For each list that was read, the catalog keeps the resources it names that are in the catalog, with the headings above each entry. The record of a list is replaced at each pass and removed 30 days after the last pass that read it. A curated list (an awesome list on GitHub, or a web page that is not on a directory host) is itself a resource; the public page of a resource names the curated lists that name it (UC-007 BR-008).
+For each list that was read, the catalog keeps the resources it names that are in the catalog, whatever their kind, with the headings above each entry: a repository, a model, a paper and a package, and also a product, a course and an article its links point to. A candidate a list proposed keeps the list that named it; when an administrator accepts it (UC-024), the resource is named by that list from that moment. The record of a list is replaced at each pass and removed 30 days after the last pass that read it. A curated list (an awesome list on GitHub, or a web page that is not on a directory host) is itself a resource; the public page of a resource names the curated lists that name it (UC-007 BR-008).
 
 ### BR-009: A List Page of a Directory Host Is Never a Resource
 

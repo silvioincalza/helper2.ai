@@ -88,6 +88,11 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcListNamings jdbcListNamings(JdbcClient jdbc) {
+    return new JdbcListNamings(jdbc);
+  }
+
+  @Bean
   JdbcReviewEvidence jdbcReviewEvidence(JdbcClient jdbc) {
     return new JdbcReviewEvidence(jdbc);
   }
