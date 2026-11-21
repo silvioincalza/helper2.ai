@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor  
 **Goal:** Tell the team that a fact on a resource page is wrong, outdated or broken, so a person reviews and corrects it.  
 **Trigger:** The visitor chooses "Report a problem" on the page of a resource.  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-014](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-009-report-wrong-information.md)  
@@ -99,11 +99,11 @@ The issue report and its review item are stored together or not at all.
 
 ### BR-006: Report Rate Limit
 
-A visitor may send at most 20 reports per hour by default (H2_RATE_LIMIT_REPORT_PER_HOUR).
+A visitor may send at most 20 reports per hour by default.
 
 ### BR-007: Retention of Reports
 
-An issue report is kept while its review item is open, and deleted once every review item that points at it was resolved more than 365 days ago by default (H2_RETENTION_RESOLVED_ISSUE_REPORTS). A report is also deleted with its resource.
+An issue report is kept while its review item is open, and deleted once every review item that points at it was resolved more than 365 days ago by default. A report is also deleted with its resource.
 
 ### BR-008: No Personal Data
 
