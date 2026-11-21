@@ -1137,6 +1137,13 @@
       "openSource": "open source",
       "techLevel": "technical level"
     },
+    "rating": "Rating from directories",
+    "ratingScore": "{{score}} out of 5",
+    "ratingDirectories_one": "from {{count}} directory",
+    "ratingDirectories_other": "from {{count}} directories",
+    "ratingHow": "Made from the average and the number of votes that directories state for this resource. Few votes count little.",
+    "ratingReport": "Report a wrong rating",
+    "ratingNone": "Not rated yet",
     "foundIn": "Found in these lists",
     "foundInUnder": "under {{heading}}",
     "foundInMore_one": "and {{count}} more list",
