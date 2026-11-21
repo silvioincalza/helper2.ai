@@ -209,7 +209,7 @@ docs/backup/eval/search-queries.json|backend-libs backend-public diagrams
 .claude/settings.json|
 frontend/src/main.tsx,backend/apps/public/x.kt|frontend backend-public web public backoffice
 backend/apps/public/x.kt,backend/apps/backoffice/x.kt|backend-public backend-backoffice public backoffice
-deploy/k8s/Makefile,docs/backup/roadmap.md|chart diagrams
+deploy/k8s/Makefile,docs/roadmap.md|chart diagrams
 EOF
   [[ -z $(from_paths < /dev/null | trues) ]] || {
     echo "FAIL: no paths must run nothing" >&2

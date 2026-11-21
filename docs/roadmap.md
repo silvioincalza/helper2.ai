@@ -59,7 +59,7 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S3.3.5 An embedding model that runs in the cluster](https://github.com/silvioincalza/helper2.ai/issues/891)
+- [S3.3.9 The embedder keeps search queries in budget while both catalogs are embedded](https://github.com/silvioincalza/helper2.ai/issues/906)
 
 ### Next
 
@@ -171,6 +171,7 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
+- [S10.3.8 v2026.11.9 on prod: the embedder in the cluster, and main's work since v2026.11.8](https://github.com/silvioincalza/helper2.ai/issues/909)
 - [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/helper2.ai/issues/353)
 - [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/helper2.ai/issues/356)
 
@@ -195,3 +196,33 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S10.4.3 Guide relevance judged by a second person](https://github.com/silvioincalza/helper2.ai/issues/349)
 - [S10.10.1 The deployer token minted per deploy](https://github.com/silvioincalza/helper2.ai/issues/355)
 - [S10.12.1 The main journeys automated in a browser](https://github.com/silvioincalza/helper2.ai/issues/357)
+
+## E11 Spec-driven docs with the AI Unified Process
+
+### Now
+
+- [S11.7.6 A D2 twin and its SVG for every specification diagram](https://github.com/silvioincalza/helper2.ai/issues/944)
+
+### Next
+
+- [S11.1.2 Spec-lint as a CI check](https://github.com/silvioincalza/helper2.ai/issues/925)
+- [S11.1.3 Decision rights for coding assistants](https://github.com/silvioincalza/helper2.ai/issues/926)
+- [S11.2.1 A vision in the AI Unified Process template](https://github.com/silvioincalza/helper2.ai/issues/927)
+- [S11.2.2 Requirements that match the vision and the use cases](https://github.com/silvioincalza/helper2.ai/issues/928)
+- [S11.2.3 A glossary the docs and the code use](https://github.com/silvioincalza/helper2.ai/issues/929)
+- [S11.3.1 An entity model that matches the schema](https://github.com/silvioincalza/helper2.ai/issues/930)
+- [S11.3.2 Use case specifications ready for approval](https://github.com/silvioincalza/helper2.ai/issues/931)
+- [S11.3.3 ADRs with a status and the requirements they serve](https://github.com/silvioincalza/helper2.ai/issues/932)
+- [S11.6.1 Eval data and design tokens out of the backup folder](https://github.com/silvioincalza/helper2.ai/issues/937)
+- [S11.6.2 Each backup page rewritten into the specification or removed](https://github.com/silvioincalza/helper2.ai/issues/938)
+- [S11.7.1 One workflow in AGENTS.md and CLAUDE.md](https://github.com/silvioincalza/helper2.ai/issues/939)
+- [S11.7.2 Specialist agents that read the specification first](https://github.com/silvioincalza/helper2.ai/issues/940)
+- [S11.7.3 Commands mapped onto the AI Unified Process skills](https://github.com/silvioincalza/helper2.ai/issues/941)
+- [S11.7.4 Backlog stories that name their use cases](https://github.com/silvioincalza/helper2.ai/issues/942)
+
+### Later
+
+- [S11.3.4 Business processes for the multi-step flows](https://github.com/silvioincalza/helper2.ai/issues/933)
+- [S11.4.1 Test cases for the approved use cases](https://github.com/silvioincalza/helper2.ai/issues/934)
+- [S11.4.2 Code and tests name the use cases they build](https://github.com/silvioincalza/helper2.ai/issues/935)
+- [S11.5.1 User guide, acceptance and release notes from the specification](https://github.com/silvioincalza/helper2.ai/issues/936)

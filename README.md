@@ -17,7 +17,7 @@ of the system.
 | | |
 |---|---|
 | What is built and why | [ADRs, one per decision](docs/architecture/decisions/README.md) · [architecture and diagrams](docs/backup/architecture.md) |
-| What is still open | [the roadmap](docs/backup/roadmap.md), generated from [the backlog](https://github.com/silvioincalza/helper2.ai/issues): epics, features and stories |
+| What is still open | [the roadmap](docs/roadmap.md), generated from [the backlog](https://github.com/silvioincalza/helper2.ai/issues): epics, features and stories |
 | What changed | [CHANGELOG](CHANGELOG.md) |
 | Product | [user journeys](docs/backup/user-journeys.md) · [sources](docs/backup/sources.md) · [processors and transfers](docs/backup/processors.md) · [costs](docs/backup/cost-analysis.md) |
 | Quality | [testing](docs/backup/testing.md) · [evaluation](docs/backup/evaluation.md) · [AI literacy](docs/backup/ai-literacy.md) |
