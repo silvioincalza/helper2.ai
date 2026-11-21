@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-035](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/back-office.md)  
 **API:** [listKnownTargets](../../../api/admin.yaml#listKnownTargets), [addKnownTarget](../../../api/admin.yaml#addKnownTarget), [changeKnownTarget](../../../api/admin.yaml#changeKnownTarget), [removeKnownTarget](../../../api/admin.yaml#removeKnownTarget)
 
 ## Preconditions

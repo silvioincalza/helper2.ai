@@ -33,7 +33,7 @@ present() {
 
 classify() {
   case $1 in
-    docs/backup/eval/*) echo "backend-libs backend-public diagrams" ;;
+    eval/*) echo "backend-libs backend-public diagrams" ;;
     frontend/index.html | frontend/src/routes.tsx | frontend/src/i18n/locales/en.json) echo "frontend backend-public web backoffice" ;;
     frontend/*) echo "frontend web backoffice" ;;
     deploy/web.Dockerfile | deploy/web/*) echo "web" ;;
@@ -49,7 +49,6 @@ classify() {
     api/*) echo "frontend $BACKEND web public backoffice" ;;
     deploy/helm/helper2/files/redis-users.acl) echo "$BACKEND backend-architecture chart" ;;
     deploy/k8s/app.env.example) echo "backend-libs chart" ;;
-    docs/backup/design/system/tokens.json) echo "frontend diagrams" ;;
     *.md | docs/* | LICENSE) echo "diagrams" ;;
     .claude/* | .idea/*) echo "" ;;
     deploy/postgres/*) echo "postgres chart" ;;
@@ -196,7 +195,7 @@ deploy/monitoring/helper2-rules.yaml|monitoring chart
 deploy/postgres/Dockerfile|postgres chart
 deploy/embedder/server.py|embedder chart
 docs/architecture/decisions/README.md|diagrams
-docs/backup/design/system/tokens.json|frontend diagrams
+frontend/design/tokens.json|frontend web backoffice
 docs/architecture/diagrams/flow-0044-ci-cd.d2|diagrams
 deploy/k8s/README.md|diagrams
 frontend/README.md|frontend web backoffice
@@ -204,12 +203,12 @@ backend/apps/public/src/main/resources/x.md|backend-public public
 backend/apps/backoffice/README.md|backend-backoffice backoffice
 deploy/web/README.md|web
 README.md,LICENSE|diagrams
-docs/backup/eval/search-queries.json|backend-libs backend-public diagrams
+eval/search-queries.json|backend-libs backend-public diagrams
 .claude/agents/architect.md|diagrams
 .claude/settings.json|
 frontend/src/main.tsx,backend/apps/public/x.kt|frontend backend-public web public backoffice
 backend/apps/public/x.kt,backend/apps/backoffice/x.kt|backend-public backend-backoffice public backoffice
-deploy/k8s/Makefile,docs/backup/roadmap.md|chart diagrams
+deploy/k8s/Makefile,docs/roadmap.md|chart diagrams
 EOF
   [[ -z $(from_paths < /dev/null | trues) ]] || {
     echo "FAIL: no paths must run nothing" >&2

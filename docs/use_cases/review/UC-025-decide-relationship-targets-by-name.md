@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-032](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/back-office.md)  
 **API:** [listRelationshipTargetGroups](../../../api/admin.yaml#listRelationshipTargetGroups), [decideRelationshipTargetGroup](../../../api/admin.yaml#decideRelationshipTargetGroup)
 
 ## Preconditions

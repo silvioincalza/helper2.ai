@@ -25,7 +25,7 @@ A research pass (9 Nov 2026) compared more sources. Most are later steps or out 
    artificiale"). A weak word has a common meaning outside AI (`prompt`, `agent`, `vector`, `transformer`,
    `embedding`, `nvidia`, `copilot`) and counts only next to a second, different AI word. A weak word is one key
    (`ai.weak.agent`) with its plural and its translations, so "agent agents" or "agente agenti" is one word: `agent-base` (an
-   `http.Agent`) and `paper` (vector graphics) are not about AI. Measured on `docs/backup/eval/classifier-labels.tsv`
+   `http.Agent`) and `paper` (vector graphics) are not about AI. Measured on `eval/classifier-labels.tsv`
    (`ClassificationLabelsTest`). The word lists are shared with GitHub, npm, live web and the Scout collectors.
 3. **Wiring.** A live source like npm: settings under `helper2.sources.hacker-news` (`H2_SOURCE_HACKER_NEWS_ENABLED`,
    timeout 2.5 s, cache 30 min), the same circuit breaker and bulkhead as the other live sources, both apps. The
@@ -101,7 +101,7 @@ Tracked privately (S9.6.3).
 
 - A new snapshot set with the source on is not recorded and graded; the ablation then keeps the source or drops it.
 - Hacker News points are not a popularity metric (it changes the API contract).
-- The shared AI word list is not measured on a labelled set (`docs/backup/eval/classifier-labels.tsv` has no rows).
+- The shared AI word list is not measured on a labelled set (`eval/classifier-labels.tsv` has no rows).
 - OpenAlex is not a live paper source; Semantic Scholar is not used.
 
 ## Diagrams

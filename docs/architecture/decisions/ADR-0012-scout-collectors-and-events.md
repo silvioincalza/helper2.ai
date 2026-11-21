@@ -298,7 +298,7 @@ Two kinds of source need more care:
     soonest start that has not ended (end, or start when there is no end, on or after today, UTC). An edition without
     a start it can read ("TBA") is skipped, and so is one without an official link or a title. City and country come
     from the file.
-23. **Curated industry events.** `docs/backup/research/industry-events-2026-11-12.json` holds each event's official site, the
+23. **Curated industry events.** `scripts/industry-events-2026-11-12.json` holds each event's official site, the
     page that states the dates and the exact excerpt, checked against the live page. `scripts/industry-events-seed.mjs`
     generates the repeatable migration `R__industry_events.sql` (32 events, from 2026-11-17 to 2027-11-08) and fails
     when a start date, a URL or an excerpt is missing. Each event gets an `eventDates` assertion (`CURATED`,
@@ -433,7 +433,7 @@ the fields it asserts ([0038](ADR-0038-back-office-and-review.md)).
   `backend/libs/core/src/main/java/ai/helper2/search/web/CardMapper.java` — `eventOrigin`;
   `backend/apps/public/src/main/java/ai/helper2/site/pages/usecase/RenderPage.java` — `view`: AI-read days off server pages.
 - `scripts/industry-events-seed.mjs`, `scripts/industry-events-seed.test.mjs`,
-  `docs/backup/research/industry-events-2026-11-12.json`,
+  `scripts/industry-events-2026-11-12.json`,
   `backend/libs/schema/src/main/resources/db/migration/R__industry_events.sql`.
 - `frontend/src/features/home/HomeLists.tsx`, `TermList.tsx`, `frontend/src/features/feeds/feeds.ts`, `feedCells.tsx`, `EventsPage.tsx`,
   `frontend/src/features/resource/DateTimeline.tsx`, `DateFactView.tsx` — the AI label.

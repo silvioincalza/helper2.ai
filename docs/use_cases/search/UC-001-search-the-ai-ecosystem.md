@@ -10,7 +10,8 @@
 **Trigger:** The visitor types words in the search box, or picks an example search, and starts the search  
 **Status:** Draft  
 
-**Requirements:** [FR-001, FR-002, FR-003, FR-004, FR-006, NFR-001, NFR-003, NFR-005, C-015](../../requirements.md)  
+**Requirements:** [FR-001, FR-002, FR-003, FR-004, FR-006, NFR-001, NFR-003, NFR-005, NFR-015, C-015](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/uc-001-search-the-ai-ecosystem.md)  
 **API:** [search](../../../api/common.yaml#search), [listCategories](../../../api/common.yaml#listCategories), [listHomeExamples](../../../api/public.yaml#listHomeExamples)
 
 ## Preconditions
@@ -101,6 +102,16 @@
 1. System shows its built-in list of examples instead.
 2. Use case continues at step 3.
 
+### A9: No Results
+
+**Trigger:** No source returns a result that fits the query and the chosen filters (step 7)  
+**Flow:**
+
+1. System says that the sources searched returned no results, lists those sources and the filters that are on, and never says that nothing exists.
+2. System offers to remove a filter, to try different or fewer words, or to ask the guide.
+3. Visitor removes a filter or changes the words.
+4. Use case continues at step 4.
+
 ## Postconditions
 
 ### Success Postconditions
@@ -180,3 +191,19 @@ A translated query and every AI-written description in a result are labelled as 
 ### BR-016: Scope Statement
 
 Every search answer states that results come only from the listed sources and not from the whole web.
+
+### BR-017: Sort Orders
+
+Results are sorted by relevance by default, or by newest publication date, or by most recent update. A result whose source states no such date comes last and is labelled as having an unknown date.
+
+### BR-018: Values No Source States
+
+Each filter shows the count of its values and one value for results where no source states the fact. Choosing a value leaves out the results with no stated value; choosing the not-stated value includes them.
+
+### BR-019: Timeline
+
+The timeline shows the same results by month, newest first, by the creation date each source states. Results with no stated creation date form one group at the end; the date helper2.ai first saw a result is never used in its place.
+
+### BR-020: Found Only in a Curated List
+
+A result whose own text does not match the query, but that a curated list names under matching words, ranks below the direct matches and names the list and the heading it sits under.

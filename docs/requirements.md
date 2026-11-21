@@ -61,11 +61,13 @@ describe how.
 | NFR-006 | Guide Rate Limits          | Each client may ask at most 10 questions per minute and 30 new questions per day, with at most 8 questions answered at a time. | Scalability | High | Implemented |
 | NFR-007 | Daily Model Budget         | The language model is called at most 600 times per day in total for the guide. | Scalability | High | Implemented |
 | NFR-008 | Answer Cache               | An AI answer to a repeated question is served from the cache for 24 hours without a new model call. | Performance | Medium | Implemented |
-| NFR-009 | Accessibility              | Keyboard-only and screen-reader users can complete search, ask, evaluate, report and save (UJ-1 to UJ-6), and the public pages meet WCAG 2.2 level AA. | Usability | High | Implemented |
+| NFR-009 | Accessibility              | Keyboard-only and screen-reader users can complete search, ask, evaluate, report and save (UC-001, UC-005, UC-007, UC-009, UC-012), and the public pages meet WCAG 2.2 level AA. | Usability | High | Implemented |
 | NFR-010 | AI Text Marking            | 100% of AI-written text is labeled in the UI and marked machine-readable in the HTML and the API. | Usability | High | Implemented |
 | NFR-011 | Search Quality Gate        | A search change does not let nDCG@10 on the recorded evaluation set fall more than 0.005 below the stored baseline. | Maintainability | High | Implemented |
 | NFR-012 | Back Office Access         | 100% of back office requests come through the VPN and need a signed-in user with the administrator role. | Security | High | Implemented |
 | NFR-013 | Model Provenance           | Every guide answer records the provider and the model ids that wrote it, and the page shows them. | Maintainability | Medium | Implemented |
+| NFR-014 | Daily Enrichment Budget    | The language model is called at most 500 times per day in total for enrichment, gap rounds included; an administrator may raise the limit up to 3,000. | Scalability | High | Implemented |
+| NFR-015 | Live Web Budget            | Each visitor gets at most 3 live web searches per day for search and 3 for the guide, and the Scout spends at most 40 live web credits per day. | Scalability | High | Implemented |
 
 ## Constraints
 
@@ -78,7 +80,7 @@ describe how.
 | C-005 | AI Text Transparency    | Every AI-written text shown to users is labeled and marked machine-readable. | Regulatory | EU AI Act Art. 50 | High | Implemented |
 | C-006 | Storage Limitation      | Each kind of data is kept only as long as it serves its purpose, then deleted. | Regulatory | GDPR Art. 5(1)(e); nFADP Art. 6(4) | High | Implemented |
 | C-007 | Consent for Cookies     | Analytics and advertising cookies are set only after consent in the EU. | Regulatory | ePrivacy Directive Art. 5(3) | High | Implemented |
-| C-008 | Source Terms            | Every source and API is used within its own terms of use. | Regulatory | The terms of each source ([sources](backup/sources.md)) | High | Implemented |
+| C-008 | Source Terms            | Every source and API is used within its own terms of use. | Regulatory | The terms of each source ([sources](architecture/sources.md)) | High | Implemented |
 | C-009 | Digital Services Act    | The site meets the duties of the Digital Services Act for an intermediary service. | Regulatory | Regulation (EU) 2022/2065 (DSA) | High | Implemented |
 | C-010 | EU Hosting              | Every server runs in the EU. | Operational | | High | Implemented |
 | C-011 | Deployment              | The system runs on Kubernetes with Helm charts for staging and production, with no dependency on a specific cluster or infrastructure repository. | Operational | | High | Implemented |
@@ -86,3 +88,5 @@ describe how.
 | C-013 | Open Source             | The source code is public under the Apache-2.0 license. | Business | | High | Implemented |
 | C-014 | One-Person Team         | The system is built and run by one person, so each choice is weighed by its operational cost and cognitive load. | Business | | High | Implemented |
 | C-015 | Disclosed Sources       | Search reads only the disclosed set of sources and never claims to search the whole web. | Business | | High | Implemented |
+| C-016 | Named Recipients        | Every recipient of data is named on the Privacy page, with the basis of each transfer outside Switzerland and the EU ([data processing](architecture/data-processing.md)). | Regulatory | GDPR Art. 13(1)(e)-(f), Art. 44-49; nFADP Art. 16-17, Art. 19 | High | Implemented |
+| C-017 | AI Literacy             | The people who build and run the AI features know the models, their limits, their evaluation and their cost ([AI literacy](architecture/ai-literacy.md)). | Regulatory | EU AI Act Art. 4 | High | Implemented |

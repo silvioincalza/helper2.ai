@@ -17,7 +17,7 @@ as scope creep.
 - `deploy/` — Helm charts for staging and prod
 - `docs/architecture/decisions/ADR-NNNN-<slug>.md` — one ADR per decision, numbered in the order the system is built,
   grouped by context in its README
-- The backlog is the GitHub issues of this repository (epics, features, stories, tasks). `docs/backup/roadmap.md` is generated
+- The backlog is the GitHub issues of this repository (epics, features, stories, tasks). `docs/roadmap.md` is generated
   from the open issues (`python3 scripts/backlog.py roadmap`): never edit it by hand
 - LLMs: NVIDIA models only (Nemotron on Nebius Token Factory)
 
@@ -55,7 +55,8 @@ Rules:
 
 - A use case is built only when its `UC-*.md` exists and its `**Status:**` is `Approved`. The human in the loop sets `Approved`.
 - Requirement, use case and test case IDs never change once published. Code and tests name the IDs they build.
-- A requirement change updates the entity model and the use case diagram in the same change.
+- A requirement change is checked against the entity model and the use case diagrams in the same change. They are
+  updated when it adds or changes an entity, an actor or a use case; when it changes none, the pull request says so.
 - Build and test a use case with `/use-case-implement` and `/use-case-test`, which follow `docs/architecture/stack.md`.
 - A gap or a contradiction in a specification goes to `/open-questions`, never into an assumed answer.
 - An architecture decision is an ADR in `docs/architecture/decisions/` (the `/adr` command, not `/architecture-decision`). It

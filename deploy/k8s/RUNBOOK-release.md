@@ -5,7 +5,7 @@ how to go back. [CI.md](CI.md) says what each workflow does and
 [ADR 0045](../../docs/architecture/decisions/ADR-0045-releases-and-versions.md) says why. This page is the order to follow on the
 day.
 
-**(Silvio)** marks a step only the owner can do: a workflow run, a merge, the approval on `prod`, a setting of the
+**(Owner)** marks a step only the owner can do: a workflow run, a merge, the approval on `prod`, a setting of the
 repository or the platform. **(workflow)** marks a step a workflow does by itself. Commands run from the repository
 root, with `gh` signed in as the owner; the `make` and `kubectl` ones need the mesh up and the cluster's kubeconfig.
 
@@ -37,15 +37,15 @@ Each line is checked once. A release run does not check them.
 
 | What | Check | Set up by |
 |---|---|---|
-| The environment `prod`, with its required reviewer and its two deployment rules (`main`, tags `v*`) | `gh api repos/$R/environments/prod --jq '.protection_rules[].type'` prints `required_reviewers` | **(Silvio)** [docs/backup/recreate.md](../../docs/backup/recreate.md) §7 |
-| The three rulesets: `main`, `release/**`, tags `v*` | `gh api repos/$R/rulesets --jq '.[].name'` | **(Silvio)** recreate.md §5 |
-| The variables `BAO_ADDR`, `BAO_AUDIENCE`, `H2_STAGING_URL` | `gh variable list -R $R` | **(Silvio)** recreate.md §7 |
-| The OpenBao roles `deploy`, `deploy-staging` and `deploy-prod` accept this repository; `deploy-prod` reads `ci/prod`, `ci/harbor-pull` and `ci/harbor` | a green push run of `cd` proves `deploy` and `deploy-staging`; `deploy-prod` is proved by the first prod job | **(Silvio)** recreate.md §8, [CI.md, Security model](CI.md#security-model) |
-| `ci/prod` holds prod's `app.env` and the `deployer` kubeconfig; the off-site backup Secret is on prod | `make -C deploy/k8s ENV=prod credentials`, `make -C deploy/k8s ENV=prod backup-credentials` | **(Silvio)** recreate.md §9 |
-| Staging's and prod's `app.env` in OpenBao hold `H2_DATABASE_MONITOR_PASSWORD` and `H2_REDIS_MONITOR_PASSWORD` (two new values of `openssl rand -hex 32`), staging's before the merge that adds them; the cluster's Alloy keeps the `pg_` and `redis_` metric names of `helper2-*` pods | `scripts/env-align.sh --dry-run deploy/k8s/app.env.example deploy/k8s/<env>/app.env` lists neither; `make -C deploy/k8s ENV=<env> credentials`; the exporters' series in Prometheus | **(Silvio)** [ADR 0009](../../docs/architecture/decisions/ADR-0009-observability.md) §7; the allow-list in the platform repo |
-| Prod can be recovered and is watched: a tested restore, the off-site copy, the exporters and the eviction alert, the DNS records, `H2_SETUP_GITHUB_TOKEN` | [S10.8.1](https://github.com/silvioincalza/helper2.ai/issues/353), [S1.8.3](https://github.com/silvioincalza/helper2.ai/issues/174) | **(Silvio)** per step |
-| The ad networks' rules are read before a prod ad setting is filled | [S8.4.1](https://github.com/silvioincalza/helper2.ai/issues/332) | **(Silvio)** |
-| The Privacy and Terms pages: the points for a lawyer are answered, or the owner releases with them open | [F9.3](https://github.com/silvioincalza/helper2.ai/issues/102) | **(Silvio)** |
+| The environment `prod`, with its required reviewer and its two deployment rules (`main`, tags `v*`) | `gh api repos/$R/environments/prod --jq '.protection_rules[].type'` prints `required_reviewers` | **(Owner)** [RUNBOOK-new-repository.md](RUNBOOK-new-repository.md) §7 |
+| The three rulesets: `main`, `release/**`, tags `v*` | `gh api repos/$R/rulesets --jq '.[].name'` | **(Owner)** RUNBOOK-new-repository.md §5 |
+| The variables `BAO_ADDR`, `BAO_AUDIENCE`, `H2_STAGING_URL` | `gh variable list -R $R` | **(Owner)** RUNBOOK-new-repository.md §7 |
+| The OpenBao roles `deploy`, `deploy-staging` and `deploy-prod` accept this repository; `deploy-prod` reads `ci/prod`, `ci/harbor-pull` and `ci/harbor` | a green push run of `cd` proves `deploy` and `deploy-staging`; `deploy-prod` is proved by the first prod job | **(Owner)** RUNBOOK-new-repository.md §8, [CI.md, Security model](CI.md#security-model) |
+| `ci/prod` holds prod's `app.env` and the `deployer` kubeconfig; the off-site backup Secret is on prod | `make -C deploy/k8s ENV=prod credentials`, `make -C deploy/k8s ENV=prod backup-credentials` | **(Owner)** RUNBOOK-new-repository.md §9 |
+| Staging's and prod's `app.env` in OpenBao hold `H2_DATABASE_MONITOR_PASSWORD` and `H2_REDIS_MONITOR_PASSWORD` (two new values of `openssl rand -hex 32`), staging's before the merge that adds them; the cluster's Alloy keeps the `pg_` and `redis_` metric names of `helper2-*` pods | `scripts/env-align.sh --dry-run deploy/k8s/app.env.example deploy/k8s/<env>/app.env` lists neither; `make -C deploy/k8s ENV=<env> credentials`; the exporters' series in Prometheus | **(Owner)** [ADR 0009](../../docs/architecture/decisions/ADR-0009-observability.md) §7; the allow-list in the platform repo |
+| Prod can be recovered and is watched: a tested restore, the off-site copy, the exporters and the eviction alert, the DNS records, `H2_SETUP_GITHUB_TOKEN` | [S10.8.1](https://github.com/silvioincalza/helper2.ai/issues/353), [S1.8.3](https://github.com/silvioincalza/helper2.ai/issues/174) | **(Owner)** per step |
+| The ad networks' rules are read before a prod ad setting is filled | [S8.4.1](https://github.com/silvioincalza/helper2.ai/issues/332) | **(Owner)** |
+| The Privacy and Terms pages: the points for a lawyer are answered, or the owner releases with them open | [F9.3](https://github.com/silvioincalza/helper2.ai/issues/102) | **(Owner)** |
 
 The environment `prod` comes first. GitHub creates a missing environment by itself when a job names it, with no
 reviewer: the prod job would then start with no approval.
@@ -63,7 +63,7 @@ Before every release. Nothing here changes prod.
    ```
 
 2. **The last nightly guide evaluation passed** on staging
-   ([docs/backup/evaluation.md](../../docs/backup/evaluation.md)): `gh run list -R $R --workflow guide-eval.yml --limit 3`.
+   ([eval/README.md](../../eval/README.md)): `gh run list -R $R --workflow guide-eval.yml --limit 3`.
 3. **Prod is healthy now**, and you know the revision a rollback goes back to: the one marked `deployed`.
 
    ```bash
@@ -105,7 +105,7 @@ Before every release. Nothing here changes prod.
 7. **[CHANGELOG.md](../../CHANGELOG.md) has the entry of the version**, on the commit to release.
 8. **For the first release only: the load-test baseline is recorded**
    ([S10.11.1](https://github.com/silvioincalza/helper2.ai/issues/356)), run against staging, never prod, with the two
-   simulations of [docs/backup/testing.md](../../docs/backup/testing.md).
+   simulations of `backend/loadtest` ([the stack](../../docs/architecture/stack.md)).
 
 ## 3. The release
 
@@ -114,15 +114,15 @@ release, and the rollout replaces the pods one at a time. Only a release with `c
 
 | # | Who | Step | Check after | When it fails |
 |---|---|---|---|---|
-| 1 | **(Silvio)** | Run `release-prepare` from `main`. A release: no input, or `commit`. A patch: `patch-of` with the line `YYYY.N`, after its fixes are merged into `release/YYYY.N` | The run summary names the version and the branch; the version pull request `release-bump/YYYY.N.P` is open | Nothing reached prod. Run it again: it finishes a branch a run left half-way |
-| 2 | **(Silvio)** | Merge the version pull request (squash). The ruleset of `release/**` wants `ci-ok` on it: when the pull request shows no check, start CI on its branch with `gh workflow run ci.yml -R $R --ref release-bump/YYYY.N.P` | **(workflow)** the push runs `cd` on the release branch: CI, the images built, signed and scanned. `gh run list -R $R --workflow cd.yml --branch release/YYYY.N --limit 1` is green | Fix the branch by pull request into `release/YYYY.N`; each push builds again |
-| 3 | **(Silvio)** | Run `release` from `main` with `version`. `headline` for a breaking change. `canary` unticked only for the maintenance window of check 5 | **(workflow)** jobs `check` and `built` are green: the branch, the version rule, the seven files, staging ran the commit a `.0` is cut from, the CD run of the branch passed | Nothing reached prod and no tag exists. Fix what the error names, run `release` again |
-| 4 | **(Silvio)** | Read the summary of `check` (version, commit, the commit it is cut from), then approve the job `prod`: [the release runs](https://github.com/silvioincalza/helper2.ai/actions/workflows/release.yml) → the run → Review deployments | The job `prod / deploy` starts on the self-hosted runner | Reject: nothing reached prod |
+| 1 | **(Owner)** | Run `release-prepare` from `main`. A release: no input, or `commit`. A patch: `patch-of` with the line `YYYY.N`, after its fixes are merged into `release/YYYY.N` | The run summary names the version and the branch; the version pull request `release-bump/YYYY.N.P` is open | Nothing reached prod. Run it again: it finishes a branch a run left half-way |
+| 2 | **(Owner)** | Merge the version pull request (squash). The ruleset of `release/**` wants `ci-ok` on it: when the pull request shows no check, start CI on its branch with `gh workflow run ci.yml -R $R --ref release-bump/YYYY.N.P` | **(workflow)** the push runs `cd` on the release branch: CI, the images built, signed and scanned. `gh run list -R $R --workflow cd.yml --branch release/YYYY.N --limit 1` is green | Fix the branch by pull request into `release/YYYY.N`; each push builds again |
+| 3 | **(Owner)** | Run `release` from `main` with `version`. `headline` for a breaking change. `canary` unticked only for the maintenance window of check 5 | **(workflow)** jobs `check` and `built` are green: the branch, the version rule, the seven files, staging ran the commit a `.0` is cut from, the CD run of the branch passed | Nothing reached prod and no tag exists. Fix what the error names, run `release` again |
+| 4 | **(Owner)** | Read the summary of `check` (version, commit, the commit it is cut from), then approve the job `prod`: [the release runs](https://github.com/silvioincalza/helper2.ai/actions/workflows/release.yml) → the run → Review deployments | The job `prod / deploy` starts on the self-hosted runner | Reject: nothing reached prod |
 | 5 | **(workflow)** | The canary: its migrate Job on prod's database, one public app pod and one web pod, reached only with the run's header. Then the smoke test through `https://helper2.ai`, with the header and without | The run summary says the canary passed and is removed | The canary is removed and the job fails. Prod runs the release before. No tag anywhere, the version is still free. A migration the canary ran stays in the schema |
 | 6 | **(workflow)** | The version tag `YYYY.N.P` in Harbor, on the three images of the commit | The step log says `tagged …` for each image | From here a failure uses the version up: see section 5 |
 | 7 | **(workflow)** | `make diff`, then `make deploy`: prod by version, by digest, and the check after it (release deployed, workloads rolled out, migrate Job complete, `/` and `/api/v1/sources` answer 200) | The step ends with `release helper2 in helper2-prod is healthy`; then `make status` passes | The release goes back by itself to the revision deployed before, is checked once more, and the job fails |
 | 8 | **(workflow)** | The job `publish`: the tag `vYYYY.N.P`, the GitHub release with its notes, the four SBOMs, the pull request `release-merge/vYYYY.N.P` into `main` with CI started on it | `gh release view vYYYY.N.P -R $R`; the pull request is open | Prod already runs the version. Run the failed job again: `gh run rerun <run id> -R $R --failed`. It finishes what is missing |
-| 9 | **(Silvio)** | Merge the pull request back into `main` once `ci-ok` is green | Staging's footer shows the version after its CD run | A conflict: resolve it on `release-merge/vYYYY.N.P`; that push runs CI |
+| 9 | **(Owner)** | Merge the pull request back into `main` once `ci-ok` is green | Staging's footer shows the version after its CD run | A conflict: resolve it on `release-merge/vYYYY.N.P`; that push runs CI |
 
 The same from the terminal:
 
@@ -237,7 +237,7 @@ last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Ne
   indexes. The catalog and its embeddings, accounts, saved items, reports, review decisions, the audit trail and the
   runtime settings stay as they are.
 
-  **(Silvio)** From the commit of the release, print the checksum of the file (Flyway's own: CRC32 of its lines):
+  **(Owner)** From the commit of the release, print the checksum of the file (Flyway's own: CRC32 of its lines):
 
   ```bash
   python3 -c 'import sys,zlib

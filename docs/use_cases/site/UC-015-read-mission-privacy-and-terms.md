@@ -9,7 +9,8 @@
 **Trigger:** The visitor opens Mission, Privacy or Terms from the footer  
 **Status:** Draft  
 
-**Requirements:** [FR-021](../../requirements.md)  
+**Requirements:** [FR-021, C-016](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/uc-015-read-mission-privacy-and-terms.md)  
 **API:** [getPolicy](../../../api/public.yaml#getPolicy)
 
 ## Preconditions

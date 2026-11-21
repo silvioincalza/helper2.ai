@@ -136,11 +136,11 @@ tool answered, and must confirm every value before it reaches the catalog.
     agreement, accuracy per attribute, the share of `CONFIRMED` values that are right, time per item and tokens per
     item. The admin chooses the model and the bar from these numbers. In production every research result is kept next
     to the admin's final decision, so the same numbers are measured on live use. The labels are the admin's decisions
-    (`docs/backup/eval/research-labels.tsv`, exported by `scripts/research-eval-labels.sql`) and items a person labels by
+    (`eval/research-labels.tsv`, exported by `scripts/research-eval-labels.sql`) and items a person labels by
     hand (`research-labels-manual.tsv`). `ResearchEvalRecorder` (`evalRecord`) runs the real tools and model on them;
     the eval's catalog is empty, so a duplicate verdict is not measured: an item labelled `DUPLICATE` is run and
     listed, and left out of the verdict agreement. The report says when the set is under 100
-    items or 20 rejects; then it decides nothing. How to run it: `docs/backup/eval/README.md`.
+    items or 20 rejects; then it decides nothing. How to run it: `eval/README.md`.
 11. **Retention.** Runs and their steps are deleted 90 days after the run ends (the daily job `review-research`), and
     with their review item. The steps hold public web pages and catalog data; no user data is sent to the model. The
     public app's database role cannot read the two tables.

@@ -34,8 +34,8 @@ jobs:
         with:
           name: guide-eval
           path: |
-            docs/backup/eval/guide-run.md
-            docs/backup/evaluation-adversarial.md
+            eval/guide-run.md
+            eval/guide-adversarial-run.md
             backend/eval-data/guide-pool.tsv
             backend/eval-data/guide-runs.json
             backend/eval-data/guide-adversarial-runs.json

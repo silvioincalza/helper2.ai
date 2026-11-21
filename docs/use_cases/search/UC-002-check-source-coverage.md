@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-005, C-015](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/uc-002-check-source-coverage.md)  
 **API:** [listSources](../../../api/common.yaml#listSources)
 
 ## Preconditions

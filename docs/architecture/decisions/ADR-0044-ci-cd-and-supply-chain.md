@@ -195,7 +195,7 @@ Harbor could put an image under a tag first.
      of a release is such a change; the push to the release branch after its merge runs all of CI (`full: true`)
      before staging and prod. The image map of `cd.yml` (§10) never takes this rule: a new version always builds
      the images it shows, the web image's footer included. A bump with any other change is mapped path by path;
-   - `docs/backup/eval/` → the libs chain and the public chain (their tests read the evaluation sets) and diagrams;
+   - `eval/` → the libs chain and the public chain (their tests read the evaluation sets) and diagrams;
    - `frontend/index.html`, `frontend/src/routes.tsx`, `frontend/src/i18n/locales/en.json` → frontend jobs, the
      public chain of the backend (its page tests read these three files), web image and back office image;
    - `frontend/` → frontend jobs, web image and back office image (the back office image builds the admin web app from
@@ -218,7 +218,6 @@ Harbor could put an image under a tag first.
    - `deploy/helm/helper2/files/redis-users.acl` → the three backend chains and the architecture job (the Redis
      test container mounts it) and chart;
    - `deploy/k8s/app.env.example` → the libs chain (`EnvGuidesTest` reads it) and chart;
-   - `docs/backup/design/system/tokens.json` → frontend jobs (the token test reads it) and diagrams;
    - any other `*.md`, `docs/`, `LICENSE` → diagrams job only; `.claude/`, `.idea/` → nothing;
    - `deploy/postgres/` → the Postgres tag check and chart; `deploy/monitoring/` → monitoring and chart;
      `deploy/helm/`, `deploy/k8s/`, `deploy/grafana/` → chart only. No app image for these;
@@ -336,7 +335,7 @@ Harbor could put an image under a tag first.
 ### GitHub settings as files
 21. **The repository's settings are in `.github/settings`.** JSON bodies for the GitHub API (the repository, its
     topics, the three rulesets, the environments, the workflow permissions, fork pull request approval, the OIDC
-    subject) and `variables.env`. [docs/backup/recreate.md](../../backup/recreate.md) applies them in order, on a new repository or
+    subject) and `variables.env`. [deploy/k8s/RUNBOOK-new-repository.md](../../../deploy/k8s/RUNBOOK-new-repository.md) applies them in order, on a new repository or
     after a change. A setting changes by pull request, like code. Squash merges only; every pull request from an
     outside collaborator waits for an approval before its workflows run; secret scanning with push protection;
     Dependabot alerts and security-update pull requests beside the weekly version updates and the Grype scan.
@@ -367,7 +366,7 @@ Harbor could put an image under a tag first.
   `install-cosign/action.yml` — Syft and Grype, the database cached per build, the code scanning upload, cosign.
 - `.github/actions/go-tool/action.yml` — helm, kubeconform, d2 and Grype: `go install` once per version, then cached.
 - `.github/dependabot.yml` — base images and actions by digest and SHA.
-- `.github/settings/` — the repository's GitHub settings; `docs/backup/recreate.md` applies them.
+- `.github/settings/` — the repository's GitHub settings; `deploy/k8s/RUNBOOK-new-repository.md` applies them.
 - `.grype.yaml` — exceptions.
 - `deploy/k8s/Makefile` — `image`, `ci-images`, `postgres-image` (`PUSHED`), `sbom`, `backoffice-sbom`, `web-sbom`,
   `postgres-sbom`, `sign`, `sign-existing`, `verify-images`, `verified`, `cosign-pub`, `chart-check`,

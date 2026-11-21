@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-014](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/uc-009-report-wrong-information.md)  
 **API:** [reportResource](../../../api/public.yaml#reportResource)
 
 ## Preconditions

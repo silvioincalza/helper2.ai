@@ -34,7 +34,7 @@ Readings: (a) keep the search-only budget only; (b) add a budget for a full answ
 **Status:** Open  
 **Assumed:** WCAG 2.2 level AA, as the UI design guidance of the repository states.  
 
-The vision only says that keyboard and screen-reader users can complete UJ-1 to UJ-6. The level comes from the
+The vision only says that keyboard and screen-reader users can complete UC-001, UC-005, UC-007, UC-009 and UC-012. The level comes from the
 ui-design agent description and the design system ADR.
 
 ## OQ-004: Which articles of the Digital Services Act apply?

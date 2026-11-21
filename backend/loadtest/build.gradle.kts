@@ -9,7 +9,7 @@ java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
 tasks.withType<JavaCompile>().configureEach { options.release = 17 }
 
 tasks.named<Copy>("processGatlingResources") {
-  from(rootProject.file("../docs/backup/eval")) {
+  from(rootProject.file("../eval")) {
     include("search-queries.json", "guide-queries.json")
   }
 }

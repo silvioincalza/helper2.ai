@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-029](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/back-office.md)  
 **API:** [listEnrichmentQueue](../../../api/admin.yaml#listEnrichmentQueue), [prioritiseEnrichment](../../../api/admin.yaml#prioritiseEnrichment), [skipEnrichment](../../../api/admin.yaml#skipEnrichment), [requeueEnrichment](../../../api/admin.yaml#requeueEnrichment), [recheckEnrichments](../../../api/admin.yaml#recheckEnrichments)
 
 ## Preconditions

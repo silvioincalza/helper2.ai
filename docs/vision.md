@@ -29,7 +29,7 @@ retrieved, with a quote that code has checked word for word.
 - Every published AI-extracted fact links to its evidence; an unsupported fact is unverified or goes to review.
 - Search works with the cache down, the language model down, or one or more sources down.
 - Asking the guide never loses the query or the filters.
-- Keyboard-only and screen-reader users can search, ask, evaluate, report and save (UJ-1 to UJ-6).
+- Keyboard-only and screen-reader users can search, ask, evaluate, report and save (UC-001, UC-005, UC-007, UC-009, UC-012).
 - The model cost stays bounded: per-client and global daily caps on questions and model calls, and AI answers cached.
 
 ## Scope
@@ -68,11 +68,33 @@ retrieved, with a quote that code has checked word for word.
 
 ## Success measures
 
-- The product success criteria SC-1 to SC-7 in [the user journeys](backup/user-journeys.md) hold, each checked by the tests
-  named there.
-- The evaluation runs ([evaluation](backup/evaluation.md)): search relevance, and for the guide the answer rate, the
+- The product success criteria SC-1 to SC-7 below hold, each checked by the tests named there.
+- The evaluation runs ([ADR 0046](architecture/decisions/ADR-0046-evaluation-guide-and-search.md)): search relevance, and for the guide the answer rate, the
   questions that must stay empty and do, P@3 and nDCG@3 of its picks, the picks the validator kept and rejected, and
   latency p50 / p90. A search change must not let nDCG@10 fall more than 0.005 below the stored baseline.
 - Latency stays within the budgets of the load test for search and the guide's search-only path.
-- Each user journey states how we know it worked (for example gifts and views of the Support page, p95 time to
-  results before and after an ad slot).
+- The screen notes of a use case ([mockups](mockups/README.md)) state how we know it worked (for example gifts and
+  views of the Support page, p95 time to results before and after an ad slot).
+
+| ID | Criterion | Verified by |
+|---|---|---|
+| SC-1 | One query returns aggregated results from every enabled source that responded within its timeout | API integration tests; UI component tests (Vitest + Testing Library, API mocked) for results, the partial line and empty/all-failed states. The browser journey is not automated: [S10.12.1](https://github.com/silvioincalza/helper2.ai/issues/357) |
+| SC-2 | Every configured source appears in the status list with a truthful outcome | Orchestrator unit tests; UI component tests for the source status panel (every outcome in words). The browser journey is not automated: [S10.12.1](https://github.com/silvioincalza/helper2.ai/issues/357) |
+| SC-3 | Asking the guide never loses query/filters | UI component tests: the URL keeps `q`, `ask` and filters; closing the answer keeps the search; back/forward restore the box; retry and replacing a running question. The browser journey is not automated: [S10.12.1](https://github.com/silvioincalza/helper2.ai/issues/357) |
+| SC-4 | No invented dates/popularity; unknowns labeled | domain tests + UI tests |
+| SC-5 | Every published AI-extracted fact links to evidence; unsupported → unverified/review | enrichment validator tests |
+| SC-6 | Search works with cache down, LLM down, one or more sources down | resilience tests |
+| SC-7 | Keyboard-only and screen-reader users can complete UC-001, UC-005, UC-007, UC-009 and UC-012 | axe smoke tests in jsdom (color contrast excluded), focus and live-region component tests + manual checklist ([S7.6.2](https://github.com/silvioincalza/helper2.ai/issues/324)) |
+
+## Test strategy
+
+- Domain rules are written test first, as unit tests with no framework and fake ports.
+- What a person or an API client sees is tested in their words: page and component tests on the frontend, API tests on
+  the backend. Every API response is checked against the OpenAPI contract.
+- Every adapter is tested against the real thing or a recording of it: PostgreSQL and Redis in containers, a scripted
+  model, recorded source responses, real HTTP at the edge.
+- Search and the guide are measured on fixed sets with labels given by people, against a stored baseline
+  ([ADR 0046](architecture/decisions/ADR-0046-evaluation-guide-and-search.md)).
+- Live smoke tests, latency tests and load tests run outside the build, on request or on a schedule.
+- No browser journey is automated yet.
+- The layers, the commands and where a new test goes are in [the stack](architecture/stack.md).
