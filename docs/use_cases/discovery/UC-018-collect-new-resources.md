@@ -125,7 +125,8 @@
 1. System takes the source records whose GitHub repository was visited the longest time ago, up to the sweep batch.
 2. System asks the Source Provider for the current state of each repository.
 3. System records for each record whether its repository was found, is archived, or was not found, and when it was visited; a record whose repository did not answer keeps its state and gets only the time of the visit.
-4. Use case ends.
+4. System stores the stars of each repository found on the record that is the repository itself, and the popularity of its resource follows.
+5. Use case ends.
 
 ## Postconditions
 
@@ -177,7 +178,7 @@ The run records of the Scout are kept for 90 days by default; older records that
 
 ### BR-009: Repository Sweep
 
-The repository sweep is on by default and visits 50 source records every 10 minutes, starting 2 minutes after startup. A record whose repository is not found is marked gone only when the repository was also missing at a visit at least 24 hours earlier and the record is the repository itself, not a record that only links to it.
+The repository sweep is on by default and visits 50 source records every 10 minutes, starting 2 minutes after startup. A record whose repository is not found is marked gone only when the repository was also missing at a visit at least 24 hours earlier and the record is the repository itself, not a record that only links to it. The stars of a repository are stored only on the record that is the repository itself; a visit that reads no stars keeps the stored count.
 
 ### BR-010: Audit of Started Runs
 

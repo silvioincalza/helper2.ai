@@ -25,6 +25,9 @@ The index query must also stay well inside its 3 s timeout on the production cat
 3. **Stored popularity.** `resource.popularity` (0..1) is kept by the trigger `source_record_popularity`:
    the strongest metric of the resource's records, `ln(1 + value) / ln(1 + reference)`, capped at 1.
    References: GitHub stars 50,000; Hugging Face likes 5,000; Hugging Face downloads 5,000,000; npm weekly downloads 1,000,000.
+   A count changes when a hit of its record is written again. The stars of a record that is a GitHub repository
+   also change when the repository sweep visits it, about every 5 days
+   ([0020](ADR-0020-resource-vitality.md) §7). The trigger runs on both, so there is one formula.
 4. **Facts in batch.** `ResourceRows.withFacts` loads labels for all returned rows in one query and popularity metrics
    in one query (newest value per kind and source). So `CatalogSearchSource` and `SemanticSearchSource` hits carry the
    same metrics a live hit carries.
@@ -159,6 +162,8 @@ The index query must also stay well inside its 3 s timeout on the production cat
 ### Known limits
 
 - The popularity formula exists twice, in SQL (`h2_resource_popularity`) and Kotlin (`Ranking.popularity`); change them together. Index stage 1 can cut partial matches when more than 300 rows match.
+- Only GitHub stars are read again on a schedule. A like or a download count is as old as the last time a collector
+  or a search found its resource ([S2.11.7](https://github.com/silvioincalza/helper2.ai/issues/976)).
 - A live hit is written back to the catalog (observed). Once it has settled, 24 h after its first discovery
   ([0022](ADR-0022-federated-search.md) §9), `helper2-index` and `helper2-semantic` can find it again, each a vote of its
   own: a result seen early gains votes, and the order of its query changes once on that day. The frozen eval

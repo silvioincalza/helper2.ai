@@ -32,7 +32,7 @@ public final class GitHubRepositoryStates implements RepositoryStates {
   private static final int MOST_NOT_FOUND_IN_FIVE = 1;
   private static final Pattern ALIAS = Pattern.compile("r\\d{1,4}");
   private static final String FACTS =
-      "{ isArchived parent { nameWithOwner isArchived } latestRelease { publishedAt } }";
+      "{ isArchived stargazerCount parent { nameWithOwner isArchived } latestRelease { publishedAt } }";
 
   private final RestClient http;
   private final Resilience resilience;
@@ -126,9 +126,14 @@ public final class GitHubRepositoryStates implements RepositoryStates {
       return new Found(
           repository.path("isArchived").asBoolean(),
           parentOf(repository.path("parent")),
-          HttpClients.instant(repository.path("latestRelease"), "publishedAt"));
+          HttpClients.instant(repository.path("latestRelease"), "publishedAt"),
+          starsOf(repository.path("stargazerCount")));
     }
     return notFound && repository.isNull() ? new Gone() : null;
+  }
+
+  private static @Nullable Long starsOf(JsonNode count) {
+    return count.isIntegralNumber() && count.asLong() >= 0 ? count.asLong() : null;
   }
 
   private static @Nullable Parent parentOf(JsonNode parent) {
