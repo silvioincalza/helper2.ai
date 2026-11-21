@@ -104,7 +104,7 @@ the product: the next source does not get it.
 
 8. **The numbers, measured on 11 Nov 2026.**
    - **Maintained within 1,095 days (36 months).** The 707 GitHub repositories of the graded results
-     (`docs/backup/eval/search-qrels.tsv`), with the day of their last push read from GitHub:
+     (`eval/search-qrels.tsv`), with the day of their last push read from GitHub:
 
      | No push for | good (grade 2–3, 219) | weak (grade 1, 345) | bad (grade 0, 143) |
      |---|---|---|---|

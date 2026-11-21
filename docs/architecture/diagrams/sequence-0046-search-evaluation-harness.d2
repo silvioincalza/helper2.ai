@@ -14,7 +14,7 @@ search: "SnapshotTaker →\nSearchResources\n(no cache, no observer)" {class: ap
 sources: "Live sources\n(GitHub, npm, HF,\narXiv, Tavily, catalog)" {class: ext}
 pg: "Postgres\n(resource_embedding)" {class: data}
 replay: "SearchReplay\n(ResultMerger.merge,\nRanking.rank)" {class: app}
-files: "docs/backup/eval/ (queries, qrels,\nbaseline) and\nbackend/eval-data/" {class: data}
+files: "eval/ (queries, qrels,\nbaseline) and\nbackend/eval-data/" {class: data}
 
 record: "./gradlew evalRecord (tag eval-record, repo-root .env)" {
   owner -> test: "run" {class: hot}

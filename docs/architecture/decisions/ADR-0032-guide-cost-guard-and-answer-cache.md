@@ -334,11 +334,11 @@ A reused answer costs the plan call (one fast-model call, one of the client's da
 No search, no choose or reason check, and no web search of the asker: the answer states the asker's own web searches
 left, like an exact hit.
 
-**Evaluation and the threshold.** `docs/backup/eval/guide-similar.json` holds 55 fixed pairs: 25 should share an answer
+**Evaluation and the threshold.** `eval/guide-similar.json` holds 55 fixed pairs: 25 should share an answer
 (paraphrases, word order, spelling, one in Italian); 30 must not (another subject 8, constraint 6, intent 5, negation 4,
 direction 4, window 2, kind named 1). Each side carries the reading a correct plan gives it. Their query embeddings are
 recorded once through the NVIDIA API with the production model (`./gradlew evalRecord --tests '*GuideSimilarRecorder'`,
-the same `NvidiaEmbedder` the index uses) into `docs/backup/eval/guide-similar-vectors.json`, and `GuideSimilarEvaluationTest`
+the same `NvidiaEmbedder` the index uses) into `eval/guide-similar-vectors.json`, and `GuideSimilarEvaluationTest`
 computes the sweep in every build, so the table cannot drift from the code.
 
 | Threshold | Reused (of 25) | False reuses (of 30) | Precision | Embedding alone: reused / false |
@@ -411,7 +411,7 @@ shared cache purge.
   `RateLimiter.java`, `PgVectors.java`; `platform/llm/DailyBudget.java`, `internal/RedisCallCounter.java` (the count and its
   give-back); `platform/llm/ModelCallMetrics.java` (`promptVersion`).
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `guide_similar_question`.
-- `docs/backup/eval/guide-similar.json`, `guide-similar-vectors.json`;
+- `eval/guide-similar.json`, `guide-similar-vectors.json`;
   `backend/apps/public/src/test/kotlin/ai/helper2/eval/GuideSimilarEvaluation.kt`, `GuideSimilarEvaluationTest.kt`,
   `GuideSimilarRecorder.kt`.
 - Tests: `ClientQuotaTest`, `GuideAnswerKeyTest`, `GuideAnswerCacheStoreTest`, `SimilarQuestionsTest`,

@@ -20,7 +20,7 @@ of the system.
 | What is still open | [the roadmap](docs/backup/roadmap.md), generated from [the backlog](https://github.com/silvioincalza/helper2.ai/issues): epics, features and stories |
 | What changed | [CHANGELOG](CHANGELOG.md) |
 | Product | [user journeys](docs/backup/user-journeys.md) · [sources](docs/backup/sources.md) · [processors and transfers](docs/backup/processors.md) · [costs](docs/backup/cost-analysis.md) |
-| Quality | [testing](docs/backup/testing.md) · [evaluation](docs/backup/evaluation.md) · [AI literacy](docs/backup/ai-literacy.md) |
+| Quality | [test layers and commands](docs/architecture/stack.md) · [evaluation](eval/README.md) · [AI literacy](docs/backup/ai-literacy.md) |
 | Stack | Spring Boot 4.1, Spring AI 2.0, Spring Modulith, Java 25 + Kotlin · React 19, Vite · PostgreSQL 18 (full-text + pgvector) · Redis 8 · contract-first [OpenAPI 3.1](api/public.yaml) |
 
 ## How the models are used
@@ -87,10 +87,10 @@ cd frontend && npm ci && npm run dev    # http://localhost:5173, proxies /api, /
 ```bash
 (cd backend && ./gradlew test)             # unit + integration (Testcontainers)
 (cd frontend && npm test -- --run)
-node scripts/eval-guide.mjs http://localhost:8080   # needs a running backend; 21 fixed guide questions, writes docs/backup/eval/guide-run.md
+node scripts/eval-guide.mjs http://localhost:8080   # needs a running backend; 21 fixed guide questions, writes eval/guide-run.md
 ```
 
-Details and known gaps: [docs/backup/testing.md](docs/backup/testing.md).
+Details and known gaps: [docs/architecture/stack.md](docs/architecture/stack.md).
 
 ## How helper2.ai runs
 

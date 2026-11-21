@@ -63,7 +63,7 @@ Before every release. Nothing here changes prod.
    ```
 
 2. **The last nightly guide evaluation passed** on staging
-   ([docs/backup/evaluation.md](../../docs/backup/evaluation.md)): `gh run list -R $R --workflow guide-eval.yml --limit 3`.
+   ([eval/README.md](../../eval/README.md)): `gh run list -R $R --workflow guide-eval.yml --limit 3`.
 3. **Prod is healthy now**, and you know the revision a rollback goes back to: the one marked `deployed`.
 
    ```bash
@@ -105,7 +105,7 @@ Before every release. Nothing here changes prod.
 7. **[CHANGELOG.md](../../CHANGELOG.md) has the entry of the version**, on the commit to release.
 8. **For the first release only: the load-test baseline is recorded**
    ([S10.11.1](https://github.com/silvioincalza/helper2.ai/issues/356)), run against staging, never prod, with the two
-   simulations of [docs/backup/testing.md](../../docs/backup/testing.md).
+   simulations of `backend/loadtest` ([the stack](../../docs/architecture/stack.md)).
 
 ## 3. The release
 
