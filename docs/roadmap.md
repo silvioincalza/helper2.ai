@@ -73,7 +73,7 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S3.12.1 Ranking weights chosen by the kind of query](https://github.com/silvioincalza/helper2.ai/issues/251)
 - [S3.12.2 A recency term for time-bound searches](https://github.com/silvioincalza/helper2.ai/issues/252)
 - [S3.12.4 Two ranking rules decided on graded data](https://github.com/silvioincalza/helper2.ai/issues/254)
-- [T3.0 Owner task (Silvio): one labelling session after the release, about 2–3 hours](https://github.com/silvioincalza/helper2.ai/issues/221)
+- [T3.0 Owner task: one labelling session after the release, about 2–3 hours](https://github.com/silvioincalza/helper2.ai/issues/221)
 
 ### Later
 
@@ -198,10 +198,6 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S10.12.1 The main journeys automated in a browser](https://github.com/silvioincalza/helper2.ai/issues/357)
 
 ## E11 Spec-driven docs with the AI Unified Process
-
-### Now
-
-- [S11.7.7 The session opens its pull request once verify.sh passes](https://github.com/silvioincalza/helper2.ai/issues/949)
 
 ### Next
 
