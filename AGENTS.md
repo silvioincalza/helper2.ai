@@ -66,7 +66,7 @@ Rules:
   page, no "previously" or "moved from". When the human in the loop says the migration is complete, revision history starts in
   the specification pages only: `docs/vision.md`, `docs/requirements.md`, the use cases and the entity model.
   ADRs and code stay free of history, then as now: an ADR that no longer holds is `Superseded`.
-- Every diagram the process writes in PlantUML or Mermaid also has a D2 twin with its SVG in
+- Every diagram the process writes in PlantUML or Mermaid also has a D2 twin with its SVG and PNG in
   `docs/architecture/diagrams/` (skill `aiup-diagrams`).
 - A change is reviewed against `REVIEW.md` by the `reviewer` agent, never by the session that designed it.
   `/pr-sweep <n>` fixes review comments and failing checks until only the human in the loop's approval is missing.
