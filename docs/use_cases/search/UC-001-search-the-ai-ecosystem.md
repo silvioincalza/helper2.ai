@@ -166,7 +166,7 @@ The coverage is partial when a source that was expected to answer did not succee
 
 ### BR-008: Daily Web Searches
 
-The live web search is metered. Each visitor gets 3 web searches a day for search and 3 a day for the AI guide by default, counted per network address and reset at 00:00 UTC. An optional global daily cap of web credits applies to all visitors, with no cap by default. A web search counts only when the web source is called live and answers; an answer from stored web results costs nothing. A web call that was made and failed gives the visitor's web search back but keeps its web credit; a call that was never made gives the credit back too.
+The live web search is metered. Each visitor gets 10 web searches a day for search and 10 a day for the AI guide by default, counted per network address and reset at 00:00 UTC. An optional global daily cap of web credits applies to all visitors, with no cap by default. A web search counts only when the web source is called live and answers; an answer from stored web results costs nothing. A web call that was made and failed gives the visitor's web search back but keeps its web credit; a call that was never made gives the credit back too.
 
 ### BR-009: Stored Web Results
 
