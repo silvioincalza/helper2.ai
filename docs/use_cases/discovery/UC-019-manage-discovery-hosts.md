@@ -36,7 +36,7 @@
 
 1. System tells the administrator that the reason must be one plain line of at most 500 characters.
 2. Nothing changes.
-3. Use case continues at step 3.
+3. Use case continues at step 3 for an addition, or at step 7 for a removal.
 
 ### A2: Not a Host Name
 
@@ -105,11 +105,11 @@
 
 ### BR-001: Kinds of Hosts
 
-A writing host publishes articles about many products: a post on it becomes an article candidate. A directory host lists products: a page on it is never kept. Discovery reads both lists at the start of each run.
+A writing host publishes articles about many products: a post on it becomes an article candidate. A directory host lists products: a page on it is never kept. On both kinds of host, no page is taken as a product's own site. Discovery and the awesome-list collector read both lists at the start of each pass.
 
 ### BR-002: Plain Host Form
 
-A host is kept in lower case, without a leading "www." and without a trailing dot. It has at most 253 characters and at least a name and a domain; each label has letters, digits and inner hyphens only.
+A host is kept in lower case, without a leading "www." and without a trailing dot. It has at most 253 characters and at least a name and a domain; each label has at most 63 characters: letters, digits and inner hyphens only. An entry also covers every subdomain of the host.
 
 ### BR-003: One List per Host
 

@@ -8,7 +8,7 @@
 **Secondary Actors:** Scheduler, Language Model, Source Provider  
 **Goal:** Have an AI research agent check resource and course candidates on the web and propose a verdict and a value for each attribute with its source quotes, so the Administrator decides faster without anything reaching the catalog unconfirmed.  
 **Trigger:** The Administrator starts research for picked candidates, for a page of the review queue, or for every open candidate.  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-034](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  
@@ -181,7 +181,7 @@ The research proposes the verdict, canonical address, title, type, audience, tec
 
 ### BR-010: Applying the proposal
 
-Accept is possible only when every changed value has a decision the candidate can take; each value is checked against the rules of a candidate edit (UC-024 BR-006) before it is confirmed. Keep and duplicate are decided one item at a time; only reject verdicts are applied to several items together, after the Administrator confirms the list.
+Accept is possible only when every changed value has a decision the candidate can take; each value is checked against the rules of a candidate edit (UC-024 BR-006) before it is confirmed. In the research view, keep and duplicate are decided one item at a time; only reject verdicts are applied to several items together, after the Administrator confirms the list. A candidate with the verdict keep and no conflict can also be accepted together with others (UC-024 BR-012).
 
 ### BR-011: Steps are stored and shown as text
 

@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Decide what the machine could not decide on its own (new resource, course, example and known target candidates, enrichment checks, unverified relationships and reported errors), so that only checked content reaches the catalog.  
 **Trigger:** The Administrator opens the back office to work through what needs a person.  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-031, FR-032, NFR-012](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  
@@ -37,7 +37,7 @@
 **Trigger:** The selected item is an open resource or course candidate whose title, type, tags or other values are wrong (step 6)  
 **Flow:**
 
-1. The Administrator changes the title, type or tags, or confirms other values such as the canonical address, pricing, licence, audience, tech level, description, language or published date.
+1. The Administrator changes the title, type or tags, or confirms other values such as the canonical address, pricing, open source, licence, audience, tech level, description, language or published date.
 2. The system checks the values, saves them into the candidate, marks the changed fields as edited by an administrator and rewrites the item's reason line.
 3. The system records the edit in the audit trail. The item stays open.
 4. Use case continues at step 6.
@@ -171,7 +171,7 @@ Only an open item can be decided, edited or have its target changed. There is no
 
 ### BR-004: Effect of accepting by kind
 
-Accepting a resource or course candidate indexes its page in the catalog with the title, type and tags it holds, at its confirmed canonical address. Accepting a known target proposal adds the known target, or adds its names to the target of the same kind that already holds its name. Accepting a drafted example adds it as a home example. Accepting a relationship candidate verifies the relationship, and rejecting it rejects the relationship. Accepting an enrichment validation or a user report closes the item and adds nothing.
+Accepting a resource or course candidate indexes its page in the catalog with the title, type and tags it holds, at its confirmed canonical address, and puts the new resource first in the enrichment backlog (UC-021 BR-017). Accepting a course candidate that holds no structured candidate closes the item and adds nothing. Accepting a known target proposal adds the known target, or adds its names to the target of the same kind that already holds its name. Accepting a drafted example adds it as a home example. Accepting a relationship candidate verifies the relationship, and rejecting it rejects the relationship. Accepting an enrichment validation or a user report closes the item and adds nothing.
 
 ### BR-005: A decided candidate is not proposed again
 
@@ -179,7 +179,7 @@ The decision on a resource, course, example or known target candidate is kept fo
 
 ### BR-006: Values of a candidate edit
 
-An edit changes at least one value. The title is 1 to 300 characters on one line. The type is a candidate type (PRODUCT, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, MODEL, DATASET, ARTICLE, NEWS, EVENT, COURSE, AWESOME_LIST), never OTHER, and need not be one the finders declare. There are at most 12 tags, each at most 40 characters of lower-case words joined by hyphens. The canonical address is a secure web address of at most 2,000 characters. Pricing is FREE, FREEMIUM, PAID or OPEN_SOURCE_SELF_HOSTED; the licence is an SPDX identifier; the audience is USE_AI, BUILD_WITH_AI or BOTH; the tech level is BEGINNER, INTERMEDIATE or ADVANCED; the description is 1 to 4,000 characters; the language is one the catalog takes; the published date is not in the future.
+An edit changes at least one value. The title is 1 to 300 characters on one line. The type is a candidate type (PRODUCT, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, MODEL, DATASET, ARTICLE, NEWS, EVENT, COURSE, AWESOME_LIST), never OTHER, and need not be one the finders declare. There are at most 12 tags, each at most 40 characters of lower-case words joined by hyphens. The canonical address is a secure web address of at most 2,000 characters. Pricing is FREE, FREEMIUM, PAID or OPEN_SOURCE_SELF_HOSTED; open source is yes or no; the licence is an SPDX identifier; the audience is USE_AI, BUILD_WITH_AI or BOTH; the tech level is BEGINNER, INTERMEDIATE or ADVANCED; the description is 1 to 4,000 characters; the language is one the catalog takes; the published date is not later than tomorrow (UTC).
 
 ### BR-007: No lost update on a candidate
 
@@ -215,7 +215,7 @@ A page holds 1 to 100 items, 20 by default, newest first. The category filter ma
 
 ### BR-015: Audit of review actions
 
-Every decision is recorded in the audit trail with its outcome (accepted, rejected, not open, not found or not allowed) and, for a batch, the batch identifier. Every candidate or proposal edit, relationship target change and resource added for it is recorded. A refused edit or target change is not recorded, since nothing changed.
+Every decision is recorded in the audit trail with its outcome (accepted, rejected, not open, not found or not allowed) and, for a batch, the batch identifier. Every candidate or proposal edit, relationship target change and resource added for it is recorded. A refused edit or target change, and an accept that cannot be added (A10), are not recorded, since nothing changed.
 
 ### BR-016: Notes
 

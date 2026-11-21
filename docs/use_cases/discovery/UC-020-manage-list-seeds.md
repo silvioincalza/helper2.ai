@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Choose curated lists of AI resources, on GitHub or on the web, that the Scout reads on every pass whatever its own search finds, so that good lists the search misses still feed the catalog.  
 **Trigger:** An administrator opens the added lists of the back office to look at them, add a list or stop reading one.  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-027](../../requirements.md)  
 **API:** [listListSeeds](../../../api/admin.yaml#listListSeeds), [addListSeed](../../../api/admin.yaml#addListSeed), [removeListSeed](../../../api/admin.yaml#removeListSeed)
@@ -37,11 +37,11 @@
 
 1. System tells the administrator that the reason must be one plain line of at most 500 characters.
 2. Nothing changes.
-3. Use case continues at step 3.
+3. Use case continues at step 3 for an addition, or at step 8 for a removal.
 
 ### A2: Address Not Accepted
 
-**Trigger:** The address is empty, is a file path or a branch on GitHub, does not use https, has user info, a port or a fragment, or is on an IP address or a private host name (step 4)  
+**Trigger:** The address is empty, is a file path, a branch or a query on GitHub, does not use https, has user info, a port, a fragment, a space or a hidden character, is longer than 300 characters, or is on an IP address, a private host name or a host name written in punycode (step 4)  
 **Flow:**
 
 1. System tells the administrator what is wrong with the address.
@@ -98,11 +98,11 @@
 
 ### BR-001: Accepted Addresses
 
-A GitHub repository is entered as "owner/name" or as its https address on github.com and is kept in lower case as "owner/name". A web page is an https address with a public host name and no user info, port or fragment, of at most 300 characters. Anything else is refused.
+A GitHub repository is entered as "owner/name" or as its https address on github.com and is kept in lower case as "owner/name". A web page is an https address with a public host name (no IP address, private name or punycode) and no user info, port or fragment, of at most 300 characters. Anything else is refused.
 
 ### BR-002: Hosts Never Read
 
-A web page on a host the configuration names as never read is refused, with the reason the configuration gives. By default, coursera.org is never read because its terms forbid automated reading without written consent.
+A web page on a host the configuration names as never read is refused, with the reason the configuration gives. By default, coursera.org is never read because its terms forbid automated reading without written consent. A host covers its subdomains. The rule is applied again at every read, so a page added before its host was named is no longer read.
 
 ### BR-003: Number of Lists
 
@@ -118,7 +118,7 @@ The awesome-list collector reads every added GitHub repository at the start of e
 
 ### BR-006: Reading an Added Web Page
 
-An added web page is read through the live web page reader at most once every 7 days by default. After a failed read, the next try comes after 1 hour by default, for up to 3 failed tries; then the page waits the full 7 days again. The text of the last successful read is kept and used while the page is not due. A page waits when the page reader is off or its daily credits are spent.
+An added web page is read through the live web page reader at most once every 7 days by default. After a failed read, the next try comes after 1 hour by default, for up to 3 failed tries; then the page waits the full 7 days again. The text of the last successful read is kept and used while the page is not due, waits or cannot be read. A page waits when the page reader is off, its daily credits are spent, or the time or size budget of the collector's pass is used up.
 
 ### BR-007: Audit
 
