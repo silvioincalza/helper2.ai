@@ -114,12 +114,17 @@ intended: every page of a directory host is dropped.
 **Element:** UC-022 A9  
 **Raised by:** /use-case-spec, 2026-11-21  
 **Blocking:** Yes  
-**Status:** Open  
+**Status:** Resolved  
 
 The re-check tests pricing, type and use case. The enrichment rules require six fields to state their value:
 licence, open source, platforms, pricing, type and use case. The success postcondition says every stored verified
 fact passes the current rules. Readings: (a) the three other fields were always checked when written, so the
 postcondition holds; (b) they were not: extend the re-check or narrow the postcondition.
+
+**Answer:** Extend the re-check to every field that must state its value. None of the six is mandatory: a field a
+resource does not have is not checked.  
+**Answered by:** the human in the loop, 2026-11-21  
+**Resolved in:** UC-022 A9  
 
 ## OQ-011: Is a search partial when the web search was skipped for the daily limit?
 
