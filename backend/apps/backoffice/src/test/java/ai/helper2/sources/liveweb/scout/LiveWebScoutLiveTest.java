@@ -82,7 +82,7 @@ class LiveWebScoutLiveTest {
     return new ScoutLiveWebCredits(
         new DiscoveryCollectorTest.MapCounter(),
         new ai.helper2.platform.quota.QuotaKeys("", clock),
-        Long.MAX_VALUE,
+        () -> Long.MAX_VALUE,
         new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
   }
 }

@@ -68,7 +68,7 @@ class LinkedInCollectorTest {
         Resilience.NONE,
         new RunInterval(Duration.ofDays(7)),
         queries,
-        new ScoutLiveWebCredits(counter, keys, 40, meters));
+        new ScoutLiveWebCredits(counter, keys, () -> 40L, meters));
   }
 
   @Test

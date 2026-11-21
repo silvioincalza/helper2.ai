@@ -45,9 +45,25 @@ public enum RuntimeSetting {
       "search.webGlobalDailyCredits",
       "Live web credits a day, all of helper2.ai",
       "credits a day",
-      2_000,
+      3_000,
       "H2_LIVE_WEB_DAILY_CREDITS",
       "Live web calls a UTC day for all of helper2.ai. 0: no live call, stored results only."),
+  SCOUT_SEARCH_DAILY_CREDITS(
+      "scoutSources.dailyCredits",
+      "Live web credits a day, Scout searches",
+      "credits a day",
+      3_000,
+      "H2_SCOUT_DAILY_CREDITS",
+      "Live web credits the Scout's searches and list reads spend a UTC day. They count on the live"
+          + " web credits of all of helper2.ai too. 0: no Scout search."),
+  SCOUT_PAGE_READ_DAILY_CREDITS(
+      "scout.evidenceDailyExtractCredits",
+      "Page reads a day, product pages",
+      "credits a day",
+      3_000,
+      "H2_SCOUT_PAGE_READER_DAILY_CREDITS",
+      "Page-read credits a UTC day for product pages. Each one also takes a live web credit of all of"
+          + " helper2.ai. 0: no product page is read."),
   REVIEW_RESEARCH_DAILY_MODEL_CALLS(
       "research.dailyModelCalls",
       "Research model calls a day",

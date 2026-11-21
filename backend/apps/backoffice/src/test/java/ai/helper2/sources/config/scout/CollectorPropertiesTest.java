@@ -47,6 +47,16 @@ class CollectorPropertiesTest {
                 .isEqualTo(ModelTier.REASONING));
   }
 
+  // UC-028 BR-003: the configured value is the default of the runtime setting.
+  @Test
+  void theScoutCreditsVariableReachesItsField() {
+    context
+        .withSystemProperties("H2_SCOUT_DAILY_CREDITS=40")
+        .run(c ->
+            assertThat(c.getBean(CollectorProperties.ScoutCredits.class).dailyCredits())
+                .isEqualTo(40));
+  }
+
   @Test
   void theYamlDefaultsBind() {
     context.run(c -> {
@@ -55,7 +65,9 @@ class CollectorPropertiesTest {
       assertThat(discovery.interval()).isEqualTo(Duration.ofDays(7));
       assertThat(discovery.searchDepth()).isEqualTo("advanced");
       assertThat(discovery.maxResults()).isEqualTo(10);
-      assertThat(c.getBean(CollectorProperties.ScoutCredits.class).dailyCredits()).isEqualTo(40);
+      assertThat(c.getBean(CollectorProperties.ScoutCredits.class).dailyCredits())
+          .as("UC-028 BR-003: the default of the runtime setting when no variable is set")
+          .isEqualTo(1000);
       assertThat(discovery.excludeDomains()).contains("producthunt.com", "alternativeto.net");
       assertThat(c.getBean(CollectorProperties.HfTrending.class))
           .isEqualTo(new CollectorProperties.HfTrending(Duration.ofDays(1)));

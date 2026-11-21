@@ -126,7 +126,7 @@ class DiscoveryCollectorTest {
         new DiscoveryCollector.Search("advanced", 10),
         all[0],
         List.of(all),
-        new ScoutLiveWebCredits(counter, keys, cap, meters),
+        new ScoutLiveWebCredits(counter, keys, () -> cap, meters),
         hosts,
         SourceFixtures.SHADOW_LIBRARIES);
   }
@@ -454,7 +454,7 @@ class DiscoveryCollectorTest {
         new DiscoveryCollector.Search("advanced", 10),
         SELF_HOSTED,
         List.of(LOCAL_AI, SELF_HOSTED),
-        new ScoutLiveWebCredits(counter, keys, 40, meters),
+        new ScoutLiveWebCredits(counter, keys, () -> 40L, meters),
         SeedDiscoveryHosts.store(),
         SourceFixtures.SHADOW_LIBRARIES);
   }

@@ -60,8 +60,8 @@ Screen notes for the administrator's use cases (UC-003, UC-004, UC-010, UC-013, 
    its value ("500 calls a day", "No cap", "On", "None" when no model is set) and the `H2_` variable that sets it, or
    "No variable". Secrets are never shown. A change needs a new value and a restart, except for the spending
    limits at the top ([ADR 0007](../architecture/decisions/ADR-0007-configuration-secrets-runtime-settings.md)): Scout enrichments per run, enrichment
-   calls and gap rounds a day, the guide's model calls a day, translations a day, Live web credits a day, research
-   model calls a day. Each row:
+   calls and gap rounds a day, the guide's model calls a day, translations a day, Live web credits a day for all of
+   helper2.ai and for the Scout's searches, page reads a day, research model calls a day. Each row:
    the value now with "Changed" or "Default", the default and its variable, the allowed range ("0 to 3000 calls a
    day") and one line of help. **Change** opens a number field; a value outside the range says "Enter a whole
    number from 0 to 3000." and nothing is sent. **Review changes** shows "600 calls a day → 50 calls a day", says
