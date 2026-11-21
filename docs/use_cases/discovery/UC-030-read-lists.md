@@ -110,7 +110,7 @@ An added web page is read through the live web page reader at most once every 7 
 
 ### BR-003: A List Page Discovery Finds
 
-When discovery finds a page whose title reads as a list on a directory host whose switch is on (UC-019 BR-007), it adds the page as a web page to read, stored with the discovery collector that found it and no reason. The page follows the rules of a web page an administrator adds: an accepted address (UC-020 BR-001) and a host that is not one never read (UC-020 BR-002). At most 100 such lists are added by default; they do not count against the lists an administrator adds (UC-020 BR-003). A page these rules refuse, and a page found when the 100 are added, waits in the review queue as an article candidate, as with the switch off (UC-019 BR-001). A page that is a list to read already is not added again.
+The searches of discovery do not exclude a directory host whose switch is on (UC-019 BR-007), so that its list pages can be found. When discovery finds a page whose title reads as a list on such a host, it adds the page as a web page to read, stored with the discovery collector that found it and no reason. The page follows the rules of a web page an administrator adds: an accepted address (UC-020 BR-001) and a host that is not one never read (UC-020 BR-002). At most 100 such lists are added by default; they do not count against the lists an administrator adds (UC-020 BR-003). A page these rules refuse, and a page found when the 100 are added, waits in the review queue as an article candidate, as with the switch off (UC-019 BR-001). A page that is a list to read already is not added again.
 
 ### BR-004: Reading the Lists Discovery Added
 

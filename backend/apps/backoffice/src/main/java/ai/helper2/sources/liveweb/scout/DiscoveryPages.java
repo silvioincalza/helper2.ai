@@ -178,6 +178,10 @@ public final class DiscoveryPages {
     return hosts.readsListsOf(host) ? Shape.LIST_TO_READ : Shape.LIST_TO_REVIEW;
   }
 
+  boolean readsListsOf(String host) {
+    return hosts.readsListsOf(host);
+  }
+
   public boolean isWritingPage(CanonicalUrl url) {
     String host = url.getHost();
     List<String> path = pagePath(url);

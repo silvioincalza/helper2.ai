@@ -88,7 +88,8 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
      answer Tavily writes;
    - `exclude_domains` for social and video sites (no product pages there, and `linkedin.com` has its own collector,
      [0012](ADR-0012-scout-collectors-and-events.md)) and for AI directories and review sites (Product Hunt, There's An AI For
-     That, Futurepedia, G2, Capterra, AlternativeTo, ...): their terms forbid copying their listings. We link to them
+     That, Futurepedia, G2, Capterra, AlternativeTo, ...): their terms forbid copying their listings (a directory host
+     whose list reading an administrator turned on is not excluded, [0055](ADR-0055-directory-lists.md) point 4). We link to them
      instead: they are entries of the curated list (`R__curated_seed.sql`) with our own one-line description, and
      nothing taken from their pages. A category adds its own: course platforms for education, health portals and
      agencies for health, law sites and legal directories for legal;

@@ -207,7 +207,7 @@ public class DiscoveryCollector implements Collector {
         break;
       }
       try {
-        sort(pages, liveWeb.search(requestBody(query, since)), query, searchedAt)
+        sort(pages, liveWeb.search(requestBody(query, since, pages)), query, searchedAt)
             .forEach(f -> found.putIfAbsent(f.page().url().getValue(), f));
         done.add(query);
       } catch (RuntimeException e) {
@@ -222,7 +222,7 @@ public class DiscoveryCollector implements Collector {
     return new Searched(found, done, done.containsAll(category.queries()));
   }
 
-  Map<String, Object> requestBody(String query, @Nullable String since) {
+  Map<String, Object> requestBody(String query, @Nullable String since, DiscoveryPages pages) {
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("query", query);
     body.put("topic", "general");
@@ -234,8 +234,11 @@ public class DiscoveryCollector implements Collector {
     body.put("include_published_date", true);
     body.put("include_favicon", true);
     body.put("include_usage", true);
-    if (!category.excludeDomains().isEmpty()) {
-      body.put("exclude_domains", category.excludeDomains());
+    // UC-030 BR-003: the search finds the list pages of a directory host whose switch is on.
+    List<String> excluded =
+        category.excludeDomains().stream().filter(host -> !pages.readsListsOf(host)).toList();
+    if (!excluded.isEmpty()) {
+      body.put("exclude_domains", excluded);
     }
     if (since != null) {
       body.put("start_date", since);

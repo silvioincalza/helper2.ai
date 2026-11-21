@@ -227,6 +227,33 @@ class DiscoveryCollectorTest {
   }
 
   @Test
+  void uc030Br003TheSearchStillExcludesADirectoryHostWhoseSwitchIsOff() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    DiscoveryCategory health =
+        category("health", ResourceType.PRODUCT, List.of("health app"), List.of());
+    hosts.add(
+        new DiscoveryHost("youtube.com", HostKind.DIRECTORY, "1", Instant.EPOCH, "a directory"));
+
+    collector(health).collect(null, null, 1000);
+
+    assertThat(server.requestBodies.get(0)).contains("\"exclude_domains\":[\"youtube.com\"]");
+  }
+
+  @Test
+  void uc030Br003TheSearchNoLongerExcludesADirectoryHostWhoseSwitchIsOn() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    DiscoveryCategory health =
+        category("health", ResourceType.PRODUCT, List.of("health app"), List.of());
+    hosts.add(
+        new DiscoveryHost(
+            "youtube.com", HostKind.DIRECTORY, "1", Instant.EPOCH, "a directory", true));
+
+    collector(health).collect(null, null, 1000);
+
+    assertThat(server.requestBodies.get(0)).doesNotContain("exclude_domains");
+  }
+
+  @Test
   @SuppressWarnings("unchecked")
   void uc030Br003AListPageTheRulesOfAnAddedPageRefuseWaitsForReviewAsWithTheSwitchOff() {
     server.route("/search", FixtureServer.Reply.ok(RESULTS));

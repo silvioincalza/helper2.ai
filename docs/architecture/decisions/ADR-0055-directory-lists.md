@@ -37,6 +37,11 @@ post when a search finds it.
 ### A list page discovery finds
 4. **A third shape.** `DiscoveryPages.classify` gives a list page of a directory host `LIST_TO_READ` when the switch
    of its host is on, and `LIST_TO_REVIEW` when it is off. A category with `index-lists: false` drops both.
+   The category searches exclude the hosts of `helper2.scout.discovery.exclude-domains` and of each category
+   ([0013](ADR-0013-discovery.md) point 4), and the known directories are among them. A host whose switch is on
+   is taken out of that list for the run (`DiscoveryCollector.requestBody`, read from the hosts at the start of
+   the run), so its list pages can be found. Its other pages may then come back from a search; `DiscoveryPages`
+   drops them as before.
 5. **Added by the rules of an added web page.** `DiscoveryCollector` hands a `LIST_TO_READ` page to
    `AddDiscoveredList` (port `DiscoveredLists`). The page becomes a `list_seed` row of kind `WEB_PAGE` with
    `origin = DISCOVERY` and the id of the collector that found it as `added_by`. The checks are the ones an
@@ -171,6 +176,9 @@ post when a search finds it.
 
 ## Consequences
 
+- A search no longer excludes a directory host whose switch is on. Its pages take places among the results of a
+  query (10 a query); the ones that are not list pages are dropped after the search, so a query can return fewer
+  usable pages.
 - A list page on a directory an administrator turned on feeds the catalog without one decision per page. What a
   source confirms is indexed; products, courses, articles and models under the like floor still wait for a person.
 - More credits: one read a week per discovered list, at most 10 a day of the Scout's 40. On a day the categories
@@ -192,9 +200,6 @@ post when a search finds it.
   removes it; its last read goes with it. Its audit rows follow the audit trail.
 
 ### Known limits
-- The category searches still exclude the hosts of `helper2.scout.discovery.exclude-domains` and of each category
-  ([0013](ADR-0013-discovery.md) point 4). A list page of such a host is never found, whatever its switch says: the
-  switch works for a directory host that is not excluded from the searches.
 - The list index links a list to the repositories, models, papers and packages it names. A product accepted from
   a list's link has no entry row, so no list counts for it on the public page.
 - A discovered list an administrator removes can be found and added again by a later search.
