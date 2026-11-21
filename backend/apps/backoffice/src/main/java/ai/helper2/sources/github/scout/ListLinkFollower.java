@@ -383,11 +383,21 @@ public final class ListLinkFollower {
     if (ItemPageCheck.nameInTitle(way.name, markdown)) {
       return found(link, reached, way, BY_CODE);
     }
-    ItemPageJudge.Answer answer = judge.isPageOf(way.name, markdown);
+    ItemPageJudge.Answer answer = asked(way.name, markdown);
     meters.counter(DECIDED, "host", way.host, "by", BY_MODEL, "answer", tag(answer)).increment();
     return answer == ItemPageJudge.Answer.YES
         ? new Followed(link.url(), reached.page().getValue(), way.steps, BY_MODEL)
         : nothing(link, way, "model-" + tag(answer));
+  }
+
+  // UC-030 BR-013: a model that cannot be asked, or fails, gives no answer.
+  private ItemPageJudge.Answer asked(String name, String markdown) {
+    try {
+      return judge.isPageOf(name, markdown);
+    } catch (RuntimeException e) {
+      log.info("the check of a followed page gave no answer: {}", e.getClass().getSimpleName());
+      return ItemPageJudge.Answer.NONE;
+    }
   }
 
   private static String tag(ItemPageJudge.Answer answer) {

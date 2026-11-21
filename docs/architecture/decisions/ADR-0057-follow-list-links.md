@@ -267,6 +267,8 @@ What exists to follow a link:
 - The robots.txt of a host is kept in memory: a restart reads it again, inside the caps.
 - The caps of status requests live in Redis: when Redis loses its data, the count of the day starts again
   ([0005](ADR-0005-redis-as-a-disposable-cache.md)).
+- Following runs when the web pages of a pass are read, before its GitHub lists, and counts on the same time budget
+  of the pass (15 minutes): a day of slow answers leaves less time for the GitHub lists of that pass.
 - One circuit covers all sites: when half of 10 requests in a row fail, following waits a minute for every site.
 
 ### STRIDE

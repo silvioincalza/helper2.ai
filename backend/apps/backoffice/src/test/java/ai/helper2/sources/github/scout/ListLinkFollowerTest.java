@@ -46,6 +46,7 @@ class ListLinkFollowerTest {
   final List<String> statusAsked = new ArrayList<>();
   final List<String> judged = new ArrayList<>();
   ItemPageJudge.Answer modelSays = ItemPageJudge.Answer.NONE;
+  RuntimeException modelFails;
   HostsNeverRead neverRead = HostsNeverRead.NONE;
   int stepsPerDay = 100;
   long scoutCredits = 1000;
@@ -65,6 +66,9 @@ class ListLinkFollowerTest {
         this::status,
         (name, pageText) -> {
           judged.add(name + " | " + pageText);
+          if (modelFails != null) {
+            throw modelFails;
+          }
           return modelSays;
         },
         new ScoutLiveWebCredits(counts, keys, () -> scoutCredits, meters),
@@ -215,6 +219,18 @@ class ListLinkFollowerTest {
             count(
                 ListLinkFollower.NOTHING, "host", HOST, "reason", "model-" + answer.toLowerCase()))
         .isEqualTo(1);
+  }
+
+  @Test
+  void aModelThatCannotBeAskedOrFailsGivesNothing() {
+    redirects(OUT, "https://anysphere.co/editor");
+    pages.markdown.put("https://anysphere.co/editor", "# The AI code editor\n");
+    modelFails = new IllegalStateException("daily budget used up");
+
+    ListLinkFollower.Result result = followed("- [Cursor](" + OUT + ") - AI code editor.");
+
+    assertThat(result.followed()).containsExactly(new Followed(OUT, null, 2, null));
+    assertThat(count(ListLinkFollower.NOTHING, "host", HOST, "reason", "model-none")).isEqualTo(1);
   }
 
   @Test

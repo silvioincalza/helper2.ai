@@ -11,8 +11,6 @@ import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.scout.UntrustedPageText;
 import java.util.Locale;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
 
 /**
@@ -27,8 +25,6 @@ public final class SpringAiItemPageJudge implements ItemPageJudge {
   static final int MAX_PAGE_TEXT = 2_000;
 
   private static final String STEP = "check-item-page";
-
-  private static final Logger log = LoggerFactory.getLogger(SpringAiItemPageJudge.class);
 
   private final TextCall call;
 
@@ -55,12 +51,7 @@ public final class SpringAiItemPageJudge implements ItemPageJudge {
 
   @Override
   public Answer isPageOf(String name, String pageText) {
-    try {
-      return parse(call.answer(user(name, pageText), "daily budget used up", LlmUnavailable::new));
-    } catch (LlmUnavailable e) {
-      log.info("the check of a page of an item gave no answer: {}", e.getMessage());
-      return Answer.NONE;
-    }
+    return parse(call.answer(user(name, pageText), "daily budget used up", LlmUnavailable::new));
   }
 
   static String user(String name, String pageText) {

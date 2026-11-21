@@ -13,6 +13,7 @@ public interface ItemPageJudge {
     NONE
   }
 
+  /** May throw when the model cannot be asked: the caller takes that as no answer. */
   Answer isPageOf(String name, String pageText);
 
   /** Never asks a model: every page the code cannot decide gives nothing. */
