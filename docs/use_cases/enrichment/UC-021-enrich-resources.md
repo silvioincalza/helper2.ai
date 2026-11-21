@@ -8,7 +8,7 @@
 **Secondary Actors:** Language Model, Embedding Service, Source Provider  
 **Goal:** Give each catalog resource a short summary, typed fields, relationships and a search embedding, keeping only the facts that a quote from its sources states, so that visitors can filter and find it and every AI-written fact can be checked.  
 **Trigger:** A Scout run reaches a resource that changed or the next resource of the enrichment backlog, or the embedding indexer's interval passes.  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-028, NFR-014, C-002, C-005](../../requirements.md)  
 **Layers:** Service
@@ -16,6 +16,7 @@
 ## Preconditions
 
 - The resource is in the catalog, indexed, observed or curated, and has at least one source text of 40 characters or more, or was accepted from the review queue.
+- For the embeddings, an Embedding Service is configured.
 
 ## Main Success Scenario
 
@@ -25,9 +26,9 @@
 4. System asks the Language Model for the fields, the relationships and up to three summary sentences that the resource's type keeps, each with the quotes from the evidence that state it.
 5. System checks every proposed fact against the evidence it cites, against the facts the sources state, and against the rules of the resource's type.
 6. System sees that facts or the summary are still missing and reads more text from the Source Provider: the repository's read-me or the model card, then the resource's official pages.
-7. System asks the Language Model again with the added text, checks the answer the same way, and keeps the answer with more accepted facts.
+7. System asks the Language Model again with the added text, once after the read-me or model card and once more after the official pages when facts are still missing, checks each answer the same way, and keeps the answer with more accepted facts.
 8. System records the enrichment run with the model, the prompt version, the outcome and every validation issue.
-9. System replaces the resource's earlier AI facts with the accepted fields, relationships and summary sentences, and links each to the evidence that states it.
+9. System replaces the resource's earlier AI fields, and its AI relationships that no person has decided, with the accepted fields, relationships and summary sentences, and links each to the evidence that states it.
 10. System opens review items for relationships it could not verify, for fields that conflict with a source, and for the validation issues a person must see.
 11. Scheduler starts the embedding indexer, which picks the next resources whose title or description have no current embedding.
 12. System sends the title and the description of each resource to the Embedding Service and stores the vector it returns for the model in use.
@@ -87,7 +88,7 @@
 
 ### A7: Extra Text Not Available
 
-**Trigger:** The daily budget for added reading or for page credits is spent, the Source Provider does not answer, the read-me does not name the claimed package, or the extra text is empty (step 6)  
+**Trigger:** The daily budget for added reading or for page credits is spent, the Source Provider does not answer, the read-me does not name the claimed package, the extra text is empty, or the Language Model fails in the added round (step 6)  
 **Flow:**
 
 1. System keeps the best answer it has so far.
@@ -98,7 +99,7 @@
 **Trigger:** The kept answer has no accepted fact (step 9)  
 **Flow:**
 
-1. System removes the resource's earlier AI facts and keeps only the unverified or conflicting values of the answer; no fact of the answer counts as verified.
+1. System removes the resource's earlier AI fields and undecided AI relationships and keeps only the unverified or conflicting values of the answer; no fact of the answer counts as verified.
 2. System opens a review item with the validation issues that a person must see.
 3. Use case continues at step 11.
 
@@ -125,7 +126,7 @@
 
 - The enrichment run is recorded with its outcome, model, prompt version and validation issues.
 - Every stored AI field, relationship and summary sentence of the resource that cites a quote is linked to the evidence that holds it; only the AI estimates of BR-007 may stand without a quote.
-- The resource's enrichment state is the outcome of its last run.
+- The resource's enrichment state is the outcome of its last run; a failed run shows as rejected.
 - The resource has an embedding for the current model and its current title and description, unless the Embedding Service refused that text.
 
 ### Failure Postconditions
@@ -149,7 +150,7 @@ A field whose value differs from the value a source states is kept as conflictin
 
 ### BR-004: Values That Must Be Stated
 
-For pricing, the type and a use case, the quote must state the value itself; otherwise the value is kept as unverified and does not count as verified.
+For pricing, the licence, open source, the platforms, the type and a use case, the quote must state the value itself; otherwise the value is kept as unverified and does not count as verified.
 
 ### BR-005: Fields per Type
 
@@ -157,7 +158,7 @@ A resource keeps the fields audience, tech level, pricing, open source, licence,
 
 ### BR-006: Limits of an Answer
 
-An answer keeps at most 3 summary sentences of at most 300 characters each, at most 3 use cases, and at most 3 relationships that only the vendor's own pages state. A summary sentence that cites text which may not support a claim, or that the claim check refuses, is dropped.
+An answer keeps at most 3 summary sentences of at most 300 characters each, at most 3 use cases, at most 3 relationships that only the vendor's own pages state, and at most 3 relationships that say what a resource is about. A summary sentence that cites text which may not support a claim, or that the claim check refuses, is dropped.
 
 ### BR-007: Judgement Fields
 
@@ -165,7 +166,7 @@ Audience and tech level are judgements of the model: they are stored as AI estim
 
 ### BR-008: Daily Budgets
 
-The enrichment uses at most 500 model calls per UTC day by default, the added reading rounds at most 400 model calls per UTC day, and the official pages at most 20 page-reading credits per day; administrators can change the call budget at runtime.
+The enrichment uses at most 500 model calls per UTC day by default, the added reading rounds included; of these, the added reading rounds use at most 400. The official pages use at most 20 page-reading credits per day. Administrators can change both call budgets at runtime.
 
 ### BR-009: Unchanged Input Is Not Asked Again
 
@@ -173,7 +174,7 @@ The fingerprint of an enrichment covers the source text, a fixed epoch and the m
 
 ### BR-010: Retries
 
-A resource whose last run failed is tried again in later runs until it has 3 failed runs; a resource whose run found the model unavailable waits in the backlog without a limit.
+A resource whose last run failed is tried again in later runs until it has 3 failed runs; a resource whose run found the model unavailable waits in the backlog without a limit. A resource whose source text changed in a collector's pass is tried in that run whatever its count.
 
 ### BR-011: Model
 
@@ -185,4 +186,20 @@ The embedding text of a resource is its title and its description. The indexer r
 
 ### BR-013: Enrichment History
 
-An enrichment run is kept for 90 days by default; an older run is deleted only when a newer run of the same resource exists and no fact, relationship or review item points to it.
+An enrichment run is kept for 90 days by default; an older run is deleted only when a newer run of the same resource exists and no fact, relationship, summary sentence or review item points to it.
+
+### BR-014: Model Calls per Resource
+
+One enrichment makes at most three model calls: with the source records, then with the read-me or model card, then with the official pages. The answer of an added call is kept only when it has more accepted facts than the best answer so far.
+
+### BR-015: Curated and Decided Values Stay
+
+A value of the model never replaces a field an administrator curated (UC-026 BR-003). A relationship a person accepted or rejected, or whose target a person chose, stays as decided when a new run replaces the others.
+
+### BR-016: Summary Shown
+
+A resource shows the summary of its latest validated or partial run that kept one. A later run that keeps no summary sentence leaves that summary in place.
+
+### BR-017: Order of the Backlog
+
+The Scout takes from the backlog first the resources an administrator moved to the top (UC-022 BR-003), then the resources accepted from the review queue, then, for a quarter of the batch, the never-enriched resources that waited longest, then the other never-enriched resources and last the ones to try again, the most popular first.

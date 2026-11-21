@@ -20,7 +20,7 @@
 ## Main Success Scenario
 
 1. Administrator opens the enrichment queue and chooses a view: waiting, skipped, or out of retries.
-2. System shows one page of the chosen view in the order of the view, with each resource's state, first discovery, failed runs, last outcome and, for a skipped one, when and why it was skipped.
+2. System shows one page of the chosen view in the order of the view, with each resource's state, why it waits, first discovery, failed runs, last outcome and last run and, for a skipped one, when and why it was skipped.
 3. Administrator moves to the next page.
 4. Administrator chooses an action for one resource: move it to the top, skip it with an optional reason, or put it back in the queue.
 5. System checks the resource's current place in the queue against the action.
@@ -39,7 +39,7 @@
 
 ### A2: Resource Not Found
 
-**Trigger:** The resource is not in the catalog or not eligible for enrichment (step 5)  
+**Trigger:** The resource is not in the catalog (step 5)  
 **Flow:**
 
 1. System tells the administrator that the resource is not found and records the attempt in the audit trail.
@@ -47,7 +47,7 @@
 
 ### A3: Resource Does Not Wait
 
-**Trigger:** The administrator moves to the top or skips a resource that does not wait in the queue (step 5)  
+**Trigger:** The administrator moves to the top or skips a resource that does not wait in the queue: it is not eligible for enrichment, is already enriched or is out of retries, or, for a move to the top, it is skipped (step 5)  
 **Flow:**
 
 1. System tells the administrator that the resource does not wait in the enrichment queue and records the attempt in the audit trail.
@@ -90,7 +90,7 @@
 **Trigger:** The skip reason is longer than 200 characters (step 4)  
 **Flow:**
 
-1. System refuses the skip and nothing changes.
+1. System refuses the skip; nothing changes and nothing is recorded in the audit trail.
 2. Use case continues at step 4.
 
 ### A9: Re-check the Stored Answers
@@ -101,9 +101,9 @@
 1. System re-checks every resource with a judged enrichment, in batches of 200, with no model call.
 2. System rejects each verified pricing, type or use case whose quotes do not state the value, and each AI field the resource's type does not keep.
 3. System drops each summary sentence that fails the claim check.
-4. System puts back in the backlog each resource that was enriched with an older prompt and still misses facts or a summary it has more text for.
+4. When a language model is available, System puts back in the backlog each resource that was enriched with an older prompt and still misses facts or a summary it has more text for.
 5. System closes the review items that are left with nothing to decide.
-6. System shows the counts of resources checked, fields rejected, sentences dropped, runs requested and items closed, and records them in the audit trail.
+6. System shows the counts of resources checked, fields rejected, sentences dropped and runs requested, and records them in the audit trail together with the number of items closed.
 7. Use case ends.
 
 ### A10: Scout Run in Progress
@@ -133,7 +133,7 @@
 
 ### BR-001: Order of the Waiting Queue
 
-The waiting queue holds first the resources an administrator moved to the top, then the resources never enriched, then the resources whose model was unavailable and the failed ones with retries left; within each part the most popular come first, then the newest discovery. The skipped view shows the latest skip first; the out-of-retries view shows the newest discovery first.
+The waiting queue holds first the resources an administrator moved to the top, the newest discovery first, then the resources never enriched, then the resources whose model was unavailable and the failed ones with retries left; within these two parts the most popular come first, then the newest discovery. The Scout takes its batch in this order, with the two additions of UC-021 BR-017. The skipped view shows the latest skip first; the out-of-retries view shows the newest discovery first.
 
 ### BR-002: Page Size
 
@@ -145,7 +145,7 @@ At most 50 resources wait at the top. A resource stays at the top until its next
 
 ### BR-004: Skip and Move to the Top Exclude Each Other
 
-A skipped resource is never at the top; skipping a resource drops its move to the top. A skip reason has at most 200 characters, without control characters.
+A skipped resource is never at the top; skipping a resource drops its move to the top. A skip reason has at most 200 characters; control characters are removed from it.
 
 ### BR-005: Out of Retries
 
