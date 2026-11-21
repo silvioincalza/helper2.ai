@@ -8,7 +8,7 @@
 **Secondary Actors:** Source Provider  
 **Goal:** Find and remove the resources that are not about AI, give the real awesome lists their type, and assign the categories of every resource again, so that the catalog holds only AI resources, typed and grouped by the current rules.  
 **Trigger:** An administrator opens the AI check of the back office or starts the awesome-list check or the category backfill, or an instance of the back office starts.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-030](../../requirements.md)  
 **API:** [checkAiWords](../../../api/admin.yaml#checkAiWords), [removeResourceNotAboutAi](../../../api/admin.yaml#removeResourceNotAboutAi), [checkAwesomeLists](../../../api/admin.yaml#checkAwesomeLists), [backfillCategories](../../../api/admin.yaml#backfillCategories)

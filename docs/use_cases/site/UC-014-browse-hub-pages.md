@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor, Search Engine  
 **Goal:** Find the newest resources of one type, and let search engines find every page of helper2.ai worth indexing  
 **Trigger:** The visitor opens a hub page from the footer or from a search engine result, or a search engine reads the site  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-020](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-014-browse-hub-pages.md)  

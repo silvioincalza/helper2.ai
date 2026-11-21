@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor  
 **Goal:** Understand which sources helper2.ai searches, what each covers and how well each works right now, so the visitor can judge the results  
 **Trigger:** The visitor opens the Sources page  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-005, C-015](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-002-check-source-coverage.md)  

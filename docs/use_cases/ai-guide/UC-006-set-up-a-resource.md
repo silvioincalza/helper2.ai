@@ -8,7 +8,7 @@
 **Secondary Actors:** Language Model, Source Provider  
 **Goal:** Install, configure and connect a resource to the visitor's AI tools, with setup facts and steps taken only from the resource's own source data and documentation  
 **Trigger:** The visitor opens the setup part of a resource page, or asks for its step-by-step guide  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-011, NFR-010, C-005](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-007-view-resource-details.md)  

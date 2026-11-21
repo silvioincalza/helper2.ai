@@ -8,7 +8,7 @@
 **Secondary Actors:** Identity Provider  
 **Goal:** Sign in with GitHub so that saved resources and settings follow the person across devices, see the allowances left today, change the account's preference, and delete the account at any time  
 **Trigger:** The visitor chooses to sign in, or the signed-in user opens the account page  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-016, FR-018, FR-019](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-011-sign-in-and-manage-account.md)  

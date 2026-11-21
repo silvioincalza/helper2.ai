@@ -7,7 +7,7 @@
 **Primary Actor:** Visitor  
 **Goal:** See everything the catalog knows about one AI resource, and for every fact who states it and when, so the visitor can judge whether the resource fits.  
 **Trigger:** The visitor opens the page of a resource from a result row, a home list, the News or Events page, a saved resource or a shared link.  
-**Status:** Reviewed  
+**Status:** Approved  
 
 **Requirements:** [FR-010, NFR-005, NFR-010, C-005](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/uc-007-view-resource-details.md)  
