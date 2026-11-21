@@ -1,6 +1,6 @@
 ---
 name: backend-conventions
-description: Use before writing, changing or reviewing any file under backend/ or api/ (Java, Kotlin, Gradle, SQL, OpenAPI), and any config or script of the repository. Holds the backend layout, the architecture and code rules (modular monolith, hexagonal, Outcome and UnitOfWork, tests, configuration, format, clean code, no dead code, no comments) and the backend commands.
+description: Use before writing, changing or reviewing any file under backend/ or api/ (Java, Kotlin, Gradle, SQL, OpenAPI), and any config or script of the repository. Holds the backend layout, the architecture and code rules (modular monolith, hexagonal, Outcome and UnitOfWork, tests, configuration, format, clean code, no dead code) and the backend commands.
 ---
 
 # Backend conventions
@@ -48,9 +48,11 @@ Run the relevant tests before calling a change done. `scripts/verify.sh backend`
   method into named steps instead of adding comments.
 - No dead code and no dead docs: a file, a function, a setting, a page or a section that nothing uses or reads is
   deleted in the change that makes it unused. Nothing is kept "for later" or as a backup copy.
-- No comments in code, config or scripts: names, small methods and ADRs say why. Only tool directives stay
-  (shebangs, `# syntax=`, `eslint-disable-next-line`, `shellcheck disable`, the Makefile's `## ` help lines).
-  Env files (`.env.example`, `deploy/k8s/app.env.example` and other dot files) are setup guides for people: their
+- The code that enforces a business rule names it with the marker of `docs/architecture/stack.md`
+  (`// UC-XXX BR-YYY:`), directly above the method, the query condition or the validator.
+- Javadoc, and KDoc in Kotlin, documents a public type or method: what it is for and the business rule it holds.
+  It does not repeat what the code says.
+- Env files (`.env.example`, `deploy/k8s/app.env.example` and other dot files) are setup guides for people: their
   comments say what each key is and how to make its value.
 - Code, ADRs and docs state the rule in force, never who decided it or when, and never what it replaced. Decision
   history goes to memory in `.private/`. The one exception is the revision history of the specification pages, once
