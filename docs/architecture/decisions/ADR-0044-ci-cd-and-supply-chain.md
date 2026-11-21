@@ -90,6 +90,10 @@ Harbor could put an image under a tag first.
    - PRs only: a check that `postgres.image.tag` changed when `deploy/postgres` changed (git only, no build);
    - the D2 diagrams re-rendered with d2 v0.9.0 and compared with the committed SVG files. It runs on pushes too, so
      the d2 binary is cached on `main`, where every pull request can restore it (§12).
+   - the specification linted across files (`scripts/spec-lint.sh`), when `docs/` or a Markdown page changed: a
+     reference to a requirement, use case, rule or decision that does not exist fails the job, and so does a
+     finding that is not in `docs/.spec-lint-baseline.json`. The linter is the one of the AI Unified Process
+     (`aiup-core`), read from its repository at a pinned commit, with no token;
    - No image build: PRs stay light. Images are built, pushed and scanned only on `main` and on release branches
      (§2), and a release adds its version tag to the images of its commit (§3).
 2. **Continuous delivery (CD) on every push to `main`** (and to a `release/*` branch, image only,

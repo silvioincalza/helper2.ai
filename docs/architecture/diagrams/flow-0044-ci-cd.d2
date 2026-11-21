@@ -25,6 +25,7 @@ checks: "ci.yml (GitHub-hosted, on every PR;\na job runs when its part changed\n
   pg: "PR only: deploy/postgres changed\n→ tag bumped? (git, no build)" {class: app}
   monitoring: "monitoring:\npromtool check\n+ test rules" {class: app}
   d2: "diagrams\nre-rendered = committed?" {class: app}
+  spec: "spec-lint:\nno dangling reference,\nno finding outside the baseline" {class: app}
 }
 
 green: "ci-ok green?\n(selected jobs succeeded,\nthe others skipped)\nCopilot threads resolved?\n(flow 0044 copilot-review)" {class: decision}
