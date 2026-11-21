@@ -6,6 +6,7 @@ Severity levels are the ones in `AGENTS.md` (section Severity). The human in the
 ## Before the review
 
 - The branch is up to date with `origin/main` and `scripts/verify.sh` passes for every part the change touches.
+- The session that made the change opened the pull request, and its description says which `verify.sh` parts ran.
 - The pull request has one `Closes #n` line per story it builds. A story for new behaviour names its `UC-*`.
 - The session that wrote the change does not review it.
 
