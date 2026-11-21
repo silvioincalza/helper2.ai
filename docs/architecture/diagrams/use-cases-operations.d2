@@ -1,0 +1,32 @@
+# Use cases of the Operations module: its actors and the use cases each one starts or serves.
+# D2 twin of docs/use_cases/operations/use_cases.puml: that file is the source of truth (AI Unified Process). Change it first,
+# then this file, in the same pull request. Same actors, use cases, entities and relations: nothing added.
+# Render: cd docs/architecture/diagrams && d2 fmt use-cases-operations.d2 && d2 use-cases-operations.d2 use-cases-operations.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+admin: "Administrator" {class: person}
+scheduler: "Scheduler" {class: ext}
+
+module: "Operations" {
+  class: group
+  UC028: "UC-028\nManage Runtime Settings" {
+    class: app
+    shape: oval
+  }
+  UC029: "UC-029\nPurge Expired Data" {
+    class: app
+    shape: oval
+  }
+}
+
+admin -> module.UC028
+scheduler -> module.UC029

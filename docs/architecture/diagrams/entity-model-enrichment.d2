@@ -1,0 +1,74 @@
+# Entity model of the enrichment module: its entities and the relationships between them, no attributes.
+# D2 twin of docs/entity_model/enrichment.md: that file is the source of truth (AI Unified Process). Change it first,
+# then this file, in the same pull request. Same actors, use cases, entities and relations: nothing added.
+# Render: cd docs/architecture/diagrams && d2 fmt entity-model-enrichment.d2 && d2 entity-model-enrichment.d2 entity-model-enrichment.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+RESOURCE: {class: data}
+ENRICHMENT_RUN: {class: data}
+FIELD_ASSERTION: {class: data}
+FIELD_ASSERTION_EVIDENCE: {class: data}
+EVIDENCE: {class: data}
+SUMMARY_CLAIM: {class: data}
+SUMMARY_CLAIM_EVIDENCE: {class: data}
+ENRICHMENT_QUEUE_CONTROL: {class: data}
+RESOURCE_EMBEDDING: {class: data}
+RESOURCE_EMBEDDING_REFUSED: {class: data}
+
+RESOURCE <-> ENRICHMENT_RUN: "is enriched by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> FIELD_ASSERTION: "has" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+ENRICHMENT_RUN <-> FIELD_ASSERTION: "proposed" {
+  source-arrowhead.shape: cf-one
+  target-arrowhead.shape: cf-many
+}
+FIELD_ASSERTION <-> FIELD_ASSERTION_EVIDENCE: "is backed by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+EVIDENCE <-> FIELD_ASSERTION_EVIDENCE: "backs" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> SUMMARY_CLAIM: "is summarised by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+ENRICHMENT_RUN <-> SUMMARY_CLAIM: "wrote" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+SUMMARY_CLAIM <-> SUMMARY_CLAIM_EVIDENCE: "is backed by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+EVIDENCE <-> SUMMARY_CLAIM_EVIDENCE: "backs" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> ENRICHMENT_QUEUE_CONTROL: "is steered by" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-one
+}
+RESOURCE <-> RESOURCE_EMBEDDING: "is embedded as" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}
+RESOURCE <-> RESOURCE_EMBEDDING_REFUSED: "has refused text" {
+  source-arrowhead.shape: cf-one-required
+  target-arrowhead.shape: cf-many
+}

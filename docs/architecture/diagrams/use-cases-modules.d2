@@ -1,0 +1,89 @@
+# Use case modules of helper2.ai: the actors, the nine modules, who uses which, and which module depends on which.
+# D2 twin of docs/use_cases.puml: that file is the source of truth (AI Unified Process). Change it first,
+# then this file, in the same pull request. Same actors, use cases, entities and relations: nothing added.
+# Render: cd docs/architecture/diagrams && d2 fmt use-cases-modules.d2 && d2 use-cases-modules.d2 use-cases-modules.svg
+
+...@style
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+direction: right
+
+visitor: "Visitor" {class: person}
+user: "Signed-in User" {class: person}
+admin: "Administrator" {class: person}
+scheduler: "Scheduler" {class: ext}
+search_engine: "Search Engine" {class: ext}
+llm: "Language Model" {class: ai}
+embedder: "Embedding Service" {class: ai}
+source_provider: "Source Provider" {class: ext}
+idp: "Identity Provider" {class: ext}
+payment: "Payment Provider" {class: ext}
+
+search: "Search" {class: app}
+ai_guide: "AI Guide" {class: app}
+catalog: "Catalog" {class: app}
+accounts: "Accounts" {class: app}
+site: "Site" {class: app}
+discovery: "Discovery" {class: app}
+enrichment: "Enrichment" {class: app}
+review: "Review" {class: app}
+operations: "Operations" {class: app}
+
+visitor -> search
+visitor -> ai_guide
+visitor -> catalog
+visitor -> accounts
+visitor -> site
+user -> accounts
+admin -> search
+admin -> catalog
+admin -> accounts
+admin -> discovery
+admin -> enrichment
+admin -> review
+admin -> operations
+scheduler -> search
+scheduler -> site
+scheduler -> discovery
+scheduler -> enrichment
+scheduler -> review
+scheduler -> operations
+search_engine -> site
+search -> llm
+search -> embedder
+search -> source_provider
+ai_guide -> llm
+ai_guide -> embedder
+ai_guide -> source_provider
+accounts -> idp
+site -> payment
+site -> search_engine
+discovery -> source_provider
+enrichment -> llm
+enrichment -> embedder
+enrichment -> source_provider
+review -> llm
+review -> source_provider
+search -> catalog: "searches and dates resources" {class: config}
+search -> review: "sends example drafts to review" {class: config}
+ai_guide -> search: "picks from search results" {class: config}
+ai_guide -> catalog: "reads resource details" {class: config}
+catalog -> enrichment: "relationships found by enrichment runs" {class: config}
+catalog -> review: "opens review items for reports" {class: config}
+site -> catalog: "lists indexable resources" {class: config}
+site -> operations: "reads runtime switches" {class: config}
+discovery -> catalog: "indexes resources of a source" {class: config}
+discovery -> enrichment: "enriches collected resources" {class: config}
+discovery -> review: "sends candidates to review" {class: config}
+enrichment -> catalog: "enriches resources with evidence" {class: config}
+enrichment -> review: "opens review items for conflicts" {class: config}
+review -> catalog: "decides on resources and reports" {class: config}
+review -> enrichment: "decides on enrichment results" {class: config}
+review -> discovery: "indexes accepted candidates" {class: config}
+operations -> accounts: "records administrator actions" {class: config}
+operations -> site: "publishes site settings" {class: config}

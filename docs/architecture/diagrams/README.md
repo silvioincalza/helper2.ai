@@ -70,6 +70,37 @@ The views C4 has no level for.
 | [event-storming](event-storming.svg) | Big picture event storming of the seven contexts the apps run, one lane each: actors, commands, external systems, aggregates, domain events, policies, read models and the open stories (hotspots), with the arrows of what triggers what. Hand-drawn SVG: edit the file itself. |
 | [data-model](data-model.svg) | Data model: every PostgreSQL table from the versioned migrations with its columns and keys, grouped by area. Solid lines are foreign keys labelled with their ON DELETE rule (ADR 0010); dashed lines are links the code keeps without one (bookmark snapshot, Tavily hit ids, guide answer key). |
 
+### Specification (AI Unified Process)
+
+The specification keeps its diagrams in the formats the AI Unified Process reads: PlantUML for the use cases, Mermaid for
+the entity model. Each one has a D2 twin here, in the look of the other diagrams. The PlantUML or Mermaid file is the
+source of truth: change it first, then its twin, in the same pull request. A twin shows the same actors, use cases,
+entities and relations, nothing more.
+Each twin is committed as `.d2`, `.svg` and `.png`. `render.sh --png` writes the PNGs; `render.sh` alone checks that each
+twin has one.
+
+| Diagram | Twin of | Shows |
+|---|---|---|
+| [use-cases-modules](use-cases-modules.svg) | [`docs/use_cases.puml`](../../use_cases.puml) | The actors, the nine modules, who uses which module, and which module depends on which. |
+| [use-cases-accounts](use-cases-accounts.svg) | [`docs/use_cases/accounts/use_cases.puml`](../../use_cases/accounts/use_cases.puml) | The use cases of the Accounts module and the actors of each one. |
+| [use-cases-ai-guide](use-cases-ai-guide.svg) | [`docs/use_cases/ai-guide/use_cases.puml`](../../use_cases/ai-guide/use_cases.puml) | The use cases of the AI Guide module and the actors of each one. |
+| [use-cases-catalog](use-cases-catalog.svg) | [`docs/use_cases/catalog/use_cases.puml`](../../use_cases/catalog/use_cases.puml) | The use cases of the Catalog module and the actors of each one. |
+| [use-cases-discovery](use-cases-discovery.svg) | [`docs/use_cases/discovery/use_cases.puml`](../../use_cases/discovery/use_cases.puml) | The use cases of the Discovery module and the actors of each one. |
+| [use-cases-enrichment](use-cases-enrichment.svg) | [`docs/use_cases/enrichment/use_cases.puml`](../../use_cases/enrichment/use_cases.puml) | The use cases of the Enrichment module and the actors of each one. |
+| [use-cases-operations](use-cases-operations.svg) | [`docs/use_cases/operations/use_cases.puml`](../../use_cases/operations/use_cases.puml) | The use cases of the Operations module and the actors of each one. |
+| [use-cases-review](use-cases-review.svg) | [`docs/use_cases/review/use_cases.puml`](../../use_cases/review/use_cases.puml) | The use cases of the Review module and the actors of each one. |
+| [use-cases-search](use-cases-search.svg) | [`docs/use_cases/search/use_cases.puml`](../../use_cases/search/use_cases.puml) | The use cases of the Search module and the actors of each one. |
+| [use-cases-site](use-cases-site.svg) | [`docs/use_cases/site/use_cases.puml`](../../use_cases/site/use_cases.puml) | The use cases of the Site module and the actors of each one. |
+| [entity-model-accounts](entity-model-accounts.svg) | [`docs/entity_model/accounts.md`](../../entity_model/accounts.md) | The entities of the Accounts module and the relationships between them, with their cardinality. No attributes. |
+| [entity-model-ai-guide](entity-model-ai-guide.svg) | [`docs/entity_model/ai-guide.md`](../../entity_model/ai-guide.md) | The entities of the AI Guide module and the relationships between them, with their cardinality. No attributes. |
+| [entity-model-catalog](entity-model-catalog.svg) | [`docs/entity_model/catalog.md`](../../entity_model/catalog.md) | The entities of the Catalog module and the relationships between them, with their cardinality. No attributes. |
+| [entity-model-discovery](entity-model-discovery.svg) | [`docs/entity_model/discovery.md`](../../entity_model/discovery.md) | The entities of the Discovery module and the relationships between them, with their cardinality. No attributes. |
+| [entity-model-enrichment](entity-model-enrichment.svg) | [`docs/entity_model/enrichment.md`](../../entity_model/enrichment.md) | The entities of the Enrichment module and the relationships between them, with their cardinality. No attributes. |
+| [entity-model-operations](entity-model-operations.svg) | [`docs/entity_model/operations.md`](../../entity_model/operations.md) | The entities of the Operations module and the relationships between them, with their cardinality. No attributes. |
+| [entity-model-review](entity-model-review.svg) | [`docs/entity_model/review.md`](../../entity_model/review.md) | The entities of the Review module and the relationships between them, with their cardinality. No attributes. |
+| [entity-model-search](entity-model-search.svg) | [`docs/entity_model/search.md`](../../entity_model/search.md) | The entities of the Search module and the relationships between them, with their cardinality. No attributes. |
+| [entity-model-site](entity-model-site.svg) | [`docs/entity_model/site.md`](../../entity_model/site.md) | The entities of the Site module and the relationships between them, with their cardinality. No attributes. |
+
 ## Per ADR
 
 | ADR | Flowchart | Sequence | Shows |
