@@ -71,7 +71,7 @@ A way to give is offered only when its address is configured: a GitHub Sponsors 
 
 ### BR-002: Analytics Question
 
-The site asks whether a visit may be counted with Google Analytics only when a measurement identifier is configured (`H2_ANALYTICS_GA4_MEASUREMENT_ID`). It asks every visitor, on every page of the public site, and counts a visit only after the visitor accepts; the site works the same before an answer and after a rejection. The answer is kept in the browser and can be changed from the footer. A rejection, or an acceptance taken back, stops the counting and removes the analytics cookies.
+The site asks whether a visit may be counted with Google Analytics only when a measurement identifier is configured (`H2_ANALYTICS_GA4_MEASUREMENT_ID`). While Google's consent tool does not ask in its place (BR-003, BR-005), it asks every visitor, on every page of the public site, and counts a visit only after the visitor accepts; the site works the same before an answer and after a rejection. The answer is kept in the browser and can be changed from the footer. A rejection, or an acceptance taken back, stops the counting and removes the analytics cookies.
 
 ### BR-003: Ads
 
@@ -80,3 +80,7 @@ An ad is shown only while the Google ads switch is on (UC-028 BR-001) and an ad 
 ### BR-004: Configured Values
 
 A configured GitHub Sponsors page, Stripe payment page, measurement identifier, ad client or ad unit must have the expected form, or the application does not start.
+
+### BR-005: Analytics Under Google's Consent Tool
+
+While Google's consent tool asks in place of the site's question (BR-003), the tool is loaded only on a page that has a place for an ad, or when the visitor asks for the privacy choices from the footer. A visit is counted when the tool says the visitor accepted, or that the visitor is outside the countries where the question is required; there the visit is counted without a question. On a page with no place for an ad, a visitor who has not met the tool yet is asked nothing and is not counted. A refusal stops the counting and removes the analytics cookies.
