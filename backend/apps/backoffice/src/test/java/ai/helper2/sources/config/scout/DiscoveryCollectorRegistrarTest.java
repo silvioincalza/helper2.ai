@@ -65,7 +65,10 @@ class DiscoveryCollectorRegistrarTest {
     @Bean
     ScoutLiveWebCredits credits() {
       return new ScoutLiveWebCredits(
-          new NoCounter(), new QuotaKeys("", SourceFixtures.CLOCK), 40, new SimpleMeterRegistry());
+          new NoCounter(),
+          new QuotaKeys("", SourceFixtures.CLOCK),
+          () -> 40L,
+          new SimpleMeterRegistry());
     }
 
     @Bean

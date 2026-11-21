@@ -49,8 +49,8 @@ class SweepRepositoriesTest {
     val catalog = Catalog(listOf(living, archived, gone))
     val answers: Map<String, Visit> =
       mapOf(
-        "acme/living" to Found(false, null, null),
-        "acme/archived" to Found(true, null, null),
+        "acme/living" to Found(false, null, null, null),
+        "acme/archived" to Found(true, null, null, null),
         "acme/gone" to Gone(),
       )
 
@@ -79,7 +79,7 @@ class SweepRepositoriesTest {
 
     sweep(Catalog(listOf(npm, pypi))) {
         asked += it
-        mapOf("acme/tool" to Found(false, null, null))
+        mapOf("acme/tool" to Found(false, null, null, null))
       }
       .sweepOneBatch()
 

@@ -55,7 +55,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 4. **Credits of the day, optional global cap.** Every live call (also the later calls of one guide question and the
    calls of internal callers) counts on `h2:v1:quota:global:<UTC date>`, field `credits`: the credits of the day
    for the whole cluster. The counter is capped by `H2_LIVE_WEB_DAILY_CREDITS`; unset, the cap is the code
-   maximum of the runtime setting, 2,000 a day ([0007](ADR-0007-configuration-secrets-runtime-settings.md)). The own and the global counter are checked and counted in **one Lua script** (`RedisQuotaCounter`), so
+   maximum of the runtime setting, 3,000 a day ([0007](ADR-0007-configuration-secrets-runtime-settings.md)). The own and the global counter are checked and counted in **one Lua script** (`RedisQuotaCounter`), so
    concurrent requests on any replica never pass a limit. The script counts before the `source-live-web` policy is
    asked, so a live call that policy refuses (circuit open, bulkhead full) gives its credit back
    (`WebSearchQuota.refund`): the call never left. A call that reached Tavily keeps its credit also when it fails
@@ -79,11 +79,12 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    (the shared cache `ai_cache`, [0032](ADR-0032-guide-cost-guard-and-answer-cache.md)). Answer TTL = min(24 h, freshness left of the web
    results it used); an answer built on stale web results is not cached ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)).
 8. **Credits are measured.** `helper2.live-web.credits{feature}` counts every live call (`none` for internal
-   callers). Alert `Helper2LiveWebCreditsHigh` when more than 200 credits were spent in 24 h: 80% of prod's
-   daily cap (250, `app.dailyLimits.webSearchCredits`). The plan has 14,000 credits a month for prod, staging (cap
-   180 a day) and the Scout (~506 a month); a 31-day month at both caps stays about 80 under it. The Scout's
+   callers). Alert `Helper2LiveWebCreditsHigh` when more than 200 credits were spent in 24 h. Prod's
+   daily cap is 3,000 (`app.dailyLimits.webSearchCredits`), staging's 180. The plan has 14,000 credits a month for
+   prod, staging and the Scout: about 450 a day. The caps do not keep a month under it (prod alone can reach 93,000
+   in 31 days), so the alert is the warning, well before the cap. The Scout's
    discovery and LinkedIn searches count on the global daily counter and in the alert too (features `scout-discovery`
-   and `scout-linkedin`, and `scout-list-pages` for the web pages an administrator added as lists, at most 40 a day
+   and `scout-linkedin`, and `scout-list-pages` for the web pages an administrator added as lists, under the Scout's daily limit
    together, [0013](ADR-0013-discovery.md),
    [0012](ADR-0012-scout-collectors-and-events.md)).
 9. **Retention** ([0010](ADR-0010-data-retention.md)): stored sets are deleted 7 days after `fetched_at`

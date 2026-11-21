@@ -61,11 +61,11 @@ class GitHubRepositoryStatesTest {
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(
                 "acme/living",
-                new Found(false, null, Instant.parse("2026-10-01T08:00:00Z")),
+                new Found(false, null, Instant.parse("2026-10-01T08:00:00Z"), null),
                 "acme/archived",
-                new Found(true, null, null),
+                new Found(true, null, null, null),
                 "me/fork",
-                new Found(false, new Parent("acme/origin", true), null)));
+                new Found(false, new Parent("acme/origin", true), null, null)));
     assertThat(server.requests).hasSize(1);
     assertThat(server.requestBodies.getFirst())
         .contains("r0: repository(owner: \\\"acme\\\", name: \\\"living\\\")")
@@ -85,7 +85,45 @@ class GitHubRepositoryStatesTest {
     Map<String, Visit> visits = states().of(List.of("acme/deleted", "acme/living"));
 
     assertThat(visits.get("acme/deleted")).isEqualTo(new Gone());
-    assertThat(visits.get("acme/living")).isEqualTo(new Found(false, null, null));
+    assertThat(visits.get("acme/living")).isEqualTo(new Found(false, null, null, null));
+  }
+
+  // S2.11.6, ADR-0020 §7: the sweep reads the stars in the call it already makes.
+  @Test
+  void theStarsOfARepositoryAreReadInTheSameCall() {
+    server.route(
+        "/graphql",
+        FixtureServer.Reply.ok(
+            """
+            {"data": {
+              "r0": {"isArchived": false, "stargazerCount": 3400, "parent": null, "latestRelease": null},
+              "r1": {"isArchived": false, "stargazerCount": 0, "parent": null, "latestRelease": null}}}
+            """));
+
+    Map<String, Visit> visits = states().of(List.of("acme/starred", "acme/new"));
+
+    assertThat(visits.get("acme/starred")).isEqualTo(new Found(false, null, null, 3400L));
+    assertThat(visits.get("acme/new")).isEqualTo(new Found(false, null, null, 0L));
+    assertThat(server.requests).hasSize(1);
+    assertThat(server.requestBodies.getFirst()).contains("stargazerCount");
+  }
+
+  // S2.11.6, ADR-0020 §7: an answer without a count is no count, never zero stars.
+  @Test
+  void anAnswerWithoutACountOfStarsStatesNoStars() {
+    server.route(
+        "/graphql",
+        FixtureServer.Reply.ok(
+            """
+            {"data": {
+              "r0": {"isArchived": false, "stargazerCount": null, "parent": null, "latestRelease": null},
+              "r1": {"isArchived": false, "stargazerCount": -1, "parent": null, "latestRelease": null},
+              "r2": {"isArchived": false, "stargazerCount": "many", "parent": null, "latestRelease": null}}}
+            """));
+
+    Map<String, Visit> visits = states().of(List.of("acme/null", "acme/negative", "acme/text"));
+
+    assertThat(visits.values()).containsOnly(new Found(false, null, null, null));
   }
 
   @Test
