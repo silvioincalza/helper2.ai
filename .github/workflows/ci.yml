@@ -505,6 +505,23 @@ jobs:
             exit 1
           fi
 
+  spec-lint:
+    needs: changes
+    if: needs.changes.outputs.diagrams == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ai-unified-process/marketplace
+          ref: 50da3882098042be961944b0861f450a8ce9fb02
+          path: .aiup
+          sparse-checkout: aiup-core
+          persist-credentials: false
+      - name: Lint the specification
+        run: scripts/spec-lint.sh .aiup
+
   ci-ok:
     if: always()
     needs:
@@ -527,6 +544,7 @@ jobs:
       - chart
       - monitoring
       - diagrams
+      - spec-lint
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
