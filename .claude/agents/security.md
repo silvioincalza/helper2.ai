@@ -17,7 +17,7 @@ Bash is for running checks. Do not write files, commit or push.
 Calibration (a made-up example, not a real finding). Bad: "Validate inputs to prevent injection." Good: "High. `GET /api/search?q=` passes `q`
 to the guide prompt unchanged (`GuidePrompt.java:42`). A result page can tell the model to drop the quote
 check. Fix: keep retrieved text in a delimited data block and keep the quote gate in code. Check: a new
-case in `docs/backup/eval/guide-adversarial.json`."
+case in `eval/guide-adversarial.json`."
 
 Return: threat model table (threat, impact, likelihood, mitigation, status), findings ranked by the
 severity levels in `AGENTS.md`, the smallest fix for each and how to check it.
