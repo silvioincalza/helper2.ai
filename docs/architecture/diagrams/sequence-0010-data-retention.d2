@@ -33,7 +33,6 @@ daily: "03:17 UTC (RetentionSchedule.cron)" {
   purge -> sql: "deleteWebNewsRetrievedBefore(now − 180 d)"
   purge -> sql: "deleteEventsEndedBefore(now − 10 years)\n(curated events too)"
   purge -> sql: "deleteObservedUnseenSince(now − 180 d)"
-  purge -> sql: "deleteListIndexUpdatedBefore(now − 30 d)\n(awesome-list search index, ADR 0023)"
   sql -> pg: "DELETE … AND NOT EXISTS\n(issue_report, review_item)"
   pg -> pg: "ON DELETE CASCADE / SET NULL"
   pg -> sql: "rows deleted"

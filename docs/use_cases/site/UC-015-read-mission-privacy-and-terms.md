@@ -52,7 +52,7 @@ A number on the pages that a configuration variable can change is the value the 
 
 ### BR-002: Retention Periods Shown
 
-The retention periods shown are the ones the daily purge applies (UC-029 BR-002, BR-003, BR-004, BR-005, BR-006, BR-008, BR-009, BR-011 and BR-014), plus the periods of the caches, counters, pages read and query vectors kept by the other modules.
+The retention periods shown are the ones the daily purge applies (UC-029 BR-002, BR-003, BR-004, BR-005, BR-006, BR-008, BR-009 and BR-014), plus the periods of the caches, counters, pages read and query vectors kept by the other modules.
 
 ### BR-003: Backups
 

@@ -128,8 +128,8 @@ Both are about the public site itself, and only the public app serves them.
      and `webSearches` per feature (`search`, `guide`), the same for every visitor, signed in or not.
    - `retention`, in seconds: the web search counters (`RedisQuotaCounter.KEEP`, fixed in code) and the guide question
      counters (`BudgetLedger.KEEP`, fixed in code); articles and news from web search (`H2_RETENTION_WEB_NEWS`),
-     pages waiting for review after the decision (`H2_RETENTION_RESOLVED_REVIEW_ITEMS`), the index of awesome lists
-     (`H2_RETENTION_LIST_INDEX`), a product page's cleaned text (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`) and its address
+     pages waiting for review after the decision (`H2_RETENTION_RESOLVED_REVIEW_ITEMS`),
+     a product page's cleaned text (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`) and its address
      with a fingerprint (`H2_SCOUT_EVIDENCE_PAGE_READ_TTL`, [0014](ADR-0014-evidence-gated-enrichment.md)); database backups
      (`H2_RETENTION_BACKUPS`: the chart passes its `backup.retentionDays`, the app only states it,
      [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md)); cached searches (`H2_SEARCH_STALE_FOR`), cached guide answers

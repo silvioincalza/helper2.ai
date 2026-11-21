@@ -28,8 +28,7 @@
 7. System indexes what the Source Provider confirms, by the admission rules (UC-018).
 8. System proposes the other links (product sites, course pages, articles, and items under the index floor) as candidates in the review queue (UC-024), within the daily cap.
 9. System adds each list as a resource of the catalog, except a list page of a directory host.
-10. System records which list names which resource, with the headings above the entry, and the rating a directory states for it (BR-010, BR-011).
-11. System removes the records of a list that was not read for 30 days.
+10. System records which list names which resource, with the headings above the entry, in place of what the list named before, and the rating a directory states for it (BR-010, BR-011).
 
 ## Alternative Flows
 
@@ -131,7 +130,7 @@ A link of a list that reads as an article by the rule of discovery (a post on a 
 
 ### BR-008: Which List Names Which Resource
 
-For each list that was read, the catalog keeps the resources it names that are in the catalog, whatever their kind, with the headings above each entry: a repository, a model, a paper and a package, and also a product, a course and an article its links point to. A candidate a list proposed keeps the list that named it; when an administrator accepts it (UC-024), the resource is named by that list from that moment. The record of a list is replaced at each pass and removed 30 days after the last pass that read it. A curated list (an awesome list on GitHub, or a web page that is not on a directory host) is itself a resource; the public page of a resource names the curated lists that name it (UC-007 BR-008).
+For each list that was read, the catalog keeps the resources it names that are in the catalog, whatever their kind, with the headings above each entry: a repository, a model, a paper and a package, and also a product, a course and an article its links point to. A candidate a list proposed keeps the list that named it; when an administrator accepts it (UC-024), the resource is named by that list from that moment. The record of a list is replaced at each pass that covers the list and has no retention period: when a list is no longer read (an administrator removed it, its reading is turned off, its host is never read, or the list no longer exists), what it named at its last read stays. A record is removed only with the resource it names or, for a curated list, with the list's own resource. A curated list (an awesome list on GitHub, or a web page that is not on a directory host) is itself a resource; the public page of a resource names the curated lists that name it (UC-007 BR-008).
 
 ### BR-009: A List Page of a Directory Host Is Never a Resource
 

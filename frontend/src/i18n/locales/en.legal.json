@@ -180,10 +180,7 @@
             "text": "Events we list (conferences, hackathons, meetups, talks and workshops), from any source: {{pastEvents}} after they ended. An event that a report or a review item still points at stays until that report or review item is deleted.",
             "withoutNumbers": "Events we list (conferences, hackathons, meetups, talks and workshops), from any source: for a set time after they ended. An event that a report or a review item still points at stays until that report or review item is deleted."
           },
-          {
-            "text": "The search index of awesome lists and their section headings: as long as we list the list and the tool, and {{listIndex}} after a list was last read.",
-            "withoutNumbers": "The search index of awesome lists and their section headings: as long as we list the list and the tool, and for a limited time after a list was last read."
-          },
+          "The search index of awesome lists, their section headings and which list names which tool: as long as we list the tool and the list, with no time limit. We keep what a list named when we last read it, also when the list is no longer read or no longer exists; reading the list again replaces it. For a list page on a site that lists AI tools, which we do not list itself, we keep the page's address and title with each tool it names in the same way: as long as we list the tool, and until we read the page again.",
           "The ratings that sites state for a tool (the average, its scale, the number of votes, the address of the page and the time we read it): until the page is read again, as long as the list names the tool and as long as we list the tool.",
           "Text sent to the AI models on Nebius Token Factory, and their answers: not kept at Nebius once it has answered. Text sent before 18 November 2026: at most one year at Nebius, in Finland.",
           "Google Analytics data: 2 months at Google. Your answer to the analytics question: in your browser until you clear it, or in Google's consent cookies for up to 13 months.",

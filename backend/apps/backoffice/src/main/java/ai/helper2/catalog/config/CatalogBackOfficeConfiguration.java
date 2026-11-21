@@ -171,8 +171,7 @@ public class CatalogBackOfficeConfiguration {
             periods.enrichmentRuns(),
             periods.webNews(),
             periods.pastEvents(),
-            periods.observedUnseen(),
-            periods.listIndex()));
+            periods.observedUnseen()));
   }
 
   @Bean

@@ -46,8 +46,7 @@ class CatalogPurgeExpiredDataIT {
             Duration.ofDays(90),
             Duration.ofDays(180),
             Duration.ofDays(365),
-            Duration.ofDays(180),
-            Duration.ofDays(30)));
+            Duration.ofDays(180)));
   }
 
   static Instant daysAgo(int days) {
@@ -80,6 +79,10 @@ class CatalogPurgeExpiredDataIT {
         .param("id", id)
         .query(Boolean.class)
         .single();
+  }
+
+  int count(String from, UUID id) {
+    return jdbc.sql("SELECT count(*) FROM " + from).param("id", id).query(Integer.class).single();
   }
 
   UUID report(UUID resourceId) {
@@ -266,6 +269,46 @@ class CatalogPurgeExpiredDataIT {
     purge().purge();
 
     assertThat(exists("enrichment_run", only)).isTrue();
+  }
+
+  @Test
+  void uc029Br011WhatAListNamedStaysHoweverLongAgoTheListWasRead() {
+    UUID list = resource("INDEXED", "AWESOME_LIST", NOW);
+    UUID named = resource("INDEXED", "LIBRARY", NOW);
+    String directoryList = "https://directory.example/list-" + UUID.randomUUID();
+    Timestamp longAgo = Timestamp.from(daysAgo(3650));
+    jdbc.sql(
+            """
+            INSERT INTO awesome_list (list_id, search_vector, updated_at)
+            VALUES (:list, to_tsvector('english', 'tools'), :at)
+            """)
+        .param("list", list)
+        .param("at", longAgo)
+        .update();
+    jdbc.sql(
+            """
+            INSERT INTO awesome_list_entry (list_id, resource_id, heading_path, search_vector, updated_at)
+            VALUES (:list, :named, 'Tools', to_tsvector('english', 'named'), :at)
+            """)
+        .param("list", list)
+        .param("named", named)
+        .param("at", longAgo)
+        .update();
+    jdbc.sql(
+            """
+            INSERT INTO directory_list_entry (list_url, resource_id, list_title, heading_path, updated_at)
+            VALUES (:url, :named, 'Best tools', 'Tools', :at)
+            """)
+        .param("url", directoryList)
+        .param("named", named)
+        .param("at", longAgo)
+        .update();
+
+    purge().purge();
+
+    assertThat(count("awesome_list WHERE list_id = :id", list)).isOne();
+    assertThat(count("awesome_list_entry WHERE resource_id = :id", named)).isOne();
+    assertThat(count("directory_list_entry WHERE resource_id = :id", named)).isOne();
   }
 
   @Test

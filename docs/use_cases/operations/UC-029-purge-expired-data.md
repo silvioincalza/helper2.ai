@@ -23,7 +23,7 @@
 2. System runs each job on one instance of the cluster only.
 3. System deletes the accounts that have not signed in for longer than their retention period, together with their saved resources.
 4. System deletes the administrator audit entries and the runtime setting changes that are older than their retention periods.
-5. System deletes the catalog records past their retention periods: resolved review items, handled issue reports, superseded enrichment runs, web news records, past events, observed resources no source has seen again, and the awesome list index.
+5. System deletes the catalog records past their retention periods: resolved review items, handled issue reports, superseded enrichment runs, web news records, past events, and observed resources no source has seen again.
 6. System deletes the Scout run records and the review research runs that are older than their retention periods.
 7. System deletes the stored live web results, the guide's remembered similar questions and the shared AI cache entries that are past their retention period or expiry time.
 8. System logs how many records each job deleted.
@@ -103,7 +103,7 @@ A resource of observed origin (RESOURCE) that no source has seen for more than 1
 
 ### BR-011: Awesome List Index
 
-An awesome list (AWESOME_LIST) and an awesome list entry (AWESOME_LIST_ENTRY) not updated for more than 30 days by default (`H2_RETENTION_LIST_INDEX`) are deleted.
+An awesome list (AWESOME_LIST), an awesome list entry (AWESOME_LIST_ENTRY) and a directory list entry (DIRECTORY_LIST_ENTRY) have no retention period and no purge job deletes them. What a list named at its last read is kept until the list is read again (UC-030 BR-008), and is deleted with the resource it belongs to (BR-009, BR-010).
 
 ### BR-012: Scout Runs
 
