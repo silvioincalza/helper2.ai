@@ -996,11 +996,11 @@
       "message": "status 'Implemented' but its use cases make it 'Open' (UC-018 Reviewed)"
     },
     {
-      "fingerprint": "c1a7859962957b8b0be59d9d848b4be70918dab7",
+      "fingerprint": "93d59a38e59b3d5aa38162a19ef0a5646e5df35d",
       "code": "REQ_STATUS_DRIFT",
       "path": "requirements.md",
       "element": "FR-026",
-      "message": "status 'Implemented' but its use cases make it 'Open' (UC-019 Draft)"
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-019 Reviewed)"
     },
     {
       "fingerprint": "526b43acadbf4031ee99e434225a7f7a0861750b",
