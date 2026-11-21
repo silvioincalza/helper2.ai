@@ -755,4 +755,23 @@ class WebPageListsTest {
     assertThat(batch.getCandidates().getFirst().getFacts().get(GitHubAwesomeCollector.FOUND_IN))
         .isEqualTo(Map.of("list", PAGE_ID, "section", "Reading"));
   }
+
+  @Test
+  void uc030Br009AListDiscoveryAddedStaysADirectoryListAfterItsHostIsRemoved() {
+    String list = "https://futurepedia.io/best-ai-coding-tools";
+    directoryHost("futurepedia.io", true);
+    addDiscovered(list);
+    collector().collect(null, null, 500);
+
+    hosts.remove("futurepedia.io");
+    clock.pass(7);
+    CollectedBatch afterRemoval = collector().collect(null, null, 500);
+
+    assertThat(pages.asked).containsExactly(list);
+    assertThat(afterRemoval.getHits()).extracting(SourceHit::getExternalId).doesNotContain(list);
+    assertThat(afterRemoval.getLists())
+        .filteredOn(l -> l.getUrl().getValue().equals(list))
+        .singleElement()
+        .satisfies(l -> assertThat(l.getOnDirectoryHost()).isTrue());
+  }
 }

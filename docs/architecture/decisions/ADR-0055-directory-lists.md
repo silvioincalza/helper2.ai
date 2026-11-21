@@ -86,7 +86,8 @@ post when a search finds it.
     they are for products. This holds for every list, on GitHub or on the web.
 14. **A list page of a directory host is never a resource.** The collector writes no hit for it
     (`GitHubAwesomeCollector.listHits`), whoever added the page: the host decides, read from the host lists at each
-    pass. So it has no page, it is in no search result, in no hub and no sitemap, and it is not counted among the
+    pass, and a list with the origin `DISCOVERY` is one for good, also after its host is removed from the directory
+    hosts. So it has no page, it is in no search result, in no hub and no sitemap, and it is not counted among the
     resources. Its words are not in the list index either: a resource is not found by the words a directory list
     uses around it.
 15. **List → resource, two relations.**

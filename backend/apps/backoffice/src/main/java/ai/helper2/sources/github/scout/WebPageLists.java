@@ -153,7 +153,10 @@ public final class WebPageLists {
               ? lastRead(last)
               : listOf(page, last, now, reads, metrics);
       if (parsed != null) {
-        boolean directory = hosts.isDirectory(url.getHost());
+        // UC-030 BR-009: a list discovery added is a list of a directory host for good, also
+        // after its host is removed from the directory hosts.
+        boolean directory =
+            page.getOrigin() == ListOrigin.DISCOVERY || hosts.isDirectory(url.getHost());
         lists.add(
             new AwesomeCrawl.Read(
                 ListRepo.webPage(url, page.getAddress(), title(parsed, url), directory),

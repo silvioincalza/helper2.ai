@@ -118,7 +118,7 @@ A list discovery added is read like an added web page (BR-002). In each pass the
 
 ### BR-005: Reading Turned Off
 
-A list discovery added is read only while the switch of its host is on. When the switch is turned off, or the host is removed from the directory hosts, the list is no longer read. What its last read gave stays: the list still names its resources. Turning the switch on again resumes the reading.
+A list discovery added is read only while the switch of its host is on. When the switch is turned off, or the host is removed from the directory hosts, the list is no longer read. What its last read gave stays: the list still names its resources, and it stays a list of a directory host (BR-009). Turning the switch on again, or adding the host again with the switch on, resumes the reading.
 
 ### BR-006: Each Link Follows the Rule of Its Kind
 
@@ -134,4 +134,4 @@ For each list that was read, the catalog keeps the resources it names that are i
 
 ### BR-009: A List Page of a Directory Host Is Never a Resource
 
-A list page of a directory host is never a resource of the catalog, whoever added it: it has no page, it is in no search result and it is not counted among the resources. The catalog keeps only its address, its title and the resources it names. The public page of a resource gives the number of such lists that name it (UC-007 BR-008); the back office names them (UC-024 BR-019).
+A list page of a directory host is never a resource of the catalog, whoever added it, and a list discovery added stays one after its host is removed from the directory hosts: it has no page, it is in no search result and it is not counted among the resources. The catalog keeps only its address, its title and the resources it names. The public page of a resource gives the number of such lists that name it (UC-007 BR-008); the back office names them (UC-024 BR-019).
