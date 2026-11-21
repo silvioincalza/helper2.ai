@@ -79,7 +79,7 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    (the shared cache `ai_cache`, [0032](ADR-0032-guide-cost-guard-and-answer-cache.md)). Answer TTL = min(24 h, freshness left of the web
    results it used); an answer built on stale web results is not cached ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)).
 8. **Credits are measured.** `helper2.live-web.credits{feature}` counts every live call (`none` for internal
-   callers). Alert `Helper2LiveWebCreditsHigh` when more than 200 credits were spent in 24 h. Prod's
+   callers). Alert `Helper2LiveWebCreditsHigh` when more than 2,500 credits were spent in 24 h, near prod's cap. Prod's
    daily cap is 3,000 (`app.dailyLimits.webSearchCredits`), staging's 180. The plan has 14,000 credits a month for
    prod, staging and the Scout: about 450 a day. The caps do not keep a month under it (prod alone can reach 93,000
    in 31 days), so the alert is the warning, well before the cap. The Scout's
