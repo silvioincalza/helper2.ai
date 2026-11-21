@@ -101,6 +101,28 @@ class ListEntryLinksTest {
     assertThat(links.reviewedPage(link("http://10.0.0.1/admin", "Admin", "R"), PAGES)).isNull();
   }
 
+  @Test
+  void uc030Br011TheDirectorysPageOfAnItemIsASafePageOnTheHostOfTheListAndNotTheListItself() {
+    CanonicalUrl list = CanonicalUrl.of("https://futurepedia.io/best-ai-coding-tools");
+
+    assertThat(
+            links.directoryItemPage(
+                link("https://www.futurepedia.io/tool/cursor?ref=list", "Details", "E"), list))
+        .isEqualTo(CanonicalUrl.of("https://futurepedia.io/tool/cursor"));
+    assertThat(
+            List.of(
+                "https://futurepedia.io/best-ai-coding-tools",
+                "https://futurepedia.io",
+                "https://other-directory.io/tool/cursor",
+                "https://app.futurepedia.io/tool/cursor",
+                "http://futurepedia.io/tool/cursor",
+                "https://futurepedia.io/go/cursor",
+                "https://futurepedia.io/tool/cursor?url=https://cursor.com",
+                "https://10.0.0.1/tool/cursor"))
+        .allSatisfy(address ->
+            assertThat(links.directoryItemPage(link(address, "Details", "E"), list)).isNull());
+  }
+
   @ParameterizedTest
   @CsvSource({
     "https://acme.ai/blog/how-we-built-our-rag-stack",

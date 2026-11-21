@@ -436,6 +436,67 @@ class RankingTest {
     assertEquals(listOf("old", "alive"), titles(ranking.rank(merged, "a need", null)))
   }
 
+  private fun twoAtNearPlaces() =
+    merger.merge(
+      listOf(
+        hit("github", "https://github.com/a/first", rank = 0),
+        hit("github", "https://github.com/a/second", rank = 1),
+      ),
+      contexts("github"),
+    )
+
+  private fun rankedWithRatings(
+    weight: Double,
+    ratings: Map<String, Double>,
+    results: List<MergedResult> = twoAtNearPlaces(),
+  ): List<String> {
+    val asked = mutableListOf<Collection<ai.helper2.shared.ResourceId>>()
+    val byTitle = results.associate { it.title to it.id }
+    val rated =
+      Ranking(weights = RankingWeights(laneWindow = 0, rating = weight)) { ids ->
+        asked += ids
+        ratings.mapKeys { byTitle.getValue(it.key) }
+      }
+    return titles(rated.rank(results, "a need", null)).also { askedOf[weight] = asked.size }
+  }
+
+  private val askedOf = mutableMapOf<Double, Int>()
+
+  @Test
+  fun `UC-001 BR-023 with the weight 0 the rating changes nothing and is not read`() {
+    assertEquals(listOf("first", "second"), rankedWithRatings(0.0, mapOf("second" to 5.0)))
+    assertEquals(0, askedOf[0.0])
+  }
+
+  @Test
+  fun `UC-001 BR-023 a high rating reorders near ties`() {
+    assertEquals(listOf("second", "first"), rankedWithRatings(0.008, mapOf("second" to 5.0)))
+  }
+
+  @Test
+  fun `UC-001 BR-023 a result not rated yet is not ranked lower than one rated in the middle`() {
+    assertEquals(listOf("first", "second"), rankedWithRatings(0.008, mapOf("second" to 3.0)))
+    assertEquals(listOf("first", "second"), rankedWithRatings(0.008, mapOf("first" to 3.0)))
+    assertEquals(0.0, Ranking.ratingSignal(null))
+    assertEquals(1.0, Ranking.ratingSignal(5.0))
+    assertEquals(-1.0, Ranking.ratingSignal(1.0))
+  }
+
+  @Test
+  fun `UC-001 BR-023 the best rating is worth less than one more source at any rank`() {
+    val merged =
+      merger.merge(
+        listOf(
+          hit("github", "https://github.com/a/two", rank = 0),
+          hit("npm", "https://github.com/a/two", rank = 29),
+          hit("github", "https://github.com/a/rated", rank = 1),
+        ),
+        contexts("github", "npm"),
+      )
+
+    assertEquals("two", rankedWithRatings(0.008, mapOf("rated" to 5.0), merged).first())
+  }
+
   @Test
   fun `ranking is deterministic for ties`() {
     val merged =

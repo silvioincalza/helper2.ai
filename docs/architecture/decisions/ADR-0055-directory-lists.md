@@ -58,7 +58,8 @@ post when a search finds it.
 8. **The reader of added web pages.** `WebPageLists` reads a discovered list like any added web page: through the
    live web page reader, at most once in `H2_SCOUT_AWESOME_WEB_PAGES_EVERY` (7 days), one credit a read, the last
    read kept in `list_seed_last_read` and used between two reads. No page of a directory other than an added list
-   page is read: not its item pages, and no link that redirects is followed.
+   page is read, and no link that redirects is followed. The one exception is the directory's page of an item, read
+   for its rating only ([0056](ADR-0056-directory-rating.md) point 6).
 9. **A budget of its own inside the Scout's.** A read costs one credit of the Scout's daily cap
    (`H2_SCOUT_DAILY_CREDITS`, 40 by default), the cap the category searches, LinkedIn, the events scout, the courses
    and the research assistant's web search also count on ([0013](ADR-0013-discovery.md) point 10). So that the

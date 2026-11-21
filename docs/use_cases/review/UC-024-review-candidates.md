@@ -232,3 +232,7 @@ A decided review item is kept for 180 days by default after its decision, unless
 ### BR-019: Directory lists of a resource
 
 For an item about a resource, the evidence names the lists on directory hosts that name the resource, at most 50, by title, each with a link to its page and the headings above the entry. The public page gives only their number (UC-007 BR-008).
+
+### BR-020: Directory ratings of a resource
+
+For an item about a resource, the evidence names the pages of directory hosts whose figures make the rating of the resource, at most 50, by host: the host, a link to the page, the average, its scale, the number of votes and the time of the read. The public page gives only the rating and the number of directories (UC-007 BR-011).

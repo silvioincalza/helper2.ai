@@ -76,7 +76,8 @@ Both are about the public site itself, and only the public app serves them.
      `Course` for COURSE; `Dataset` for DATASET; nothing for the rest. Every resource page also gets a
      `BreadcrumbList`; the home page gets `WebSite` and `Organization`; a hub page gets a `CollectionPage`
      ([0052](ADR-0052-hub-pages-per-resource-type.md)). Only facts the page itself shows go in.
-   - Body (`main.h2-prerender`): an `<h1>`, the source's description, up to 6 facts, up to 5 source links (web
+   - Body (`main.h2-prerender`): an `<h1>`, the source's description, up to 7 facts (the type, the directory rating or
+     "Not rated yet" ([0056](ADR-0056-directory-rating.md)), then what the sources state), up to 5 source links (web
      addresses only), up to 8 links to related resources (relationships a person did not reject), and up to 10 links to the pages
      of the lists that name the resource ("Found in these lists", [0023](ADR-0023-catalog-full-text-index.md)).
    - The indexed site pages have a body too, so a crawler that runs no JavaScript reads more than the head: an `<h1>`,

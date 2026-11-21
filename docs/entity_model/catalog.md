@@ -21,6 +21,7 @@ erDiagram
     RESOURCE ||--o{ AWESOME_LIST_ENTRY : "lists as a list"
     RESOURCE ||--o{ AWESOME_LIST_ENTRY : "is listed in"
     RESOURCE ||--o{ DIRECTORY_LIST_ENTRY : "is named by"
+    RESOURCE ||--o{ DIRECTORY_RATING : "is rated by"
     KNOWN_TARGET ||--o{ KNOWN_TARGET_NAME : "is meant by"
     RESOURCE ||--o{ ISSUE_REPORT : "is reported by"
     REMOVED_RESOURCE
@@ -217,6 +218,27 @@ One resource that a list page of a directory host names. The page itself is neve
 #### Constraints
 
 - A list page names a resource at most once (list_url, resource_id are the key).
+
+### DIRECTORY_RATING
+
+The aggregated rating a directory host states for one resource that one of its list pages names: on the list page next to the entry, or on the directory's own page of the item. A row with no figures records a page of an item that was tried and stated none.
+
+| Attribute   | Description                                                                   | Data Type | Length/Precision | Validation Rules                       |
+|-------------|-------------------------------------------------------------------------------|-----------|------------------|----------------------------------------|
+| list_url    | Address of the list page that names the resource                              | String    | 300              | Primary Key                            |
+| resource_id | Resource the figures are about                                                | String    | 36               | Primary Key, Foreign Key (RESOURCE.id) |
+| host        | Directory host                                                                | String    | 253              | Not Null                               |
+| page_url    | Address of the page that states the figures: the list page or the item's page | String    | 300              | Not Null                               |
+| average     | Average the page states                                                       | Decimal   | 5,2              | Optional, above 0, at most the scale   |
+| scale       | Scale the page states for the average                                         | Integer   | -                | Optional, Values: 5, 10, 100           |
+| votes       | Number of votes, reviews or ratings the page states                           | Integer   | -                | Optional, at least 1                   |
+| read_at     | When the figures were read                                                    | DateTime  | -                | Optional                               |
+| tried_at    | When the page was last tried                                                  | DateTime  | -                | Not Null                               |
+
+#### Constraints
+
+- One row per list page and resource (list_url, resource_id are the key).
+- The average, the scale, the votes and the time of the read are all set or all empty.
 
 ### KNOWN_TARGET
 

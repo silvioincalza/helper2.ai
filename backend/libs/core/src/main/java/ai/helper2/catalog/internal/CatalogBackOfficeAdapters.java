@@ -93,6 +93,11 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcDirectoryRatingIndex jdbcDirectoryRatingIndex(JdbcClient jdbc, ObjectMapper json) {
+    return new JdbcDirectoryRatingIndex(jdbc, json);
+  }
+
+  @Bean
   JdbcReviewEvidence jdbcReviewEvidence(JdbcClient jdbc) {
     return new JdbcReviewEvidence(jdbc);
   }

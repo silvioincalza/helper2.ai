@@ -16,6 +16,8 @@ class RankingSettingsConfiguration {
 
   private static final int THOUSAND = 1000;
 
+  private static final int TEN_THOUSAND = 10_000;
+
   @Bean
   SettingsGroup rankingSettings(Ranking ranking) {
     return rankingSettingsGroup(ranking);
@@ -36,6 +38,11 @@ class RankingSettingsConfiguration {
             weight("ranking.typeHint", "Type named in the query", w.getTypeHint()),
             weight("ranking.popularity", "Popularity, at most", w.getPopularity()),
             weight("ranking.unmaintained", "Unmaintained, taken off", w.getUnmaintained()),
+            Setting.fixedCount(
+                "ranking.rating",
+                "Directory rating, at most",
+                Math.round(w.getRating() * TEN_THOUSAND),
+                "ten-thousandths"),
             Setting.fixedCount(
                 "ranking.laneWindow",
                 "Places searched for the other lane",

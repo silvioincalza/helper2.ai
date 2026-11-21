@@ -371,6 +371,7 @@ export function makeReviewEvidence(
     },
     validationErrors: ['pricing: the quotes disagree'],
     directoryLists: [],
+    directoryRatings: [],
     fields: [
       {
         field: 'pricing',

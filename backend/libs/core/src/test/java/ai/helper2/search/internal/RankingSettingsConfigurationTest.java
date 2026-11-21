@@ -28,6 +28,7 @@ class RankingSettingsConfigurationTest {
         .containsEntry("ranking.typeHint", "5")
         .containsEntry("ranking.popularity", "8")
         .containsEntry("ranking.unmaintained", "8")
+        .containsEntry("ranking.rating", "0")
         .containsEntry("ranking.laneWindow", "10")
         .containsEntry("ranking.referenceGitHubStars", "50000")
         .containsEntry("ranking.referenceHfLikes", "5000")
@@ -37,7 +38,8 @@ class RankingSettingsConfigurationTest {
 
   @Test
   void otherWeightsShowAsTheyAre() {
-    RankingWeights weights = new RankingWeights(0.05, 0.002, 0.01, 0.005, 0.005, 0.002, 0, 0.0);
+    RankingWeights weights =
+        new RankingWeights(0.05, 0.002, 0.01, 0.005, 0.005, 0.002, 0, 0.0, 0.0015);
     Ranking ranking = new Ranking(40, weights, new VitalityPolicy());
 
     assertThat(values(RankingSettingsConfiguration.rankingSettingsGroup(ranking)))
@@ -45,7 +47,8 @@ class RankingSettingsConfigurationTest {
         .containsEntry("ranking.exactTitle", "50")
         .containsEntry("ranking.title", "2")
         .containsEntry("ranking.laneWindow", "0")
-        .containsEntry("ranking.unmaintained", "0");
+        .containsEntry("ranking.unmaintained", "0")
+        .containsEntry("ranking.rating", "15");
   }
 
   @Test
