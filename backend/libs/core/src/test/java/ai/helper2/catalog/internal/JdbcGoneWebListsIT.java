@@ -98,6 +98,9 @@ class JdbcGoneWebListsIT {
 
   private void theCuratedPageNamesTheProduct() {
     resource(curatedPage);
+    jdbc.sql("INSERT INTO source (id, mode) VALUES (:source, 'INDEXED') ON CONFLICT DO NOTHING")
+        .param("source", CollectorIds.CURATED_WEB_LISTS)
+        .update();
     jdbc.sql(
             """
             INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url,
