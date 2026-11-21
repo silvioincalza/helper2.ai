@@ -729,8 +729,8 @@ helper2.search.translation.ttl = ${H2_SEARCH_TRANSLATION_TTL:24h}  =>  24h
 helper2.search.web.fresh-general = ${H2_LIVE_WEB_FRESH_GENERAL:PT48H}  =>  PT48H
 helper2.search.web.fresh-time-bound = ${H2_LIVE_WEB_FRESH_TIMEBOUND:PT24H}  =>  PT24H
 helper2.search.web.quota.global-daily-credits = ${H2_LIVE_WEB_DAILY_CREDITS:}  =>  <empty>
-helper2.search.web.quota.guest.guide = ${H2_LIVE_WEB_GUEST_GUIDE:3}  =>  3
-helper2.search.web.quota.guest.search = ${H2_LIVE_WEB_GUEST_SEARCH:3}  =>  3
+helper2.search.web.quota.guest.guide = ${H2_LIVE_WEB_GUEST_GUIDE:10}  =>  10
+helper2.search.web.quota.guest.search = ${H2_LIVE_WEB_GUEST_SEARCH:10}  =>  10
 helper2.setup.cache-ttl = ${H2_SETUP_CACHE_TTL:PT1H}  =>  PT1H
 helper2.setup.document-cache = ${H2_SETUP_DOCUMENT_CACHE_MB:32}  =>  32
 helper2.setup.document-timeout = ${H2_SETUP_DOCUMENT_TIMEOUT:10s}  =>  10s
