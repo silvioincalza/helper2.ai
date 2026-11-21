@@ -48,6 +48,8 @@ Run the relevant tests before calling a change done. `scripts/verify.sh backend`
   method into named steps instead of adding comments.
 - No dead code and no dead docs: a file, a function, a setting, a page or a section that nothing uses or reads is
   deleted in the change that makes it unused. Nothing is kept "for later" or as a backup copy.
+- Comments are allowed in code, config and scripts, Javadoc and KDoc too. A comment says why the code is so, or what
+  a type or a method is for; it does not repeat what the code says.
 - The code that enforces a business rule names it with the marker of `docs/architecture/stack.md`
   (`// UC-XXX BR-YYY:`), directly above the method, the query condition or the validator.
 - Javadoc, and KDoc in Kotlin, documents a public type or method: what it is for and the business rule it holds.

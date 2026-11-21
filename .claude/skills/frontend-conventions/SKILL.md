@@ -27,5 +27,5 @@ Run the relevant tests before calling a change done. `scripts/verify.sh frontend
 - Code format (ADR 0047): Prettier for the frontend. Run `npm run format` before a commit; CI fails on unformatted
   code.
 - BDD for user-visible behaviour: Vitest and Testing Library tests next to each page and component.
-- No dead code: `npm run knip` is strict.
+- No dead code: `npm run knip` is strict. Comments are allowed, JSDoc too: a comment says why, not what the code says.
 - A user-visible change also follows the skill `ux-rules`.
