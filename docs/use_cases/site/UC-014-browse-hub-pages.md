@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-020](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/uc-014-browse-hub-pages.md)  
 **API:** [listHub](../../../api/public.yaml#listHub)
 
 ## Preconditions

@@ -11,6 +11,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-007, FR-008, FR-009, NFR-002, NFR-004, NFR-006, NFR-007, NFR-008, NFR-010, NFR-013, C-001, C-003, C-005](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/uc-005-ask-the-ai-guide.md)  
 **API:** [askGuideStream](../../../api/public.yaml#askGuideStream)
 
 ## Preconditions
@@ -238,3 +239,11 @@ The guide's searches use the guide's own daily web searches of UC-001 BR-008; a 
 ### BR-018: Shadow Libraries
 
 A stored answer that cites a shadow library is not served and the question is answered again, as UC-004 BR-006 states.
+
+### BR-019: Asked Only by Choice
+
+The guide answers only when the visitor asks it. A search never asks the guide, whatever the length of its words.
+
+### BR-020: One Question at a Time on the Page
+
+A new question replaces the question being answered. New words in the search box drop the question and its picks, because the picks answered the earlier words.

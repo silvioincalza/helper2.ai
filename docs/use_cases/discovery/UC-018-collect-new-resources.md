@@ -11,6 +11,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-025, C-008](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/back-office.md)  
 **API:** [listScoutRuns](../../../api/admin.yaml#listScoutRuns), [startScoutRun](../../../api/admin.yaml#startScoutRun)
 
 ## Preconditions

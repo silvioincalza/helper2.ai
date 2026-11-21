@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-012, FR-013](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/uc-008-follow-new-resources-and-events.md)  
 **API:** [listRecent](../../../api/public.yaml#listRecent), [listUpcomingEvents](../../../api/public.yaml#listUpcomingEvents)
 
 ## Preconditions

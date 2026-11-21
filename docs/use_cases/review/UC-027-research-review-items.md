@@ -11,6 +11,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-034](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/back-office.md)  
 **API:** [startReviewResearch](../../../api/admin.yaml#startReviewResearch), [listReviewResearch](../../../api/admin.yaml#listReviewResearch), [estimateReviewResearch](../../../api/admin.yaml#estimateReviewResearch), [getReviewResearch](../../../api/admin.yaml#getReviewResearch), [cancelReviewResearch](../../../api/admin.yaml#cancelReviewResearch), [streamReviewResearch](../../../api/admin.yaml#streamReviewResearch)
 
 ## Preconditions

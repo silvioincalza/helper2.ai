@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-021](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/uc-015-read-mission-privacy-and-terms.md)  
 **API:** [getPolicy](../../../api/public.yaml#getPolicy)
 
 ## Preconditions

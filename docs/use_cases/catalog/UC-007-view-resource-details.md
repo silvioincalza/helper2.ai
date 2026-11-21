@@ -10,6 +10,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-010, NFR-005, NFR-010, C-005](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/uc-007-view-resource-details.md)  
 **API:** [getResource](../../../api/public.yaml#getResource)
 
 ## Preconditions

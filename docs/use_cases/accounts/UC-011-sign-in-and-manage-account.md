@@ -11,6 +11,7 @@
 **Status:** Draft  
 
 **Requirements:** [FR-016, FR-018, FR-019](../../requirements.md)  
+**Mockup:** [Screens and states](../../mockups/uc-011-sign-in-and-manage-account.md)  
 **API:** [getMe](../../../api/public.yaml#getMe), [changePreferences](../../../api/public.yaml#changePreferences), [deleteMyAccount](../../../api/public.yaml#deleteMyAccount)
 
 ## Preconditions
