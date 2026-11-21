@@ -486,13 +486,12 @@ components:
         retention:
           type: object
           description: How long each store keeps what it keeps (ADR 0010), in seconds.
-          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, webSearchCountersSeconds, guideQuestionCountersSeconds, webNewsSeconds, pendingReviewPagesSeconds, listIndexSeconds, pageTextSeconds, pageReadSeconds, backupsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds, runtimeSettingChangesSeconds, pastEventsSeconds]
+          required: [cachedSearchesSeconds, cachedGuideAnswersSeconds, translationsSeconds, queryVectorsSeconds, storedWebResultsSeconds, webSearchCountersSeconds, guideQuestionCountersSeconds, webNewsSeconds, pendingReviewPagesSeconds, pageTextSeconds, pageReadSeconds, backupsSeconds, inactiveAccountsSeconds, handledReportsSeconds, adminRecordsSeconds, runtimeSettingChangesSeconds, pastEventsSeconds]
           properties:
             webSearchCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A visitor's web search counter, per feature and UTC day (fixed in code, ADR 0027)." }
             guideQuestionCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A client address's guide question counter, per UTC day (fixed in code, ADR 0032)." }
             webNewsSeconds: { type: integer, format: int64, minimum: 0, description: "Articles and news found by web search, after they were last retrieved (`H2_RETENTION_WEB_NEWS`)." }
             pendingReviewPagesSeconds: { type: integer, format: int64, minimum: 0, description: "A page waiting for review, after the decision (`H2_RETENTION_RESOLVED_REVIEW_ITEMS`)." }
-            listIndexSeconds: { type: integer, format: int64, minimum: 0, description: "The search index of an awesome list, after the list was last read (`H2_RETENTION_LIST_INDEX`)." }
             pageTextSeconds: { type: integer, format: int64, minimum: 0, description: "The cleaned text of a product's own page, in the cache (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`)." }
             pageReadSeconds: { type: integer, format: int64, minimum: 0, description: "The address and text fingerprint of a product page that was read (`H2_SCOUT_EVIDENCE_PAGE_READ_TTL`)." }
             backupsSeconds: { type: integer, format: int64, minimum: 0, description: "A database backup (`H2_RETENTION_BACKUPS`, from the chart's `backup.retentionDays`, ADR 0043)." }

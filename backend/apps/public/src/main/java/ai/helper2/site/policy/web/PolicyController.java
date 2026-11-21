@@ -72,7 +72,6 @@ class PolicyController implements PolicyApi {
         BudgetLedger.KEEP.toSeconds(),
         catalog.webNews().toSeconds(),
         catalog.pendingReviewPages().toSeconds(),
-        catalog.listIndex().toSeconds(),
         scout.pageText().toSeconds(),
         scout.pageRead().toSeconds(),
         platform.backups().toSeconds(),

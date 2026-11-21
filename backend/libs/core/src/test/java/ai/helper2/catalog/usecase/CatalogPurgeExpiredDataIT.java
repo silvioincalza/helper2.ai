@@ -46,8 +46,7 @@ class CatalogPurgeExpiredDataIT {
             Duration.ofDays(90),
             Duration.ofDays(180),
             Duration.ofDays(365),
-            Duration.ofDays(180),
-            Duration.ofDays(30)));
+            Duration.ofDays(180)));
   }
 
   static Instant daysAgo(int days) {
