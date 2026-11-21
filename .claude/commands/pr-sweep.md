@@ -12,7 +12,7 @@ Sweep pull request #$ARGUMENTS until only the human in the loop's review is left
    cause. Never skip, loosen or delete a test to turn a check green.
 4. Review comments (people and automated reviews): fix each one, or say in one line why it is not a defect.
    A comment that changes the design or the scope goes to the human in the loop first.
-5. Run the `verifier` agent, then push the branch (never to main, never a force push without the human in the loop's OK).
+5. Run the `verifier` agent (`scripts/verify.sh` must pass), then push the branch (never to main, never a force push without the human in the loop's OK).
 6. Repeat from step 3 until the checks are green and no comment is open.
 7. Do not post on GitHub: give the human in the loop the reply for each comment as text, and the link to the pull request.
 
