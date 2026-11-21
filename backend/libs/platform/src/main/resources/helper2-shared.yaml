@@ -728,8 +728,8 @@ helper2:
       fresh-general: ${H2_LIVE_WEB_FRESH_GENERAL:PT48H}
       quota:
         guest:
-          search: ${H2_LIVE_WEB_GUEST_SEARCH:3}
-          guide: ${H2_LIVE_WEB_GUEST_GUIDE:3}
+          search: ${H2_LIVE_WEB_GUEST_SEARCH:10}
+          guide: ${H2_LIVE_WEB_GUEST_GUIDE:10}
         global-daily-credits: ${H2_LIVE_WEB_DAILY_CREDITS:}
   retention:
     live-web-results: ${H2_RETENTION_LIVE_WEB_RESULTS:P7D}
