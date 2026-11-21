@@ -326,3 +326,16 @@ lists. The specification states no reason. Readings: (a) state the reason; (b) s
 A resource whose text changed is tried again in that run even after three failed runs. UC-022 presents out of
 retries as final until an administrator puts it back. Readings: (a) intended, the text changed; (b) the cap applies
 there too.
+
+## OQ-028: Should the daily cap of list reads count tries, not lists?
+
+**Element:** UC-030 BR-004  
+**Raised by:** review of pull request #990, 2026-11-21  
+**Blocking:** No  
+**Status:** Open  
+**Assumed:** it counts lists.  
+
+At most 10 lists discovery added are read per day. The count is taken from the last try of each list, so a page
+that fails and is tried again on the same day counts once: a day can go past 10 reads. Three tries a page and the
+Scout's daily credits bound it. Readings: (a) accepted, the bounds are enough; (b) count every try, which needs a
+counter of its own.
