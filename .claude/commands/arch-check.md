@@ -1,6 +1,6 @@
 ---
 description: Run the AI architecture check (15 layers) on a change or design - this project's own check, no AI Unified Process skill covers it
-argument-hint: [scope, e.g. a branch, a module or a design doc]
+argument-hint: "[scope, e.g. a branch, a module or a design doc]"
 ---
 Run the AI architecture check of the skill `ai-architecture-check` (`.claude/skills/ai-architecture-check/SKILL.md`)
 on: $ARGUMENTS

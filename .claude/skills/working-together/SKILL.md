@@ -1,6 +1,6 @@
 ---
 name: working-together
-description: Use when planning a task, before asking or reporting to the human in the loop, before writing documentation, when review comments wait on a pull request, and when more than one specialist agent works on a task (the /team command). Holds the rules for working with the human in the loop: when to wait, when to keep going, when to stop and ask, how to explain and how to write docs.
+description: "Use when planning a task, before asking or reporting to the human in the loop, before writing documentation, when review comments wait on a pull request, and when more than one specialist agent works on a task (the /team command). Holds the rules for working with the human in the loop: when to wait, when to keep going, when to stop and ask, how to explain and how to write docs."
 ---
 
 # Working with the human in the loop

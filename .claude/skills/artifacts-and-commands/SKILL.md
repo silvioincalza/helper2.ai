@@ -1,6 +1,6 @@
 ---
 name: artifacts-and-commands
-description: Use before creating or changing any page under docs/ (requirements, glossary, use cases, use case diagrams, entity model, test cases, open questions, stack file, ADRs, diagrams, roadmap, mockups, architecture pages), and when asked which command makes or checks an artifact. Holds the table artifact → command: one command makes each artifact.
+description: "Use before creating or changing any page under docs/ (requirements, glossary, use cases, use case diagrams, entity model, test cases, open questions, stack file, ADRs, diagrams, roadmap, mockups, architecture pages), and when asked which command makes or checks an artifact. Holds the table artifact → command: one command makes each artifact."
 ---
 
 # Artifacts and the command that makes each

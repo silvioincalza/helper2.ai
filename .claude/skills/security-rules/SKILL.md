@@ -1,6 +1,6 @@
 ---
 name: security-rules
-description: Use for every new feature, endpoint, input, dependency, image, CI action, secret, log line or model call, and when reviewing one. Holds the security rules: STRIDE threat model, OWASP Top 10 and OWASP LLM Top 10, supply chain, least privilege, validation at every boundary, no secrets in code or logs.
+description: "Use for every new feature, endpoint, input, dependency, image, CI action, secret, log line or model call, and when reviewing one. Holds the security rules: STRIDE threat model, OWASP Top 10 and OWASP LLM Top 10, supply chain, least privilege, validation at every boundary, no secrets in code or logs."
 ---
 
 # Security
