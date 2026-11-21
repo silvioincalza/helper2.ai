@@ -8,10 +8,14 @@ import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.scout.DiscoveryHost;
+import ai.helper2.scout.HostKind;
 import ai.helper2.scout.HostsNeverRead;
+import ai.helper2.scout.InMemoryDiscoveryHostStore;
 import ai.helper2.scout.InMemoryListSeedStore;
 import ai.helper2.scout.ListEntryText;
 import ai.helper2.scout.ListKind;
+import ai.helper2.scout.ListOrigin;
 import ai.helper2.scout.ListReading;
 import ai.helper2.scout.ListSeed;
 import ai.helper2.scout.ListText;
@@ -139,6 +143,8 @@ class WebPageListsTest {
   final FakePages pages = new FakePages();
   final InMemoryListSeedStore added = new InMemoryListSeedStore();
   final GitHubAwesomeCollectorTest.FakeModel model = new GitHubAwesomeCollectorTest.FakeModel();
+  final InMemoryDiscoveryHostStore hosts = SeedDiscoveryHosts.store();
+  int discoveredReadsPerDay = 10;
   HostsNeverRead neverRead =
       new HostsNeverRead(
           Map.of("coursera.org", "its terms forbid automated reading without written consent"));
@@ -173,6 +179,7 @@ class WebPageListsTest {
             neverRead,
             Duration.ofDays(7),
             Duration.ofHours(1),
+            discoveredReadsPerDay,
             clock));
   }
 
@@ -189,7 +196,7 @@ class WebPageListsTest {
         model,
         new CategoryMatcher(new CategoryCatalog(List.of())),
         meters,
-        SeedDiscoveryHosts.store(),
+        hosts,
         added,
         SourceFixtures.SHADOW_LIBRARIES,
         GitHubAwesomeCollectorTest.NO_LINK_RULES,
@@ -198,6 +205,25 @@ class WebPageListsTest {
 
   void addPage(String address) {
     added.add(new ListSeed(ListKind.WEB_PAGE, address, "42", DAY_0, null));
+  }
+
+  void addDiscovered(String address) {
+    pages.markdown.put(address, linkedItems(3));
+    added.add(
+        new ListSeed(
+            ListKind.WEB_PAGE,
+            address,
+            "discovery-coding",
+            DAY_0,
+            null,
+            null,
+            0,
+            ListOrigin.DISCOVERY));
+  }
+
+  void directoryHost(String host, boolean readsLists) {
+    hosts.remove(host);
+    hosts.add(new DiscoveryHost(host, HostKind.DIRECTORY, "42", DAY_0, null, readsLists));
   }
 
   void addRepository(String name) {
@@ -598,5 +624,154 @@ class WebPageListsTest {
     assertThat(batch.getLists().getFirst().getEntries())
         .extracting(e -> e.getUrl().getValue(), ListEntryText::getText)
         .containsExactly(tuple("https://github.com/infiniflow/ragflow", "Ragflow - RAG engine."));
+  }
+
+  @Test
+  void uc030Br005WithTheSwitchOffAListDiscoveryAddedIsNotReadAndWhatItGaveStays() {
+    String list = "https://futurepedia.io/best-ai-coding-tools";
+    directoryHost("futurepedia.io", true);
+    addDiscovered(list);
+
+    CollectedBatch on = collector().collect(null, null, 500);
+
+    assertThat(pages.asked).containsExactly(list);
+    assertThat(on.getLists()).extracting(l -> l.getUrl().getValue()).containsExactly(list);
+
+    directoryHost("futurepedia.io", false);
+    clock.pass(7);
+    CollectedBatch off = collector().collect(null, null, 500);
+
+    assertThat(pages.asked).containsExactly(list);
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "page-host-off")).isEqualTo(1);
+    assertThat(off.getLists())
+        .filteredOn(l -> l.getUrl().getValue().equals(list))
+        .singleElement()
+        .satisfies(l -> assertThat(l.getDirectoryListTitle()).isEqualTo("Best AI tools"));
+    assertThat(off.getCandidates())
+        .extracting(c -> c.getUrl().getValue())
+        .containsExactlyElementsOf(
+            on.getCandidates().stream().map(c -> c.getUrl().getValue()).toList());
+
+    directoryHost("futurepedia.io", true);
+    collector().collect(null, null, 500);
+
+    assertThat(pages.asked).containsExactly(list, list);
+  }
+
+  @Test
+  void uc030Br005AListDiscoveryAddedIsNeverReadBeforeTheSwitchOfItsHostIsOn() {
+    directoryHost("futurepedia.io", false);
+    addDiscovered("https://futurepedia.io/best-ai-coding-tools");
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(pages.asked).isEmpty();
+    assertThat(listHits(batch)).isEmpty();
+  }
+
+  @Test
+  void uc030Br004DiscoverysListsShareANumberOfReadsADayAndTheRestWaitForTheNextDay() {
+    directoryHost("futurepedia.io", true);
+    discoveredReadsPerDay = 2;
+    for (int i = 0; i < 3; i++) {
+      addDiscovered("https://futurepedia.io/best-" + i);
+    }
+
+    collector().collect(null, null, 500);
+
+    assertThat(pages.asked).hasSize(2);
+    assertThat(count(AwesomeMetrics.SKIPS, "reason", "page-daily-cap")).isEqualTo(1);
+
+    clock.passHours(2);
+    collector().collect(null, null, 500);
+
+    assertThat(pages.asked).hasSize(2);
+
+    clock.pass(1);
+    collector().collect(null, null, 500);
+
+    assertThat(pages.asked).hasSize(3);
+  }
+
+  @Test
+  void uc030Br004TheListsAnAdministratorAddedAreReadFirstAndDoNotCountOnDiscoverysReads() {
+    directoryHost("futurepedia.io", true);
+    discoveredReadsPerDay = 1;
+    addDiscovered("https://futurepedia.io/best-0");
+    addDiscovered("https://futurepedia.io/best-1");
+    addPage(PAGE);
+
+    collector().collect(null, null, 500);
+
+    assertThat(pages.asked).containsExactly(PAGE, "https://futurepedia.io/best-0");
+  }
+
+  @Test
+  void uc030Br009AListPageOfADirectoryHostIsNeverAResourceWhoeverAddedIt() {
+    directoryHost("futurepedia.io", true);
+    addDiscovered("https://futurepedia.io/best-0");
+    addPage("https://producthunt.com/lists/ai-tools");
+    pages.markdown.put("https://producthunt.com/lists/ai-tools", linkedItems(3));
+    addPage(PAGE);
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(batch.getHits())
+        .extracting(SourceHit::getExternalId)
+        .contains(PAGE_ID)
+        .doesNotContain("https://producthunt.com/lists/ai-tools", "https://futurepedia.io/best-0");
+    assertThat(batch.getHits())
+        .extracting(h -> h.getCanonicalUrl().getHost())
+        .doesNotContain("producthunt.com", "futurepedia.io");
+    assertThat(batch.getLists())
+        .extracting(l -> l.getUrl().getValue(), ListText::getOnDirectoryHost)
+        .containsExactlyInAnyOrder(
+            tuple(PAGE_ID, false),
+            tuple("https://producthunt.com/lists/ai-tools", true),
+            tuple("https://futurepedia.io/best-0", true));
+  }
+
+  @Test
+  void uc030Br007ALinkToAnArticleInAListIsAnArticleCandidateWithItsListAndSection() {
+    addPage(PAGE);
+    pages.markdown.put(
+        PAGE,
+        """
+        # Best AI tools
+        ## Reading
+        - [How we built our RAG stack](https://acme.ai/blog/how-we-built-our-rag-stack) - A post.
+        - [The blog](https://acme.ai/blog) - Every post.
+        """);
+
+    CollectedBatch batch = collector().collect(null, null, 500);
+
+    assertThat(batch.getCandidates())
+        .extracting(c -> c.getUrl().getValue(), Candidate::getTitle, Candidate::getType)
+        .containsExactly(
+            tuple(
+                "https://acme.ai/blog/how-we-built-our-rag-stack",
+                "How we built our RAG stack",
+                ResourceType.ARTICLE));
+    assertThat(batch.getCandidates().getFirst().getFacts().get(GitHubAwesomeCollector.FOUND_IN))
+        .isEqualTo(Map.of("list", PAGE_ID, "section", "Reading"));
+  }
+
+  @Test
+  void uc030Br009AListDiscoveryAddedStaysADirectoryListAfterItsHostIsRemoved() {
+    String list = "https://futurepedia.io/best-ai-coding-tools";
+    directoryHost("futurepedia.io", true);
+    addDiscovered(list);
+    collector().collect(null, null, 500);
+
+    hosts.remove("futurepedia.io");
+    clock.pass(7);
+    CollectedBatch afterRemoval = collector().collect(null, null, 500);
+
+    assertThat(pages.asked).containsExactly(list);
+    assertThat(afterRemoval.getHits()).extracting(SourceHit::getExternalId).doesNotContain(list);
+    assertThat(afterRemoval.getLists())
+        .filteredOn(l -> l.getUrl().getValue().equals(list))
+        .singleElement()
+        .satisfies(l -> assertThat(l.getOnDirectoryHost()).isTrue());
   }
 }

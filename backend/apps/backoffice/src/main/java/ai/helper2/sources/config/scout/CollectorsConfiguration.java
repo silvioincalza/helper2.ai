@@ -16,12 +16,14 @@ import ai.helper2.platform.settings.RuntimeSetting;
 import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
+import ai.helper2.scout.DiscoveredLists;
 import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.admission.AdmissionPolicy;
 import ai.helper2.scout.admission.AdmissionRules;
 import ai.helper2.scout.admission.IndexFloor;
+import ai.helper2.scout.usecase.AddDiscoveredList;
 import ai.helper2.search.DescribedSource;
 import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceDescriptor;
@@ -391,7 +393,17 @@ class CollectorsConfiguration {
         neverRead,
         c.webPages().readEvery(),
         c.webPages().retryAfter(),
+        c.webPages().discoveredReadsPerDay(),
         clock);
+  }
+
+  @Bean
+  DiscoveredLists discoveredLists(
+      CollectorProperties.GitHubAwesome c,
+      ListSeedStore addedLists,
+      HostsNeverRead neverRead,
+      Clock clock) {
+    return new AddDiscoveredList(addedLists, neverRead, c.webPages().maxDiscovered(), clock);
   }
 
   private static final String AWESOME_POLICY = "collector-" + CollectorIds.GITHUB_AWESOME;

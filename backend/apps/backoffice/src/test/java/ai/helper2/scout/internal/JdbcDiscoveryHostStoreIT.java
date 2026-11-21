@@ -60,4 +60,20 @@ class JdbcDiscoveryHostStoreIT {
     assertThat(store.remove("g2.com")).isNotNull();
     assertThat(store.lists().getDirectory()).doesNotContain("g2.com");
   }
+
+  @Test
+  void uc019Br007TheSwitchOfADirectoryHostIsOffUntilSetAndAWritingHostHasNone() {
+    assertThat(store.lists().getDirectoryListsRead()).isEmpty();
+
+    DiscoveryHost on = store.readLists("g2.com", true);
+
+    assertThat(on).isNotNull();
+    assertThat(on.getReadsLists()).isTrue();
+    assertThat(store.lists().getDirectoryListsRead()).containsExactly("g2.com");
+    assertThat(store.readLists("medium.com", true)).isNull();
+    assertThat(store.readLists("unknown.example", true)).isNull();
+
+    assertThat(store.readLists("g2.com", false).getReadsLists()).isFalse();
+    assertThat(store.lists().getDirectoryListsRead()).isEmpty();
+  }
 }

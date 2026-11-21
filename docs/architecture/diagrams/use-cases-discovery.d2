@@ -16,6 +16,7 @@ direction: right
 admin: "Administrator" {class: person}
 scheduler: "Scheduler" {class: ext}
 source_provider: "Source Provider" {class: ext}
+scout: "Scout" {class: ext}
 
 module: "Discovery" {
   class: group
@@ -31,10 +32,16 @@ module: "Discovery" {
     class: app
     shape: oval
   }
+  UC030: "UC-030\nRead Lists" {
+    class: app
+    shape: oval
+  }
 }
 
 scheduler -> module.UC018
 admin -> module.UC018
 admin -> module.UC019
 admin -> module.UC020
+scout -> module.UC030
 module.UC018 -> source_provider
+module.UC030 -> source_provider

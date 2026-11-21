@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.search.ShadowLibraries;
 import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.sources.github.scout.ListEntryLinks.Article;
 import ai.helper2.sources.github.scout.ListEntryLinks.Course;
 import ai.helper2.sources.github.scout.ListEntryLinks.Model;
 import ai.helper2.sources.github.scout.ListEntryLinks.Product;
@@ -66,6 +67,29 @@ class ListEntryLinksTest {
             new Course(
                 CanonicalUrl.of("https://huggingface.co/learn/agents-course"),
                 "Hugging Face Learn"));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "https://acme.ai/blog/how-we-built-our-rag-stack",
+    "https://medium.com/@someone/a-guide-to-ai-agents",
+    "https://newsletter.ai/how-we-built-our-ai-stack",
+  })
+  void uc030Br007ALinkThatReadsAsAnArticleByTheRuleOfDiscoveryIsAnArticleForReview(String url) {
+    assertThat(route(url + "?utm_source=list", "How we built it", "Reading"))
+        .isEqualTo(new Article(CanonicalUrl.of(url)));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "https://acme.ai/blog, not-a-product-page",
+    "https://medium.com/@someone, not-a-product-page",
+    "https://producthunt.com/stories/how-we-rank-ai-tools, not-a-product-page",
+    "https://arxiv.org/list/cs.AI/recent-papers-of-the-week, excluded-domain",
+  })
+  void uc030Br007ABlogIndexAnAuthorPageADirectoryPageAndAnExcludedDomainAreNoArticle(
+      String url, String reason) {
+    assertThat(route(url, "Read more", "Reading")).isEqualTo(new Skipped(reason));
   }
 
   @Test

@@ -151,7 +151,8 @@ class ResourceDetailController implements ResourceDetailApi {
         found.lists().stream()
             .map(l -> new FoundInListDto(l.listId(), l.listTitle(), l.headingPath()))
             .toList(),
-        found.more());
+        found.more(),
+        found.directoryLists());
   }
 
   private static List<EvidenceDto> evidence(List<ResourceDetail.Evidence> list) {

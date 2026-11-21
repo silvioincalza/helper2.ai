@@ -46,6 +46,7 @@ class AppRolesGrantsIT {
               Map.entry("awesome_list", R),
               Map.entry("removed_resource", R),
               Map.entry("awesome_list_entry", R),
+              Map.entry("directory_list_entry", R),
               Map.entry("job_marker", R),
               Map.entry("enrichment_run", R),
               Map.entry("evidence", R),

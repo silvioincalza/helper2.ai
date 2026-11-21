@@ -7,6 +7,7 @@ import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Collector;
+import ai.helper2.scout.DiscoveredLists;
 import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.search.ShadowLibraries;
@@ -73,6 +74,11 @@ class DiscoveryCollectorRegistrarTest {
     @Bean
     DiscoveryHostStore hosts() {
       return SeedDiscoveryHosts.store();
+    }
+
+    @Bean
+    DiscoveredLists discoveredLists() {
+      return (page, foundBy) -> DiscoveredLists.Outcome.WAITS_FOR_REVIEW;
     }
 
     @Bean

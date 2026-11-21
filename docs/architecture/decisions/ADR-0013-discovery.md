@@ -88,7 +88,8 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
      answer Tavily writes;
    - `exclude_domains` for social and video sites (no product pages there, and `linkedin.com` has its own collector,
      [0012](ADR-0012-scout-collectors-and-events.md)) and for AI directories and review sites (Product Hunt, There's An AI For
-     That, Futurepedia, G2, Capterra, AlternativeTo, ...): their terms forbid copying their listings. We link to them
+     That, Futurepedia, G2, Capterra, AlternativeTo, ...): their terms forbid copying their listings (a directory host
+     whose list reading an administrator turned on is not excluded, [0055](ADR-0055-directory-lists.md) point 4). We link to them
      instead: they are entries of the curated list (`R__curated_seed.sql`) with our own one-line description, and
      nothing taken from their pages. A category adds its own: course platforms for education, health portals and
      agencies for health, law sites and legal directories for legal;
@@ -107,7 +108,9 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
      infers `EVENT`, and an `EVENT` with no event date would escape both retention rules. A list helps a person
      compare; it claims nothing about the products in it. With `index-lists: false` list pages are dropped.
      A list page on a directory's host (point 21) is not indexed: it is an `ARTICLE` candidate in the review list
-     (`Shape.LIST_TO_REVIEW`), so a person decides whether a page of a site we only link to enters the catalog;
+     (`Shape.LIST_TO_REVIEW`), so a person decides whether a page of a site we only link to enters the catalog.
+     On a directory host whose lists an administrator lets the Scout read, it is added as a list to read instead
+     (`Shape.LIST_TO_READ`, [0055](ADR-0055-directory-lists.md));
    - **product page** one level below a home page (a language segment such as `/en` does not count). A site page
      (`/pricing`, `/features`, `/download`, ...) stands for its site's home page, titled with the side of the page title
      that names the site ("Pricing | AnythingLLM", "AnythingLLM - Pricing" → "AnythingLLM"). Any other page is the
@@ -228,7 +231,9 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
       `H2_SCOUT_AWESOME_WEB_PAGES_EVERY` (7 days), for one live web credit of the Scout's daily cap; the passes
       between two reads use what the last read gave (`list_seed_last_read`). The GitHub lists it links to are followed like those of a seed
       README, and its links to product sites go to review (point 17) with the page as the list. It comes after the
-      GitHub seeds in a pass, so an entry two lists share keeps the section of the GitHub list.
+      GitHub seeds in a pass, so an entry two lists share keeps the section of the GitHub list. A list page discovery
+      added on a directory host is read the same way, after the administrator's pages and within its own reads a day;
+      it is never a resource ([0055](ADR-0055-directory-lists.md)).
     - A link is a nested list when the repository's name says "awesome", or when it sits under a heading below the
       title that names a section of lists ("Other awesome lists", "Related lists", "Lists of lists").
     - It is followed only when its GitHub facts (`GET /repos/{owner}/{repo}`) say it is alive and about AI: not
@@ -297,8 +302,10 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
       [0012](ADR-0012-scout-collectors-and-events.md) point 7). The words read are the link's words, the heading path
       and the address. It becomes a `COURSE_CANDIDATE`, with the platform's name.
     - **Any other link**: not an excluded domain, and the product's home page or its one-level page by the rules of
-      point 5 (`DiscoveryPages.productSite`): docs, blogs, articles, publisher hosts and deeper pages are skipped. It
-      becomes a `RESOURCE_CANDIDATE` of type PRODUCT. The excluded domains are discovery's (directories, review,
+      point 5 (`DiscoveryPages.productSite`): docs, a blog's index, publisher hosts and deeper pages are skipped. It
+      becomes a `RESOURCE_CANDIDATE` of type PRODUCT. A link that is no product page and reads as a post by the rule
+      of point 5 (`DiscoveryPages.isWritingPage`) becomes a `RESOURCE_CANDIDATE` of type ARTICLE
+      ([0055](ADR-0055-directory-lists.md) point 13). The excluded domains are discovery's (directories, review,
       social and video sites) plus papers, chats, notebooks, package registries and app stores
       (`links.exclude-domains`). They apply to this kind only: they never drop a model, a paper, a package or a
       course.
@@ -476,8 +483,9 @@ No new table for deep search, no new dependency.
 - **A model sorts the results, picks the categories or maps headings** — better recall on odd pages and headings, but a
   model call per result, values that need an AI label, and a model that reads untrusted pages before anything is
   checked.
-- **Search known directories with `include_domains`** (Product Hunt, There's An AI For That) — their terms forbid
-  copying their listings, and the result would be their catalog, not ours.
+- **Search known directories with `include_domains`** (Product Hunt, There's An AI For That) — the result would be
+  their catalog, not ours. What the Scout reads on a directory host, and when, is decided in
+  [0055](ADR-0055-directory-lists.md).
 - **Tavily `/crawl`, `/extract` or `include_raw_content`** — more text for the reviewer and the enrichment, more
   credits, and a copy of the page we would have to keep and justify; the excerpt is enough to decide.
 - **Drop Tavily's own pages in `DiscoveryPages.classify`** — works too, but the rule then lives in two places; `keep()`
@@ -608,6 +616,7 @@ discovery hosts: [flow](../diagrams/flow-0013-discovery-hosts.svg) · [sequence]
 - Decides: [F2.3](https://github.com/silvioincalza/helper2.ai/issues/33).
 - Open issues that change it:
   - [S2.3.5](https://github.com/silvioincalza/helper2.ai/issues/197): kept and dropped candidates per `discovery_host` row, one-step move, public-suffix check.
+  - [0055](ADR-0055-directory-lists.md) decides the lists of directory hosts and the article links of a list.
   - [S2.3.9](https://github.com/silvioincalza/helper2.ai/issues/843): a list page that discovery finds is split into its items and each item is checked; a web page an administrator added is read (point 15).
   - [S2.3.12](https://github.com/silvioincalza/helper2.ai/issues/850): a PyPI package a list links to is read by its name.
   - [S2.3.13](https://github.com/silvioincalza/helper2.ai/issues/851): a Hugging Face dataset or Space a list links to is read by its id.

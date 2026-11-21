@@ -6,7 +6,7 @@
 |-------------------------------------------|-----------------------------------------------------------------------------|----------|------------|
 | [Search](entity_model/search.md)          | Finds AI resources across the catalog and live sources with one query       | LIVE_WEB_QUERY_RESULT, SHADOW_LIBRARY, HOME_EXAMPLE | - |
 | [AI Guide](entity_model/ai-guide.md)      | Answers needs only from retrieved results, and writes setup guides          | GUIDE_SIMILAR_QUESTION | - |
-| [Catalog](entity_model/catalog.md)        | The stored AI resources, where each fact came from, and how they relate     | SOURCE, RESOURCE, RESOURCE_LABEL, SOURCE_RECORD, EVIDENCE, RELATIONSHIP, RELATIONSHIP_EVIDENCE, AWESOME_LIST, AWESOME_LIST_ENTRY, KNOWN_TARGET, KNOWN_TARGET_NAME, ISSUE_REPORT, REMOVED_RESOURCE | Enrichment |
+| [Catalog](entity_model/catalog.md)        | The stored AI resources, where each fact came from, and how they relate     | SOURCE, RESOURCE, RESOURCE_LABEL, SOURCE_RECORD, EVIDENCE, RELATIONSHIP, RELATIONSHIP_EVIDENCE, AWESOME_LIST, AWESOME_LIST_ENTRY, DIRECTORY_LIST_ENTRY, KNOWN_TARGET, KNOWN_TARGET_NAME, ISSUE_REPORT, REMOVED_RESOURCE | Enrichment |
 | [Accounts](entity_model/accounts.md)      | Optional GitHub sign-in, saved resources, and the record of administrator actions | APP_USER, BOOKMARK, ADMIN_AUDIT | - |
 | [Site](entity_model/site.md)              | The public pages around search: hubs, policy pages and support             | PUBLIC_APP_SETTING | - |
 | [Discovery](entity_model/discovery.md)    | Collects new AI resources from the sources and admits them as candidates   | SCOUT_RUN, SCOUT_SCHEDULE, SOURCE_CURSOR, DISCOVERY_HOST, LIST_SEED, LIST_SEED_LAST_READ | Catalog |

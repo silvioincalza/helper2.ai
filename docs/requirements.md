@@ -48,6 +48,7 @@ describe how.
 | FR-038 | Runtime Settings             | As an administrator, I want to change the spending limits and switches at runtime, and see the settings in force, so that I control costs without a deploy. | High | Implemented |
 | FR-039 | Audit Log                    | As an administrator, I want a record of every administrator action, newest first, so that each change can be traced. | Medium | Implemented |
 | FR-040 | Purge Expired Data           | As a visitor, I want every piece of data deleted when its retention period ends so that nothing about me is kept longer than needed. | High | Implemented |
+| FR-041 | Read Lists                   | As a visitor, I want the resources that curated lists and directory lists name to be in the catalog, checked at their own source, with the lists that name each so that I find them and see how known a resource is. | Medium | Open |
 
 ## Non-Functional Requirements
 

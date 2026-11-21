@@ -228,3 +228,7 @@ Every value a model wrote (the run's field values, its validation errors, the re
 ### BR-018: Retention of decided items
 
 A decided review item is kept for 180 days by default after its decision, unless it belongs to a user report.
+
+### BR-019: Directory lists of a resource
+
+For an item about a resource, the evidence names the lists on directory hosts that name the resource, at most 50, by title, each with a link to its page and the headings above the entry. The public page gives only their number (UC-007 BR-008).

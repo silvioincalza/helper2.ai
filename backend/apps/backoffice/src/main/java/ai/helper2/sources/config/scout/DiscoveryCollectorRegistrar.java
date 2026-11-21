@@ -2,6 +2,7 @@ package ai.helper2.sources.config.scout;
 
 import ai.helper2.platform.config.HttpClientProperties;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.scout.DiscoveredLists;
 import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.search.ShadowLibraries;
 import ai.helper2.sources.config.CollectorProperties;
@@ -59,6 +60,7 @@ class DiscoveryCollectorRegistrar implements BeanRegistrar {
         categories.all(),
         ctx.bean(ScoutLiveWebCredits.class),
         ctx.bean(DiscoveryHostStore.class),
+        ctx.bean(DiscoveredLists.class),
         ctx.bean(ShadowLibraries.class));
   }
 }

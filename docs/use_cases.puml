@@ -5,6 +5,7 @@ actor "Visitor" as visitor
 actor "Signed-in User" as user
 actor "Administrator" as admin
 actor "Scheduler" as scheduler
+actor "Scout" as scout
 actor "Search Engine" as search_engine
 actor "Language Model" as llm
 actor "Embedding Service" as embedder
@@ -38,6 +39,7 @@ admin --> operations
 scheduler --> search
 scheduler --> site
 scheduler --> discovery
+scout --> discovery
 scheduler --> enrichment
 scheduler --> review
 scheduler --> operations

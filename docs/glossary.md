@@ -22,7 +22,7 @@
 | Hub Page          | The public page of one resource type that search engines may index. | Landing page |
 | Shadow Library    | A site that offers pirated books or papers; search never shows one. | |
 | Discovery Host    | A host the Scout may read when it looks for new resources. | |
-| List Seed         | A GitHub repository or web page that lists AI resources and that an administrator added for the Scout to read. | |
+| List Seed         | A GitHub repository or web page that lists AI resources and that the Scout reads: an administrator added it, or discovery found the page on a directory host whose lists are read. | |
 | Home Example      | An example search the home page offers, checked regularly for good results. | |
 | Runtime Setting   | A spending limit or switch an administrator may change without a deploy. | Feature flag |
 | Retention Period  | How long one kind of data is kept before it is deleted. | |

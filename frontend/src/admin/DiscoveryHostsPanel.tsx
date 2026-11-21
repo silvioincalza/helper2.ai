@@ -14,7 +14,9 @@ import { useFocusReturn } from './useFocusReturn';
 const KINDS: DiscoveryHostKind[] = ['WRITING', 'DIRECTORY'];
 
 type Done =
-  { kind: 'added'; host: string; list: DiscoveryHostKind } | { kind: 'removed'; host: string };
+  | { kind: 'added'; host: string; list: DiscoveryHostKind }
+  | { kind: 'removed'; host: string }
+  | { kind: 'reading'; host: string; on: boolean };
 
 export function DiscoveryHostsPanel() {
   const { t } = useTranslation();
@@ -27,12 +29,19 @@ export function DiscoveryHostsPanel() {
   const [empty, setEmpty] = useState(false);
   const [removing, setRemoving] = useState<DiscoveryHostEntry | null>(null);
   const [removeReason, setRemoveReason] = useState('');
+  const [switching, setSwitching] = useState<DiscoveryHostEntry | null>(null);
+  const [switchReason, setSwitchReason] = useState('');
   const { busy, notice, clearNotice, run } = useAdminAction<Done>(hosts.reload);
   const focusOnMount = useCallback((el: HTMLElement | null) => el?.focus(), []);
-  const focus = useFocusReturn(removing !== null || hosts.loading);
+  const focus = useFocusReturn(removing !== null || switching !== null || hosts.loading);
   const closeRemove = (entry: DiscoveryHostEntry) => {
     focus.returnTo(entry.host, entry.kind);
     setRemoving(null);
+  };
+
+  const closeSwitch = (entry: DiscoveryHostEntry) => {
+    focus.returnTo(entry.host, entry.kind);
+    setSwitching(null);
   };
 
   const all = (hosts.data ?? hosts.previous)?.hosts ?? [];
@@ -70,7 +79,24 @@ export function DiscoveryHostsPanel() {
     });
   };
 
-  const done = notice?.kind === 'added' || notice?.kind === 'removed';
+  const confirmSwitch = () => {
+    if (!switching) return;
+    const changed = switching;
+    void run(async () => {
+      try {
+        const saved = await adminApi.readDirectoryLists(
+          changed.host,
+          !changed.readsLists,
+          trimOrNull(switchReason),
+        );
+        return { kind: 'reading', host: saved.host, on: saved.readsLists };
+      } finally {
+        closeSwitch(changed);
+      }
+    });
+  };
+
+  const done = notice?.kind === 'added' || notice?.kind === 'removed' || notice?.kind === 'reading';
 
   return (
     <section aria-labelledby="dh-h">
@@ -87,9 +113,13 @@ export function DiscoveryHostsPanel() {
               })
             : notice.kind === 'removed'
               ? t('admin.settings.hosts.removed', { host: notice.host })
-              : notice.kind === 'refused'
-                ? t('admin.settings.hosts.refused', { detail: notice.detail })
-                : t('admin.settings.hosts.failed')}
+              : notice.kind === 'reading'
+                ? t(`admin.settings.hosts.reading.${notice.on ? 'on' : 'off'}`, {
+                    host: notice.host,
+                  })
+                : notice.kind === 'refused'
+                  ? t('admin.settings.hosts.refused', { detail: notice.detail })
+                  : t('admin.settings.hosts.failed')}
         </p>
       )}
       <form className="h2-admin__form" noValidate onSubmit={add} aria-labelledby="dh-add-h">
@@ -179,6 +209,43 @@ export function DiscoveryHostsPanel() {
           </div>
         </div>
       )}
+      {switching && (
+        <div className="h2-admin__form" role="group" aria-labelledby="dh-switch-h">
+          <h4 id="dh-switch-h" ref={focusOnMount} tabIndex={-1} className="h2-admin__h">
+            {t(`admin.settings.hosts.switchTitle.${switching.readsLists ? 'off' : 'on'}`, {
+              host: switching.host,
+            })}
+          </h4>
+          <p>{t(`admin.settings.hosts.switchEffect.${switching.readsLists ? 'off' : 'on'}`)}</p>
+          <label>
+            {t('admin.settings.hosts.reason')}
+            <input
+              type="text"
+              value={switchReason}
+              maxLength={500}
+              onChange={(e) => setSwitchReason(e.target.value)}
+            />
+          </label>
+          <div className="h2-admin__tools">
+            <button
+              type="button"
+              className="btn btn-primary"
+              aria-disabled={busy || undefined}
+              onClick={confirmSwitch}
+            >
+              {t(`admin.settings.hosts.confirmSwitch.${switching.readsLists ? 'off' : 'on'}`)}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              aria-disabled={busy || undefined}
+              onClick={() => !busy && closeSwitch(switching)}
+            >
+              {t('admin.settings.hosts.cancel')}
+            </button>
+          </div>
+        </div>
+      )}
       {hosts.loading && all.length === 0 ? (
         <TableSkeleton rows={3} quiet />
       ) : hosts.error !== undefined && all.length === 0 ? (
@@ -221,8 +288,34 @@ export function DiscoveryHostsPanel() {
                               at: formatDate(h.addedAt, 'INSTANT'),
                             })}
                             {h.reason && <span className="muted"> · {h.reason}</span>}
+                            {h.kind === 'DIRECTORY' && (
+                              <>
+                                {' · '}
+                                {t(`admin.settings.hosts.lists.${h.readsLists ? 'on' : 'off'}`)}
+                              </>
+                            )}
                           </td>
                           <td>
+                            {h.kind === 'DIRECTORY' && (
+                              <button
+                                type="button"
+                                className="btn"
+                                aria-disabled={busy || undefined}
+                                aria-label={t(
+                                  `admin.settings.hosts.switchLabel.${h.readsLists ? 'off' : 'on'}`,
+                                  { host: h.host },
+                                )}
+                                onClick={() => {
+                                  if (busy) return;
+                                  setRemoving(null);
+                                  setSwitching(h);
+                                  setSwitchReason('');
+                                  clearNotice();
+                                }}
+                              >
+                                {t(`admin.settings.hosts.switch.${h.readsLists ? 'off' : 'on'}`)}
+                              </button>
+                            )}{' '}
                             <button
                               ref={focus.row(h.host)}
                               type="button"
@@ -231,6 +324,7 @@ export function DiscoveryHostsPanel() {
                               aria-label={t('admin.settings.hosts.removeLabel', { host: h.host })}
                               onClick={() => {
                                 if (busy) return;
+                                setSwitching(null);
                                 setRemoving(h);
                                 setRemoveReason('');
                                 clearNotice();

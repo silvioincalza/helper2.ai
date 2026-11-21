@@ -18,7 +18,10 @@ public final class DiscoveryPages {
 
   private final Set<String> publisherHosts;
 
+  private final HostLists hosts;
+
   public DiscoveryPages(HostLists hosts) {
+    this.hosts = hosts;
     this.writingHosts = Set.copyOf(hosts.getWriting());
     this.directoryHosts = Set.copyOf(hosts.getDirectory());
     this.publisherHosts = union(writingHosts, directoryHosts);
@@ -27,11 +30,12 @@ public final class DiscoveryPages {
   enum Shape {
     LIST,
     LIST_TO_REVIEW,
+    LIST_TO_READ,
     PRODUCT,
     ARTICLE;
 
     boolean isList() {
-      return this == LIST || this == LIST_TO_REVIEW;
+      return this == LIST || this == LIST_TO_REVIEW || this == LIST_TO_READ;
     }
   }
 
@@ -157,9 +161,7 @@ public final class DiscoveryPages {
       return new Page(Shape.PRODUCT, site, siteTitle(title, url, site));
     }
     if (isListPage(title, url)) {
-      // UC-019 BR-001: a list page of a directory host waits for review, it is not indexed.
-      Shape shape = hostIn(url.getHost(), directoryHosts) ? Shape.LIST_TO_REVIEW : Shape.LIST;
-      return new Page(shape, url, title);
+      return new Page(listShape(url.getHost()), url, title);
     }
     if (site != null) {
       return new Page(Shape.PRODUCT, site, siteTitle(title, url, site));
@@ -167,7 +169,20 @@ public final class DiscoveryPages {
     return isWritingPage(url) ? new Page(Shape.ARTICLE, url, title.strip()) : null;
   }
 
-  boolean isWritingPage(CanonicalUrl url) {
+  private Shape listShape(String host) {
+    if (!hostIn(host, directoryHosts)) {
+      return Shape.LIST;
+    }
+    // UC-019 BR-001: a list page of a directory host waits for review, it is not indexed.
+    // UC-030 BR-003: with the switch of its host on, it is a list to read.
+    return hosts.readsListsOf(host) ? Shape.LIST_TO_READ : Shape.LIST_TO_REVIEW;
+  }
+
+  boolean readsListsOf(String host) {
+    return hosts.readsListsOf(host);
+  }
+
+  public boolean isWritingPage(CanonicalUrl url) {
     String host = url.getHost();
     List<String> path = pagePath(url);
     if (path.isEmpty() || hostIn(host, directoryHosts) || host.equals("github.com")) {

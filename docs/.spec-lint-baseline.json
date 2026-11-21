@@ -758,6 +758,20 @@
       "message": "ADR-0054 has no **Status:** line"
     },
     {
+      "fingerprint": "a2d54ef99afa6f4a26be7593e63420f557a7ea06",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0055-directory-lists.md",
+      "element": "ADR-0055",
+      "message": "ADR-0055 has no **Date:** line"
+    },
+    {
+      "fingerprint": "cc36d6b792e00a10b9a170316daba5c9170edbca",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0055-directory-lists.md",
+      "element": "ADR-0055",
+      "message": "ADR-0055 has no **Status:** line"
+    },
+    {
       "fingerprint": "44d3e597349cb1850f8906f8a356ce1bd44124cb",
       "code": "REQ_STATUS_DRIFT",
       "path": "requirements.md",
@@ -800,11 +814,11 @@
       "message": "status 'Implemented' but its use cases make it 'Open' (UC-016 Approved)"
     },
     {
-      "fingerprint": "f192fd4598c366d2b0cd5a4b67683cde4862235c",
+      "fingerprint": "ede9d4b8f138ca8991b2f1dfe11abb9c0314b3be",
       "code": "REQ_STATUS_DRIFT",
       "path": "requirements.md",
       "element": "C-008",
-      "message": "status 'Implemented' but its use cases make it 'Open' (UC-018 Approved)"
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-018 Approved, UC-030 Approved)"
     },
     {
       "fingerprint": "fff4470d0fd8cac7739b37a9c8f41a538d89f1cc",
@@ -1185,11 +1199,11 @@
       "message": "status 'Implemented' but its use cases make it 'Open' (UC-021 Approved)"
     },
     {
-      "fingerprint": "208bcf54dfca9e3f22186da807bc0f6876cdb86f",
+      "fingerprint": "6a693cee2bca43130249c40e4126c4dd50946193",
       "code": "REQ_STATUS_DRIFT",
       "path": "requirements.md",
       "element": "NFR-015",
-      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved, UC-001 Approved)"
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved, UC-030 Approved, UC-001 Approved)"
     }
   ]
 }

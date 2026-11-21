@@ -140,11 +140,34 @@ class JdbcResourceDetailReads implements EnrichmentFacts, AwesomeListEntries {
                         rs.getString("heading_path")),
                     rs.getInt("total")))
             .list();
-    if (rows.isEmpty()) {
-      return ResourceDetail.FoundIn.NO_LIST;
-    }
+    int more = rows.isEmpty() ? 0 : rows.getFirst().total() - rows.size();
     return new ResourceDetail.FoundIn(
-        rows.stream().map(ListRow::entry).toList(), rows.getFirst().total() - rows.size());
+        rows.stream().map(ListRow::entry).toList(), more, directoryLists(resourceId));
+  }
+
+  // UC-007 BR-008: a list on a directory host is counted, never named.
+  private int directoryLists(UUID resourceId) {
+    return jdbc.sql("SELECT count(*) FROM directory_list_entry WHERE resource_id = :id")
+        .param("id", resourceId)
+        .query(Integer.class)
+        .single();
+  }
+
+  @Override
+  public List<DirectoryList> directoryListsNaming(UUID resourceId) {
+    return jdbc.sql(
+            """
+            SELECT list_title, list_url, heading_path FROM directory_list_entry
+            WHERE resource_id = :id
+            ORDER BY list_title, list_url
+            LIMIT :limit
+            """)
+        .param("id", resourceId)
+        .param("limit", MAX_DIRECTORY_LISTS)
+        .query((rs, n) ->
+            new DirectoryList(
+                rs.getString("list_title"), rs.getString("list_url"), rs.getString("heading_path")))
+        .list();
   }
 
   private record ListRow(ResourceDetail.ListEntry entry, int total) {}

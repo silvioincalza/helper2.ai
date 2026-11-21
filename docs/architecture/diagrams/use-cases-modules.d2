@@ -17,6 +17,7 @@ visitor: "Visitor" {class: person}
 user: "Signed-in User" {class: person}
 admin: "Administrator" {class: person}
 scheduler: "Scheduler" {class: ext}
+scout: "Scout" {class: ext}
 search_engine: "Search Engine" {class: ext}
 llm: "Language Model" {class: ai}
 embedder: "Embedding Service" {class: ai}
@@ -50,6 +51,7 @@ admin -> operations
 scheduler -> search
 scheduler -> site
 scheduler -> discovery
+scout -> discovery
 scheduler -> enrichment
 scheduler -> review
 scheduler -> operations

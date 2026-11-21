@@ -21,9 +21,17 @@ public record ResourceDetail(
 
   public record ListEntry(UUID listId, String listTitle, String headingPath) {}
 
-  public record FoundIn(List<ListEntry> lists, int more) {
+  /**
+   * The lists that name a resource. A list page of a directory host is no resource and is never in
+   * {@code lists} or {@code more}: {@code directoryLists} counts it.
+   */
+  public record FoundIn(List<ListEntry> lists, int more, int directoryLists) {
     public static final int MAX_LISTS = 10;
-    public static final FoundIn NO_LIST = new FoundIn(List.of(), 0);
+    public static final FoundIn NO_LIST = new FoundIn(List.of(), 0, 0);
+
+    public FoundIn(List<ListEntry> lists, int more) {
+      this(lists, more, 0);
+    }
   }
 
   public record Evidence(UUID id, URI sourceUrl, Instant retrievedAt, String excerpt) {}

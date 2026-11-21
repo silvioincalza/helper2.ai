@@ -5,6 +5,7 @@ import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.scout.DiscoveryHostStore;
+import ai.helper2.scout.HostLists;
 import ai.helper2.scout.ListEntryText;
 import ai.helper2.scout.ListKind;
 import ai.helper2.scout.ListSeed;
@@ -239,8 +240,9 @@ public class GitHubAwesomeCollector implements Collector {
     if (!interval.allowsPass(cursor.getCheckpoint(), cursor.getResumeCursor(), startedAt)) {
       return CollectedBatch.notDue();
     }
-    DiscoveryPages pages = new DiscoveryPages(hosts.lists());
-    Pass pass = read(addedLists(), discoverListRepos());
+    HostLists hostLists = hosts.lists();
+    DiscoveryPages pages = new DiscoveryPages(hostLists);
+    Pass pass = read(addedLists(), discoverListRepos(), hostLists);
     List<AwesomeListParser.Entry> all =
         pass.entries().stream().sorted(Comparator.comparing(GitHubAwesomeCollector::key)).toList();
     int offset = firstAfter(all, resumeKey(cursor.getOwnResume()));
@@ -358,7 +360,7 @@ public class GitHubAwesomeCollector implements Collector {
     return discoverListRepos().stream().map(ListRepo::fullName).toList();
   }
 
-  record WebPage(String address, String title) {}
+  record WebPage(String address, String title, boolean directory) {}
 
   record ListRepo(String fullName, JsonNode facts, @Nullable WebPage page) {
 
@@ -366,8 +368,13 @@ public class GitHubAwesomeCollector implements Collector {
       this(fullName, facts, null);
     }
 
-    static ListRepo webPage(CanonicalUrl url, String address, String title) {
-      return new ListRepo(url.getValue(), MissingNode.getInstance(), new WebPage(address, title));
+    static ListRepo webPage(CanonicalUrl url, String address, String title, boolean directory) {
+      return new ListRepo(
+          url.getValue(), MissingNode.getInstance(), new WebPage(address, title, directory));
+    }
+
+    boolean isOnADirectoryHost() {
+      return page != null && page.directory();
     }
 
     @Nullable CanonicalUrl url() {
@@ -440,13 +447,13 @@ public class GitHubAwesomeCollector implements Collector {
 
   private static final String GITHUB = "https://github.com/";
 
-  private Pass read(List<String> added, List<ListRepo> seeds) {
+  private Pass read(List<String> added, List<ListRepo> seeds, HostLists hostLists) {
     AwesomeCrawl.Limits crawlLimits = crawlLimits();
     ReadmeBudget budget = AwesomeCrawl.budget(crawlLimits, clock);
     List<AwesomeCrawl.Read> crawl =
         AwesomeCrawl.crawl(
             added,
-            webPages.read(budget, metrics),
+            webPages.read(hostLists, budget, metrics),
             seeds,
             gitHubLists(),
             crawlLimits,
@@ -535,6 +542,8 @@ public class GitHubAwesomeCollector implements Collector {
           case ListEntryLinks.Course course -> propose(found, courseCandidate(course, link, list));
           case ListEntryLinks.Product product ->
               propose(found, candidate(product.site(), link, list, ResourceType.PRODUCT));
+          case ListEntryLinks.Article article ->
+              propose(found, candidate(article.page(), link, list, ResourceType.ARTICLE));
         }
       }
     }
@@ -751,7 +760,11 @@ public class GitHubAwesomeCollector implements Collector {
       CanonicalUrl url = r.list().url();
       if (url != null) {
         texts.add(
-            new ListText(url, r.parsed().headingsText(), searchEntries(r.parsed(), listedAs)));
+            new ListText(
+                url,
+                r.parsed().headingsText(),
+                searchEntries(r.parsed(), listedAs),
+                r.list().isOnADirectoryHost() ? r.list().page().title() : null));
       }
     }
     return texts;
@@ -781,6 +794,10 @@ public class GitHubAwesomeCollector implements Collector {
   private static List<SourceHit> listHits(List<AwesomeCrawl.Read> lists, Instant now) {
     List<SourceHit> hits = new ArrayList<>();
     for (AwesomeCrawl.Read read : lists) {
+      // UC-030 BR-009: a list page of a directory host is never a resource of the catalog.
+      if (read.list().isOnADirectoryHost()) {
+        continue;
+      }
       SourceHit hit =
           read.list().page() == null
               ? listHit(read.list(), typeOfRepository(read), now)

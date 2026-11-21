@@ -1,0 +1,64 @@
+# Flowchart: what happens to a list page discovery finds on a directory host, and when a discovered list is read (ADR 0055).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryPages.java (classify, listShape),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryCollector.java (readAsList),
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/AddDiscoveredList.kt (add),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/WebPageLists.java (read, switchedOff, waitsBecause),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/ListEntryLinks.java (route).
+# Render: cd docs/architecture/diagrams && d2 fmt flow-0055-directory-lists.d2 && d2 flow-0055-directory-lists.d2 flow-0055-directory-lists.svg
+
+...@style
+
+direction: down
+
+found: "Discovery finds a page whose\ntitle reads as a list" {class: app}
+directory: "On a directory host?" {class: decision}
+indexed: "Indexed as an ARTICLE\n(ADR 0013)" {class: end}
+switch: "Switch \"read its lists\"\nof the host on?" {class: decision}
+rules: "Address accepted and\nhost not one never read?" {class: decision}
+known: "A list to read already?" {class: decision}
+nothing: "Nothing new" {class: end}
+cap: "100 discovered lists\nalready?" {class: decision}
+review: "ARTICLE candidate in the\nreview list (LIST_TO_REVIEW)" {class: end}
+added: "Row in list_seed:\nWEB_PAGE, origin DISCOVERY" {class: data}
+
+pass: "Pass of the awesome-list collector:\nadministrator's pages first" {class: app}
+still: "Switch of its host\nstill on?" {class: decision}
+kept: "Not read; what the last\nread gave is used" {class: end}
+due: "Due (7 days since\nits last read)?" {class: decision}
+day: "10 discovered lists read\ntoday already?" {class: decision}
+credits: "Scout's daily credits\nor the pass budget spent?" {class: decision}
+waits: "Waits for a later pass;\nlast read used" {class: end}
+read: "Read through the page reader\n(1 credit), kept as last read" {class: app}
+links: "Each link: the rule of its kind" {class: decision}
+confirmed: "Model, paper, package:\nindexed when its source confirms it" {class: end}
+candidate: "Product, course, article:\ncandidate in the review list" {class: end}
+index: "directory_list_entry: what the\nlist names; the page is no resource" {class: data}
+
+found -> directory: {class: hot}
+directory -> indexed: no
+directory -> switch: yes {class: hot}
+switch -> review: no
+switch -> rules: yes {class: hot}
+rules -> review: no
+rules -> known: yes {class: hot}
+known -> nothing: yes
+known -> cap: no {class: hot}
+cap -> review: yes
+cap -> added: no {class: hot}
+added -> pass: next pass {class: hot}
+
+pass -> still: {class: hot}
+still -> kept: no
+still -> due: yes {class: hot}
+due -> kept: no
+due -> day: yes {class: hot}
+day -> waits: yes
+day -> credits: no {class: hot}
+credits -> waits: yes
+credits -> read: no {class: hot}
+read -> links: {class: hot}
+kept -> links
+links -> confirmed: {class: hot}
+links -> candidate
+read -> index
+kept -> index

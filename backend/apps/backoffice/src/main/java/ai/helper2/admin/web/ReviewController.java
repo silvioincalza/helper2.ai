@@ -13,6 +13,7 @@ import ai.helper2.api.common.model.VerificationDto;
 import ai.helper2.api.generated.ReviewApi;
 import ai.helper2.api.generated.model.AlreadyListedDto;
 import ai.helper2.api.generated.model.CandidateEditDto;
+import ai.helper2.api.generated.model.DirectoryListDto;
 import ai.helper2.api.generated.model.DraftedExampleDto;
 import ai.helper2.api.generated.model.KnownTargetWriteDto;
 import ai.helper2.api.generated.model.NewResourceDto;
@@ -49,6 +50,7 @@ import ai.helper2.scout.usecase.EditCandidate;
 import ai.helper2.scout.usecase.ListedResource;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.UtcTimes;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -329,7 +331,11 @@ class ReviewController implements ReviewApi {
         new ReviewEvidenceDto(
                 item,
                 view.validationErrors(),
-                view.fields().stream().map(ReviewController::field).toList())
+                view.fields().stream().map(ReviewController::field).toList(),
+                view.directoryLists().stream()
+                    .map(
+                        l -> new DirectoryListDto(l.title(), URI.create(l.page()), l.headingPath()))
+                    .toList())
             .run(view.run() == null ? null : run(view.run()))
             .relationship(view.relationship() == null ? null : relationship(view.relationship()))
             .aiContent(marker(view, item)));
