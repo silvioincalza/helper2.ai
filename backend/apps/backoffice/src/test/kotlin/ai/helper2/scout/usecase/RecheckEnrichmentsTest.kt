@@ -33,7 +33,7 @@ class RecheckEnrichmentsTest {
 
   private val badPrice = UUID.randomUUID()
   private val goodUseCase = UUID.randomUUID()
-  private val oldLicence = UUID.randomUUID()
+  private val statedLicence = UUID.randomUUID()
   private val badClaim = UUID.randomUUID()
   private val goodClaim = UUID.randomUUID()
 
@@ -61,7 +61,7 @@ class RecheckEnrichmentsTest {
         listOf(
             field(badPrice, "pricing", "FREE", "Start your 14-day free trial today"),
             field(goodUseCase, "useCase", "writing", "Acme Notes is a writing assistant"),
-            field(oldLicence, "license", "MIT", "Licensed under something"),
+            field(statedLicence, "license", "MIT", "Released under the MIT license"),
           )
           .filter { it.id !in rejected }
           .map { if (it.id in rejected) it.copy(verification = Verification.REJECTED) else it },
@@ -170,6 +170,61 @@ class RecheckEnrichmentsTest {
       1.0,
       meters.get("helper2.scout.recheck").tag("result", "claims_dropped").counter().count(),
     )
+  }
+
+  @Test
+  fun `a verified licence, open source or platform whose quote does not state it is rejected`() {
+    val unstatedLicence = UUID.randomUUID()
+    val unstatedOpenSource = UUID.randomUUID()
+    val unstatedPlatform = UUID.randomUUID()
+    val statedOpenSource = UUID.randomUUID()
+    val statedPlatform = UUID.randomUUID()
+    val curatedLicence = UUID.randomUUID()
+    val answers =
+      object : StoredAnswers {
+        val rejected = mutableSetOf<UUID>()
+
+        override fun judgedAfter(after: UUID?, limit: Int) =
+          if (after == null) listOf(withPage) else emptyList()
+
+        override fun stored(resourceId: UUID) =
+          StoredAnswer(
+            resourceId,
+            "Acme Notes",
+            ResourceType.PRODUCT,
+            "enrich-v4",
+            listOf(
+              field(unstatedLicence, "license", "MIT", "Licensed under something"),
+              field(unstatedOpenSource, "openSource", "true", "Acme Notes syncs your notes"),
+              field(unstatedPlatform, "platforms", "ios", "Acme Notes runs everywhere"),
+              field(statedOpenSource, "openSource", "true", "Acme Notes is open source"),
+              field(statedPlatform, "platforms", "ios", "Get Acme Notes for iPhone"),
+              field(
+                curatedLicence,
+                "license",
+                "MIT",
+                "Licensed under something",
+                ValueOrigin.CURATED,
+              ),
+            ),
+            emptyList(),
+          )
+
+        override fun rejectFields(ids: List<UUID>): Int = ids.count { rejected.add(it) }
+
+        override fun dropClaims(ids: List<UUID>): Int = 0
+
+        override fun requestRun(resourceId: UUID) = Unit
+
+        override fun done(name: String) = false
+
+        override fun markDone(name: String) = Unit
+      }
+    val r =
+      RecheckEnrichments(answers, enrichment, "enrich-v4", true, trail, meters, free)
+        .runByAdmin("42")!!
+    assertEquals(setOf(unstatedLicence, unstatedOpenSource, unstatedPlatform), answers.rejected)
+    assertEquals(3, r.fieldsRejected)
   }
 
   @Test

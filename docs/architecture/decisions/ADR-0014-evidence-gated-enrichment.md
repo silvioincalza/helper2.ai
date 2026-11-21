@@ -321,8 +321,10 @@ place to say that.
 
 ### The re-check of stored answers
 23. **`RecheckEnrichments`** applies the rules above to what earlier runs stored, by code, with no model call:
-    - a verified pricing, type or use case whose quotes do not state the value is set to `REJECTED` (it shows "Not
-      stated");
+    - a verified licence, open source, platform, pricing, type or use case whose quotes do not state the value is set
+      to `REJECTED` (it shows "Not stated"). These are the fields the validator makes state their value
+      (`EvidenceRules.MUST_STATE_VALUE`): one list for a new answer and for a stored one. A field a resource does not
+      have is not checked: none of them is mandatory;
     - a field writing does not keep (point 20) is rejected, whatever its verification;
     - a summary sentence that fails the claim check is dropped, with the evidence only it used;
     - an open `ENRICHMENT_VALIDATION` item with nothing left to decide is closed: its run is `PARTIAL` (point 9), or its

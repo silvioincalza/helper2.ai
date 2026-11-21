@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Decide which resources the Scout enriches next, which it leaves out, and which it tries again, and re-check the stored answers against the current rules, so that the daily model budget goes to the resources that matter.  
 **Trigger:** An administrator opens the enrichment queue of the back office.  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-029](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  
@@ -99,7 +99,7 @@
 **Flow:**
 
 1. System re-checks every resource with a judged enrichment, in batches of 200, with no model call.
-2. System rejects each verified pricing, type or use case whose quotes do not state the value, and each AI field the resource's type does not keep.
+2. System rejects each verified licence, open source, platform, pricing, type or use case whose quotes do not state the value, and each AI field the resource's type does not keep.
 3. System drops each summary sentence that fails the claim check.
 4. When a language model is available, System puts back in the backlog each resource that was enriched with an older prompt and still misses facts or a summary it has more text for.
 5. System closes the review items that are left with nothing to decide.
