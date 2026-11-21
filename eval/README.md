@@ -6,22 +6,22 @@ its relevance part with a message.
 
 | File | What | Read by |
 |---|---|---|
-| `search-queries.json` | 116 search queries in 11 groups: 84 typed in the box, the 11 home examples (group `home-example`, each with the `path` it is sent with) and 21 everyday queries (group `everyday`, path `USE_AI`) ([ADR 0046](../../architecture/decisions/ADR-0046-evaluation-guide-and-search.md)) | `./gradlew evalRecord`, `evalTest` |
+| `search-queries.json` | 116 search queries in 11 groups: 84 typed in the box, the 11 home examples (group `home-example`, each with the `path` it is sent with) and 21 everyday queries (group `everyday`, path `USE_AI`) ([ADR 0046](../docs/architecture/decisions/ADR-0046-evaluation-guide-and-search.md)) | `./gradlew evalRecord`, `evalTest` |
 | `semantic-gold.json` | 20 paraphrase queries for vector search and its cutoff (ADR 0024, 0046) | same |
 | `search-qrels.tsv` | graded judgements for both sets: `query_id`, `url`, `grade` 0–3 | `evalTest` |
 | `search-qrels-second.tsv` | the second judge's grades of a 20 % sample (same format, optional) | `evalTest` (Cohen's kappa) |
 | `search-baseline.json` | nDCG@10 the gate compares with, and the snapshots and labels it was measured on (step 5) | `evalTest` |
-| `guide-queries.json` | 60 guide questions: 21 core ones (the nightly run) and 39 marked `extended`; 6 must stay empty (`expectNoPick`, with a `why`) ([ADR 0046](../../architecture/decisions/ADR-0046-evaluation-guide-and-search.md)) | `scripts/eval-guide.mjs` (`--core`: the 21; the nightly run fails below a pass share of 0.8, `--min-pass 0.8`) |
-| `guide-intents.json` | 19 intent cases and 7 ask-back cases with pass rules ([ADR 0031](../../architecture/decisions/ADR-0031-guide-pipeline.md), intents §10) | `scripts/eval-guide.mjs --intents` |
+| `guide-queries.json` | 60 guide questions: 21 core ones (the nightly run) and 39 marked `extended`; 6 must stay empty (`expectNoPick`, with a `why`) ([ADR 0046](../docs/architecture/decisions/ADR-0046-evaluation-guide-and-search.md)) | `scripts/eval-guide.mjs` (`--core`: the 21; the nightly run fails below a pass share of 0.8, `--min-pass 0.8`) |
+| `guide-intents.json` | 19 intent cases and 7 ask-back cases with pass rules ([ADR 0031](../docs/architecture/decisions/ADR-0031-guide-pipeline.md), intents §10) | `scripts/eval-guide.mjs --intents` |
 | `guide-adversarial.json` | 13 hostile questions | `scripts/eval-guide.mjs --adversarial` |
 | `guide-qrels.tsv` | graded judgements of guide picks: `query_id` (guide or intent case id), `url`, `grade` 0–3 | `scripts/eval-guide.mjs` (P@3, nDCG@3) |
-| `guide-similar.json` | 55 question pairs for similar-question reuse: 25 that should share an answer, 30 near misses that must not, each side with the reading a correct plan gives it ([ADR 0032](../../architecture/decisions/ADR-0032-guide-cost-guard-and-answer-cache.md)) | `GuideSimilarEvaluationTest` (in `test`) |
+| `guide-similar.json` | 55 question pairs for similar-question reuse: 25 that should share an answer, 30 near misses that must not, each side with the reading a correct plan gives it ([ADR 0032](../docs/architecture/decisions/ADR-0032-guide-cost-guard-and-answer-cache.md)) | `GuideSimilarEvaluationTest` (in `test`) |
 | `guide-similar-vectors.json` | the query embeddings of those questions, recorded once | written by `./gradlew evalRecord --tests '*GuideSimilarRecorder'` |
 | `classifier-labels.tsv` | items labelled AI-related or not, for `Classification.isAiRelated` | `ClassificationLabelsTest` |
-| `research-labels.tsv` | review candidates the admin decided (keep or reject), with the catalog values of the kept ones ([ADR 0048](../../architecture/decisions/ADR-0048-review-research-assistant.md) §10) | `ResearchEvalRecorder` (`evalRecord`) |
+| `research-labels.tsv` | review candidates the admin decided (keep or reject), with the catalog values of the kept ones ([ADR 0048](../docs/architecture/decisions/ADR-0048-review-research-assistant.md) §10) | `ResearchEvalRecorder` (`evalRecord`) |
 | `research-labels-manual.tsv` | open candidates a person labelled by hand, same columns | same |
 | `research-report-<model>.md`, `research-baseline-<model>.json` | the last research eval of each model | written by `ResearchEvalRecorder` |
-| `setup-resources.json` | 15 resources for the setup guide ([ADR 0034](../../architecture/decisions/ADR-0034-setup-guide.md)) | `scripts/eval-setup.mjs` |
+| `setup-resources.json` | 15 resources for the setup guide ([ADR 0034](../docs/architecture/decisions/ADR-0034-setup-guide.md)) | `scripts/eval-setup.mjs` |
 
 Snapshots, judging pools, TREC files and reports are third-party data and stay in `backend/eval-data/` (git-ignored).
 
@@ -87,6 +87,70 @@ questions leaves about 100 picks and, for each question with no answer, up to 24
 Later runs only add what changed. Then `node scripts/eval-guide.mjs --rescore` rebuilds the report with the new
 grades from the saved answers (`backend/eval-data/guide-runs.json`), with no new request.
 
+## Guide: run and reports
+
+`scripts/eval-guide.mjs` writes `guide-run.md` (the core questions), `guide-adversarial-run.md` (`--adversarial`) and
+`guide-intents-run.md` (`--intents`); `scripts/eval-setup.mjs` writes `setup-run.md`. Each report states its date, address,
+models and how to run it. In `guide-run.md` the section under "Notes on this run" is hand-written and kept by the script;
+the rest is regenerated. A new run overwrites the report; git keeps the earlier ones.
+
+## Guide: the clean baseline
+
+The baseline decides whether query fan-out (C) or an extra guide round (D) get built at all, so it runs once, clean,
+on staging, before either. Never on prod.
+
+Before the run, for that day only, in staging's `app.env` or chart values (back to the usual values the day after):
+
+| Setting | For the run | Staging today | Why |
+|---|---|---|---|
+| `H2_GUIDE_CACHE_TTL` (`app.guideCacheTtl`) | `PT1S` | `PT1S` | every answer is a real model call |
+| `H2_GUIDE_DAILY_MODEL_CALLS` (`app.dailyLimits.guideModelCalls`) | 1000 | 600 | 50 questions x 3 runs x 3 calls = 450, up to 900 with retries |
+| `H2_GUIDE_CLIENT_DAILY_QUESTIONS` (`app.dailyLimits.guideQuestions`) | at least 200 | 1000 | 150 questions from one address |
+| `H2_LIVE_WEB_GUEST_GUIDE` (`app.dailyLimits.webSearches.guide`) | at least 200 | 1000 | a question that needs the web must not meet the per-visitor limit of 3 |
+| `H2_LIVE_WEB_GUEST_SEARCH` (`app.dailyLimits.webSearches.search`) | at least 200 | 1000 | the pool searches of questions with no answer |
+| `H2_LIVE_WEB_DAILY_CREDITS` (`app.dailyLimits.webSearchCredits`) | 400 | 180 | web searches of the guide and of the pool searches |
+
+The backend needs its GitHub token (`H2_GITHUB_TOKEN`): the script keeps to 25 live GitHub searches a minute, which only
+an authenticated token allows. Start after the nightly run (01:41 UTC) has finished.
+
+The run, from the repository root (about 45 minutes):
+
+```
+node scripts/eval-guide.mjs "$H2_STAGING_URL" --repeat 3
+```
+
+Then:
+
+1. Grade `backend/eval-data/guide-pool.tsv` with the grades above: the AI picks, and the
+   candidates of every question with no answer. Append the first three columns to `eval/guide-qrels.tsv`,
+   then delete the pool: the script never overwrites a pool with grades in it.
+2. `node scripts/eval-guide.mjs --rescore` rebuilds this report from the saved answers
+   (`backend/eval-data/guide-runs.json`) with the new grades, with no new request.
+3. Write the notes.
+
+What the figures decide:
+
+- **Choosing or retrieval.** When most questions with no answer already have a candidate graded relevant, the guide
+  found the resource and did not pick it: fix the chooser and the planner's wording, not C or D. When few have one,
+  retrieval is the gap and C is worth trying.
+- **Noise.** A change counts only when it is bigger than the flips between the baseline's own runs.
+- **C (fan-out)** goes ahead only if, on the same set and settings: the answer rate goes up, P@3 does not go down, the
+  share of relevant candidates goes up, p90 grows by 1.5 s at most, and there are zero 429s.
+- **D (extra round)** goes ahead only if: the answer rate goes up, P@3 does not go down, there are zero 429s, and the
+  p90 of the questions that trigger the extra round, reported on its own, stays under the target set before D is built.
+
+## Guide: how to read a run
+
+- "Answered" means the model gave an answer of the question's kind: an AI pick, a comparison, an explanation, or a dated record. "Expected empty" questions pass when they stay empty; each one says why in the query file.
+- "Checks confirmed" is confirmed / total constraint checks over the AI picks. Not confirmed means the resource's own text does not show it, not that it is false.
+- "(cache)" marks an answer served from the cache (the backend was not run with `H2_GUIDE_CACHE_TTL=PT1S`); its latency is left out of the percentiles.
+- P@3 is the share of the first three AI picks graded relevant (2 or 3) in [guide-qrels.tsv](guide-qrels.tsv); nDCG@3 weighs them by grade. Picks not graded yet are written to `backend/eval-data/guide-pool.tsv` and count as not relevant.
+- "Candidates graded relevant": for each question with no answer, the script sends the answer's search terms to `GET /api/v1/search` (24 results) and writes them to the pool. It is close to the guide's own 24 candidates, not the same list (no intent filter, sort or web query). Once graded, it tells a retrieval problem (no good candidate) from a choosing problem (a good candidate the model left out).
+- A flip is a question answered in one run and not in another; "top-flip" is a first AI pick that differs between runs.
+- "Kept" counts only AI-reasoned picks that passed the evidence check. Plain search results shown as a fallback count 0.
+- "Top pick" is the first AI-reasoned pick; "no AI pick" means the model chose nothing or everything was rejected.
+- `b14` is in Italian, to check that the planning model turns any language into English search terms.
+
 ## Review research (`research-labels.tsv`)
 
 The verdict labels are the admin's own decisions in the review queue. The expected values of a kept item are the
@@ -96,7 +160,7 @@ sources, not from a person, so a miss on them is a reason to look, not a proof. 
 values, empty when unknown.
 
 1. **Export the decisions.** Read-only, from the database with the most decisions (prod):
-   `{ echo 'BEGIN READ ONLY;'; cat scripts/research-eval-labels.sql; echo 'COMMIT;'; } | kubectl -n helper2-prod exec -i postgres-0 -- sh -c 'psql -q -U "$POSTGRES_USER" -d "${POSTGRES_DB:-$POSTGRES_USER}"' > docs/backup/eval/research-labels.tsv`.
+   `{ echo 'BEGIN READ ONLY;'; cat scripts/research-eval-labels.sql; echo 'COMMIT;'; } | kubectl -n helper2-prod exec -i postgres-0 -- sh -c 'psql -q -U "$POSTGRES_USER" -d "${POSTGRES_DB:-$POSTGRES_USER}"' > eval/research-labels.tsv`.
    It holds public page URLs and titles only.
 2. **Label more by hand.** The queue has few rejects. The same command with `scripts/research-eval-pool.sql` writes
    120 open candidates, about 14 per type, to `backend/eval-data/research-pool.tsv`. Decide each one as you would in
@@ -107,7 +171,7 @@ values, empty when unknown.
    and the same with `H2_RESEARCH_MODEL=REASONING`. Each item takes up to 14 model calls and spends live web credits.
    `H2_EVAL_ONLY=r001,r002` runs some items only; `H2_EVAL_PAUSE` (default `PT2S`) is the pause between items. Without
    a model key the test is skipped.
-4. **Read.** `docs/backup/eval/research-report-<model>.md` (the numbers and each item), `research-baseline-<model>.json`, and
+4. **Read.** `eval/research-report-<model>.md` (the numbers and each item), `research-baseline-<model>.json`, and
    every step of every run in `backend/eval-data/research-traces/<model>/`.
 
 ## Classifier (`classifier-labels.tsv`)

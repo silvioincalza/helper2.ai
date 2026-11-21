@@ -66,6 +66,36 @@ Details; the controller maps a use case's `Outcome` to the status and the senten
 | Unit tests         | `cd backend && ./gradlew test` and `cd frontend && npm test -- --run` |
 | Integration tests  | `cd backend && ./gradlew test` (Postgres and Redis in containers) |
 | End-to-end tests   | – |
+| Container runtime  | Testcontainers needs one. With Podman: `export DOCKER_HOST=unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')` and `export TESTCONTAINERS_RYUK_DISABLED=true` |
+| Live smoke tests   | `cd backend && ./gradlew liveTest` (real external APIs, `@Tag("live")`; not part of `test`) |
+| Evaluation         | `cd backend && ./gradlew evalRecord` (one live search per evaluation query, saved to `backend/eval-data`; `--tests '*GuideSimilarRecorder'` records the similar-question embeddings) and `./gradlew evalTest` (offline replay and metrics; skips without snapshots). Not part of `test`. The sets and the steps: [eval/README.md](../../eval/README.md) |
+| Category evaluation | `cd backend && ./gradlew evalTest --tests ai.helper2.eval.CategoryEvalTest` (labels in `apps/public/src/test/resources/eval/categories-labelled.csv`; skips without rows) |
+| Guide evaluation   | `node scripts/eval-guide.mjs <baseUrl>` (`--core`, `--intents`, `--adversarial`, `--repeat <n>`, `--rescore`) and `node scripts/eval-setup.mjs <baseUrl>`; every night against staging in `.github/workflows/guide-eval.yml` |
+| Latency tests      | `cd backend && ./gradlew perfTest` (seeded catalog, `@Tag("perf")`, p50/p95/p99 in `build/perf/`) |
+| Load test          | `cd backend && ./gradlew :loadtest:gatlingRun --simulation ai.helper2.load.SearchSimulation -Dh2.load.baseUrl=https://<host>` (by hand only; `test` only compiles it) |
+| Alert rules        | `promtool check rules deploy/monitoring/helper2-rules.yaml` and `promtool test rules deploy/monitoring/tests/*.yaml` (CI runs them in the `monitoring` job) |
+| Frontend checks    | `cd frontend && npm test -- --run && npm run lint && npm run typecheck` (Node 26, `frontend/.nvmrc`) |
+
+## Test layers
+
+What each layer covers, and where a new test goes. The tests of each area are listed in [test-map.md](test-map.md).
+
+| Layer | Covers | Where a new test goes |
+|---|---|---|
+| Unit (domain, TDD) | The rules in the Kotlin domain and the use cases: merging, ranking, filtering, the evidence gate, budgets, the vitality and admission rules. No Spring context, no container; ports are fakes. Written first, with the rule. | Next to the class, `*Test`. |
+| BDD (user-visible behaviour) | What a person or an API client sees, said in their words: the user journeys and their states. On the frontend, Vitest and Testing Library tests next to each page and component; on the backend, the API tests below. No Gherkin tool is installed: the test names state the behaviour. | Next to the page or component (`*.test.tsx`), or the API test of the endpoint. |
+| Integration (DB, Redis, LLM, HTTP) | Every adapter against the real thing or a recording of it: PostgreSQL 18 and Redis 8 in Testcontainers, a scripted `ChatModel` for the LLM adapters, recorded real responses for the source connectors, real HTTP for the edge. | Next to the adapter, `*IT`: in `backend/libs/core` for an adapter of a shared context (it runs on `CoreTestApplication`, with `@AsBackOffice` when the back office runs that code), in the app when the test needs the app (its controllers, security, schedules, the sources it registers, its own settings) or tests `libs/platform` on a Spring context ([ADR 0002](decisions/ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §10). |
+| Contract | The API against `api/public.yaml`, `api/admin.yaml` and `api/common.yaml`: every response of the API tests is validated against the OpenAPI schema; `SchemaContractTest` holds the database schema to the domain enums; `ModularityTest` holds the module rules. | The API test of the endpoint; a new enum value in `SchemaContractTest`; a new table in `TableOwnersTest`. |
+| Live | One smoke test per source adapter against the real API (`@Tag("live")`). A test whose key is missing is skipped, and the run prints it as `SKIPPED`. The keys are read from the environment (`H2_GITHUB_TOKEN`, `H2_HF_TOKEN`, `H2_LIVE_WEB_API_KEY`, `H2_NEBIUS_API_KEY`), never from the repository's `.env`. Not part of `test`: `./gradlew liveTest`, and the weekly `live` workflow. Every `liveTest` asked for runs its tests: the task is never up to date and never stored in or taken from the build cache. | Next to the adapter, `*LiveTest`. |
+| Evaluation, performance, load | Relevance of search and of the guide on fixed sets ([eval/README.md](../../eval/README.md)), latency on a seeded catalog (`perfTest`), Gatling load tests by hand. Not part of `test`. | `backend/apps/public/src/test` under `eval`, `backend/loadtest`. |
+| Browser end to end | **Not built.** No browser journey is automated and no tool is installed; frontend tests run in jsdom. Backlog: [S10.12.1](https://github.com/silvioincalza/helper2.ai/issues/357). | — |
+
+Not covered by automated tests:
+
+- Browser end-to-end tests: not built, and no tool is installed until the journeys are written
+  ([S10.12.1](https://github.com/silvioincalza/helper2.ai/issues/357)). The guide journey is covered by `GuideApiIT` (API) and
+  `HomeGuide.test.tsx` (UI).
+- Live source checks from production: `liveTest` runs from a GitHub runner, not from the cluster's egress.
 
 ## Markers
 

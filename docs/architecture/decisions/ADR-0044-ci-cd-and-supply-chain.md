@@ -195,7 +195,7 @@ Harbor could put an image under a tag first.
      of a release is such a change; the push to the release branch after its merge runs all of CI (`full: true`)
      before staging and prod. The image map of `cd.yml` (§10) never takes this rule: a new version always builds
      the images it shows, the web image's footer included. A bump with any other change is mapped path by path;
-   - `docs/backup/eval/` → the libs chain and the public chain (their tests read the evaluation sets) and diagrams;
+   - `eval/` → the libs chain and the public chain (their tests read the evaluation sets) and diagrams;
    - `frontend/index.html`, `frontend/src/routes.tsx`, `frontend/src/i18n/locales/en.json` → frontend jobs, the
      public chain of the backend (its page tests read these three files), web image and back office image;
    - `frontend/` → frontend jobs, web image and back office image (the back office image builds the admin web app from

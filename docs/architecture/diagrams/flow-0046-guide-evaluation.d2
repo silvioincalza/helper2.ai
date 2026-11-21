@@ -1,6 +1,6 @@
 # Flowchart: scripts/eval-guide.mjs, from a fixed question set to its report (default set shown;
 # --intents and --adversarial differ only in the set, the pass rules and the report file).
-# Source of truth: scripts/eval-guide.mjs, scripts/eval-lib.mjs (guideRunStop), docs/backup/eval/guide-queries.json, docs/backup/eval/guide-qrels.tsv,
+# Source of truth: scripts/eval-guide.mjs, scripts/eval-lib.mjs (guideRunStop), eval/guide-queries.json, eval/guide-qrels.tsv,
 #   .github/workflows/guide-eval.yml (nightly run on staging),
 #   backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideJudge.java (the guide judge).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0046-guide-evaluation.d2 && d2 flow-0046-guide-evaluation.d2 flow-0046-guide-evaluation.svg
@@ -11,7 +11,7 @@ direction: down
 
 start: "node scripts/eval-guide.mjs\n[baseUrl] [--core] [--repeat n] [--min-pass]\n| --intents | --adversarial | --rescore\n(backend: H2_GUIDE_CACHE_TTL=PT1S)" {class: person}
 nightly: "guide-eval.yml, 01:41 UTC:\nstaging only, --core --min-pass 0.8,\nthen --adversarial" {class: config}
-queries: "Read docs/backup/eval/guide-queries.json\n(50 fixed queries; --core: the 20\nwithout \"extended\")" {class: data}
+queries: "Read eval/guide-queries.json\n(50 fixed queries; --core: the 20\nwithout \"extended\")" {class: data}
 csrf: "GET /api/v1/me →\nXSRF-TOKEN cookie?" {class: decision}
 noBackend: "Stop: \"is the\nbackend running?\"" {class: fail}
 
@@ -47,19 +47,19 @@ loop: For each query, in order {
   candidates -> row
 }
 
-stopBudget: "Stop, exit code 3: the guide's\nmodel budget on <base> is used up\n(run again after retryAt);\ndocs/backup/eval/guide-run.md unchanged" {class: fail}
-stopNetwork: "Stop, exit code 4: the runner's\nnetwork has used its questions;\ndocs/backup/eval/guide-run.md unchanged" {class: fail}
-stopQuota: "Stop, exit code 1 (address quota,\nor the provider is down);\ndocs/backup/eval/guide-run.md unchanged" {class: fail}
+stopBudget: "Stop, exit code 3: the guide's\nmodel budget on <base> is used up\n(run again after retryAt);\neval/guide-run.md unchanged" {class: fail}
+stopNetwork: "Stop, exit code 4: the runner's\nnetwork has used its questions;\neval/guide-run.md unchanged" {class: fail}
+stopQuota: "Stop, exit code 1 (address quota,\nor the provider is down);\neval/guide-run.md unchanged" {class: fail}
 raw: "Raw answers →\nbackend/eval-data/guide-runs.json\n(--rescore starts here)" {class: data}
 summary: "Go / no-go figures: answer rate,\nP@3, relevant candidates, p90,\n429s, flips over the runs;\ntotals as before" {class: app}
-qrels: "docs/backup/eval/guide-qrels.tsv\nhas grades?" {class: decision}
+qrels: "eval/guide-qrels.tsv\nhas grades?" {class: decision}
 rel: "P@3 and nDCG@3 of the AI picks;\nshare of graded candidates relevant" {class: app}
 pool: "Ungraded picks and candidates →\nbackend/eval-data/guide-pool.tsv" {class: data}
 keep: "Read the hand-written notes\nbetween the markers\n(placeholder if none)" {class: app}
-write: "Rewrite docs/backup/eval/guide-run.md\n(summary, per-query table,\nhow to run, notes kept)" {class: data}
+write: "Rewrite eval/guide-run.md\n(summary, per-query table,\nhow to run, notes kept)" {class: data}
 minPass: "--min-pass given and\nshare passed below it?" {class: decision}
 failRun: "Exit 1: the nightly job fails;\nreports kept 30 days\nas an artifact" {class: fail}
-manual: "By hand: grade the pool into\nguide-qrels.tsv, --rescore, update the\nnotes, move the old run to docs/backup/eval/" {class: person}
+manual: "By hand: grade the pool into\nguide-qrels.tsv, --rescore, update the\nnotes" {class: person}
 
 nightly -> start
 start -> queries -> csrf

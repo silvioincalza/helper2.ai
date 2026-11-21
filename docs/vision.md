@@ -70,9 +70,22 @@ retrieved, with a quote that code has checked word for word.
 
 - The product success criteria SC-1 to SC-7 in [the user journeys](backup/user-journeys.md) hold, each checked by the tests
   named there.
-- The evaluation runs ([evaluation](backup/evaluation.md)): search relevance, and for the guide the answer rate, the
+- The evaluation runs ([ADR 0046](architecture/decisions/ADR-0046-evaluation-guide-and-search.md)): search relevance, and for the guide the answer rate, the
   questions that must stay empty and do, P@3 and nDCG@3 of its picks, the picks the validator kept and rejected, and
   latency p50 / p90. A search change must not let nDCG@10 fall more than 0.005 below the stored baseline.
 - Latency stays within the budgets of the load test for search and the guide's search-only path.
 - Each user journey states how we know it worked (for example gifts and views of the Support page, p95 time to
   results before and after an ad slot).
+
+## Test strategy
+
+- Domain rules are written test first, as unit tests with no framework and fake ports.
+- What a person or an API client sees is tested in their words: page and component tests on the frontend, API tests on
+  the backend. Every API response is checked against the OpenAPI contract.
+- Every adapter is tested against the real thing or a recording of it: PostgreSQL and Redis in containers, a scripted
+  model, recorded source responses, real HTTP at the edge.
+- Search and the guide are measured on fixed sets with labels given by people, against a stored baseline
+  ([ADR 0046](architecture/decisions/ADR-0046-evaluation-guide-and-search.md)).
+- Live smoke tests, latency tests and load tests run outside the build, on request or on a schedule.
+- No browser journey is automated yet.
+- The layers, the commands and where a new test goes are in [the stack](architecture/stack.md).

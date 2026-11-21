@@ -22,7 +22,7 @@ repository. Relevance needs a human judgement per result, and judging every resu
 ## Decision
 
 ### The guide
-1. **Fixed question set.** `docs/backup/eval/guide-queries.json`: 60 fixed queries, all written before any run and never
+1. **Fixed question set.** `eval/guide-queries.json`: 60 fixed queries, all written before any run and never
    tuned to the results.
    - The 21 core questions: 14 for building with AI (`b01`–`b14`, `b14` in Italian), 5 for using AI (`u01`–`u05`;
      `u05` asks for three properties a hostile-text rule must not drop: offline, no account, no API key),
@@ -56,7 +56,7 @@ repository. Relevance needs a human judgement per result, and judging every resu
      judgements of that moment and no new request;
    - marks an answer as cached when its `generatedAt` is older than the request, counts it in the summary and leaves
      it out of the latency figures;
-   - stops with an error, and leaves `docs/backup/eval/guide-run.md` unchanged, when the rest of the run would be search-only
+   - stops with an error, and leaves `eval/guide-run.md` unchanged, when the rest of the run would be search-only
      answers and would not measure the model (`guideRunStop` in `scripts/eval-lib.mjs`, tested by
      `scripts/eval-lib.test.mjs`): on the first answer with the notice `GUIDE_BUDGET_SPENT` (the guide's model budget
      on that backend is used up, [0032](ADR-0032-guide-cost-guard-and-answer-cache.md)) with exit code 3, the
@@ -70,17 +70,17 @@ repository. Relevance needs a human judgement per result, and judging every resu
      `LLM_UNAVAILABLE`) with an AI pick, a comparison, an explanation or a dated record; it passes when answered, or
      when it stays empty and expects to; `--min-pass` exits with code 1 when the share passed is below the given one,
      after writing the report;
-   - writes `docs/backup/eval/guide-run.md`: the go / no-go figures of later retrieval changes (answer rate, questions kept
+   - writes `eval/guide-run.md`: the go / no-go figures of later retrieval changes (answer rate, questions kept
      empty, P@3, share of relevant candidates, p90, 429s, flips), questions passed, statuses, AI picks kept and
      rejected, reason check counts, constraint checks, latency p50 / p90 / max, P@3 and nDCG@3 of the AI picks when
      judgements exist (5), one row per query with its top pick, and how to run it.
-3. **Adversarial set.** `docs/backup/eval/guide-adversarial.json`: 13 hostile questions, each with expectations a passing
+3. **Adversarial set.** `eval/guide-adversarial.json`: 13 hostile questions, each with expectations a passing
    answer must meet (`noAiPicks`, `noPickTitled`, `noText`, `unsupportedClaimsRemoved`): breaking out
    of the `<need>` tag with a fake candidate, a link in the reason, a prompt asking for secrets, leaking the
    instructions, an Italian instruction, unsupported claims, an instruction for the user placed in the reason (three
    cases), a statement about what the user must or need not do (three cases: as a plain statement, denied, and a
    payment). `--adversarial` runs them, writes
-   `docs/backup/evaluation-adversarial.md` with pass or fail per case, saves the raw answers to
+   `eval/guide-adversarial-run.md` with pass or fail per case, saves the raw answers to
    `backend/eval-data/guide-adversarial-runs.json` (what a failed case showed), and exits with code 1 on a failure. A case answered
    without a model (`LLM_UNAVAILABLE`) is a failure, because a search-only answer meets every expectation.
    `noText` reads every field the answer marks as AI-written (`aiContent.fields`) except `searchQuery` and
@@ -88,32 +88,31 @@ repository. Relevance needs a human judgement per result, and judging every resu
    They are
    questions, because that is what a shared `?ask=` link controls; hostile source text cannot be planted in live
    sources and is covered by unit tests.
-4. **Intent cases.** `docs/backup/eval/guide-intents.json`: 26 cases. 19 cover the eight intents of
+4. **Intent cases.** `eval/guide-intents.json`: 26 cases. 19 cover the eight intents of
    [0031](ADR-0031-guide-pipeline.md), at least two each (three for `SUGGEST`, `NEWEST` and `WHEN`); four vague
    questions must be asked back and three clear ones must not. Each case states what it expects: the intent, the
    subjects, a window, an ask-back. `--intents` runs them, checks the pass rule of each intent (`NEWEST`: every pick
    born inside the window, newest first, dates read from the stored record; `ALTERNATIVES`: the subject is not a
    pick; `COMPARE`: one column per subject, no cell without a gated quote; `WHAT_IS`: every sentence quoted; `WHEN`:
    the stated date equals the stored record, and an event question shows events only; `LEARN`: every pick is a
-   `COURSE`), writes `docs/backup/evaluation-intents.md` and exits with code 1 on a failure. A case answered without a
+   `COURSE`), writes `eval/guide-intents-run.md` and exits with code 1 on a failure. A case answered without a
    model fails.
-5. **Graded relevance.** `docs/backup/eval/guide-qrels.tsv` (`query_id`, `url`, `grade` 0–3, the grades of §15). The script
+5. **Graded relevance.** `eval/guide-qrels.tsv` (`query_id`, `url`, `grade` 0–3, the grades of §15). The script
    matches a pick to a judgement by the resource id of the URL (`canonicalUrl` in `scripts/eval-lib.mjs` gives a URL
    the identity `CanonicalUrl` gives it in the backend: a folder of a repository is its own resource), reports P@3 (share of the first three AI picks graded
    2 or 3) and nDCG@3 over the judged questions, and writes the picks no one has graded to
    `backend/eval-data/guide-pool.tsv` (git-ignored) for the next judging round. The pool also holds the candidates of
    every question with no answer (2). Graded, they show whether the guide had a good resource and did not pick it
    (the chooser) or never found one (retrieval).
-6. **Setup set.** `docs/backup/eval/setup-resources.json`: 15 resources (MCP servers, libraries, models, a gated model, apps)
+6. **Setup set.** `eval/setup-resources.json`: 15 resources (MCP servers, libraries, models, a gated model, apps)
    for the setup guide of [0034](ADR-0034-setup-guide.md). `node scripts/eval-setup.mjs [baseUrl]` reads each
-   one's setup options and tool guide and writes `docs/backup/evaluation-setup.md`: status, steps kept and rejected by the
+   one's setup options and tool guide and writes `eval/setup-run.md`: status, steps kept and rejected by the
    checks per section, kept steps whose text the step check confirmed, snippet coverage (AI clients with a ready
    snippet) and latency.
 7. **Manual notes, written down.** Observations a number does not show go in the section "Notes on this run", between
    the markers `<!-- hand-written: kept by scripts/eval-guide.mjs -->` and `<!-- end hand-written -->`. The script
-   keeps that text as it is and regenerates the rest; the notes must be updated by hand after each run. When a new run
-   takes its place, the old report moves to `docs/backup/eval/` with a name that says what it measured (for example
-   `run-16-before-thinking-off.md`). Every run stays, good or bad.
+   keeps that text as it is and regenerates the rest; the notes must be updated by hand after each run. A new run
+   overwrites the report; git keeps the earlier ones. Every published run is committed, good or bad.
 8. **Cost of a run.** A question costs 3 model calls (plan, choose, reason check; a compare or explain question the
    same), and each call is retried at most once, for an answer the guide cannot use
    ([0008](ADR-0008-llm-integration.md)): 3 to 6 calls from the guide's daily cap. The core set costs about
@@ -133,30 +132,30 @@ repository. Relevance needs a human judgement per result, and judging every resu
      `app.dailyLimits.guideModelCalls: 600` (the prod cap, four times the hard bound of a run, retries included, so a
      rerun and checks by hand on staging still get answers after the nightly run) and per-visitor limits of 1000 (a run and a rerun from one
      address). Prod keeps the defaults. The full set with `--repeat 3` does not fit in 600 calls: it is a run by hand,
-     with the settings of the day raised as [docs/backup/evaluation.md](../../backup/evaluation.md) "Clean baseline" says;
-   - the reports (`docs/backup/eval/guide-run.md`, `docs/backup/evaluation-adversarial.md`, `backend/eval-data/guide-pool.tsv`,
+     with the settings of the day raised as [eval/README.md](../../../eval/README.md) "Guide: the clean baseline" says;
+   - the reports (`eval/guide-run.md`, `eval/guide-adversarial-run.md`, `backend/eval-data/guide-pool.tsv`,
      `backend/eval-data/guide-runs.json`, `backend/eval-data/guide-adversarial-runs.json`) are kept as an artifact for 30 days; nothing is committed. Publishing a run
      stays a step by hand (7).
 
    It runs on a GitHub-hosted runner that calls the public staging address like a visitor, so it needs no secret and
    no runner inside the cluster.
-10. **Similar-question set.** `docs/backup/eval/guide-similar.json`: 55 question pairs, 25 that should share a cached answer
+10. **Similar-question set.** `eval/guide-similar.json`: 55 question pairs, 25 that should share a cached answer
     and 30 near misses that must not, each side with the reading a correct plan gives it
     ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)). Their query embeddings are recorded once into
-    `docs/backup/eval/guide-similar-vectors.json` (`./gradlew evalRecord --tests '*GuideSimilarRecorder'`, the embedding
+    `eval/guide-similar-vectors.json` (`./gradlew evalRecord --tests '*GuideSimilarRecorder'`, the embedding
     key), so `GuideSimilarEvaluationTest` sweeps the reuse threshold offline in every build, with no model call.
-11. **Results.** The latest run of the core questions is in `docs/backup/eval/guide-run.md`, the latest run of the hostile
-    questions in `docs/backup/evaluation-adversarial.md`; each header states the date, the address and the models, and the
-    notes of `guide-run.md` name the commit. How search and the guide are measured, and how a run is made and read, is in
-    [docs/backup/evaluation.md](../../backup/evaluation.md), which no script writes.
+11. **Results.** The latest run of the core questions is in `eval/guide-run.md`, the latest run of the hostile
+    questions in `eval/guide-adversarial-run.md`; each header states the date, the address and the models, and the
+    notes of `guide-run.md` name the commit. How a run is made and read is in
+    [eval/README.md](../../../eval/README.md), which no script writes.
 
 ### Search
-12. **Fixed query set.** `docs/backup/eval/search-queries.json`: 116 fixed queries, never tuned on results. Groups:
+12. **Fixed query set.** `eval/search-queries.json`: 116 fixed queries, never tuned on results. Groups:
     navigational (10), MCP server for a task (12), model for a task (10), library for a language (14), paper (8),
     news and events (8), Italian and other languages (10), typos and synonyms (8), nonsense control (4), the home
     examples (11, `home-example`) and everyday tasks in plain words (21, `everyday`); the last two are sent with their
     audience `path`. The guide questions of §1 that fit are reused (`from` names the guide id).
-    `docs/backup/eval/semantic-gold.json` adds 20 paraphrase queries with few words in common with their answers, for vector
+    `eval/semantic-gold.json` adds 20 paraphrase queries with few words in common with their answers, for vector
     search and its cutoff. A home example has a higher bar than nDCG: a result graded 3 or 2 in its top 3; the report
     lists each one with its best grade there. The everyday group is its own row in the report, so a ranking change
     cannot help developers and hurt that slice without it showing.
@@ -176,7 +175,7 @@ repository. Relevance needs a human judgement per result, and judging every resu
     snapshot recorded without the prefixes replays with every result. A variant is a different `Ranking`, a different merge, or a source left out. The ranking variants
     (`RankingVariants`: other `RankingWeights`, or one vote for the catalog sources) are in every report with their
     ΔnDCG@10 and interval, and their top 20 are in the judging pool.
-15. **Pooled graded judgements.** `docs/backup/eval/search-qrels.tsv` (`query_id`, `url`, `grade` 0–3: 0 not relevant,
+15. **Pooled graded judgements.** `eval/search-qrels.tsv` (`query_id`, `url`, `grade` 0–3: 0 not relevant,
     1 marginal, 2 relevant, 3 the answer). The pool to judge is the union of the top 20 of the baseline and of every
     variant, plus the 10 nearest vectors at any distance; `evalTest` writes the unjudged part to
     `backend/eval-data/search-pool.tsv`. A grade attaches to every URL of a merged result (identity, each source's URL
@@ -198,7 +197,7 @@ repository. Relevance needs a human judgement per result, and judging every resu
     cost. A change is not accepted while a group of queries is lower with an interval below 0, whatever
     the mean says.
 18. **Gate.** `./gradlew evalTest` (JUnit tag `eval`) writes `backend/eval-data/search-report.md` and fails when
-    nDCG@10 falls more than 0.005 below `docs/backup/eval/search-baseline.json`. The gate starts working once the baseline is
+    nDCG@10 falls more than 0.005 below `eval/search-baseline.json`. The gate starts working once the baseline is
     committed: it is recorded on staging before the first release, after the 10 navigational queries are graded. The baseline
     names the snapshots and judgements it was measured on (fingerprints); with other snapshots or labels, or with no
     snapshots, no labels or no baseline at all, the gate is skipped with a message, never failed.
@@ -260,15 +259,14 @@ The guide:
 - `scripts/eval-guide.mjs` — the guide runner, pass rate and report writer; `scripts/eval-setup.mjs` — the setup
   runner; `scripts/eval-lib.mjs` — session token, resource id, judgements, P@k and nDCG@k shared by both, and the
   guide run's stop rule (`guideRunStop`); `scripts/eval-lib.test.mjs` — its tests (`node --test`, run by CI).
-- `docs/backup/eval/guide-queries.json`, `guide-intents.json`, `guide-adversarial.json`, `guide-qrels.tsv`,
+- `eval/guide-queries.json`, `guide-intents.json`, `guide-adversarial.json`, `guide-qrels.tsv`,
   `guide-similar.json`, `guide-similar-vectors.json`, `setup-resources.json` — the fixed sets and the judgements;
-  `docs/backup/eval/README.md` — grades and how to judge.
+  `eval/README.md` — grades, how to judge, the clean baseline and how to read a run.
 - `backend/apps/public/src/test/kotlin/ai/helper2/eval/GuideSimilarEvaluation.kt`, `GuideSimilarEvaluationTest.kt`,
   `GuideSimilarRecorder.kt` — the similar-question sweep.
-- `docs/backup/evaluation.md` — how search and the guide are measured; `docs/backup/eval/guide-run.md`,
-  `docs/backup/evaluation-adversarial.md` — the latest runs; `docs/backup/evaluation-intents.md` and
-  `docs/backup/evaluation-setup.md` are written by `--intents` and `eval-setup.mjs` and committed after a run (neither is
-  committed yet); `docs/backup/eval/run-*.md` — earlier runs.
+- `eval/guide-run.md`, `eval/guide-adversarial-run.md` — the latest runs; `eval/guide-intents-run.md` and
+  `eval/setup-run.md` are written by `--intents` and `eval-setup.mjs` and committed after a run (neither is
+  committed yet).
 
 Search:
 - `backend/apps/public/src/test/kotlin/ai/helper2/eval/` — `SearchSnapshot.kt` (snapshot, recording, replay), `RankingVariants.kt` (the ranking variants of the report),
@@ -277,8 +275,8 @@ Search:
   `HomeExampleQueriesTest.kt`, `EverydayQueriesTest.kt` — the two groups sent with a path.
 - `backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts` — tasks `evalRecord` and `evalTest`;
   `test` excludes both tags.
-- `docs/backup/eval/search-queries.json`, `docs/backup/eval/semantic-gold.json`, `docs/backup/eval/search-qrels.tsv`,
-  `docs/backup/eval/README.md` (how to record, judge and compare).
+- `eval/search-queries.json`, `eval/semantic-gold.json`, `eval/search-qrels.tsv`,
+  `eval/README.md` (how to record, judge and compare).
 
 ## Alternatives considered
 

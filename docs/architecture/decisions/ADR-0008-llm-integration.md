@@ -150,7 +150,7 @@ Without a configured model the application must still work.
   trial call succeeds.
 - A model id of another vendor stops the deploy at startup instead of reaching that vendor.
 - Thinking off makes calls faster and repeatable.
-- Bulk work on the fast model can be less accurate. The research eval (`docs/backup/eval/README.md`, FAST against REASONING)
+- Bulk work on the fast model can be less accurate. The research eval (`eval/README.md`, FAST against REASONING)
   and the enrichment checks decide if a feature moves back; moving back is one variable, no code change.
 - One provider keeps setup and image small. A second provider needs only a dependency and a profile; the ports stay the same.
 

@@ -1,47 +1,6 @@
-# Testing
+# Test map
 
-## Layers: what each one covers, and where a new test goes
-
-| Layer | Covers | Where a new test goes |
-|---|---|---|
-| Unit (domain, TDD) | The rules in the Kotlin domain and the use cases: merging, ranking, filtering, the evidence gate, budgets, the vitality and admission rules. No Spring context, no container; ports are fakes. Written first, with the rule. | Next to the class, `*Test`. |
-| BDD (user-visible behaviour) | What a person or an API client sees, said in their words: the journeys of [user-journeys.md](user-journeys.md) and their states. On the frontend, Vitest and Testing Library tests next to each page and component; on the backend, the API tests below. No Gherkin tool is installed: the test names state the behaviour. | Next to the page or component (`*.test.tsx`), or the API test of the endpoint. |
-| Integration (DB, Redis, LLM, HTTP) | Every adapter against the real thing or a recording of it: PostgreSQL 18 and Redis 8 in Testcontainers, a scripted `ChatModel` for the LLM adapters, recorded real responses for the source connectors, real HTTP for the edge. | Next to the adapter, `*IT`: in `backend/libs/core` for an adapter of a shared context (it runs on `CoreTestApplication`, with `@AsBackOffice` when the back office runs that code), in the app when the test needs the app (its controllers, security, schedules, the sources it registers, its own settings) or tests `libs/platform` on a Spring context ([ADR 0002](../architecture/decisions/ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md) §10). |
-| Contract | The API against `api/public.yaml`, `api/admin.yaml` and `api/common.yaml`: every response of the API tests is validated against the OpenAPI schema; `SchemaContractTest` holds the database schema to the domain enums; `ModularityTest` holds the module rules. | The API test of the endpoint; a new enum value in `SchemaContractTest`; a new table in `TableOwnersTest`. |
-| Live | One smoke test per source adapter against the real API (`@Tag("live")`). A test whose key is missing is skipped, and the run prints it as `SKIPPED`. The keys are read from the environment (`H2_GITHUB_TOKEN`, `H2_HF_TOKEN`, `H2_LIVE_WEB_API_KEY`, `H2_NEBIUS_API_KEY`), never from the repository's `.env`. Not part of `test`: `./gradlew liveTest`, and the weekly `live` workflow. Every `liveTest` asked for runs its tests: the task is never up to date and never stored in or taken from the build cache. | Next to the adapter, `*LiveTest`. |
-| Evaluation, performance, load | Relevance of search and of the guide on fixed sets ([evaluation.md](evaluation.md)), latency on a seeded catalog (`perfTest`), Gatling load tests by hand. Not part of `test`. | `backend/apps/public/src/test` under `eval`, `backend/loadtest`. |
-| Browser end to end | **Not built.** No browser journey is automated and no tool is installed; frontend tests run in jsdom. Backlog: [S10.12.1](https://github.com/silvioincalza/helper2.ai/issues/357). | — |
-
-## Run
-
-```bash
-# backend (needs a container runtime for Testcontainers; with Podman:)
-export DOCKER_HOST=unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')
-export TESTCONTAINERS_RYUK_DISABLED=true
-cd backend && ./gradlew test            # unit + integration (Postgres 18, Redis 8 in containers)
-./gradlew liveTest                      # opt-in smoke tests against real external APIs (@Tag("live"))
-./gradlew evalRecord                    # opt-in: one live search per evaluation query, saved to backend/eval-data (ADR 0046);
-                                         # --tests '*GuideSimilarRecorder' records the similar-question embeddings (ADR 0032)
-./gradlew evalTest                      # offline replay and metrics over the recorded snapshots; skips without them
-./gradlew evalTest --tests ai.helper2.eval.CategoryEvalTest  # category precision and recall on the labels in
-                                         # apps/public/src/test/resources/eval/categories-labelled.csv (ADR 0026); skips without rows
-./gradlew perfTest                      # opt-in latency tests on a seeded catalog (@Tag("perf")), p50/p95/p99 in build/perf/
-./gradlew :loadtest:gatlingRun --simulation ai.helper2.load.SearchSimulation -Dh2.load.baseUrl=https://<host>
-                                         # Gatling load test, by hand only;
-                                         # test only compiles it
-# alert rules (promtool from the Prometheus release or image; CI runs the image)
-promtool check rules deploy/monitoring/helper2-rules.yaml
-promtool test rules deploy/monitoring/tests/*.yaml
-# frontend (Node 26, frontend/.nvmrc)
-cd frontend && npm test -- --run && npm run lint && npm run typecheck
-```
-
-The alert rules have promtool unit tests; CI runs them in the `monitoring` job.
-`evalTest` and `evalRecord` are not part of `test`: see [docs/backup/eval](eval/README.md).
-The guide evaluation (`scripts/eval-guide.mjs`, default and adversarial sets) runs every night against staging in
-[`guide-eval.yml`](../../.github/workflows/guide-eval.yml) ([ADR 0046](../architecture/decisions/ADR-0046-evaluation-guide-and-search.md)).
-
-## What exists
+The tests of each area and what they hold. The layers and the commands are in [stack.md](stack.md).
 
 | Area | Tests | Notes |
 |---|---|---|
@@ -62,15 +21,10 @@ The guide evaluation (`scripts/eval-guide.mjs`, default and adversarial sets) ru
 | Back office edge (ADR 0043) | BackOfficeEdgeIT, SecurityIT, SchedulesIT (both apps), ModularityTest (both apps) | real HTTP on the back office: only its own paths answer, the fixed strict CSP and the other headers on every response (pages, deep links, assets, 404s, API errors, redirects), cache rules, `/` and `/admin/admin.html` to `/admin`, `/resource/**` to the public site, `__Host-` cookies, Origin and header-only CSRF on writes, pinned sign-in callback, a failed sign-in returns to `/admin`, a public session cookie is not read; each app's list of jobs, none in both; the public app has no back office code and answers 404 on the admin paths |
 | Sign-in keeps no token (ADR 0036) | SignInKeepsNoTokenIT (both apps), IdentityArchitectureTest | a real sign-in through each app's own filters against a provider on localhost (`FakeSignInProvider`): the session holds the user and roles but not the access token, and no store in memory holds an authorized client; the identity context imports no app and no use case reaches into `internal` |
 | Setup guide | RunOptionRulesTest, SetupGuidesTest, SnippetParseBackTest, HttpToolMaterialsTest, SharedToolGuideCacheTest, ToolGuideApiIT, SetupGuidesLeftApiIT | only safe run commands (package runners, one Docker image, no shells or inline code), snippets for the eight listed clients, every client snippet parses back to the same values, READMEs read with the setup guide's own GitHub token or anonymously, guide answers in the shared cache without document text, the unreadable answer kept 10 minutes, the guide endpoint takes no question, `/me` says the setup guides left without taking one |
-| Category evaluation | CategoryEvaluationTest, CategoryEvalTest | Precision and recall per category of the code matcher against labels a person gives (`categories-labelled.csv`, header only until labelled); `build/eval/categories.md` ([ADR 0026](../architecture/decisions/ADR-0026-filters-facets-categories.md)) |
-| Search and guide evaluation | RelevanceMetricsTest, SearchEvaluationTest, CutoffSweepTest, SnapshotTakerTest, GuideSimilarEvaluationTest | nDCG@10, reciprocal rank and recall on known cases; the vector cutoff sweep; offline replay of recorded snapshots and the nDCG@10 gate (`evalTest`); the similar-question threshold sweep on recorded embeddings, no false reuse from 0.96 ([ADR 0032](../architecture/decisions/ADR-0032-guide-cost-guard-and-answer-cache.md)) |
+| Category evaluation | CategoryEvaluationTest, CategoryEvalTest | Precision and recall per category of the code matcher against labels a person gives (`categories-labelled.csv`, header only until labelled); `build/eval/categories.md` ([ADR 0026](decisions/ADR-0026-filters-facets-categories.md)) |
+| Search and guide evaluation | RelevanceMetricsTest, SearchEvaluationTest, CutoffSweepTest, SnapshotTakerTest, GuideSimilarEvaluationTest | nDCG@10, reciprocal rank and recall on known cases; the vector cutoff sweep; offline replay of recorded snapshots and the nDCG@10 gate (`evalTest`); the similar-question threshold sweep on recorded embeddings, no false reuse from 0.96 ([ADR 0032](decisions/ADR-0032-guide-cost-guard-and-answer-cache.md)) |
 | Statement counts and latency | HomeListsIT, HomeListsPerfTest | the home lists read their cards in 6 statements for any size (`StatementCounting`, datasource-proxy), batched cards equal the one-by-one ones; `HomeListsPerfTest` gives p50/p95/p99 before and after on 25 000 resources (`perfTest` only) |
 | Live smoke | GitHubSourceLiveTest, HuggingFaceLiveTest, NpmSourceLiveTest, ArxivSourceLiveTest, LiveWebScoutLiveTest, McpRegistryCollectorLiveTest, AiDeadlinesCollectorLiveTest, ConfsTechCollectorLiveTest, GitHubAwesomeLiveTest | one per adapter, against the real API (the awesome-list collector with Nemotron classification); a test whose key is missing is skipped; runs only with `./gradlew liveTest`, once a week in the `live` workflow |
 | Frontend | Vitest + RTL tests next to each component and page (AccountPage.test.tsx and others) | pages, client, bookmarks, account deletion, i18n, layout; axe smoke checks in jsdom; the review queue's evidence (loading, error, none, AI values and refused values labelled and marked, quotes labelled as source text, links only http(s)) and its keys (j/k, a, r, n, ?, only inside the queue, a held key decides nothing, focus and status after a decision) in ReviewEvidence.test.tsx; the enrichment queue's actions (move to top, skip with a reason and focus back on Cancel, the skipped view and requeue, a refused action says why; axe with the skip confirm); bulk decisions (boxes, x, the bar, the confirm with focus on Cancel, the result line, failed items stay picked) in ReviewBulk.test.tsx; a bookmark edit while the account list is on its way wins over the merge and is sent after it, a save then a removal of the same resource sends nothing, and a removal survives a failed merge until the account list arrives (BookmarksContext.test.tsx); the 404 page sets the tab title (NotFoundPage.test.tsx); a resource page puts Google's consent tool in before the AdSense script, no other page asks for the tool until "Privacy choices" is pressed, and Google Analytics waits for the tool's answer (Monetisation.test.tsx); one ad per search words, asked when the results are there (Monetisation.test.tsx); the monetisation settings are read once from GET /site, the back office never reads them, and everything stays off while the read fails (Monetisation.test.tsx); the account panel shows `limits.webSearches.guide` (AccountPage.test.tsx); the Privacy and Terms pages state every number of GET /policy (free answers, counter lifetimes, backups, page text and read periods, source counts and sizes) and fall back to wording without numbers when the read fails (TextPagesPolicy.test.tsx); the slug follows the same list of titles as the backend (slug.test.ts), and a resource page opened on a bare id or an old slug replaces its address without losing the page or the focus (ResourcePage.test.tsx); the home radar says how long ago a source was checked by the server's clock, not the browser's (HomeRadar.test.tsx) |
 | Load test | backend/loadtest (Gatling) | search and the guide's search-only path at the peak rate against the latency budgets; compiled by `test`, run by hand only |
 | Alert rules | deploy/monitoring/tests | promtool unit tests: each of the 26 alert rules fires on its condition and stays quiet otherwise |
-
-## Known gaps (not covered by automated tests)
-
-- **Browser end-to-end tests.** Not built; no tool is installed until the journeys are written ([S10.12.1](https://github.com/silvioincalza/helper2.ai/issues/357)). The guide journey is covered by `GuideApiIT` (API) and `HomeGuide.test.tsx` (UI).
-- **Live source checks from production.** `liveTest` runs from a GitHub runner, not from the cluster's egress.

@@ -33,7 +33,7 @@ present() {
 
 classify() {
   case $1 in
-    docs/backup/eval/*) echo "backend-libs backend-public diagrams" ;;
+    eval/*) echo "backend-libs backend-public diagrams" ;;
     frontend/index.html | frontend/src/routes.tsx | frontend/src/i18n/locales/en.json) echo "frontend backend-public web backoffice" ;;
     frontend/*) echo "frontend web backoffice" ;;
     deploy/web.Dockerfile | deploy/web/*) echo "web" ;;
@@ -204,7 +204,7 @@ backend/apps/public/src/main/resources/x.md|backend-public public
 backend/apps/backoffice/README.md|backend-backoffice backoffice
 deploy/web/README.md|web
 README.md,LICENSE|diagrams
-docs/backup/eval/search-queries.json|backend-libs backend-public diagrams
+eval/search-queries.json|backend-libs backend-public diagrams
 .claude/agents/architect.md|diagrams
 .claude/settings.json|
 frontend/src/main.tsx,backend/apps/public/x.kt|frontend backend-public web public backoffice

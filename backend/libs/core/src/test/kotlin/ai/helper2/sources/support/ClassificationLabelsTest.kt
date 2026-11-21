@@ -30,7 +30,7 @@ class ClassificationLabelsTest {
     val items = parse(lines)
     assumeTrue(
       items.isNotEmpty(),
-      "$file has no labelled rows yet (see docs/backup/eval/README.md).",
+      "$file has no labelled rows yet (see eval/README.md).",
     )
     val c = confusion(items)
     println(
@@ -86,8 +86,8 @@ class ClassificationLabelsTest {
     fun docs(): File =
       File(System.getProperty("user.dir"))
         .absoluteFile
-        .let { if (File(it, "docs/backup/eval").isDirectory) it else it.parentFile }
-        .resolve("docs/backup/eval")
+        .let { if (File(it, "eval").isDirectory) it else it.parentFile }
+        .resolve("eval")
 
     fun parse(lines: List<String>): List<Labelled> {
       val rows = lines.filter { it.isNotBlank() && !it.startsWith("#") }

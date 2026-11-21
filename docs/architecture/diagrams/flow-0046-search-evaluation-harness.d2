@@ -3,14 +3,14 @@
 # the per-source ablation, the cutoff sweep and the gate.
 # Source of truth: backend/apps/public/src/test/kotlin/ai/helper2/eval/ (SearchSnapshot.kt, SearchEvaluation.kt,
 #   RelevanceMetrics.kt, CutoffSweep.kt, SearchSnapshotRecorder.kt, SearchRelevanceEvalTest.kt), backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts,
-#   docs/backup/eval/search-queries.json, docs/backup/eval/semantic-gold.json, docs/backup/eval/search-qrels.tsv.
+#   eval/search-queries.json, eval/semantic-gold.json, eval/search-qrels.tsv.
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0046-search-evaluation-harness.d2 && d2 flow-0046-search-evaluation-harness.d2 flow-0046-search-evaluation-harness.svg
 
 ...@style
 
 direction: down
 
-sets: "docs/backup/eval/search-queries.json (80)\n+ semantic-gold.json (20)\nfixed before any run" {class: data}
+sets: "eval/search-queries.json (80)\n+ semantic-gold.json (20)\nfixed before any run" {class: data}
 
 record: ./gradlew evalRecord (tag eval-record, never in CI) {
   class: group
@@ -50,7 +50,7 @@ eval: ./gradlew evalTest (tag eval) {
   check -> fail: no
 }
 
-judge: "People grade the pool 0–3 into\ndocs/backup/eval/search-qrels.tsv;\nsecond judge on 20 % (kappa)" {class: person}
+judge: "People grade the pool 0–3 into\neval/search-qrels.tsv;\nsecond judge on 20 % (kappa)" {class: person}
 
 sets -> record.has
 record.vectors -> snapshots

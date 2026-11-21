@@ -15,7 +15,7 @@ class RankingBaselineTest {
     assertEquals(
       baseline.ranking,
       RankingCode.fingerprint(),
-      "One of ${RankingCode.files} changed after docs/backup/eval/search-baseline.json was measured. " +
+      "One of ${RankingCode.files} changed after eval/search-baseline.json was measured. " +
         "Measure again on the recorded snapshots: ./gradlew :apps:public:evalTest, read " +
         "backend/eval-data/search-report.md, then store the new baseline with " +
         "H2_EVAL_WRITE_BASELINE=true and commit it with the change.",
