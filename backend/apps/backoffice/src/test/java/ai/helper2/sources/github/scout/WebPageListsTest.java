@@ -175,7 +175,7 @@ class WebPageListsTest {
         new WebPageLists(
             added,
             pages,
-            new ScoutLiveWebCredits(credits, keys, 40, meters),
+            new ScoutLiveWebCredits(credits, keys, () -> 40L, meters),
             neverRead,
             Duration.ofDays(7),
             Duration.ofHours(1),

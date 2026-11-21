@@ -38,6 +38,20 @@ description: Use before creating a worktree or a branch, naming a branch, settin
   ready (checks green, review threads answered), then give him the command to run, one line per
   PR: `gh pr merge <n> --squash --delete-branch`. For a stack, give the order. Never use
   `gh pr merge`, `gh stack merge` or auto-merge yourself.
+- Every comment, every review and every conflict on a pull request is handled without being asked, by the
+  session that opened it:
+  - when `main` moves and the pull request no longer merges cleanly, merge `origin/main` into the branch,
+    resolve each conflict by reading both sides, run `scripts/verify.sh` for the parts touched and push
+    (no rebase of pushed commits, no force push); when the two sides disagree on behaviour, stop and ask;
+  - list the open threads after each push and before the pull request is called ready; a reviewer that
+    reads every push (Codex) may answer minutes later, so look again;
+  - fix each finding in that pull request, with a test that fails first when it is about behaviour; a
+    finding that is wrong gets a reply that says why, with the file and line that show it;
+  - reply on the thread with what changed
+    (`gh api repos/<owner>/<repo>/pulls/<n>/comments/<id>/replies -f body=...`), then resolve it (GraphQL
+    `resolveReviewThread`); a comment outside a thread gets a reply on the pull request;
+  - a thread that needs the human in the loop's decision (an approval, a drawback, a legal point) is not
+    resolved and not answered for him: it stays open and the session names it in its report.
 - Never add AI attribution, "Generated with" footers or Co-Authored-By to commits, PRs,
   comments, docs or code.
 

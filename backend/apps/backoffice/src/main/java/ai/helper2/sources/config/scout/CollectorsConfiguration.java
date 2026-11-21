@@ -12,6 +12,8 @@ import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.OutboundThrottle;
 import ai.helper2.platform.resilience.Resilience;
+import ai.helper2.platform.settings.RuntimeSetting;
+import ai.helper2.platform.settings.RuntimeSettings;
 import ai.helper2.platform.settings.Setting;
 import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.DiscoveredLists;
@@ -76,6 +78,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.IntSupplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,8 +187,11 @@ class CollectorsConfiguration {
       CollectorProperties.ScoutCredits c,
       QuotaCounter counter,
       QuotaKeys keys,
+      RuntimeSettings runtime,
       MeterRegistry meters) {
-    return new ScoutLiveWebCredits(counter, keys, c.dailyCredits(), meters);
+    IntSupplier dailyCredits =
+        runtime.declare(RuntimeSetting.SCOUT_SEARCH_DAILY_CREDITS, c.dailyCredits());
+    return new ScoutLiveWebCredits(counter, keys, dailyCredits::getAsInt, meters);
   }
 
   @Bean
