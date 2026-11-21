@@ -7,7 +7,7 @@
 **Primary Actor:** Administrator  
 **Goal:** Keep the list of vendors, services and tools that a relationship may name without a catalog resource, so relationships to them are verified and the rest go to review.  
 **Trigger:** The administrator opens the known vendors, services and tools on the Settings page of the back office.  
-**Status:** Draft  
+**Status:** Reviewed  
 
 **Requirements:** [FR-035](../../requirements.md)  
 **Mockup:** [Screens and states](../../mockups/back-office.md)  
@@ -33,7 +33,7 @@
 
 ### A1: Unusable Name
 
-**Trigger:** The name is empty, shorter than 2 or longer than 60 characters, not one plain line, or comes with more than 20 other names (step 4)  
+**Trigger:** The name is empty, shorter than 2 or longer than 60 characters, not one plain line, or comes with more than 20 other names (step 4 or step 7)  
 **Flow:**
 
 1. System says what a usable name is; an empty name is caught before anything is sent.
@@ -41,7 +41,7 @@
 
 ### A2: Name Already Taken
 
-**Trigger:** Another known target already holds one of the names (step 4)  
+**Trigger:** Another known target already holds one of the names (step 4 or step 7)  
 **Flow:**
 
 1. System says which name already means which target and stores nothing.
@@ -131,3 +131,7 @@ Every addition, change and removal, also a refused one, is one entry in the admi
 ### BR-009: Origin of a Target
 
 A target is curated when a person typed it, and discovered when a person accepted a Scout proposal for it; the first 31 vendors ship with the system and are recorded as added by the migration.
+
+### BR-010: Accepted Proposal for a Name Already Known
+
+When an accepted proposal (UC-024) names a target that the list already holds with the same kind, its new names are added to that target as a change. When the name belongs to a target of another kind, the proposal is refused as taken.
