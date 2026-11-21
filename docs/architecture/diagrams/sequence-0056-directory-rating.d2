@@ -1,0 +1,46 @@
+# Sequence: a pass of the awesome-list collector takes the rating figures of a directory list, the public page shows the rating, a visitor reports it and the back office names the directories (ADR 0056).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubAwesomeCollector.java, DirectoryRatingReader.java, StatedRatings.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (listIndex),
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcDirectoryRatingIndex.java, JdbcResourceRatings.java,
+#   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/GetResourceDetail.java, DirectoryRating.java,
+#   backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetReviewEvidence.java,
+#   frontend/src/features/resource/DirectoryRating.tsx, ReportForm.tsx, frontend/src/admin/ReviewEvidence.tsx.
+# Render: cd docs/architecture/diagrams && d2 fmt sequence-0056-directory-rating.d2 && d2 sequence-0056-directory-rating.d2 sequence-0056-directory-rating.svg
+
+...@style
+
+shape: sequence_diagram
+
+awesome: "Awesome-list\ncollector" {class: app}
+db: PostgreSQL {class: data}
+reader: "Live web\npage reader" {class: ext}
+visitor: Visitor {class: person}
+public: "Public API" {class: app}
+admin: "Administrator\n(admin host)" {class: person}
+api: "Admin API" {class: app}
+
+read: Pass of the awesome-list collector {
+  awesome -> db: "SELECT list_seed, list_seed_last_read, discovery_host" {class: hot}
+  awesome -> awesome: "each entry that names one resource:\naverage, scale and votes in its text?"
+  awesome -> db: "pages of an item that are due:\nresource in the catalog, not tried for 7 days;\ntries of today"
+  awesome -> db: "UPSERT directory_rating (tried_at):\nthe try counts before the read"
+  awesome -> reader: "read the page of the item (1 credit):\nhost on, under 100 tries today"
+  reader -> awesome: "Markdown"
+  awesome -> awesome: "three figures by fixed patterns,\nrange checks; nothing else is kept"
+  awesome -> db: "directory_rating of the list: figures upserted;\nrows of resources no longer named deleted"
+}
+
+show: The resource page {
+  visitor -> public: "GET /api/v1/resources/{id}" {class: hot}
+  public -> db: "SELECT host, average, scale, votes\nFROM directory_rating WHERE resource_id"
+  public -> public: "one per host, Bayesian average\n(prior 3.0 with 20 votes)"
+  public -> visitor: "rating {score: 4.7, directories: 2},\nor null: \"Not rated yet\""
+}
+
+report: A wrong rating {
+  visitor -> public: "POST /api/v1/resources/{id}/reports\n{kind, field: \"rating\", message}" {class: hot}
+  public -> db: "INSERT issue_report and its review item"
+  admin -> api: "GET /api/v1/admin/review-items/{id}/evidence"
+  api -> db: "the figures directories state for the resource"
+  api -> admin: "directoryRatings [{host, page, average, scale, votes, readAt}]"
+}

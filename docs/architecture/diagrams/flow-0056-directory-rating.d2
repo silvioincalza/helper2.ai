@@ -1,0 +1,52 @@
+# Flowchart: where the rating figures of an entry of a directory list come from, and what makes the rating of a resource (ADR 0056).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubAwesomeCollector.java (ratedEntries),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/DirectoryRatingReader.java (ratingsOf, mayReadItemPages, waitsBecause),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/StatedRatings.java (in),
+#   backend/libs/core/src/main/java/ai/helper2/catalog/StatedFigures.java (checked), DirectoryRating.java (of),
+#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcDirectoryRatingIndex.java (due, tried, replace).
+# Render: cd docs/architecture/diagrams && d2 fmt flow-0056-directory-rating.d2 && d2 flow-0056-directory-rating.d2 flow-0056-directory-rating.svg
+
+...@style
+
+direction: down
+
+entry: "Entry of a list page of a directory host,\nfrom the last read of the list" {class: app}
+one: "Names exactly one resource?" {class: decision}
+none: "No rating from this entry" {class: end}
+text: "Its text states the average, the scale\nand the number of votes, all in range?" {class: decision}
+listed: "Figures of the list page" {class: data}
+item: "Links to exactly one page of\nthe same host about the item?" {class: decision}
+allowed: "Switch of the host on, host not one\nnever read, resource in the catalog?" {class: decision}
+due: "Tried in the last 7 days?" {class: decision}
+kept: "Not read; the figures of\nits last read stay" {class: end}
+budget: "100 tries today, the Scout's credits\nor the pass budget spent?" {class: decision}
+waits: "Waits for a later pass" {class: end}
+read: "Try written, then the page read\nthrough the page reader (1 credit)" {class: app}
+stated: "The page states all three,\nin range, and one rating only?" {class: decision}
+empty: "Row with no figures:\ntried, nothing stated" {class: data}
+found: "Figures of the page of the item" {class: data}
+table: "directory_rating: one row per list and resource;\ngoes when the list no longer names the resource" {class: data}
+rating: "Rating of the resource: Bayesian average over\nthe directories, prior 3.0 with 20 votes" {class: app}
+shown: "Public page: score and number of directories.\nNo figures: \"Not rated yet\"" {class: end}
+
+entry -> one: {class: hot}
+one -> none: no
+one -> text: yes {class: hot}
+text -> listed: yes {class: hot}
+text -> item: no
+item -> none: no
+item -> allowed: yes
+allowed -> none: no
+allowed -> due: yes
+due -> kept: yes
+due -> budget: no
+budget -> waits: yes
+budget -> read: no
+read -> stated
+stated -> empty: no
+stated -> found: yes
+listed -> table: {class: hot}
+found -> table
+empty -> table
+table -> rating: {class: hot}
+rating -> shown: {class: hot}

@@ -223,3 +223,7 @@ When the query names a known use case with words of another language, the system
 ### BR-022: Hosted Apps Confirmed in the Search
 
 A hosted app that only the catalog returns in a search is left out, because the catalog does not know whether the app still runs. It is shown when the live source of hosted apps, another live source or the curated resources return it in the same search.
+
+### BR-023: The Rating in the Ranking
+
+The rating of a result (UC-007 BR-011) can raise or lower its place by a bounded amount: a rating of 5 adds the weight, a rating of 1 takes it off, and a result that is not rated yet counts as 3 and is not ranked lower for it. The weight is 0 by default, so the rating does not change the order; it is at most the weight of the popularity, and it is raised only after a measurement on the evaluation set.

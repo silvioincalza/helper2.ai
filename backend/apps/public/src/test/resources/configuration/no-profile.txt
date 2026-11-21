@@ -677,6 +677,7 @@ helper2.scout.github-awesome.nested.max-depth = ${H2_SCOUT_AWESOME_NESTED_DEPTH:
 helper2.scout.github-awesome.nested.max-lists-per-run = ${H2_SCOUT_AWESOME_NESTED_LISTS:30}  =>  30
 helper2.scout.github-awesome.topic-queries = topic:awesome-list topic:llm, topic:awesome topic:llm, topic:awesome-list topic:artificial-intelligence, topic:awesome-list topic:ai-agents, topic:awesome topic:mcp, topic:awesome topic:generative-ai
 helper2.scout.github-awesome.web-pages.discovered-reads-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_DISCOVERED_READS_PER_DAY:10}  =>  10
+helper2.scout.github-awesome.web-pages.item-page-reads-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_ITEM_PAGE_READS_PER_DAY:100}  =>  100
 helper2.scout.github-awesome.web-pages.max-discovered = ${H2_SCOUT_AWESOME_WEB_PAGES_MAX_DISCOVERED:100}  =>  100
 helper2.scout.github-awesome.web-pages.never-read = ${H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ:coursera.org=its terms forbid automated reading without written consent}  =>  coursera.org=its terms forbid automated reading without written consent
 helper2.scout.github-awesome.web-pages.read-every = ${H2_SCOUT_AWESOME_WEB_PAGES_EVERY:P7D}  =>  P7D
@@ -721,6 +722,7 @@ helper2.scout.pypi.candidates-per-day = ${H2_SCOUT_PYPI_CANDIDATES_PER_DAY:20}  
 helper2.scout.pypi.interval = ${H2_SCOUT_PYPI_INTERVAL:P1D}  =>  P1D
 helper2.scout.pypi.max-bytes-billed = ${H2_SCOUT_PYPI_MAX_BYTES_BILLED:20000000000}  =>  20000000000
 helper2.search.per-source-limit = ${H2_SEARCH_PER_SOURCE_LIMIT:30}  =>  30
+helper2.search.ranking.rating-weight = ${H2_SEARCH_RANKING_RATING_WEIGHT:0}  =>  0
 helper2.search.stale-for = ${H2_SEARCH_STALE_FOR:24h}  =>  24h
 helper2.search.translate-timeout = ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}  =>  2500
 helper2.search.translation.daily-calls = ${H2_SEARCH_DAILY_TRANSLATIONS:300}  =>  300
