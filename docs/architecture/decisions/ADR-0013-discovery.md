@@ -101,13 +101,13 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
      not about AI (`Classification.isAiRelated`);
    - **a GitHub repository or a home page is a product**, whatever its title says ("an open-source alternative to
      ChatGPT" is a product's own words);
-   - dropped: a page on a directory's host (point 21), whatever its title says. A directory's terms forbid copying
-     its listings, so its list pages are not indexed either;
    - **list page**: any other page with a list-like title ("12 best ...", "best AI coding tools", "X vs Y", "ChatGPT
      alternatives"). Indexed as an `ARTICLE` hit, with Tavily's excerpt (400 characters) as its description. It stays
      an `ARTICLE` even when its title names an event ("10 best AI tools for event planning"): only the news mapping
      infers `EVENT`, and an `EVENT` with no event date would escape both retention rules. A list helps a person
-     compare; it claims nothing about the products in it. With `index-lists: false` list pages are dropped;
+     compare; it claims nothing about the products in it. With `index-lists: false` list pages are dropped.
+     A list page on a directory's host (point 21) is not indexed: it is an `ARTICLE` candidate in the review list
+     (`Shape.LIST_TO_REVIEW`), so a person decides whether a page of a site we only link to enters the catalog;
    - **product page** one level below a home page (a language segment such as `/en` does not count). A site page
      (`/pricing`, `/features`, `/download`, ...) stands for its site's home page, titled with the side of the page title
      that names the site ("Pricing | AnythingLLM", "AnythingLLM - Pricing" → "AnythingLLM"). Any other page is the

@@ -244,7 +244,7 @@ public class DiscoveryCollector implements Collector {
       return null;
     }
     Page page = pages.classify(url, title);
-    if (page == null || (page.shape() == Shape.LIST && !category.indexLists())) {
+    if (page == null || (page.shape().isList() && !category.indexLists())) {
       return null;
     }
     Map<String, List<String>> matched =
@@ -309,7 +309,7 @@ public class DiscoveryCollector implements Collector {
         f.page().title(),
         evidence(f.content()),
         String.join(", ", tags),
-        f.page().shape() == Shape.ARTICLE ? ResourceType.ARTICLE : category.type(),
+        f.page().shape() == Shape.PRODUCT ? category.type() : ResourceType.ARTICLE,
         tags,
         f.facts());
   }

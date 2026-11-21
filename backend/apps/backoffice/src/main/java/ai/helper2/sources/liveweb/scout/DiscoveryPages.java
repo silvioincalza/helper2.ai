@@ -26,8 +26,13 @@ public final class DiscoveryPages {
 
   enum Shape {
     LIST,
+    LIST_TO_REVIEW,
     PRODUCT,
-    ARTICLE
+    ARTICLE;
+
+    boolean isList() {
+      return this == LIST || this == LIST_TO_REVIEW;
+    }
   }
 
   record Page(Shape shape, CanonicalUrl url, String title) {}
@@ -151,12 +156,10 @@ public final class DiscoveryPages {
     if (site != null && (isRepository(url) || pagePath(url).isEmpty())) {
       return new Page(Shape.PRODUCT, site, siteTitle(title, url, site));
     }
-    // UC-019 BR-001: no page of a directory host is kept, a list page neither.
-    if (hostIn(url.getHost(), directoryHosts)) {
-      return null;
-    }
     if (isListPage(title, url)) {
-      return new Page(Shape.LIST, url, title);
+      // UC-019 BR-001: a list page of a directory host waits for review, it is not indexed.
+      Shape shape = hostIn(url.getHost(), directoryHosts) ? Shape.LIST_TO_REVIEW : Shape.LIST;
+      return new Page(shape, url, title);
     }
     if (site != null) {
       return new Page(Shape.PRODUCT, site, siteTitle(title, url, site));

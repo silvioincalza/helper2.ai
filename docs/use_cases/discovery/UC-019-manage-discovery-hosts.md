@@ -105,7 +105,7 @@
 
 ### BR-001: Kinds of Hosts
 
-A writing host publishes articles about many products: a post on it becomes an article candidate. A directory host lists products: no page on it is kept, not as a product, not as an article and not as a list, whatever its title says, because the terms of a directory forbid copying its listings. This holds for its subdomains too. On both kinds of host, no page is taken as a product's own site. Discovery and the awesome-list collector read both lists at the start of each pass.
+A writing host publishes articles about many products: a post on it becomes an article candidate. A directory host lists products: no page on it becomes a product candidate or an article candidate, and none is indexed without review. A page on it whose title reads as a list is proposed as an article candidate in the review list, where an administrator decides; on any other host such a page is indexed as a list. This holds for the subdomains of a directory host too. On both kinds of host, no page is taken as a product's own site. Discovery and the awesome-list collector read both lists at the start of each pass.
 
 ### BR-002: Plain Host Form
 

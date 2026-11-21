@@ -185,6 +185,23 @@ class DiscoveryCollectorTest {
   }
 
   @Test
+  void uc019Br001AListPageOfADirectoryHostIsProposedForReviewNotIndexed() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    hosts.add(
+        new DiscoveryHost(
+            "example-lists.com", HostKind.DIRECTORY, "1", Instant.EPOCH, "a directory"));
+
+    CollectedBatch batch = collector(SELF_HOSTED, LOCAL_AI).collect(null, null, 1000);
+
+    String list = "https://example-lists.com/blog/12-best-self-hosted-llm-apps";
+    assertThat(batch.getHits()).isEmpty();
+    assertThat(batch.getCandidates())
+        .filteredOn(c -> c.getUrl().getValue().equals(list))
+        .singleElement()
+        .satisfies(c -> assertThat(c.getType()).isEqualTo(ResourceType.ARTICLE));
+  }
+
+  @Test
   void aLaterPassAsksOnlyForPagesSinceThePreviousOne() {
     server.route("/search", FixtureServer.Reply.ok("{\"results\":[]}"));
     collector(SELF_HOSTED).collect("2026-10-01T03:07:00Z", null, 1000);

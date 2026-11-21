@@ -109,8 +109,8 @@ a directory is indexed without review. The rule says a page on a directory host 
 the order the code uses. Readings: (a) intended: a directory host stops product and article candidates only; (b) not
 intended: every page of a directory host is dropped.
 
-**Answer:** Not intended. No page of a directory host is kept, a list page neither: a list page must not enter the
-catalog without review, and a directory's terms forbid copying its listings.  
+**Answer:** Not intended. A list page of a directory host is not indexed without review: it goes to the review
+list as an article candidate, and an administrator decides.  
 **Answered by:** the human in the loop, 2026-11-21  
 **Resolved in:** UC-019 BR-001  
 
