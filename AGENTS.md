@@ -275,9 +275,10 @@ deferred (safe for now, say why).
 - No backward compatibility with removed code or migrations unless asked.
 - Never add AI attribution, "Generated with" footers or Co-Authored-By to commits, PRs,
   comments, docs or code.
-- Every change reaches `main` through a pull request. Open it with `gh` from the human in the loop's machine
-  (never through a tool that adds an AI footer). Its description closes the stories it builds, one `Closes #n`
-  line each. The human in the loop reviews and merges it himself: never
+- Every change reaches `main` through a pull request. The session that makes the change opens it, always, and only
+  after `scripts/verify.sh` passes for every part the change touches (`backend`, `frontend`, `docs`). Open it with
+  `gh` from the human in the loop's machine (never through a tool that adds an AI footer). Its description says
+  which `verify.sh` parts ran and what could not run, and closes the stories it builds, one `Closes #n` line each. The human in the loop reviews and merges it himself: never
   merge to `main`, never push to `main` directly, never deploy to prod.
 - This holds even when the human in the loop asks for a merge in a session ("merge", "merge all"). Get the PR
   ready (checks green, review threads answered), then give him the command to run, one line per
