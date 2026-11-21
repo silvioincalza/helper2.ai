@@ -111,7 +111,9 @@ recognises are written from how such pages commonly print a rating, and are not 
     5); this one is a setting so that the measurement can be run against production data without a release. The
     condition to raise it: a recording with rated resources in the first ten results, a variant in `RankingVariants`
     with the weight, and its ΔnDCG@10 with the interval of [0046](ADR-0046-evaluation-guide-and-search.md), before
-    and after. The Settings page shows the weight read-only in the group "Ranking".
+    and after. With the weight 0 the replay of the recorded set (131 queries, 50 judged) gives nDCG@10 0.378, the
+    value of the baseline: the order does not change. The Settings page shows the weight read-only in the group
+    "Ranking".
 
 ### Metrics and the measurement of the patterns
 24. `helper2.scout.ratings.pages{host,page}` counts the pages read (`page` is `list` or `item`) and
