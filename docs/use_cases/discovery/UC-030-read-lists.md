@@ -8,7 +8,7 @@
 **Secondary Actors:** Source Provider  
 **Goal:** Read the lists of AI resources, awesome lists on GitHub and list pages on the web, follow each link to the item's own source, and keep which list names which resource, so that what a list names reaches the catalog checked and a visitor sees how known a resource is.  
 **Trigger:** A pass of the awesome-list collector starts in a run of the Scout (UC-018).  
-**Status:** Draft  
+**Status:** Approved  
 
 **Requirements:** [FR-041, NFR-015, C-008](../../requirements.md)
 
