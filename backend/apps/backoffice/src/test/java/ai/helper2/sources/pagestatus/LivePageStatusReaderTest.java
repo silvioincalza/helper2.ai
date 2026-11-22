@@ -287,6 +287,17 @@ class LivePageStatusReaderTest {
   }
 
   @Test
+  void aCapReachedOnTheRobotsFileOfTheWwwTwinIsACapAndNotARobotsRule() {
+    dns.put("vectorly.io", "93.184.216.34");
+    dns.put("www.vectorly.io", "93.184.216.34");
+    answer("GET https://vectorly.io/robots.txt", 301, "https://www.vectorly.io/robots.txt", "");
+    limits = new LivePageStatusReader.Limits(1, 30);
+
+    assertThat(status(reader(), "https://vectorly.io/go"))
+        .isEqualTo(new PageStatus.Refused(Reason.DAILY_CAP));
+  }
+
+  @Test
   void everyTryCountsOnTheDayAndOnItsHostAndPastACapNoRequestIsMade() {
     dns.put("dir.acme.dev", "93.184.216.34");
     dns.put("vectorly.io", "93.184.216.34");

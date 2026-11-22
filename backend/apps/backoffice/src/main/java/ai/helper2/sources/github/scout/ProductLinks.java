@@ -101,11 +101,16 @@ final class ProductLinks {
   }
 
   Checked product(CanonicalUrl page, DiscoveryPages pages) {
-    if (under(page.getHost(), excludedDomains)) {
+    if (isExcluded(page)) {
       return Checked.skipped(Skip.EXCLUDED_DOMAIN);
     }
     CanonicalUrl site = pages.productSite(page);
     return site == null ? Checked.skipped(Skip.NOT_A_PRODUCT_PAGE) : Checked.kept(site);
+  }
+
+  /** A page on one of the excluded domains: never a product, wherever a link to it is found. */
+  boolean isExcluded(CanonicalUrl page) {
+    return under(page.getHost(), excludedDomains);
   }
 
   Checked page(@Nullable String raw) {
