@@ -4,6 +4,8 @@ import { ADMIN, ANON, USER, makeReviewEvidence } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderAdmin } from '@/test/render';
 import type { AdminOverview, ReviewItem, ScoutRun } from '@/api/types';
+import { auditEntryActionValues } from '@/api/admin-schema';
+import en from '@/i18n/locales/en.admin.json';
 import { RUN_POLL_MS } from './ScoutRunsPage';
 import { SIGN_IN_RETURN_KEY } from '@/lib/signInReturn';
 import { getCommandLine } from '@/test/queries';
@@ -813,6 +815,50 @@ describe('Feature: the audit trail', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(await screen.findByText('NOT_OPEN 1')).toBeInTheDocument();
     expect(m.callsTo('GET', '/admin/audit').at(-1)?.search).toBe('?page=1&size=20');
+  });
+
+  it('Scenario: UC-013 BR-001 the removal of a discovered list that is gone names the system, the list and the checks', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/audit': () => ({
+        items: [
+          {
+            id: '99999999-9999-5999-8999-999999999998',
+            adminId: 'system',
+            action: 'REMOVE_GONE_LIST_SEED',
+            targetId: 'https://www.acme.dev/blog/Awesome-LLM',
+            at: '2026-11-21T04:07:00Z',
+            outcome: 'REMOVED',
+            reason: '3 checks in a row said the page is gone, the first at 2026-11-20T03:07:00Z',
+          },
+          {
+            id: '99999999-9999-5999-8999-999999999997',
+            adminId: '12345',
+            action: 'REMOVE_LIST_SEED',
+            targetId: 'acme/awesome-rag',
+            at: '2026-11-20T09:00:00Z',
+            outcome: 'REMOVED',
+          },
+        ],
+        total: 2,
+      }),
+    });
+    renderAdmin('/admin/audit');
+    const table = await screen.findByRole('table', { name: 'Audit trail' });
+    const row = within(table).getByRole('row', {
+      name: /Discovered list removed: gone at its site/,
+    });
+    expect(within(row).getByText('https://www.acme.dev/blog/Awesome-LLM')).toBeInTheDocument();
+    expect(within(row).getByText('System')).toBeInTheDocument();
+    expect(row).toHaveTextContent(
+      'REMOVED · 3 checks in a row said the page is gone, the first at 2026-11-20T03:07:00Z',
+    );
+    expect(within(table).getByText('List to read removed')).toBeInTheDocument();
+    expect(within(table).getByText('12345')).toBeInTheDocument();
+  });
+
+  it('Scenario: UC-013 BR-001 every action of the audit API has its words', () => {
+    expect(Object.keys(en.admin.audit.actions).sort()).toEqual([...auditEntryActionValues].sort());
   });
 
   it('Scenario: the trail cannot load and offers Try again', async () => {

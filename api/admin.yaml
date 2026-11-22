@@ -3082,7 +3082,7 @@ components:
         adminId:
           {
             type: string,
-            description: "The administrator's provider subject (GitHub: the numeric user id).",
+            description: "The administrator's provider subject (GitHub: the numeric user id); `system` for an action no administrator took (REMOVE_GONE_LIST_SEED).",
           }
         action:
           {
@@ -3117,6 +3117,7 @@ components:
                 ADD_LIST_SEED,
                 REMOVE_LIST_SEED,
                 READ_DIRECTORY_LISTS,
+                REMOVE_GONE_LIST_SEED,
               ],
           }
         targetId:
@@ -3128,7 +3129,7 @@ components:
         outcome:
           {
             type: string,
-            description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item, NOT_ALLOWED for one refused in bulk, followed by bulk:<batch> when decided in bulk; STARTED or BUSY for a Scout run; STARTED for a category backfill; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; REQUEUED, REQUEUED_RESET, SKIPPED, PRIORITISED, NOT_FOUND, NOT_STOPPED, NOT_WAITING, ALREADY_SKIPPED, ALREADY_PRIORITISED or TOP_FULL for the enrichment queue; CHANGED, RESET, OUT_OF_RANGE or CONFLICT for a runtime setting. LINKED <resource id> or RENAMED for a relationship target; ADDED for a resource added from the review list. EDITED <fields> for a resource candidate. SET <field> or DROPPED <field> <count> for a resource field.",
+            description: "ACCEPTED, REJECTED, NOT_OPEN or NOT_FOUND for a review item, NOT_ALLOWED for one refused in bulk, followed by bulk:<batch> when decided in bulk; STARTED or BUSY for a Scout run; STARTED for a category backfill; ADDED, CHANGED, PAUSED, ACTIVATED, REMOVED, DUPLICATE, CONFLICT, INVALID or NOT_FOUND for a home example; REQUEUED, REQUEUED_RESET, SKIPPED, PRIORITISED, NOT_FOUND, NOT_STOPPED, NOT_WAITING, ALREADY_SKIPPED, ALREADY_PRIORITISED or TOP_FULL for the enrichment queue; CHANGED, RESET, OUT_OF_RANGE or CONFLICT for a runtime setting. LINKED <resource id> or RENAMED for a relationship target; ADDED for a resource added from the review list. EDITED <fields> for a resource candidate. SET <field> or DROPPED <field> <count> for a resource field. REMOVED for a discovered list that is gone at its site.",
           }
         before:
           {
@@ -3143,7 +3144,7 @@ components:
         reason:
           {
             type: [string, "null"],
-            description: Why the administrator changed a setting (optional).,
+            description: "Why the administrator changed a setting (optional); for a discovered list that is gone at its site, the number of checks and the time of the first one.",
           }
 
     EnrichmentRecheck:

@@ -179,22 +179,29 @@ class JdbcListSeedStoreIT {
     store.readSucceeded(PAGE, new ListReading(T0, List.of(), List.of(), List.of(), 0, 0));
     store.goneChecked(PAGE, T0);
 
-    store.forgotten(PAGE);
+    assertThat(store.forgotten(PAGE)).isNull();
 
     assertThat(store.lastReads()).doesNotContainKey(PAGE);
     assertThat(page().getGoneChecks()).isEqualTo(1);
   }
 
-  // UC-030 BR-012: a list discovery added that is gone is no longer a list to read.
+  // UC-030 BR-012: a list discovery added that is gone is no longer a list to read, and the store
+  // gives it back with its checks.
   @Test
   void uc030Br012AGoneListDiscoveryAddedIsRemovedWithItsLastRead() {
     store.add(
         new ListSeed(
             ListKind.WEB_PAGE, PAGE, "discovery-coding", T0, null, null, 0, ListOrigin.DISCOVERY));
     store.readSucceeded(PAGE, new ListReading(T0, List.of(), List.of(), List.of(), 0, 0));
+    store.goneChecked(PAGE, T0);
+    store.goneChecked(PAGE, T0.plus(1, ChronoUnit.DAYS));
 
-    store.forgotten(PAGE);
+    ListSeed removed = store.forgotten(PAGE);
 
+    assertThat(removed).isNotNull();
+    assertThat(removed.getGoneChecks()).isEqualTo(2);
+    assertThat(removed.getGoneSince().truncatedTo(ChronoUnit.MILLIS)).isEqualTo(T0);
+    assertThat(store.forgotten(PAGE)).isNull();
     assertThat(store.lastReads()).doesNotContainKey(PAGE);
     assertThat(store.all()).noneMatch(s -> s.getAddress().equals(PAGE));
   }

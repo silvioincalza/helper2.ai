@@ -50,6 +50,7 @@ class GoneWebPagesTest {
           forgotten.add(list);
           return theCatalogHeldSomething;
         },
+        seeds::forgotten,
         checksInARow,
         meters);
   }

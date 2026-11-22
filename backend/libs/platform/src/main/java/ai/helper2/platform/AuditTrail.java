@@ -4,6 +4,12 @@ import org.jspecify.annotations.Nullable;
 
 public interface AuditTrail {
 
+  /**
+   * The actor of an action no administrator took (UC-013 BR-004). An administrator is named by the
+   * subject of the identity provider, which is never this word.
+   */
+  String SYSTEM = "system";
+
   enum Action {
     RESOLVE_REVIEW_ITEM,
     START_SCOUT_RUN,
@@ -32,7 +38,8 @@ public interface AuditTrail {
     REMOVE_RESOURCE,
     ADD_LIST_SEED,
     REMOVE_LIST_SEED,
-    READ_DIRECTORY_LISTS
+    READ_DIRECTORY_LISTS,
+    REMOVE_GONE_LIST_SEED
   }
 
   record Change(@Nullable String before, @Nullable String after, @Nullable String reason) {}

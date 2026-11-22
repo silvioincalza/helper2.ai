@@ -101,6 +101,14 @@ reaches the cluster with an address from the platform's private ranges.
    port (in `platform`, so the catalog needs no identity) in the same transaction as the change, so an entry exists exactly when the change was committed.
    `GET /api/v1/admin/audit` (ADMIN, paged, newest first, at most 100 per page) reads it for `/admin/audit`. A
    decision on an item that is no longer open changes nothing: the entry says `NOT_OPEN` and the API answers 409.
+   One action in the trail is taken by no administrator: `REMOVE_GONE_LIST_SEED`, the removal of a list discovery
+   added whose page is gone at its site (UC-030 BR-012, [0023](ADR-0023-catalog-full-text-index.md) point 17). Its
+   row names the actor `system` in `admin_id` (`AuditTrail.SYSTEM`). An administrator is named by the subject of the
+   identity provider, a number at GitHub, so the word names no administrator. The row is a row like any other:
+   written through `AuditTrail` in the transaction of the removal (`ForgetGoneListSeed`), append-only, kept as long,
+   read by the same page, which shows "System" as its actor. Its target is the address of the list and its reason
+   holds the number of checks that said the page is gone and the time of the first one. The values before and after
+   stay empty: an address can be longer than their 100 characters.
    The database keeps the trail, whatever an app does. A plain `UPDATE`, `DELETE` or `TRUNCATE` fails for every role,
    the owner too. The triggers are `ENABLE ALWAYS`, so `SET session_replication_role = replica` does not silence them.
    The app roles cannot get past them: they own nothing, may not `SET` that mode and have no `TRIGGER` grant. The owner
@@ -229,6 +237,10 @@ reaches the cluster with an address from the platform's private ranges.
 - Audit entries in the application log — logs are kept 90 days and can be filtered or lost; the audit trail must be
   queryable and kept 24 months.
 - An audit table that references `app_user` — deleting the administrator's account would delete or orphan the trail.
+- A nullable `admin_id` for an action of the system — a migration on a column that is `NOT NULL`, a nullable field
+  in the contract and on the page, and a row without an actor reads like a row that lost one. The fixed actor
+  `system` changes no column, no type of the contract and no trigger. A trail of its own for the system — a second
+  table, purge and page for one action.
 - A plain `DELETE` trigger on `admin_audit` — no purge could run; the trail would grow without end, against the
   retention on the Privacy page.
 - The audit purge in the public app, or any right of the public app on the trail — the public
@@ -250,7 +262,7 @@ reaches the cluster with an address from the platform's private ranges.
   says nothing about who sent it.
 - No GitHub token sits in Redis, in its AOF file or in a replica's memory: a leaked session or a heap dump gives no
   access to anyone's GitHub account. The apps cannot act on GitHub for a user; nothing needs that.
-- Every admin decision names the administrator. No statement an app can send edits, empties or cuts the trail
+- Every admin decision names the administrator, and an action of the system names `system`. No statement an app can send edits, empties or cuts the trail
   short: someone who takes over the back office can add rows but not remove the last 729 days, because its role does
   not own the table and cannot touch its triggers. The owner role still could, with DDL, while it is a superuser
   (an open point of [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md)).
