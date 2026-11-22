@@ -26,6 +26,9 @@ class ListSeedsApiIT extends ApiTestBase {
   static final String BASE = "/api/v1/admin/list-seeds";
   static final String REPOSITORY = "api-it-acme/awesome-rag";
   static final String PAGE = "https://api-it-blog.acme.dev/best-ai-tools";
+  static final String LONG_HOST = "https://api-it-long.acme.dev/";
+  static final String LONG_PAGE =
+      LONG_HOST + "a".repeat(ListAddresses.MAX_LENGTH - LONG_HOST.length());
   static final String REPOSITORY_ID = ListAddresses.idOf(REPOSITORY).toString();
   static final String PAGE_ID = ListAddresses.idOf(PAGE).toString();
 
@@ -42,6 +45,7 @@ class ListSeedsApiIT extends ApiTestBase {
   void clean() {
     store.remove(REPOSITORY);
     store.remove(PAGE);
+    store.remove(LONG_PAGE);
   }
 
   List<String> audit() {
@@ -164,6 +168,38 @@ class ListSeedsApiIT extends ApiTestBase {
                 + "https://www.api-it-blog.acme.dev/best-ai-tools/ ALREADY_LISTED - "
                 + "https://www.api-it-blog.acme.dev/best-ai-tools/ -",
             "REMOVE_LIST_SEED " + PAGE + " REMOVED " + PAGE + " - -");
+  }
+
+  // UC-020 BR-001, BR-005: an address has up to 300 characters, and the audit entry holds it whole
+  // as its target and as its value before or after (UC-013 BR-004).
+  @Test
+  void uc020Br005AListWithAnAddressOf300CharactersIsAddedAndRemovedWithItsAuditEntries()
+      throws Exception {
+    assertThat(LONG_PAGE).hasSize(ListAddresses.MAX_LENGTH);
+
+    mvc.perform(
+            post(BASE)
+                .with(admin)
+                .with(csrf().asHeader())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(add(LONG_PAGE, "\"a long address\"")))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.address").value(LONG_PAGE));
+    assertThat(store.all()).extracting(ListSeed::getAddress).contains(LONG_PAGE);
+
+    mvc.perform(
+            post(BASE + "/" + ListAddresses.idOf(LONG_PAGE) + "/remove")
+                .with(admin)
+                .with(csrf().asHeader())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\":\"stale\"}"))
+        .andExpect(status().isNoContent());
+    assertThat(store.all()).extracting(ListSeed::getAddress).doesNotContain(LONG_PAGE);
+
+    assertThat(audit())
+        .containsExactly(
+            "ADD_LIST_SEED " + LONG_PAGE + " ADDED - " + LONG_PAGE + " a long address",
+            "REMOVE_LIST_SEED " + LONG_PAGE + " REMOVED " + LONG_PAGE + " - stale");
   }
 
   @Test
