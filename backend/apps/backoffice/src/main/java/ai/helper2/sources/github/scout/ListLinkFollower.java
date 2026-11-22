@@ -222,7 +222,8 @@ public final class ListLinkFollower {
     for (AwesomeListParser.Link link : parsed.links()) {
       CanonicalUrl page = links.page(link.url()).site();
       Followed known = followed.get(link.url());
-      boolean direct = page != null && !hosts.isDirectory(page.getHost());
+      boolean direct =
+          page != null && !hosts.isDirectory(page.getHost()) && !links.isExcluded(page);
       if (direct || known != null && known.getItem() != null) {
         named.add(link.entryText());
       }
