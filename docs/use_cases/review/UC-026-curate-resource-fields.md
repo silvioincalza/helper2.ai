@@ -95,4 +95,4 @@ The AI writes the type, pricing, licence, open source, tech level, audience, use
 
 ### BR-005: Audit of curation
 
-Setting a value records the field, the value before (marked "(curated)" when a person had set it, "(none)" when it was empty) and the value after, each cut at 100 characters. Dropping records the field and the number of values dropped.
+Setting a value records the field, the value before (marked "(curated)" when a person had set it, "(none)" when it was empty) and the value after, each kept whole up to the 1000 characters an audit entry holds (UC-013 BR-004) and cut there. Dropping records the field and the number of values dropped.

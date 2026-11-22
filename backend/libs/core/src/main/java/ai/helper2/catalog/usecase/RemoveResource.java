@@ -9,7 +9,7 @@ public class RemoveResource {
 
   public static final int MAX_REASON = 500;
 
-  private static final int MAX_AUDIT_VALUE = 100;
+  private static final int MAX_AUDIT_VALUE = AuditTrail.Change.MAX_LENGTH;
 
   public sealed interface Outcome {
     record Removed() implements Outcome {}

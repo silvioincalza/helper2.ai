@@ -94,12 +94,22 @@ class RemoveResourceTest {
   }
 
   @Test
-  void aLongAddressIsCutToTheAuditValueLength() {
+  void uc013Br004AnAddressLongerThan100CharactersIsKeptWholeInTheAuditEntry() {
     listed = "https://example.com/" + "a".repeat(200);
 
     remove.remove(ID, "not about AI", "admin-1");
 
     String before = audited.getFirst().split(" \\| ")[1];
-    assertThat(before).hasSize(100).endsWith("…");
+    assertThat(before).isEqualTo(listed);
+  }
+
+  @Test
+  void uc013Br004AnAddressLongerThanAnAuditTextHoldsIsCutToItsLength() {
+    listed = "https://example.com/" + "a".repeat(1200);
+
+    remove.remove(ID, "not about AI", "admin-1");
+
+    String before = audited.getFirst().split(" \\| ")[1];
+    assertThat(before).hasSize(1000).endsWith("…");
   }
 }

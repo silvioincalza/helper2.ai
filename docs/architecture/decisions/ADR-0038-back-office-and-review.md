@@ -101,7 +101,7 @@ On a review item, accept and reject were not enough:
 
    Remove (`POST /api/v1/admin/ai-check/{id}/remove`, `RemoveResource`), on any listed row, after a dialog that asks
    for a reason of 1 to 500 characters: in one transaction the audit keeps `REMOVE_RESOURCE` with the address
-   (cut to 100 characters) and the reason, `candidate_decision` keeps a `REJECTED` decision for the address's key, as a resource candidate and as a course
+   (cut to the 1000 characters an audit text holds) and the reason, `candidate_decision` keeps a `REJECTED` decision for the address's key, as a resource candidate and as a course
    candidate,
    `removed_resource` keeps the key (the same UUID a resource id is made from its address, never the address), and
    the resource goes with what cascades from it: source records, labels, embedding, enrichment runs, review items,
@@ -382,7 +382,7 @@ than a hundred), so the question is the same for each of them: what is this name
     source's value, or "Not stated": a rejected estimate is not shown (`FieldStates`).
 28. **Audit:** `SET_FIELD` (`SET <field>`) and `DROP_FIELD` (`DROPPED <field> <count>`), with the resource id.
     Every `SET_FIELD` holds the value before (with "(curated)" when a person had set it, "(none)" when it was empty)
-    and the value after, each cut at 100 characters; every path that curates a field goes through `CurateField`.
+    and the value after, each cut at the 1000 characters an audit text holds; every path that curates a field goes through `CurateField`.
 29. **Back office:** next to each field of an enrichment check, "Set the value" (a list of the field's values, the
     licence id, a date, or a text box for a description) and "Drop the AI value". Both read the evidence again.
 
