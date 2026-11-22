@@ -69,6 +69,7 @@ public final class WebPageLists {
   private final int discoveredReadsPerDay;
   private final Clock clock;
   private final @Nullable ListLinkFollower follower;
+  private final @Nullable GoneWebPages gone;
 
   public WebPageLists(
       ListSeedStore seeds,
@@ -88,10 +89,14 @@ public final class WebPageLists {
         retryAfter,
         discoveredReadsPerDay,
         clock,
+        null,
         null);
   }
 
-  /** With a follower, the links of the list pages of directory hosts are followed (BR-013). */
+  /**
+   * With a follower, the links of the list pages of directory hosts are followed (BR-013). With the
+   * rule of gone pages, a page that could not be read is asked of its site (BR-012).
+   */
   public WebPageLists(
       ListSeedStore seeds,
       PageReader reader,
@@ -101,7 +106,8 @@ public final class WebPageLists {
       Duration retryAfter,
       int discoveredReadsPerDay,
       Clock clock,
-      @Nullable ListLinkFollower follower) {
+      @Nullable ListLinkFollower follower,
+      @Nullable GoneWebPages gone) {
     this(
         seeds,
         new WebPageReader(reader),
@@ -111,7 +117,8 @@ public final class WebPageLists {
         retryAfter,
         discoveredReadsPerDay,
         clock,
-        follower);
+        follower,
+        gone);
   }
 
   private WebPageLists(
@@ -123,8 +130,10 @@ public final class WebPageLists {
       Duration retryAfter,
       int discoveredReadsPerDay,
       Clock clock,
-      @Nullable ListLinkFollower follower) {
+      @Nullable ListLinkFollower follower,
+      @Nullable GoneWebPages gone) {
     this.follower = follower;
+    this.gone = gone;
     this.seeds = seeds;
     this.pages = pages;
     this.credits = credits;
@@ -145,6 +154,7 @@ public final class WebPageLists {
         Duration.ofHours(1),
         0,
         clock,
+        null,
         null);
   }
 
@@ -153,6 +163,7 @@ public final class WebPageLists {
     private final ReadmeBudget budget;
     private int discoveredLeft;
     private final Set<String> readNow = new HashSet<>();
+    private final Set<String> goneNow = new HashSet<>();
 
     Reads(ReadmeBudget budget, int discoveredLeft) {
       this.budget = budget;
@@ -277,10 +288,14 @@ public final class WebPageLists {
       if (page.getOrigin() == ListOrigin.DISCOVERY) {
         reads.discoveredLeft--;
       }
-      AwesomeListParser.Parsed read = readNow(address, now, reads.budget, metrics);
+      AwesomeListParser.Parsed read = readNow(page, now, reads, metrics);
       if (read != null) {
         reads.readNow.add(address);
         return read;
+      }
+      // UC-030 BR-012: a page its site says is gone gives nothing, not even its last read.
+      if (reads.goneNow.contains(address)) {
+        return null;
       }
     } else if (!waits.equals(NOT_DUE)) {
       log.info("a list page waits for the next pass ({})", waits);
@@ -322,7 +337,8 @@ public final class WebPageLists {
   }
 
   private AwesomeListParser.@Nullable Parsed readNow(
-      String address, Instant now, ReadmeBudget budget, AwesomeMetrics metrics) {
+      ListSeed page, Instant now, Reads reads, AwesomeMetrics metrics) {
+    String address = page.getAddress();
     CanonicalUrl url = CanonicalUrl.of(address);
     if (url == null || credits == null) {
       return null;
@@ -331,16 +347,28 @@ public final class WebPageLists {
     credits.spent(MissingNode.getInstance(), READ_DEPTH);
     try {
       String markdown = pages.markdown(address);
-      budget.read(markdown);
+      reads.budget.read(markdown);
       AwesomeListParser.Parsed parsed = AwesomeListParser.parse(markdown, "");
       seeds.readSucceeded(address, reading(parsed, now));
       metrics.listRead(0);
       return parsed;
-    } catch (SourceFailure | CallRefused e) {
-      log.warn("a list page on {} is unavailable: {}", url.getHost(), e.getMessage());
-      metrics.skipped("page-unavailable");
+    } catch (SourceFailure e) {
+      unavailable(url, e, metrics);
+      // UC-030 BR-012: the status of a page is asked only after a read of it failed. A read that
+      // was not made (the page is not due, waits, or is not read at all) asks nothing.
+      if (gone != null && gone.readFailed(page, url, now)) {
+        reads.goneNow.add(address);
+      }
+      return null;
+    } catch (CallRefused e) {
+      unavailable(url, e, metrics);
       return null;
     }
+  }
+
+  private static void unavailable(CanonicalUrl url, RuntimeException e, AwesomeMetrics metrics) {
+    log.warn("a list page on {} is unavailable: {}", url.getHost(), e.getMessage());
+    metrics.skipped("page-unavailable");
   }
 
   static ListReading reading(AwesomeListParser.Parsed parsed, Instant readAt) {

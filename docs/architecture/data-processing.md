@@ -39,7 +39,9 @@ Sites a link of a directory list leads to receive, from the back office, a statu
 the link redirects ([ADR 0057](decisions/ADR-0057-follow-list-links.md)): a `HEAD` (a `GET` with no body read when
 the site refuses `HEAD`) and one `GET` of its `robots.txt` a day. Such a site can be anywhere. It sees the address of
 our server and our User-Agent, no cookie, no credential and nothing about a visitor; the Privacy page says so under
-"Who receives data". The page text the fast model checks against a name is public text about a resource, the kind
+"Who receives data". The site of a web page list receives the same request, for the address of the list page, when
+the live web processor could not read the page: the answer says whether the page is gone
+([ADR 0023](decisions/ADR-0023-catalog-full-text-index.md) point 17). The page text the fast model checks against a name is public text about a resource, the kind
 Nebius already receives (the table above): at most 2,000 characters of a page and the name a list gives.
 
 **When to look again.** Before a release that adds a recipient, and when a "next due" date above has passed: an entry

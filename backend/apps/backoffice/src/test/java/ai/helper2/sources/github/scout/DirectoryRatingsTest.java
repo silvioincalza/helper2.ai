@@ -171,7 +171,8 @@ class DirectoryRatingsTest {
             Duration.ofHours(1),
             10,
             clock,
-            follower);
+            follower,
+            null);
     DirectoryRatingReader reader =
         new DirectoryRatingReader(
             ratings,

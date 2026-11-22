@@ -83,16 +83,19 @@ A curated list, a GitHub repository or a web page, that the Scout reads on every
 | reason        | Why the list was added; at most 500 characters                                                               | String    | -                | Optional                                       |
 | read_tried_at | When the last read of a web page started; empty for a GitHub repository                                      | DateTime  | -                | Optional                                       |
 | read_failures | Failed reads of a web page in a row since its last successful read; 0 by default                             | Integer   | 10               | Not Null, Min: 0                               |
+| gone_checks   | Status checks in a row that said the web page is gone at its site; 0 by default                              | Integer   | 10               | Not Null, Min: 0                               |
+| gone_since    | When the first of these checks was made; empty when the count is 0                                           | DateTime  | -                | Optional                                       |
 
 #### Constraints
 
 - A GitHub repository address matches "owner/name" (owner of 1 to 39 lower-case letters, digits or hyphens, name of 1 to 100 lower-case letters, digits, dots, underscores or hyphens); a web page address is an https address with a host name and no fragment, of at most 300 characters.
 - read_tried_at is set only for a web page.
+- gone_checks is above 0 only for a web page, and gone_since is set exactly when gone_checks is above 0.
 - A list discovery added is a web page.
 
 ### LIST_SEED_LAST_READ
 
-The text of the last successful read of an added web page, used while the page is not due to be read again or is no longer read.
+The text of the last successful read of an added web page, used while the page is not due to be read again or is no longer read. It is removed when the page is gone at its site.
 
 | Attribute    | Description                                                                 | Data Type | Length/Precision | Validation Rules                         |
 |--------------|-----------------------------------------------------------------------------|-----------|------------------|------------------------------------------|
