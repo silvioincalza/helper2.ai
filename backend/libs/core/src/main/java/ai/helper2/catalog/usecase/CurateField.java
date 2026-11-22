@@ -19,7 +19,7 @@ import org.jspecify.annotations.Nullable;
 
 public class CurateField {
 
-  private static final int MAX_AUDIT_VALUE = 100;
+  private static final int MAX_AUDIT_VALUE = AuditTrail.Change.MAX_LENGTH;
 
   private static final Pattern SPDX = Pattern.compile("^[A-Za-z0-9.+-]{2,40}$");
 

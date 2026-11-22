@@ -116,8 +116,8 @@ reaches the cluster with an address from the platform's private ranges.
    text with words that name it, the table refuses it with a check (`V2026.11.11.2__audit_texts_1000.sql`), and the
    API states it as `maxLength`; `SchemaContractTest` and `AuditEntryContractTest` fail when one of them moves
    alone. A longer text can hold more of a third party's text or a name than a short one, and it is kept as long as
-   every row: 24 months. A use case that needs less writes less: a curated field is cut at 100 characters (UC-026
-   BR-005). The audit page shows a text longer than 280 characters shortened, with a button that opens it whole.
+   every row: 24 months. A value longer than the limit is cut to it by the use case that writes it: a curated field (UC-026
+   BR-005) and the address of a removed resource. The audit page shows a text longer than 280 characters shortened, with a button that opens it whole.
    The database keeps the trail, whatever an app does. A plain `UPDATE`, `DELETE` or `TRUNCATE` fails for every role,
    the owner too. The triggers are `ENABLE ALWAYS`, so `SET session_replication_role = replica` does not silence them.
    The app roles cannot get past them: they own nothing, may not `SET` that mode and have no `TRIGGER` grant. The owner

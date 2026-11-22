@@ -157,4 +157,20 @@ class CurateFieldTest {
       return true;
     }
   }
+
+  @Test
+  void uc026Br005AValueLongerThan100CharactersIsKeptWholeInTheAuditEntry() {
+    String value = "a".repeat(300);
+
+    assertThat(CurateField.auditValue(value, false)).isEqualTo(value);
+    assertThat(CurateField.auditValue(value, true)).isEqualTo(value + " (curated)");
+  }
+
+  @Test
+  void uc026Br005AValueLongerThanAnAuditTextHoldsIsCutToItsLength() {
+    String value = "a".repeat(4000);
+
+    assertThat(CurateField.auditValue(value, false)).hasSize(1000).endsWith("…");
+    assertThat(CurateField.auditValue(value, true)).hasSize(1000).endsWith("… (curated)");
+  }
 }
