@@ -146,7 +146,7 @@ What exists to follow a link:
     the links to that host only.
 
 ### What is kept
-14. **With the last read of the list.** `list_seed_last_read.followed` (`V2026.11.9.4__list_seed_followed.sql`): for
+14. **With the last read of the list.** `list_seed_last_read.followed` (`V2026.11.10.1__list_seed_followed.sql`): for
     each link followed, the link, the address found or nothing, the number of steps and who decided (`code`,
     `model`). A link in it is not followed again. A new read of the list (7 days) starts it empty. It goes with the
     list (`ON DELETE CASCADE`). No page text, no answer of the model and nothing about a person is kept.
@@ -184,7 +184,7 @@ What exists to follow a link:
     link. A host where the model decides most links, or where most links give nothing, is looked at by hand.
 
 ### Code
-- `backend/libs/schema/src/main/resources/db/migration/V2026.11.9.4__list_seed_followed.sql`.
+- `backend/libs/schema/src/main/resources/db/migration/V2026.11.10.1__list_seed_followed.sql`.
 - `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/PageStatus.kt`, `ListSeeds.kt` (`ListReading.Followed`);
   `scout/internal/JdbcListSeedStore.java`.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/ListLinkFollower.java`,
