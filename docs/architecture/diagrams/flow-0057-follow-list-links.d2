@@ -1,0 +1,60 @@
+# Flowchart: how a link of a list page of a directory host is followed to the page of the item, and who says that the page is the item's (ADR 0057).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/ListLinkFollower.java (follow, canBeFollowed, followOne, placeOf, linkToTheItem, checked, takeStep),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/ItemPageCheck.java (nameInAddress, nameInTitle),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/classifier/SpringAiItemPageJudge.java (parse),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/pagestatus/LivePageStatusReader.java (status),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/WebPageLists.java (followed).
+# Render: cd docs/architecture/diagrams && d2 fmt flow-0057-follow-list-links.d2 && d2 flow-0057-follow-list-links.d2 flow-0057-follow-list-links.svg
+
+...@style
+
+direction: down
+
+entry: "Link of an entry of a list page\nof a directory host" {class: app}
+on: "Switch of the host on, and the entry\nhas no link that points at its item?" {class: decision}
+skipped: "Not followed: the rule of\nits kind skips the link" {class: end}
+known: "Followed since the last\nread of the list?" {class: decision}
+stored: "What following gave then is used" {class: data}
+kind: "A page of the list's own host, or a link\nthat redirects, whose words name the item?" {class: decision}
+budget: "Steps of the day, credits or\nthe pass budget spent?" {class: decision}
+waits: "Waits for a later pass" {class: end}
+safe: "The address passes the host check\nand is not on a directory host\nor in a shadow library?" {class: decision}
+nothing: "The entry gives nothing;\nthe try is kept with the list" {class: end}
+where: "Where does the address stand?" {class: decision}
+item: "Step: read the directory's page of the item\nthrough the page reader (1 credit);\ntake the link to the item" {class: app}
+status: "Step: status request of our own\n(HEAD, robots.txt, caps, pinned address);\ntake the Location" {class: app}
+three: "3 steps taken\nand no page yet?" {class: decision}
+address: "Name of the entry a whole part\nof the address of the page?" {class: decision}
+read: "Step: read the page reached\nthrough the page reader (1 credit)" {class: app}
+title: "Name in the first\nheading of the page?" {class: decision}
+model: "Fast model: fixed instruction, the name,\n2,000 characters of the cleaned page.\nAnswer exactly yes?" {class: ai}
+found: "The address of the item's page joins\nthe links of the entry (by code or by model)" {class: data}
+rule: "The rule of its kind: the source confirms\nby id, or a candidate waits for a person" {class: end}
+
+entry -> on: {class: hot}
+on -> skipped: no
+on -> known: yes {class: hot}
+known -> stored: yes
+known -> kind: no {class: hot}
+kind -> skipped: no
+kind -> budget: yes {class: hot}
+budget -> waits: yes
+budget -> safe: no {class: hot}
+safe -> nothing: no
+safe -> where: yes {class: hot}
+where -> item: "page of the directory,\nnone read yet"
+where -> status: "redirects"
+where -> address: "another site" {class: hot}
+item -> three
+status -> three
+three -> nothing: yes
+three -> budget: no
+address -> found: yes {class: hot}
+address -> read: no
+read -> title
+title -> found: yes
+title -> model: no
+model -> found: yes
+model -> nothing: "no, or no answer"
+stored -> rule
+found -> rule: {class: hot}

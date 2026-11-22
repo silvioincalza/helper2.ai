@@ -112,7 +112,9 @@ the product: the next source does not get it.
      removed with `notFoundAt`. The sweep hands the records of a batch that were not found to `ForgetGoneLists`: a
      curated list whose repository is `gone` and was not found on
      `H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS` (3) visits in a row no longer names its resources
-     ([0023](ADR-0023-catalog-full-text-index.md) point 17).
+     ([0023](ADR-0023-catalog-full-text-index.md) point 17). The record of a curated web page gets the same mark
+     `gone` when its site says the page is gone (0023 point 17, `JdbcGoneWebLists`): no visit of the sweep sets it,
+     and the read that gives the page again states it and removes the mark.
      An answer where more than one repository in five is not found, in a batch of 10 or more, is not believed:
      those repositories count as unanswered and get only `visitedAt`, so the sweep moves on to the next batch. The catalog search reads a `gone` record as `archived` (`ResourceRows.statedVitality`), so
      the rule of §2 refuses it with the reason `archived`: the rule itself has no new fact. As with `archived`,

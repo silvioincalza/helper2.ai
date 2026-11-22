@@ -88,6 +88,11 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcGoneWebLists jdbcGoneWebLists(JdbcClient jdbc) {
+    return new JdbcGoneWebLists(jdbc);
+  }
+
+  @Bean
   JdbcDirectoryListIndex jdbcDirectoryListIndex(JdbcClient jdbc, ObjectMapper json) {
     return new JdbcDirectoryListIndex(jdbc, json);
   }

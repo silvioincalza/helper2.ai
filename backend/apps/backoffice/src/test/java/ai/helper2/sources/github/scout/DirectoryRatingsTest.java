@@ -17,12 +17,16 @@ import ai.helper2.scout.InMemoryDiscoveryHostStore;
 import ai.helper2.scout.InMemoryListSeedStore;
 import ai.helper2.scout.ListKind;
 import ai.helper2.scout.ListOrigin;
+import ai.helper2.scout.ListReading;
 import ai.helper2.scout.ListSeed;
+import ai.helper2.scout.PageStatus;
 import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.CategoryCatalog;
 import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.sources.SourceFixtures;
+import ai.helper2.sources.classifier.ItemPageJudge;
+import ai.helper2.sources.evidence.PublicSuffixDomains;
 import ai.helper2.sources.liveweb.scout.ScoutLiveWebCredits;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
@@ -38,6 +42,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -94,6 +99,7 @@ class DirectoryRatingsTest {
   final Ratings ratings = new Ratings();
   HostsNeverRead neverRead = HostsNeverRead.NONE;
   int itemPageReadsPerDay = 100;
+  int followStepsPerDay = 0;
   long scoutCredits = 1000;
 
   @BeforeEach
@@ -130,10 +136,43 @@ class DirectoryRatingsTest {
   }
 
   ListRatings ratingsOfThePass() {
+    return pass().getLists().stream()
+        .filter(list -> list.getUrl().getValue().equals(LIST))
+        .findFirst()
+        .orElseThrow()
+        .getRatings();
+  }
+
+  CollectedBatch pass() {
     ScoutLiveWebCredits scout = new ScoutLiveWebCredits(credits, keys, () -> scoutCredits, meters);
+    ItemPageReads readInThisPass = new ItemPageReads();
+    ListLinkFollower follower =
+        new ListLinkFollower(
+            List.of(),
+            SourceFixtures.SHADOW_LIBRARIES,
+            new PublicSuffixDomains(),
+            pages,
+            address -> new PageStatus.Answered(200, null),
+            ItemPageJudge.NOT_ASKED,
+            scout,
+            credits,
+            keys,
+            neverRead,
+            readInThisPass,
+            followStepsPerDay,
+            meters);
     WebPageLists webPages =
         new WebPageLists(
-            added, pages, scout, neverRead, Duration.ofDays(7), Duration.ofHours(1), 10, clock);
+            added,
+            pages,
+            scout,
+            neverRead,
+            Duration.ofDays(7),
+            Duration.ofHours(1),
+            10,
+            clock,
+            follower,
+            null);
     DirectoryRatingReader reader =
         new DirectoryRatingReader(
             ratings,
@@ -143,33 +182,79 @@ class DirectoryRatingsTest {
             Duration.ofDays(7),
             itemPageReadsPerDay,
             meters,
-            clock);
-    CollectedBatch batch =
-        new GitHubAwesomeCollector(
-                new SourceSettings(
-                    true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO, null),
-                TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
-                clock,
-                Resilience.NONE,
-                new RunInterval(Duration.ofDays(1)),
-                List.of("topic:awesome-list topic:llm"),
-                new GitHubAwesomeCollector.Limits(10, 1000, 1000, 1000, 50, 25),
-                GitHubAwesomeCollectorTest.DEEP,
-                new GitHubAwesomeCollectorTest.FakeModel(),
-                new CategoryMatcher(new CategoryCatalog(List.of())),
-                meters,
-                hosts,
-                added,
-                SourceFixtures.SHADOW_LIBRARIES,
-                GitHubAwesomeCollectorTest.NO_LINK_RULES,
-                webPages,
-                reader)
-            .collect(null, null, 500);
-    return batch.getLists().stream()
-        .filter(list -> list.getUrl().getValue().equals(LIST))
-        .findFirst()
-        .orElseThrow()
-        .getRatings();
+            clock,
+            readInThisPass);
+    return new GitHubAwesomeCollector(
+            new SourceSettings(
+                true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO, null),
+            TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
+            clock,
+            Resilience.NONE,
+            new RunInterval(Duration.ofDays(1)),
+            List.of("topic:awesome-list topic:llm"),
+            new GitHubAwesomeCollector.Limits(10, 1000, 1000, 1000, 50, 25),
+            GitHubAwesomeCollectorTest.DEEP,
+            new GitHubAwesomeCollectorTest.FakeModel(),
+            new CategoryMatcher(new CategoryCatalog(List.of())),
+            meters,
+            hosts,
+            added,
+            SourceFixtures.SHADOW_LIBRARIES,
+            GitHubAwesomeCollectorTest.NO_LINK_RULES,
+            webPages,
+            reader)
+        .collect(null, null, 500);
+  }
+
+  @Test
+  void uc030Br013AnEntryThatLinksOnlyTheDirectorysPageBecomesACandidateFromTheItemsOwnSite() {
+    followStepsPerDay = 100;
+    listSays("- [Zed](https://futurepedia.io/tool/zed) - Editor.");
+    pages.markdown.put(
+        "https://futurepedia.io/tool/zed", "# Zed\n[Visit website](https://zed.dev/?ref=fp)");
+
+    CollectedBatch first = pass();
+
+    assertThat(first.getCandidates())
+        .singleElement()
+        .satisfies(candidate -> {
+          assertThat(candidate.getUrl().getValue()).isEqualTo("https://zed.dev");
+          assertThat(candidate.getTitle()).isEqualTo("Zed");
+          assertThat(candidate.getFacts().get(GitHubAwesomeCollector.FOUND_IN))
+              .asInstanceOf(InstanceOfAssertFactories.MAP)
+              .containsEntry("list", LIST);
+        });
+    assertThat(added.lastReads().get(LIST).getFollowed())
+        .containsExactly(
+            new ListReading.Followed(
+                "https://futurepedia.io/tool/zed", "https://zed.dev", 1, "code"));
+
+    pages.asked.clear();
+    clock.pass(1);
+    CollectedBatch nextDay = pass();
+
+    assertThat(pages.asked).isEmpty();
+    assertThat(nextDay.getLists().getFirst().getEntries())
+        .extracting(entry -> entry.getUrl().getValue())
+        .contains("https://zed.dev");
+  }
+
+  @Test
+  void uc030Br011APageOfAnItemTheFollowerOfLinksReadIsNotReadAgainForItsRating() {
+    followStepsPerDay = 100;
+    listSays("- [Cursor](" + CURSOR_PAGE.getValue() + ") - AI code editor.");
+    pages.markdown.put(
+        CURSOR_PAGE.getValue(),
+        "# Cursor\nRated 9.1/10 from 45 votes\n[cursor.com](https://cursor.com)");
+
+    ListRatings rated = ratingsOfThePass();
+
+    assertThat(rated.onItemPages())
+        .containsExactly(new Reading(CURSOR, CURSOR_PAGE, figures(9.1, 10, 45), clock.instant()));
+    assertThat(itemPagesAsked()).containsExactly(CURSOR_PAGE.getValue());
+    assertThat(count("helper2.live-web.credits", "feature", DirectoryRatingReader.FEATURE))
+        .isZero();
+    assertThat(count("helper2.live-web.credits", "feature", ListLinkFollower.FEATURE)).isEqualTo(1);
   }
 
   static StatedFigures figures(double average, int scale, int votes) {

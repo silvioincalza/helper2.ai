@@ -265,7 +265,10 @@ is a number with a maximum in code, audited at 100 characters a value: a list of
       registry's second level alone: `co`, `com`, `go` and the like under a two-letter country code (`co.uk`,
       `com.au`; `go.dev` is a site). `ProductLinks` adds its own rules: no link that redirects (a URL
       inside the path or the query, a redirect path such as `/out` or `/go`, a link shortener); not GitHub's own pages;
-      not a shadow library. The query and the fragment are dropped.
+      not a shadow library. The query and the fragment are dropped. On a list page of a directory host whose switch
+      is on, a link that redirects and a link to the directory's own page of the item are followed to the item's own
+      page first, and the address found then goes through these same checks
+      ([0057](ADR-0057-follow-list-links.md)).
     - **A Hugging Face model** (`huggingface.co/{owner}/{name}`, also written `hf.co`, with or without a file path;
       not a dataset, a Space or a page of the site: `CanonicalUrl.huggingFaceModel`). `HuggingFaceModelReader` asks
       the Hub for the model by its id (`GET /api/models/{owner}/{name}`, the fields the Hugging Face sources read).

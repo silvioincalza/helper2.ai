@@ -5,6 +5,7 @@ import ai.helper2.catalog.usecase.ForgetGoneLists;
 import ai.helper2.platform.ClusterLock;
 import ai.helper2.platform.ClusterLocks;
 import ai.helper2.platform.ScheduledJob;
+import ai.helper2.scout.GoneWebPageRule;
 import ai.helper2.scout.config.ScoutProperties;
 import ai.helper2.scout.usecase.RepositoryStates;
 import ai.helper2.scout.usecase.SweepRepositories;
@@ -50,7 +51,10 @@ class RepositorySweepSchedule implements SchedulingConfigurer {
                 clock,
                 settings.batch(),
                 meters,
-                notFound -> goneLists.forget(notFound, settings.goneListVisits()))
+                notFound ->
+                    meters
+                        .counter(GoneWebPageRule.FORGOTTEN, "kind", "github")
+                        .increment(goneLists.forget(notFound, settings.goneListVisits())))
             : null;
     this.lock = locks.keptAlive("scout-repository-sweep", LEASE);
     this.meters = meters;
