@@ -69,7 +69,7 @@
 
 - The resource holds the value in its own field, the field is listed as curated, and the AI's values of that field are rejected.
 - After a drop, the AI's values of the field are rejected and the values of sources and administrators are unchanged.
-- The audit trail holds the change, with the value before and after, each cut at 100 characters.
+- The audit trail holds the change, with the value before and after, each kept whole up to 1000 characters and cut there.
 
 ### Failure Postconditions
 
