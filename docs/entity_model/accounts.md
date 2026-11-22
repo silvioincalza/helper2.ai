@@ -56,9 +56,9 @@ One action an administrator took in the back office, or one action of the system
 | target_id    | What the action was about, such as a setting key or a resource  | String    | -                | Optional         |
 | at           | When the action was taken; the current time by default          | DateTime  | -                | Not Null         |
 | outcome      | Result of the action, such as CHANGED, RESET or CONFLICT        | String    | -                | Not Null         |
-| before_value | Value before the action; at most 100 characters                 | String    | -                | Optional         |
-| after_value  | Value after the action; at most 100 characters                  | String    | -                | Optional         |
-| reason       | Why the administrator acted, or what made the system act; at most 500 characters | String    | -                | Optional         |
+| before_value | Value before the action; at most 1000 characters                | String    | -                | Optional         |
+| after_value  | Value after the action; at most 1000 characters                 | String    | -                | Optional         |
+| reason       | Why the administrator acted, or what made the system act; at most 1000 characters | String    | -                | Optional         |
 
 #### Constraints
 

@@ -108,7 +108,16 @@ reaches the cluster with an address from the platform's private ranges.
    written through `AuditTrail` in the transaction of the removal (`ForgetGoneListSeed`), append-only, kept as long,
    read by the same page, which shows "System" as its actor. Its target is the address of the list and its reason
    holds the number of checks that said the page is gone and the time of the first one. The values before and after
-   stay empty: an address can be longer than their 100 characters.
+   stay empty: the target names the list.
+   The value before, the value after and the reason hold up to 1000 characters each (`AuditTrail.Change.MAX_LENGTH`):
+   an address of 300 characters or a host name fits whole, and so does a reason the system writes, so an action
+   never fails on the size of its own entry. A reason an administrator types stays at most 500 characters, checked
+   by each use case. One number serves the three places that state the limit: the value object refuses a longer
+   text with words that name it, the table refuses it with a check (`V2026.11.11.2__audit_texts_1000.sql`), and the
+   API states it as `maxLength`; `SchemaContractTest` and `AuditEntryContractTest` fail when one of them moves
+   alone. A longer text can hold more of a third party's text or a name than a short one, and it is kept as long as
+   every row: 24 months. A use case that needs less writes less: a curated field is cut at 100 characters (UC-026
+   BR-005). The audit page shows a text longer than 280 characters shortened, with a button that opens it whole.
    The database keeps the trail, whatever an app does. A plain `UPDATE`, `DELETE` or `TRUNCATE` fails for every role,
    the owner too. The triggers are `ENABLE ALWAYS`, so `SET session_replication_role = replica` does not silence them.
    The app roles cannot get past them: they own nothing, may not `SET` that mode and have no `TRIGGER` grant. The owner

@@ -43,6 +43,10 @@ final class ContractValidator {
     }
   }
 
+  static JsonNode schema(String schemaName) {
+    return SPEC.get("components").get("schemas").get(schemaName);
+  }
+
   static void assertArrayMatches(String itemSchemaName, String body) {
     for (JsonNode item : JSON.readTree(body)) {
       assertMatches(itemSchemaName, JSON.writeValueAsString(item));

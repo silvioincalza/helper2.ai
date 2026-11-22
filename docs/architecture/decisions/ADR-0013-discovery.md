@@ -22,7 +22,7 @@ links a learning platform. A source that knows the item by its id can confirm it
 Sorting a web page needs to know some sites by name. A writing site (Medium, TechCrunch …) publishes articles about
 many products. A directory (Product Hunt, G2 …) lists products: a page there is never a product's own site. These
 lists change more often than the code, and a runtime setting ([0007](ADR-0007-configuration-secrets-runtime-settings.md))
-is a number with a maximum in code, audited at 100 characters a value: a list of hosts does not fit there.
+is a number with a maximum in code: a list of hosts does not fit there.
 
 ## Decision
 ### One collector per category
@@ -499,7 +499,7 @@ No new table for deep search, no new dependency.
 - **A daily link cap counted in Redis** — the review items are already in PostgreSQL; counting them there needs no
   second store and survives a cache flush.
 - **Host lists as a runtime setting of type list, as `H2_` variables, or a snapshot refreshed every 20 s** — the setting
-  is a number audited at 100 characters; a variable needs a deploy; a snapshot is one more thread, not needed while only
+  is a number with a maximum in code; a variable needs a deploy; a snapshot is one more thread, not needed while only
   batch runs read the lists.
 
 ## Consequences

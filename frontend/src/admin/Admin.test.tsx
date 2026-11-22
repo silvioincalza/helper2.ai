@@ -857,6 +857,85 @@ describe('Feature: the audit trail', () => {
     expect(within(table).getByText('12345')).toBeInTheDocument();
   });
 
+  it('Scenario: UC-013 BR-004 a list added shows its address as the target and as the value after, whatever its length', async () => {
+    const long = `https://blog.acme.dev/${'a'.repeat(278)}`;
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/audit': () => ({
+        items: [
+          {
+            id: '99999999-9999-5999-8999-999999999996',
+            adminId: '12345',
+            action: 'ADD_LIST_SEED',
+            targetId: long,
+            at: '2026-11-22T09:00:00Z',
+            outcome: 'ADDED',
+            after: long,
+            reason: 'a long address',
+          },
+          {
+            id: '99999999-9999-5999-8999-999999999995',
+            adminId: '12345',
+            action: 'REMOVE_LIST_SEED',
+            targetId: 'acme/awesome-rag',
+            at: '2026-11-20T09:00:00Z',
+            outcome: 'REMOVED',
+            before: 'acme/awesome-rag',
+            reason: 'stale',
+          },
+        ],
+        total: 2,
+      }),
+    });
+    renderAdmin('/admin/audit');
+    const table = await screen.findByRole('table', { name: 'Audit trail' });
+    expect(long).toHaveLength(300);
+    const added = within(table).getByRole('row', { name: /List to read added/ });
+    expect(within(added).getByRole('cell', { name: long })).toBeInTheDocument();
+    expect(added).toHaveTextContent('a long address');
+    await userEvent.click(within(added).getByRole('button', { name: 'Show all, value after' }));
+    expect(within(added).getAllByText(long)).toHaveLength(2);
+    const removed = within(table).getByRole('row', { name: /List to read removed/ });
+    expect(removed).toHaveTextContent(/REMOVED · acme\/awesome-rag →\s?becomes — · stale/);
+    expect(within(removed).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('Scenario: UC-013 BR-004 a value of 1000 characters is shown shortened, and the keyboard opens and closes it', async () => {
+    const value = `${'word '.repeat(199)}last.`;
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/audit': () => ({
+        items: [
+          {
+            id: '99999999-9999-5999-8999-999999999994',
+            adminId: '12345',
+            action: 'SET_FIELD',
+            targetId: item.id,
+            at: '2026-11-22T10:00:00Z',
+            outcome: 'SET description',
+            before: 'short',
+            after: value,
+          },
+        ],
+        total: 1,
+      }),
+    });
+    renderAdmin('/admin/audit');
+    const table = await screen.findByRole('table', { name: 'Audit trail' });
+    expect(value).toHaveLength(1000);
+    expect(within(table).queryByText(/last\.$/)).not.toBeInTheDocument();
+    const open = within(table).getByRole('button', { name: 'Show all, value after' });
+    expect(open).toHaveAttribute('aria-expanded', 'false');
+    open.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(within(table).getByText(/last\.$/)).toBeInTheDocument();
+    const close = within(table).getByRole('button', { name: 'Show less, value after' });
+    expect(close).toHaveAttribute('aria-expanded', 'true');
+    expect(close).toHaveFocus();
+    await userEvent.keyboard(' ');
+    expect(within(table).queryByText(/last\.$/)).not.toBeInTheDocument();
+  });
+
   it('Scenario: UC-013 BR-001 every action of the audit API has its words', () => {
     expect(Object.keys(en.admin.audit.actions).sort()).toEqual([...auditEntryActionValues].sort());
   });
