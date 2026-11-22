@@ -36,7 +36,8 @@ description: Use before creating a worktree or a branch, naming a branch, settin
   deploy to prod.
 - This holds even when the human in the loop asks for a merge in a session ("merge", "merge all"). Get the PR
   ready (checks green, review threads answered), then give him the command to run, one line per
-  PR: `gh pr merge <n> --squash --delete-branch`. For a stack, give the order. Never use
+  PR: `gh pr merge <n> --squash --delete-branch`, or `gh pr merge <n> --merge` for a pull request into
+  `release/**` and for `release-merge/*` back into `main` (ADR 0045 §4). For a stack, give the order. Never use
   `gh pr merge`, `gh stack merge` or auto-merge yourself.
 - Every comment, every review and every conflict on a pull request is handled without being asked, by the
   session that opened it:

@@ -340,7 +340,9 @@ Harbor could put an image under a tag first.
 21. **The repository's settings are in `.github/settings`.** JSON bodies for the GitHub API (the repository, its
     topics, the three rulesets, the environments, the workflow permissions, fork pull request approval, the OIDC
     subject) and `variables.env`. [deploy/k8s/RUNBOOK-new-repository.md](../../../deploy/k8s/RUNBOOK-new-repository.md) applies them in order, on a new repository or
-    after a change. A setting changes by pull request, like code. Squash merges only; every pull request from an
+    after a change. A setting changes by pull request, like code. A pull request into `main` is squashed; a pull
+    request into `release/**`, and the pull request of a release back into `main`, is merged with a merge commit
+    ([0045](ADR-0045-releases-and-versions.md) §4); every pull request from an
     outside collaborator waits for an approval before its workflows run; secret scanning with push protection;
     Dependabot alerts and security-update pull requests beside the weekly version updates and the Grype scan.
 
