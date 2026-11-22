@@ -7,6 +7,7 @@ import ai.helper2.catalog.DirectoryRatingIndex;
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.ScoutPolicy;
+import ai.helper2.catalog.usecase.ForgetGoneWebList;
 import ai.helper2.catalog.usecase.ForgetWithdrawnRecords;
 import ai.helper2.catalog.usecase.IndexAwesomeLists;
 import ai.helper2.catalog.usecase.IndexResources;
@@ -41,6 +42,7 @@ import ai.helper2.scout.EnrichmentStore;
 import ai.helper2.scout.EvidenceValidator;
 import ai.helper2.scout.ExtraEvidence;
 import ai.helper2.scout.GapBudget;
+import ai.helper2.scout.GoneWebPageRule;
 import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.KnownTargetProposals;
 import ai.helper2.scout.KnownTargets;
@@ -569,6 +571,12 @@ class ScoutConfiguration {
   ManageDiscoveryHosts manageDiscoveryHosts(
       DiscoveryHostStore hosts, AuditTrail audit, UnitOfWork unitOfWork, Clock clock) {
     return new ManageDiscoveryHosts(hosts, audit, unitOfWork, clock);
+  }
+
+  // UC-030 BR-012: the Scout hands a web page list that is gone to the catalog.
+  @Bean
+  GoneWebPageRule goneWebPageRule(ForgetGoneWebList forget) {
+    return forget::forget;
   }
 
   @Bean

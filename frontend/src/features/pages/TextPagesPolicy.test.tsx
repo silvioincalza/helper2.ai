@@ -111,7 +111,7 @@ describe('Feature: the text pages state the numbers of GET /policy', () => {
     expect(keep).toHaveTextContent('200 days after their feed last listed them');
     expect(keep).toHaveTextContent('until we decide, then 150 days.');
     expect(keep).toHaveTextContent(
-      'which list names which tool: as long as we list the tool and the list, with no time limit. We keep what a list named when we last read it, also when the list is no longer read; reading the list again replaces it. When GitHub tells us on several checks in a row, over at least a day, that the repository of a list on GitHub no longer exists, we delete what that list named. A list that is a web page has no such check: what it named stays until we read the page again or no longer list the tool.',
+      'which list names which tool: as long as we list the tool and the list, with no time limit. We keep what a list named when we last read it, also when the list is no longer read; reading the list again replaces it. When GitHub tells us on several checks in a row, over at least a day, that the repository of a list on GitHub no longer exists, we delete what that list named. When the site of a list that is a web page tells our server, on several checks in a row over at least a day, that the page no longer exists, we delete what that page named, the ratings its page stated and what we kept from its last read; a list page our searches found is then no longer read. We ask only after a read of the page failed, so a page we no longer read keeps what it named.',
     );
     expect(keep).toHaveTextContent('Technical logs and request traces: up to 3 months.');
     expect(keep).toHaveTextContent(

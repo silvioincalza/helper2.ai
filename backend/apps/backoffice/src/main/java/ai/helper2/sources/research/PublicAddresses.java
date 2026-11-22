@@ -8,15 +8,21 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Locale;
+import org.apache.hc.client5.http.DnsResolver;
 import org.jspecify.annotations.Nullable;
 
-final class PublicAddresses {
+/**
+ * The addresses a host name resolves to, kept only when every one of them is public. A request of
+ * our own to a host a page names connects to these addresses and no other ({@link #pinned}), so a
+ * DNS answer that changes after the check cannot lead it to an internal address.
+ */
+public final class PublicAddresses {
 
-  interface Resolver {
+  public interface Resolver {
     InetAddress[] resolve(String host) throws UnknownHostException;
   }
 
-  static final class NotPublic extends Exception {
+  public static final class NotPublic extends Exception {
     NotPublic(String reason) {
       super(reason);
     }
@@ -25,11 +31,11 @@ final class PublicAddresses {
   private final ShadowLibraries shadowLibraries;
   private final Resolver resolver;
 
-  PublicAddresses(ShadowLibraries shadowLibraries) {
+  public PublicAddresses(ShadowLibraries shadowLibraries) {
     this(shadowLibraries, InetAddress::getAllByName);
   }
 
-  PublicAddresses(ShadowLibraries shadowLibraries, Resolver resolver) {
+  public PublicAddresses(ShadowLibraries shadowLibraries, Resolver resolver) {
     this.shadowLibraries = shadowLibraries;
     this.resolver = resolver;
   }
@@ -53,7 +59,7 @@ final class PublicAddresses {
     }
   }
 
-  @Nullable String urlProblem(URI uri) {
+  public @Nullable String urlProblem(URI uri) {
     String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
     if (!scheme.equals("https") && !scheme.equals("http")) {
       return "only http and https";
@@ -71,7 +77,7 @@ final class PublicAddresses {
     return null;
   }
 
-  List<InetAddress> resolve(String host) throws NotPublic {
+  public List<InetAddress> resolve(String host) throws NotPublic {
     InetAddress[] addresses;
     try {
       addresses = resolver.resolve(host);
@@ -87,6 +93,24 @@ final class PublicAddresses {
       }
     }
     return List.of(addresses);
+  }
+
+  /** A resolver that answers for {@code host} only, with the addresses already checked. */
+  public static DnsResolver pinned(String host, List<InetAddress> checked) {
+    return new DnsResolver() {
+      @Override
+      public InetAddress[] resolve(String name) throws UnknownHostException {
+        if (!name.equalsIgnoreCase(host)) {
+          throw new UnknownHostException(name);
+        }
+        return checked.toArray(InetAddress[]::new);
+      }
+
+      @Override
+      public String resolveCanonicalHostname(String name) {
+        return name;
+      }
+    };
   }
 
   static boolean isPublic(InetAddress a) {

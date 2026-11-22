@@ -7,6 +7,7 @@ import ai.helper2.catalog.CategoryInputs;
 import ai.helper2.catalog.CategoryLabels;
 import ai.helper2.catalog.CuratedFields;
 import ai.helper2.catalog.GoneLists;
+import ai.helper2.catalog.GoneWebLists;
 import ai.helper2.catalog.JobMarkers;
 import ai.helper2.catalog.KnownTarget;
 import ai.helper2.catalog.KnownTargetCandidates;
@@ -23,6 +24,7 @@ import ai.helper2.catalog.usecase.ChangeRelationshipTarget;
 import ai.helper2.catalog.usecase.CurateField;
 import ai.helper2.catalog.usecase.EditKnownTargetCandidate;
 import ai.helper2.catalog.usecase.ForgetGoneLists;
+import ai.helper2.catalog.usecase.ForgetGoneWebList;
 import ai.helper2.catalog.usecase.ForgetWithdrawnRecords;
 import ai.helper2.catalog.usecase.GetReviewItem;
 import ai.helper2.catalog.usecase.IndexAwesomeLists;
@@ -134,6 +136,12 @@ public class CatalogBackOfficeConfiguration {
   @Bean
   ForgetGoneLists forgetGoneLists(GoneLists lists, CategoryLabels labels, UnitOfWork unitOfWork) {
     return new ForgetGoneLists(lists, labels, unitOfWork);
+  }
+
+  @Bean
+  ForgetGoneWebList forgetGoneWebList(
+      GoneWebLists lists, CategoryLabels labels, UnitOfWork unitOfWork) {
+    return new ForgetGoneWebList(lists, labels, unitOfWork);
   }
 
   @Bean

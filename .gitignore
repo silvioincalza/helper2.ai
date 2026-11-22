@@ -46,6 +46,10 @@ deploy/k8s/*/digests.env
 # Kotlin compiler daemon data
 .kotlin/
 
+# Python byte-code caches the scripts leave
+__pycache__/
+*.pyc
+
 # Local notes, not published
 .private/
 

@@ -64,3 +64,4 @@ Contexts, one per record: `foundation`, `scout`, `search`, `guide`, `identity`, 
 | [0054](ADR-0054-embedding-model-in-the-cluster.md) | The embedding model runs in the cluster | `operations` | [F3.3](https://github.com/silvioincalza/helper2.ai/issues/49) | 0006, 0024, 0043, 0044 |
 | [0055](ADR-0055-directory-lists.md) | Lists of directory hosts | `scout` | [F2.3](https://github.com/silvioincalza/helper2.ai/issues/33) | 0007, 0010, 0012, 0013, 0023, 0027, 0036, 0038 |
 | [0056](ADR-0056-directory-rating.md) | A rating from the votes directories state | `scout` | [F2.3](https://github.com/silvioincalza/helper2.ai/issues/33) | 0007, 0010, 0013, 0025, 0027, 0038, 0041, 0046, 0055 |
+| [0057](ADR-0057-follow-list-links.md) | A link of a directory list is followed to the page of the item | `scout` | [F2.3](https://github.com/silvioincalza/helper2.ai/issues/33) | 0006, 0007, 0010, 0012, 0013, 0014, 0027, 0055, 0056 |
