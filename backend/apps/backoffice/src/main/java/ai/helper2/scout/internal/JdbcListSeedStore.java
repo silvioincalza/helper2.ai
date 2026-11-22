@@ -176,13 +176,17 @@ class JdbcListSeedStore implements ListSeedStore {
   // its last read with it.
   @Transactional
   @Override
-  public void forgotten(String address) {
+  public @Nullable ListSeed forgotten(String address) {
     jdbc.sql("DELETE FROM list_seed_last_read WHERE address = :address")
         .param("address", address)
         .update();
-    jdbc.sql("DELETE FROM list_seed WHERE address = :address AND origin = 'DISCOVERY'")
+    return jdbc.sql(
+            "DELETE FROM list_seed WHERE address = :address AND origin = 'DISCOVERY' RETURNING "
+                + COLUMNS)
         .param("address", address)
-        .update();
+        .query((rs, i) -> seed(rs))
+        .optional()
+        .orElse(null);
   }
 
   private String headings(ListReading reading) {

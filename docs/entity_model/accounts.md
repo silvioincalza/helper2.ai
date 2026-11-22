@@ -46,19 +46,19 @@ A resource a signed-in person saved, with its own copy of the title and the addr
 
 ### ADMIN_AUDIT
 
-One action an administrator took in the back office, with its outcome; entries are only ever appended, and none younger than 729 days can be deleted.
+One action an administrator took in the back office, or one action of the system on something an administrator manages, with its outcome; entries are only ever appended, and none younger than 729 days can be deleted.
 
 | Attribute    | Description                                                     | Data Type | Length/Precision | Validation Rules |
 |--------------|-----------------------------------------------------------------|-----------|------------------|------------------|
 | id           | Unique identifier                                               | String    | 36               | Primary Key      |
-| admin_id     | Administrator who took the action                               | String    | -                | Not Null         |
-| action       | What the administrator did                                      | String    | -                | Not Null, Values: RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT, BACKFILL_CATEGORIES, CHANGE_SETTING, ADD_DISCOVERY_HOST, REMOVE_DISCOVERY_HOST, CHANGE_RELATIONSHIP_TARGET, ADD_RESOURCE, EDIT_CANDIDATE, SET_FIELD, DROP_FIELD, ADD_KNOWN_TARGET, EDIT_KNOWN_TARGET, REMOVE_KNOWN_TARGET, ADD_SHADOW_LIBRARY, REMOVE_SHADOW_LIBRARY, REMOVE_RESOURCE, ADD_LIST_SEED, REMOVE_LIST_SEED, READ_DIRECTORY_LISTS |
+| admin_id     | Administrator who took the action; `system` for an action no administrator took | String    | -                | Not Null         |
+| action       | What the administrator did                                      | String    | -                | Not Null, Values: RESOLVE_REVIEW_ITEM, START_SCOUT_RUN, ADD_HOME_EXAMPLE, CHANGE_HOME_EXAMPLE, REMOVE_HOME_EXAMPLE, DRAFT_HOME_EXAMPLES, RECHECK_ENRICHMENT, REQUEUE_ENRICHMENT, SKIP_ENRICHMENT, PRIORITISE_ENRICHMENT, BACKFILL_CATEGORIES, CHANGE_SETTING, ADD_DISCOVERY_HOST, REMOVE_DISCOVERY_HOST, CHANGE_RELATIONSHIP_TARGET, ADD_RESOURCE, EDIT_CANDIDATE, SET_FIELD, DROP_FIELD, ADD_KNOWN_TARGET, EDIT_KNOWN_TARGET, REMOVE_KNOWN_TARGET, ADD_SHADOW_LIBRARY, REMOVE_SHADOW_LIBRARY, REMOVE_RESOURCE, ADD_LIST_SEED, REMOVE_LIST_SEED, READ_DIRECTORY_LISTS, REMOVE_GONE_LIST_SEED |
 | target_id    | What the action was about, such as a setting key or a resource  | String    | -                | Optional         |
 | at           | When the action was taken; the current time by default          | DateTime  | -                | Not Null         |
 | outcome      | Result of the action, such as CHANGED, RESET or CONFLICT        | String    | -                | Not Null         |
 | before_value | Value before the action; at most 100 characters                 | String    | -                | Optional         |
 | after_value  | Value after the action; at most 100 characters                  | String    | -                | Optional         |
-| reason       | Why the administrator acted; at most 500 characters             | String    | -                | Optional         |
+| reason       | Why the administrator acted, or what made the system act; at most 500 characters | String    | -                | Optional         |
 
 #### Constraints
 

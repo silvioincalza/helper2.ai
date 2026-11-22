@@ -105,9 +105,18 @@ interface ListSeedStore {
 
   /**
    * UC-030 BR-012: a web page that is gone keeps no last read, and a list discovery added is no
-   * longer a list to read.
+   * longer a list to read. Gives the list that was removed, or nothing when the list stays a list
+   * to read or was none.
    */
-  fun forgotten(address: String)
+  fun forgotten(address: String): ListSeed?
+}
+
+/**
+ * UC-030 BR-012: where the Scout hands its own record of a web page list once what the list named
+ * is removed.
+ */
+fun interface GoneListSeeds {
+  fun forget(address: String)
 }
 
 /**

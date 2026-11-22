@@ -13,6 +13,8 @@ import { TableSkeleton } from '@/ui/Skeleton';
 
 const PAGE_SIZE = 20;
 const COMMAND = 'helper2 audit';
+// UC-013 BR-004: the actor of an action no administrator took.
+const SYSTEM = 'system';
 
 export default function AuditPage() {
   const { t } = useTranslation();
@@ -79,7 +81,7 @@ export default function AuditPage() {
                     )}
                     {e.reason && <span className="muted"> · {e.reason}</span>}
                   </td>
-                  <td>{e.adminId}</td>
+                  <td>{e.adminId === SYSTEM ? t('admin.audit.system') : e.adminId}</td>
                 </tr>
               ))}
             </tbody>

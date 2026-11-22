@@ -225,9 +225,18 @@ whether a query finds a resource there:
      ([0056](ADR-0056-directory-rating.md) point 12), its `awesome_list_entry` rows and its `awesome_list` row, and
      refreshes the categories of what it named. Both kinds go by the address because a host can become a directory
      host, or stop being one, between two reads. Then the Scout drops `list_seed_last_read` of the page
-     (`ListSeedStore.forgotten`), so no later pass records the stored read again. The catalog comes first: when
-     the second step fails, the next pass records the stored read again and the next check that says "gone" removes
-     it again.
+     (`ForgetGoneListSeed`, `ListSeedStore.forgotten`), so no later pass records the stored read again. The catalog
+     comes first: when the second step fails, the next pass records the stored read again and the next check that
+     says "gone" removes it again.
+   - **The removal of a discovered list is audited.** `ListSeedStore.forgotten` also deletes the `list_seed` row of
+     a list discovery added and gives the row back. `ForgetGoneListSeed` then writes one `admin_audit` row in the
+     same unit of work: `REMOVE_GONE_LIST_SEED`, the actor `system`
+     ([0036](ADR-0036-identity-and-the-admin-host.md) §9), the address of the list, `REMOVED`, and as reason the number
+     of checks and the time of the first one (`gone_checks`, `gone_since` of the deleted row). An entry that cannot
+     be written rolls the removal back, the last read included, and the next check that says "gone" tries again. A
+     list an administrator added keeps its row and gets no entry. A list on GitHub that is gone gets no entry
+     either: its `list_seed` row stays, so nothing an administrator manages is removed; what it named is derived
+     data, and the metric counts it.
    - **The own resource of a curated web page** follows the one rule for a resource that is gone,
      [0020](ADR-0020-resource-vitality.md) §7: its record gets `extra.vitality.gone` (with `checkedAt`), search
      reads that as archived and refuses it, and the resource is not deleted. A read that gives the page again
@@ -264,9 +273,11 @@ whether a query finds a resource there:
   `scout/config/ScoutProperties.java` (`RepositorySweep.goneListVisits`) — a list on GitHub gone at its source.
 - `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GoneWebPages.java`, `WebPageLists.java`
   (`readNow`), `GitHubAwesomeCollector.java` (`pageHit`); `scout/ListSeeds.kt` (`goneChecked`, `notGone`,
-  `forgotten`, `GoneWebPageRule`), `scout/internal/JdbcListSeedStore.java`;
+  `forgotten`, `GoneWebPageRule`, `GoneListSeeds`), `scout/usecase/ForgetGoneListSeed.kt`,
+  `scout/internal/JdbcListSeedStore.java`;
   `backend/libs/core/src/main/java/ai/helper2/catalog/GoneWebLists.java`, `usecase/ForgetGoneWebList.java`,
-  `internal/JdbcGoneWebLists.java`; `V2026.11.10.2__list_seed_gone_checks.sql`;
+  `internal/JdbcGoneWebLists.java`; `V2026.11.10.2__list_seed_gone_checks.sql`,
+  `V2026.11.11.1__remove_gone_list_seed_action.sql`;
   `sources/config/CollectorProperties.java` (`WebPages.goneChecks`) — a web page gone at its site.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/LanguageDetector.kt` — detection rules.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/QueryTranslation.kt` — `start`, `await`,
@@ -293,7 +304,8 @@ whether a query finds a resource there:
   `catalog/internal/JdbcGoneListsIT.java`, `JdbcRepositoryVisitsIT.java` (the count), `SweepRepositoriesTest.kt`
   (a list gone at its source); `sources/github/scout/GoneWebPagesTest.java`, `WebPageListsTest.java`
   (`uc030Br012…`), `catalog/usecase/ForgetGoneWebListTest.java`, `catalog/internal/JdbcGoneWebListsIT.java`,
-  `scout/internal/JdbcListSeedStoreIT.java` (a web page gone at its site).
+  `scout/internal/JdbcListSeedStoreIT.java` (a web page gone at its site); `scout/usecase/ForgetGoneListSeedTest.kt`,
+  `scout/internal/ForgetGoneListSeedIT.java` (the audit entry of a discovered list that is gone).
 
 ## Alternatives considered
 
@@ -341,6 +353,7 @@ whether a query finds a resource there:
   | A candidate accepted later | Still named by the list (Known limits) | The row could say that the list is gone |
   | Failure mode | A page a search keeps finding is added, fails and is removed again: 3 reads and at most 4 status requests over 2 days a round | The 100 fill with dead pages and discovery adds no list, with nothing that says why |
   | Load for one person | None | A list to clean by hand |
+  | What says that it went | One audit row in the name of the system | Nothing went |
 
   The row that stays is the simpler code and the trap: the cap fills in silence. A page an administrator added is
   the other case: its row is a person's decision and is never removed by the system.

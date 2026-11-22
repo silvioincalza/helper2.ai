@@ -132,6 +132,7 @@
       "target": "Target",
       "outcome": "Outcome",
       "admin": "Administrator",
+      "system": "System",
       "actions": {
         "RESOLVE_REVIEW_ITEM": "Review decision",
         "START_SCOUT_RUN": "Scout run started",
@@ -156,7 +157,12 @@
         "REMOVE_SHADOW_LIBRARY": "Shadow library removed",
         "SET_FIELD": "Field set by an admin",
         "DROP_FIELD": "AI value of a field dropped",
-        "REMOVE_RESOURCE": "Resource removed"
+        "REMOVE_RESOURCE": "Resource removed",
+        "CHANGE_SETTING": "Setting changed",
+        "ADD_LIST_SEED": "List to read added",
+        "REMOVE_LIST_SEED": "List to read removed",
+        "READ_DIRECTORY_LISTS": "Reading of a host's lists changed",
+        "REMOVE_GONE_LIST_SEED": "Discovered list removed: gone at its site"
       }
     },
     "budget": {

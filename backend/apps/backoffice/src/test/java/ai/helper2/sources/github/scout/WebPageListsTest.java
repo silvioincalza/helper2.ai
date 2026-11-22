@@ -200,6 +200,7 @@ class WebPageListsTest {
             },
             added,
             (list, at) -> forgotten.add(list.getValue()),
+            added::forgotten,
             3,
             meters);
     return collector(
