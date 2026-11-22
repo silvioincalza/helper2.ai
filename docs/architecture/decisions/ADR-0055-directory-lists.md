@@ -225,7 +225,8 @@ post when a search finds it.
   (`awesome_list_entry`, `directory_list_entry`) has no period: it stays until the next read of the list writes it
   again, or until the resource it names goes. What a list named also goes when the list is gone at its source
   ([0023](ADR-0023-catalog-full-text-index.md) point 17): a repository GitHub no longer knows, a web page whose site
-  answers 404 or 410. A discovered list that is gone leaves `list_seed`, with its last read.
+  answers 404 or 410. A discovered list that is gone leaves `list_seed`, with its last read, and one audit row in the name of the
+  system keeps its address for the period of the audit trail ([0023](ADR-0023-catalog-full-text-index.md) point 17).
 
 ### Known limits
 - A product, a course and an article come after the pages a source confirms in the index of a list. In a list

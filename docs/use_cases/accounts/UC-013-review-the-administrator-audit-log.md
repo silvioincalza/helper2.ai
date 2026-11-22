@@ -21,7 +21,7 @@
 
 1. Administrator opens the audit page.
 2. System shows the first page of audit entries, the newest first, with the total number of entries.
-3. System shows for each entry the administrator, the action, its target, the time, the outcome, the value before and after, and the reason.
+3. System shows for each entry the administrator, or the system for an action no administrator took, the action, its target, the time, the outcome, the value before and after, and the reason.
 4. Administrator moves to another page.
 5. System shows the entries of that page.
 
@@ -67,6 +67,8 @@
 
 The log records these administrator actions: resolving a review item, starting a Scout run, adding, changing, removing and drafting home examples, checking, requeueing, skipping and prioritising enrichment, backfilling categories, changing a setting, adding and removing a discovery host, changing a relationship target, adding and removing a resource, editing a candidate, setting and dropping a field, adding, editing and removing a known target, adding and removing a shadow library, and adding and removing a list seed.
 
+The log records one action of the system, which no administrator took: the removal of a list discovery added whose page is gone at its site (UC-030 BR-012).
+
 ### BR-002: The Log Cannot Be Changed
 
 An audit entry is never changed after it is written: the database refuses a change for every application. Entries are removed only after their retention period (UC-029 BR-003), and they stay when the administrator's account is deleted (UC-011 BR-007).
@@ -77,4 +79,4 @@ Entries are shown the newest first, 20 per page by default and at most 100 per p
 
 ### BR-004: Entry Content
 
-An entry names the administrator by the identifier at the identity provider, never by name. The value before and the value after are at most 100 characters each, and the reason at most 500 characters. The outcome says how the action ended, a refused attempt included.
+An entry names the administrator by the identifier at the identity provider, never by name. An entry of an action of the system names the system as its actor, and the audit page says so in words. For the removal of a discovered list that is gone, the target is the address of the list, and the reason holds the number of checks that said the page is gone and the time of the first one. The value before, the value after and the reason are at most 1000 characters each; a reason an administrator types is at most 500 characters. The audit page shows a long value shortened, with a button that opens it whole. The outcome says how the action ended, a refused attempt included.

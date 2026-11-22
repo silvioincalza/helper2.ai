@@ -1,5 +1,6 @@
 package ai.helper2.sources.github.scout;
 
+import ai.helper2.scout.GoneListSeeds;
 import ai.helper2.scout.GoneWebPageRule;
 import ai.helper2.scout.ListSeed;
 import ai.helper2.scout.ListSeedStore;
@@ -31,6 +32,7 @@ public final class GoneWebPages {
   private final PageStatusReader statuses;
   private final ListSeedStore seeds;
   private final GoneWebPageRule catalog;
+  private final GoneListSeeds records;
   private final int checksInARow;
   private final MeterRegistry meters;
 
@@ -38,11 +40,13 @@ public final class GoneWebPages {
       PageStatusReader statuses,
       ListSeedStore seeds,
       GoneWebPageRule catalog,
+      GoneListSeeds records,
       int checksInARow,
       MeterRegistry meters) {
     this.statuses = statuses;
     this.seeds = seeds;
     this.catalog = catalog;
+    this.records = records;
     this.checksInARow = checksInARow;
     this.meters = meters;
   }
@@ -113,7 +117,7 @@ public final class GoneWebPages {
           "a list page on {} is gone at its site: it no longer names its resources",
           list.getHost());
     }
-    seeds.forgotten(page.getAddress());
+    records.forget(page.getAddress());
     return true;
   }
 

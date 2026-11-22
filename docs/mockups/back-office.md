@@ -54,7 +54,7 @@ Screen notes for the administrator's use cases (UC-003, UC-004, UC-010, UC-013, 
    wait in the Review queue" with a link to them (`/admin/review?kind=EXAMPLE_CANDIDATE`), or why there is none (drafts
    off, today's runs used, the model cannot answer). In the queue a draft shows its label, what it searches, for whom
    and "Drafted with AI (model)"; **Accept** adds it as an example, which then waits for the check.
-6. **Audit**: what administrators did, newest first: when, the action, the target, the outcome, who.
+6. **Audit**: what administrators did, newest first: when, the action, the target, the outcome, who. A discovered list the system removed because its page is gone is listed too, with "System" as who.
 7. **Settings** (read-only, [ADR 0038](../architecture/decisions/ADR-0038-back-office-and-review.md)): what the app runs with now, one table per
    part (Models, AI guide, Search, Scout, Scout sources, Setup guide, Home examples). Each row: the setting in words,
    its value ("500 calls a day", "No cap", "On", "None" when no model is set) and the `H2_` variable that sets it, or

@@ -117,8 +117,8 @@ class InMemoryListSeedStore : ListSeedStore {
     seeds.computeIfPresent(address) { _, seed -> seed.copy(goneChecks = 0, goneSince = null) }
   }
 
-  override fun forgotten(address: String) {
+  override fun forgotten(address: String): ListSeed? {
     readings.remove(address)
-    if (seeds[address]?.origin == ListOrigin.DISCOVERY) seeds.remove(address)
+    return if (seeds[address]?.origin == ListOrigin.DISCOVERY) seeds.remove(address) else null
   }
 }

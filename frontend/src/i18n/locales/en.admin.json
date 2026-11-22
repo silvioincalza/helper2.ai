@@ -123,6 +123,10 @@
         }
       }
     },
+    "excerpt": {
+      "more": "Show all",
+      "less": "Show less"
+    },
     "audit": {
       "title": "Audit trail",
       "empty": "No entries yet.",
@@ -132,6 +136,11 @@
       "target": "Target",
       "outcome": "Outcome",
       "admin": "Administrator",
+      "system": "System",
+      "before": "value before",
+      "after": "value after",
+      "reason": "reason",
+      "becomes": "becomes",
       "actions": {
         "RESOLVE_REVIEW_ITEM": "Review decision",
         "START_SCOUT_RUN": "Scout run started",
@@ -156,7 +165,12 @@
         "REMOVE_SHADOW_LIBRARY": "Shadow library removed",
         "SET_FIELD": "Field set by an admin",
         "DROP_FIELD": "AI value of a field dropped",
-        "REMOVE_RESOURCE": "Resource removed"
+        "REMOVE_RESOURCE": "Resource removed",
+        "CHANGE_SETTING": "Setting changed",
+        "ADD_LIST_SEED": "List to read added",
+        "REMOVE_LIST_SEED": "List to read removed",
+        "READ_DIRECTORY_LISTS": "Reading of a host's lists changed",
+        "REMOVE_GONE_LIST_SEED": "Discovered list removed: gone at its site"
       }
     },
     "budget": {
@@ -257,9 +271,7 @@
         "excerpt": "Search excerpt",
         "foundBy": "Found by",
         "note": "Found by a web search. Accept adds it to the catalog; the next Scout run describes it.",
-        "edited": "Changed by an admin: {{fields}}.",
-        "more": "Show all",
-        "less": "Show less"
+        "edited": "Changed by an admin: {{fields}}."
       },
       "decided": {
         "ACCEPTED_one": "Accepted. {{count}} left.",

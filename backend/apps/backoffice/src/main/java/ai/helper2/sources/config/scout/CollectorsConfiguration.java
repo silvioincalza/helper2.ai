@@ -20,6 +20,7 @@ import ai.helper2.platform.settings.SettingsGroup;
 import ai.helper2.scout.DiscoveredLists;
 import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.DomainRoots;
+import ai.helper2.scout.GoneListSeeds;
 import ai.helper2.scout.GoneWebPageRule;
 import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.ListSeedStore;
@@ -421,8 +422,10 @@ class CollectorsConfiguration {
       PageStatusReader statuses,
       ListSeedStore addedLists,
       GoneWebPageRule catalog,
+      GoneListSeeds records,
       MeterRegistry meters) {
-    return new GoneWebPages(statuses, addedLists, catalog, c.webPages().goneChecks(), meters);
+    return new GoneWebPages(
+        statuses, addedLists, catalog, records, c.webPages().goneChecks(), meters);
   }
 
   @Bean

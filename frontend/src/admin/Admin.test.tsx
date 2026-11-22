@@ -4,6 +4,8 @@ import { ADMIN, ANON, USER, makeReviewEvidence } from '@/test/fixtures';
 import { mockApi, problem } from '@/test/mockApi';
 import { renderAdmin } from '@/test/render';
 import type { AdminOverview, ReviewItem, ScoutRun } from '@/api/types';
+import { auditEntryActionValues } from '@/api/admin-schema';
+import en from '@/i18n/locales/en.admin.json';
 import { RUN_POLL_MS } from './ScoutRunsPage';
 import { SIGN_IN_RETURN_KEY } from '@/lib/signInReturn';
 import { getCommandLine } from '@/test/queries';
@@ -813,6 +815,129 @@ describe('Feature: the audit trail', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(await screen.findByText('NOT_OPEN 1')).toBeInTheDocument();
     expect(m.callsTo('GET', '/admin/audit').at(-1)?.search).toBe('?page=1&size=20');
+  });
+
+  it('Scenario: UC-013 BR-001 the removal of a discovered list that is gone names the system, the list and the checks', async () => {
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/audit': () => ({
+        items: [
+          {
+            id: '99999999-9999-5999-8999-999999999998',
+            adminId: 'system',
+            action: 'REMOVE_GONE_LIST_SEED',
+            targetId: 'https://www.acme.dev/blog/Awesome-LLM',
+            at: '2026-11-21T04:07:00Z',
+            outcome: 'REMOVED',
+            reason: '3 checks in a row said the page is gone, the first at 2026-11-20T03:07:00Z',
+          },
+          {
+            id: '99999999-9999-5999-8999-999999999997',
+            adminId: '12345',
+            action: 'REMOVE_LIST_SEED',
+            targetId: 'acme/awesome-rag',
+            at: '2026-11-20T09:00:00Z',
+            outcome: 'REMOVED',
+          },
+        ],
+        total: 2,
+      }),
+    });
+    renderAdmin('/admin/audit');
+    const table = await screen.findByRole('table', { name: 'Audit trail' });
+    const row = within(table).getByRole('row', {
+      name: /Discovered list removed: gone at its site/,
+    });
+    expect(within(row).getByText('https://www.acme.dev/blog/Awesome-LLM')).toBeInTheDocument();
+    expect(within(row).getByText('System')).toBeInTheDocument();
+    expect(row).toHaveTextContent(
+      'REMOVED · 3 checks in a row said the page is gone, the first at 2026-11-20T03:07:00Z',
+    );
+    expect(within(table).getByText('List to read removed')).toBeInTheDocument();
+    expect(within(table).getByText('12345')).toBeInTheDocument();
+  });
+
+  it('Scenario: UC-013 BR-004 a list added shows its address as the target and as the value after, whatever its length', async () => {
+    const long = `https://blog.acme.dev/${'a'.repeat(278)}`;
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/audit': () => ({
+        items: [
+          {
+            id: '99999999-9999-5999-8999-999999999996',
+            adminId: '12345',
+            action: 'ADD_LIST_SEED',
+            targetId: long,
+            at: '2026-11-22T09:00:00Z',
+            outcome: 'ADDED',
+            after: long,
+            reason: 'a long address',
+          },
+          {
+            id: '99999999-9999-5999-8999-999999999995',
+            adminId: '12345',
+            action: 'REMOVE_LIST_SEED',
+            targetId: 'acme/awesome-rag',
+            at: '2026-11-20T09:00:00Z',
+            outcome: 'REMOVED',
+            before: 'acme/awesome-rag',
+            reason: 'stale',
+          },
+        ],
+        total: 2,
+      }),
+    });
+    renderAdmin('/admin/audit');
+    const table = await screen.findByRole('table', { name: 'Audit trail' });
+    expect(long).toHaveLength(300);
+    const added = within(table).getByRole('row', { name: /List to read added/ });
+    expect(within(added).getByRole('cell', { name: long })).toBeInTheDocument();
+    expect(added).toHaveTextContent('a long address');
+    await userEvent.click(within(added).getByRole('button', { name: 'Show all, value after' }));
+    expect(within(added).getAllByText(long)).toHaveLength(2);
+    const removed = within(table).getByRole('row', { name: /List to read removed/ });
+    expect(removed).toHaveTextContent(/REMOVED · acme\/awesome-rag →\s?becomes — · stale/);
+    expect(within(removed).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('Scenario: UC-013 BR-004 a value of 1000 characters is shown shortened, and the keyboard opens and closes it', async () => {
+    const value = `${'word '.repeat(199)}last.`;
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/audit': () => ({
+        items: [
+          {
+            id: '99999999-9999-5999-8999-999999999994',
+            adminId: '12345',
+            action: 'SET_FIELD',
+            targetId: item.id,
+            at: '2026-11-22T10:00:00Z',
+            outcome: 'SET description',
+            before: 'short',
+            after: value,
+          },
+        ],
+        total: 1,
+      }),
+    });
+    renderAdmin('/admin/audit');
+    const table = await screen.findByRole('table', { name: 'Audit trail' });
+    expect(value).toHaveLength(1000);
+    expect(within(table).queryByText(/last\.$/)).not.toBeInTheDocument();
+    const open = within(table).getByRole('button', { name: 'Show all, value after' });
+    expect(open).toHaveAttribute('aria-expanded', 'false');
+    open.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(within(table).getByText(/last\.$/)).toBeInTheDocument();
+    const close = within(table).getByRole('button', { name: 'Show less, value after' });
+    expect(close).toHaveAttribute('aria-expanded', 'true');
+    expect(close).toHaveFocus();
+    await userEvent.keyboard(' ');
+    expect(within(table).queryByText(/last\.$/)).not.toBeInTheDocument();
+  });
+
+  it('Scenario: UC-013 BR-001 every action of the audit API has its words', () => {
+    expect(Object.keys(en.admin.audit.actions).sort()).toEqual([...auditEntryActionValues].sort());
   });
 
   it('Scenario: the trail cannot load and offers Try again', async () => {

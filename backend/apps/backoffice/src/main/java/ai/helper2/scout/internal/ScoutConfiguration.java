@@ -42,6 +42,7 @@ import ai.helper2.scout.EnrichmentStore;
 import ai.helper2.scout.EvidenceValidator;
 import ai.helper2.scout.ExtraEvidence;
 import ai.helper2.scout.GapBudget;
+import ai.helper2.scout.GoneListSeeds;
 import ai.helper2.scout.GoneWebPageRule;
 import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.KnownTargetProposals;
@@ -71,6 +72,7 @@ import ai.helper2.scout.config.ScoutProperties;
 import ai.helper2.scout.usecase.CatalogLookup;
 import ai.helper2.scout.usecase.EditCandidate;
 import ai.helper2.scout.usecase.EnrichResource;
+import ai.helper2.scout.usecase.ForgetGoneListSeed;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
 import ai.helper2.scout.usecase.ListScoutRuns;
 import ai.helper2.scout.usecase.ListedResource;
@@ -577,6 +579,12 @@ class ScoutConfiguration {
   @Bean
   GoneWebPageRule goneWebPageRule(ForgetGoneWebList forget) {
     return forget::forget;
+  }
+
+  // UC-030 BR-012: the Scout's own record of a web page list that is gone, with its audit entry.
+  @Bean
+  GoneListSeeds goneListSeeds(ListSeedStore seeds, AuditTrail audit, UnitOfWork unitOfWork) {
+    return new ForgetGoneListSeed(seeds, audit, unitOfWork);
   }
 
   @Bean
