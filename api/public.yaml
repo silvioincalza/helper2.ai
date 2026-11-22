@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: helper2.ai public API
-  version: 2026.11.8
+  version: 2026.11.9
   summary: Federated metasearch for AI resources, with explicit provenance and source status.
   description: |
     Public API: served by the public app. Shared types live in common.yaml; the back office API is admin.yaml.
