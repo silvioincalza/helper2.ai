@@ -73,7 +73,7 @@ cd backend && ./gradlew :apps:public:bootRun --args='--spring.profiles.active=de
 Terminal 2 (frontend):
 
 ```bash
-cd frontend && npm ci && npm run dev    # http://localhost:5173, proxies /api, /oauth2, /login, /logout to :8080
+cd frontend && npm ci --include=dev && npm run dev    # http://localhost:5173, proxies /api, /oauth2, /login, /logout to :8080
 ```
 
 - Without `llm-nebius` or a key, everything runs and the guide answers in degraded mode.

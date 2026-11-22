@@ -9,6 +9,13 @@ backend() {
 }
 
 frontend() {
+  # CI runs with no NODE_ENV. A shell with NODE_ENV=production gives a production React build in the
+  # tests, and makes npm ci skip the dev tools (Prettier, ESLint, Vitest).
+  unset NODE_ENV
+  if [[ ! -x "$root/frontend/node_modules/.bin/prettier" ]]; then
+    echo "verify: the frontend dev tools are missing: run 'npm ci --include=dev' in frontend/" >&2
+    return 1
+  fi
   (cd "$root/frontend" && npm run format:check && npm run lint && npm run knip && npm run typecheck && npm test -- --run \
     && npx vite build && npm run check:bundle && npx vite build --config vite.admin.config.ts)
 }
