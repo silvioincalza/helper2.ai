@@ -266,7 +266,7 @@ whether a query finds a resource there:
   (`readNow`), `GitHubAwesomeCollector.java` (`pageHit`); `scout/ListSeeds.kt` (`goneChecked`, `notGone`,
   `forgotten`, `GoneWebPageRule`), `scout/internal/JdbcListSeedStore.java`;
   `backend/libs/core/src/main/java/ai/helper2/catalog/GoneWebLists.java`, `usecase/ForgetGoneWebList.java`,
-  `internal/JdbcGoneWebLists.java`; `V2026.11.9.5__list_seed_gone_checks.sql`;
+  `internal/JdbcGoneWebLists.java`; `V2026.11.10.2__list_seed_gone_checks.sql`;
   `sources/config/CollectorProperties.java` (`WebPages.goneChecks`) — a web page gone at its site.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/LanguageDetector.kt` — detection rules.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/QueryTranslation.kt` — `start`, `await`,
