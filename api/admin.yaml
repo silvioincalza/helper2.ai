@@ -1867,7 +1867,18 @@ components:
     RuntimeSwitchState:
       type: object
       required:
-        [key, label, help, variable, defaultOn, "on", overridden, inUse, version, history]
+        [
+          key,
+          label,
+          help,
+          variable,
+          defaultOn,
+          "on",
+          overridden,
+          inUse,
+          version,
+          history,
+        ]
       properties:
         key: { type: string }
         label: { type: string }
@@ -2141,7 +2152,12 @@ components:
       type: object
       required: [read]
       properties:
-        read: { type: boolean, description: True to read the host's list pages, false to stop. }
+        read:
+          {
+            type: boolean,
+            description: True to read the host's list pages,
+            false to stop.,
+          }
         reason:
           {
             type: [string, "null"],
@@ -2163,7 +2179,12 @@ components:
       type: object
       required: [id, kind, origin, address, addedBy, addedAt]
       properties:
-        id: { type: string, format: uuid, description: The same for the same address; the remove path takes it. }
+        id:
+          {
+            type: string,
+            format: uuid,
+            description: The same for the same address; the remove path takes it.,
+          }
         kind: { type: string, enum: [GITHUB_REPOSITORY, WEB_PAGE] }
         origin:
           type: string
@@ -2179,7 +2200,8 @@ components:
         addedBy:
           {
             type: string,
-            description: The administrator who added it, or the id of the discovery collector that found it.,
+            description: The administrator who added it,
+            or the id of the discovery collector that found it.,
           }
         addedAt: { type: string, format: date-time }
         reason: { type: [string, "null"] }
@@ -2191,7 +2213,11 @@ components:
         lists:
           type: array
           items: { $ref: "#/components/schemas/ListSeedEntry" }
-        max: { type: integer, description: The most lists an administrator can add. }
+        max:
+          {
+            type: integer,
+            description: The most lists an administrator can add.,
+          }
 
     ListSeedAdd:
       type: object
@@ -2621,7 +2647,12 @@ components:
         otherNames:
           type: array
           items: { type: string }
-        edited: { type: boolean, description: An admin changed the name, the kind or the other names. }
+        edited:
+          {
+            type: boolean,
+            description: An admin changed the name,
+            the kind or the other names.,
+          }
 
     AlreadyListed:
       type: object
@@ -2899,7 +2930,8 @@ components:
 
     ReviewEvidence:
       type: object
-      required: [item, validationErrors, fields, directoryLists, directoryRatings]
+      required:
+        [item, validationErrors, fields, directoryLists, directoryRatings]
       properties:
         item: { $ref: "#/components/schemas/ReviewItem" }
         run:
@@ -2951,18 +2983,45 @@ components:
       required: [host, page, average, scale, votes, readAt]
       properties:
         host: { type: string, description: The directory host. }
-        page: { type: string, format: uri, description: The list page or the page of the item that states the figures. }
-        average: { type: number, description: The average as the page states it. }
-        scale: { type: integer, minimum: 5, maximum: 100, description: "The scale the page states for the average: 5, 10 or 100." }
-        votes: { type: integer, minimum: 1, description: "The number of votes, reviews or ratings the page states." }
-        readAt: { type: string, format: date-time, description: When the page was read. }
+        page:
+          {
+            type: string,
+            format: uri,
+            description: The list page or the page of the item that states the figures.,
+          }
+        average:
+          { type: number, description: The average as the page states it. }
+        scale:
+          {
+            type: integer,
+            minimum: 5,
+            maximum: 100,
+            description: "The scale the page states for the average: 5, 10 or 100.",
+          }
+        votes:
+          {
+            type: integer,
+            minimum: 1,
+            description: "The number of votes, reviews or ratings the page states.",
+          }
+        readAt:
+          {
+            type: string,
+            format: date-time,
+            description: When the page was read.,
+          }
 
     DirectoryList:
       type: object
       required: [title, page, headingPath]
       properties:
         title: { type: string, description: "The list's title in the catalog." }
-        page: { type: string, format: uri, description: The address of the list page on the directory host. }
+        page:
+          {
+            type: string,
+            format: uri,
+            description: The address of the list page on the directory host.,
+          }
         headingPath:
           {
             type: string,
@@ -3134,17 +3193,20 @@ components:
         before:
           {
             type: [string, "null"],
-            description: 'The value before a setting change ("default" for the default); null for other actions.',
+            maxLength: 1000,
+            description: 'The value before the action ("default" for the default of a setting), at most 1000 characters; null when the action has none.',
           }
         after:
           {
             type: [string, "null"],
-            description: The value after a setting change; null for other actions.,
+            maxLength: 1000,
+            description: "The value after the action, at most 1000 characters; null when the action has none.",
           }
         reason:
           {
             type: [string, "null"],
-            description: "Why the administrator changed a setting (optional); for a discovered list that is gone at its site, the number of checks and the time of the first one.",
+            maxLength: 1000,
+            description: "Why the administrator acted (optional; an administrator types at most 500 characters), or what made the system act: for a discovered list that is gone at its site, the number of checks and the time of the first one. The entry holds at most 1000 characters.",
           }
 
     EnrichmentRecheck:

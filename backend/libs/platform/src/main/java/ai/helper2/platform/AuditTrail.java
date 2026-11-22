@@ -42,7 +42,34 @@ public interface AuditTrail {
     REMOVE_GONE_LIST_SEED
   }
 
-  record Change(@Nullable String before, @Nullable String after, @Nullable String reason) {}
+  /**
+   * What an entry holds beside its target and outcome (UC-013 BR-004). The limit is the one of the
+   * table and of the API description: a text past it fails here, with words that name it, before
+   * the database refuses the row.
+   */
+  record Change(@Nullable String before, @Nullable String after, @Nullable String reason) {
+
+    public static final int MAX_LENGTH = 1000;
+
+    public Change {
+      within("value before", before);
+      within("value after", after);
+      within("reason", reason);
+    }
+
+    private static void within(String name, @Nullable String text) {
+      int length = text == null ? 0 : text.codePointCount(0, text.length());
+      if (length > MAX_LENGTH) {
+        throw new IllegalArgumentException(
+            "the "
+                + name
+                + " of an audit entry holds at most "
+                + MAX_LENGTH
+                + " characters, not "
+                + length);
+      }
+    }
+  }
 
   void record(String adminId, Action action, @Nullable String targetId, String outcome);
 

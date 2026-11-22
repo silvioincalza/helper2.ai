@@ -1,5 +1,4 @@
 import './adminText';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
   DraftedExample as Draft,
@@ -11,6 +10,7 @@ import { aiMark } from '@/lib/aiMark';
 import { safeHref } from '@/lib/format';
 import { CATEGORY_NOTICES, CategoryNotice } from '@/ui/DiscoveryCategories';
 import { CandidateEditForm } from './CandidateEditForm';
+import { Excerpt } from './Excerpt';
 import { KnownTargetProposalForm } from './KnownTargetProposalForm';
 
 export function ItemDetails({ item, onChanged }: { item: ReviewItem; onChanged?: () => void }) {
@@ -179,25 +179,4 @@ function plainText(markdown: string): string {
     .replace(/(\*\*|__|`)/g, '')
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-const EXCERPT_SHORT = 280;
-
-function Excerpt({ text }: { text: string }) {
-  const { t } = useTranslation();
-  const [all, setAll] = useState(false);
-  if (text.length <= EXCERPT_SHORT) return <span className="h2-admin__excerpt">{text}</span>;
-  return (
-    <span className="h2-admin__excerpt">
-      {all ? text : `${text.slice(0, EXCERPT_SHORT).trimEnd()}…`}{' '}
-      <button
-        type="button"
-        className="btn-text"
-        aria-expanded={all}
-        onClick={() => setAll((v) => !v)}
-      >
-        {t(all ? 'admin.review.candidate.less' : 'admin.review.candidate.more')}
-      </button>
-    </span>
-  );
 }

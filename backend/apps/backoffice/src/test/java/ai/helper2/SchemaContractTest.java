@@ -211,6 +211,32 @@ class SchemaContractTest {
     assertThat(actual).isEqualTo(expected);
   }
 
+  // UC-013 BR-004: the table and the value object refuse a text at the same length, so a caller
+  // that passes the value object never meets a refusal of the database.
+  @Test
+  void theAuditTableHoldsWhatAnAuditChangeHolds() {
+    List<String> held =
+        jdbc.sql(
+                """
+                SELECT a.attname AS col, pg_get_constraintdef(c.oid) AS def
+                FROM pg_constraint c
+                JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+                WHERE c.contype = 'c' AND c.conrelid = 'admin_audit'::regclass AND cardinality(c.conkey) = 1
+                  AND a.attname IN ('before_value', 'after_value', 'reason')
+                """)
+            .query((rs, i) -> {
+              Matcher m = Pattern.compile("<= (\\d+)").matcher(rs.getString("def"));
+              assertThat(m.find()).as(rs.getString("def")).isTrue();
+              return rs.getString("col") + " " + m.group(1);
+            })
+            .list();
+    assertThat(held)
+        .containsExactlyInAnyOrder(
+            "before_value " + AuditTrail.Change.MAX_LENGTH,
+            "after_value " + AuditTrail.Change.MAX_LENGTH,
+            "reason " + AuditTrail.Change.MAX_LENGTH);
+  }
+
   private static Set<String> literals(String checkDefinition) {
     Matcher m = Pattern.compile("'([^']+)'::text").matcher(checkDefinition);
     Set<String> values = new TreeSet<>();

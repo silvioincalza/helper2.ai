@@ -283,4 +283,23 @@ class ManageListSeedsTest {
       audit,
     )
   }
+
+  // UC-013 BR-004: the value before and the value after hold the whole address.
+  @Test
+  fun `UC-020 BR-005 a web page of 300 characters is added and removed with its whole address in the audit`() {
+    val host = "https://blog.acme.dev/"
+    val page = host + "a".repeat(ListAddresses.MAX_LENGTH - host.length)
+
+    val added = seeds.add("42", page, "a long address")
+    assertIs<ManageListSeeds.Added.Done>(added)
+    assertIs<ManageListSeeds.Removed.Done>(seeds.remove("42", added.seed.id, "stale"))
+
+    assertEquals(
+      listOf(
+        "42 ADD_LIST_SEED $page ADDED null $page a long address",
+        "42 REMOVE_LIST_SEED $page REMOVED $page null stale",
+      ),
+      audit,
+    )
+  }
 }

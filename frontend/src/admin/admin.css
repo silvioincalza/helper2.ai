@@ -487,6 +487,7 @@
 }
 .h2-admin__excerpt {
   white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .h2-admin__contents ul {
