@@ -52,7 +52,8 @@ Rules:
   Its description says which parts ran and what could not run, and has one `Closes #n` line per story it builds.
 - The human in the loop reviews and merges: never merge to `main`, never push to `main`, never force-push without
   his OK, never deploy to or change prod. This holds even when he asks for a merge: get the pull request ready and give
-  him `gh pr merge <n> --squash --delete-branch`. `.claude/hooks/guard-bash.py` enforces this and the next rule.
+  him `gh pr merge <n> --squash --delete-branch` (`--merge` for a pull request into `release/**` and for
+  `release-merge/*` back into `main`). `.claude/hooks/guard-bash.py` enforces this and the next rule.
 - Every comment, every review and every conflict on a pull request is resolved without being asked, by the session
   that opened it: after each push, when `main` moves, and again before it calls the pull request ready. A finding is
   fixed in that pull request, with a test when it is about behaviour; a conflict is resolved by merging `main` in.
