@@ -155,10 +155,15 @@ public final class LivePageStatusReader implements PageStatusReader {
     if (known == null || !now.isBefore(known.until())) {
       Tried read =
           request("GET", URI.create("https://" + host + "/robots.txt"), host, MAX_ROBOTS_BYTES);
+      URI twin = read.answer() == null ? null : wwwTwin(host, read.answer());
+      if (twin != null) {
+        read = request("GET", twin, twin.getHost(), MAX_ROBOTS_BYTES);
+      }
+      // A cap, a private address or an open circuit says nothing about the rules: not kept.
       if (NOT_ABOUT_ROBOTS.contains(read.refused())) {
         return read.refused();
       }
-      known = new Robots(rulesOf(read, host), now.plus(ROBOTS_KEPT));
+      known = new Robots(rulesOf(read), now.plus(ROBOTS_KEPT));
       robots.put(host, known);
     }
     String path = url.getRawPath() == null || url.getRawPath().isEmpty() ? "/" : url.getRawPath();
@@ -166,7 +171,7 @@ public final class LivePageStatusReader implements PageStatusReader {
     return known.rules().allows(asked) ? null : Reason.ROBOTS;
   }
 
-  private RobotsRules rulesOf(Tried read, String host) {
+  private static RobotsRules rulesOf(Tried read) {
     Answer answer = read.answer();
     if (answer == null) {
       return RobotsRules.DISALLOW_ALL;
@@ -174,19 +179,7 @@ public final class LivePageStatusReader implements PageStatusReader {
     if (answer.status() == 200) {
       return RobotsRules.parse(answer.body());
     }
-    if (answer.status() == 404 || answer.status() == 410) {
-      return RobotsRules.ALLOW_ALL;
-    }
-    URI twin = wwwTwin(host, answer);
-    return twin == null ? RobotsRules.DISALLOW_ALL : rulesOfTwin(twin);
-  }
-
-  private RobotsRules rulesOfTwin(URI twin) {
-    Answer answer = request("GET", twin, twin.getHost(), MAX_ROBOTS_BYTES).answer();
-    if (answer != null && answer.status() == 200) {
-      return RobotsRules.parse(answer.body());
-    }
-    boolean none = answer != null && (answer.status() == 404 || answer.status() == 410);
+    boolean none = answer.status() == 404 || answer.status() == 410;
     return none ? RobotsRules.ALLOW_ALL : RobotsRules.DISALLOW_ALL;
   }
 

@@ -61,7 +61,7 @@ class ListLinkFollowerTest {
 
   ListLinkFollower follower() {
     return new ListLinkFollower(
-        List.of("wikipedia.org"),
+        List.of("wikipedia.org", "x.com"),
         SourceFixtures.SHADOW_LIBRARIES,
         new PublicSuffixDomains(),
         pages,
@@ -382,6 +382,19 @@ class ListLinkFollowerTest {
     assertThat(result.changed()).isFalse();
     assertThat(pages.asked).isEmpty();
     assertThat(statusAsked).isEmpty();
+  }
+
+  @Test
+  void aLinkToAnExcludedDomainInTheEntryDoesNotStopTheItemPageFromBeingFollowed() {
+    pages.markdown.put(ITEM_PAGE, "# Cursor\nThe AI code editor. [cursor.com](https://cursor.com)");
+
+    ListLinkFollower.Result result =
+        followed(
+            "- [Cursor](" + ITEM_PAGE + ") - AI code editor." + " [Follow](https://x.com/cursor)");
+
+    assertThat(result.followed())
+        .containsExactly(new Followed(ITEM_PAGE, "https://cursor.com", 1, "code"));
+    assertThat(pages.asked).containsExactly(ITEM_PAGE);
   }
 
   @Test
