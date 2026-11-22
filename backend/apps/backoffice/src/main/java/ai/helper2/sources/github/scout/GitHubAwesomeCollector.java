@@ -974,16 +974,20 @@ public class GitHubAwesomeCollector implements Collector {
     if (canonical == null) {
       return null;
     }
-    return new SourceHit(
-            WEB_LISTS_ID,
-            canonical.getValue(),
-            URI.create(page.address()),
-            canonical,
-            page.title(),
-            type,
-            now)
-        .withAudience(Audience.BOTH)
-        .withTags(Set.of(LIST_TAG));
+    SourceHit hit =
+        new SourceHit(
+                WEB_LISTS_ID,
+                canonical.getValue(),
+                URI.create(page.address()),
+                canonical,
+                page.title(),
+                type,
+                now)
+            .withAudience(Audience.BOTH)
+            .withTags(Set.of(LIST_TAG));
+    // UC-030 BR-012: a read in this pass says that the page exists. Stating it takes the mark
+    // "gone" off the record of a page that was gone (UC-018 BR-009).
+    return page.readInThisPass() ? hit.withVitality(new Vitality(false)) : hit;
   }
 
   private static List<String> restTopics(@Nullable JsonNode repo) {

@@ -66,6 +66,7 @@ public final class DirectoryRatingReader {
   private final int itemPageReadsPerDay;
   private final MeterRegistry meters;
   private final Clock clock;
+  private final ItemPageReads readInThisPass;
 
   public DirectoryRatingReader(
       DirectoryRatingIndex index,
@@ -76,6 +77,30 @@ public final class DirectoryRatingReader {
       int itemPageReadsPerDay,
       MeterRegistry meters,
       Clock clock) {
+    this(
+        index,
+        reader,
+        credits,
+        neverRead,
+        readEvery,
+        itemPageReadsPerDay,
+        meters,
+        clock,
+        new ItemPageReads());
+  }
+
+  /** {@code readInThisPass} holds the pages of an item the follower of links already read. */
+  public DirectoryRatingReader(
+      DirectoryRatingIndex index,
+      PageReader reader,
+      ScoutLiveWebCredits credits,
+      HostsNeverRead neverRead,
+      Duration readEvery,
+      int itemPageReadsPerDay,
+      MeterRegistry meters,
+      Clock clock,
+      ItemPageReads readInThisPass) {
+    this.readInThisPass = readInThisPass;
     this.index = index;
     this.pages = new WebPageReader(reader);
     this.credits = credits.forFeature(FEATURE);
@@ -87,6 +112,7 @@ public final class DirectoryRatingReader {
   }
 
   private DirectoryRatingReader(MeterRegistry meters, Clock clock) {
+    this.readInThisPass = new ItemPageReads();
     this.index = null;
     this.pages = new WebPageReader(urls -> List.of());
     this.credits = null;
@@ -170,6 +196,15 @@ public final class DirectoryRatingReader {
     List<Reading> readings = new ArrayList<>();
     // UC-030 BR-011: a page of an item is read again no more often than its list.
     for (ItemPage page : index.due(itemPages, now.minus(readEvery))) {
+      // UC-030 BR-011: a page the follower of links read in this pass is not read again.
+      String alreadyRead = readInThisPass.markdownOf(page.page());
+      if (alreadyRead != null) {
+        index.tried(page, host, now);
+        Optional<StatedFigures> stated = StatedRatings.in(alreadyRead);
+        counted(host, "item", stated.isPresent() ? 1 : 0);
+        readings.add(new Reading(page.resource(), page.page(), stated.orElse(null), now));
+        continue;
+      }
       String waits = waitsBecause(reads);
       if (waits != null) {
         meters.counter(SKIPS, "reason", waits).increment();

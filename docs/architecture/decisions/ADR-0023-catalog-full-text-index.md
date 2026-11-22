@@ -157,8 +157,8 @@ whether a query finds a resource there:
 16. **Retention.** Rows go with the list or the resource (`ON DELETE CASCADE`, [0010](ADR-0010-data-retention.md)).
    No period deletes them: `JdbcAwesomeListIndex.replace` writes the rows of a list again each time a pass reads the
    list. A list that is no longer read because it left the top lists or an administrator removed it keeps the rows of
-   its last read for as long as the list and the resource are in the catalog. A list on GitHub whose repository is
-   gone loses its rows (point 17).
+   its last read for as long as the list and the resource are in the catalog. A list that is gone at its source
+   loses its rows (point 17): a list on GitHub whose repository is gone, and a web page its site says is gone.
 17. **A list gone at its source no longer names its resources** (UC-030 BR-012).
    - **How "gone" is known, for a list on GitHub.** The repository sweep of
      [0020](ADR-0020-resource-vitality.md) §7 already asks GitHub about every record that is a repository, so about
@@ -189,12 +189,64 @@ whether a query finds a resource there:
      ([0011](ADR-0011-scout-runner.md) §4); its rows go with its resource.
    - **When the repository is back**, the visit that finds it removes `gone` and the count, and the next pass that
      reads the list writes its rows again.
-   - **A web page is left out**, a curated one and a list page of a directory host
+   - **How "gone" is known, for a web page**, a curated one and a list page of a directory host
      ([0055](ADR-0055-directory-lists.md)). The page reader answers a page it could not read in `failed_results`
      with its address and a free text (`error`), and `LiveWebPageReader` reads only `results`: nothing tells a 404
-     or a 410 from a time-out or a block. A failed read keeps what the last read gave. Knowing that a page is gone
-     needs a request of our own to the page (a `HEAD` or `GET` through the Scout's host check), which is a new call
-     to a third party's site and its own decision.
+     or a 410 from a time-out or a block. So the site is asked, with the status request of our own
+     ([0057](ADR-0057-follow-list-links.md) point 8, `PageStatusReader`): the same adapter, with its host check, its
+     robots.txt rule and its caps, and no other client.
+   - **When the site is asked.** Only when a read of the page through the page reader failed in this pass
+     (`WebPageLists.readNow`, a `SourceFailure`; `GoneWebPages.readFailed`). Never for a page that was read. Never
+     for a page that is not read: one that is not due or waits, a list whose reading is turned off
+     ([0055](ADR-0055-directory-lists.md) point 11), a page on a host that is never read. A read our own circuit
+     refused was not made, so it asks nothing either. A page that is not read is never checked, and keeps what it
+     named.
+   - **What counts.** Only `Answered` with 404 or 410 is "gone": `ListSeedStore.goneChecked` adds one to
+     `list_seed.gone_checks` and sets `gone_since` at the first such check. A 2xx and a 3xx start the count again
+     (`notGone`), and so does a read that gives the page (`readSucceeded`). Every other answer (5xx, 401, 403, 429,
+     another 4xx) and every `Refused` (a time-out, robots.txt, a cap, the host check, a private address, the open
+     circuit) says nothing: nothing is removed and the count stays.
+   - **A redirect starts the count again and is not followed.** A 3xx says that the site still answers for the
+     address. Leaving the count would let two "gone" answers, a redirect and one more "gone" remove a list; starting
+     it again asks for three answers "gone" with nothing between them that says the page is there. A redirect to a
+     page that says "not found" with status 200 keeps a dead list for good: the price of removing nothing by
+     mistake.
+   - **The rule.** A page is gone when `gone_checks` reached `H2_SCOUT_AWESOME_WEB_PAGES_GONE_CHECKS` (3) and the
+     first of these checks is at least one day before the last (`GoneWebPages.CONFIRMED_AFTER`), so one bad hour
+     of a site removes nothing. With a pass a day, that is the third failed read in a row: the weekly read and the
+     tries of the two next days. The two counts mean
+     the same on both sides: answers "gone" in a row from the source itself, at least 3 by default, over at least
+     24 hours, started again by an answer that finds the list. On GitHub the day comes from the mark `gone`
+     (two visits 24 hours apart) and the count from `H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS`; for a web page
+     both are on the row of the list in `list_seed`. Each side has its own setting because each has its own rhythm:
+     the sweep comes back in days, a failed read is tried again at the next pass.
+   - **What goes.** `ForgetGoneWebList` (port `GoneWebLists`, `JdbcGoneWebLists.forget`) deletes, by the address
+     of the page and in one unit of work: its `directory_list_entry` rows, its `directory_rating` rows
+     ([0056](ADR-0056-directory-rating.md) point 12), its `awesome_list_entry` rows and its `awesome_list` row, and
+     refreshes the categories of what it named. Both kinds go by the address because a host can become a directory
+     host, or stop being one, between two reads. Then the Scout drops `list_seed_last_read` of the page
+     (`ListSeedStore.forgotten`), so no later pass records the stored read again. The catalog comes first: when
+     the second step fails, the next pass records the stored read again and the next check that says "gone" removes
+     it again.
+   - **The own resource of a curated web page** follows the one rule for a resource that is gone,
+     [0020](ADR-0020-resource-vitality.md) §7: its record gets `extra.vitality.gone` (with `checkedAt`), search
+     reads that as archived and refuses it, and the resource is not deleted. A read that gives the page again
+     states `archived: false` for it (`GitHubAwesomeCollector.pageHit`, only for a page read in this pass), and a
+     source that states a record again removes `gone`, as for a repository. A list page of a directory host has no
+     resource ([0055](ADR-0055-directory-lists.md) point 14).
+   - **The list to read.** A page an administrator added keeps its row in `list_seed`: a person added it and a
+     person removes it. It is tried again by the rule of failed reads, weekly once three tries failed. A list
+     discovery added loses its row: it frees its place among the 100 lists discovery adds, and discovery adds it
+     again when a search finds it again.
+   - **A candidate accepted later.** A curated web page that is gone has no row in `awesome_list`, so it names
+     nothing on accept, like a list on GitHub. A list page of a directory host still names a candidate it proposed
+     (Known limits).
+   - **When the page is back**, the read that gives it starts the count again, writes its last read and its rows,
+     and takes the mark `gone` off the record of a curated page.
+   - **Metrics.** `helper2.scout.lists.gone.checks{outcome}`: `gone`, `found`, `redirect`, `other-status`, or the
+     refusal of the status request (`robots`, `daily-cap`, `host-cap`, `timeout`, `host-check`, …).
+     `helper2.scout.lists.forgotten{kind}`: the lists that no longer name their resources, `web-page` or `github`
+     (counted by the repository sweep from what `ForgetGoneLists` returns).
 
 ### Code
 
@@ -209,7 +261,13 @@ whether a query finds a resource there:
 - `backend/libs/core/src/main/java/ai/helper2/catalog/GoneLists.java`, `usecase/ForgetGoneLists.java`,
   `internal/JdbcGoneLists.java`, `internal/JdbcRepositoryVisits.java` (`recordNotFound`);
   `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/SweepRepositories.kt` (`GoneListRule`),
-  `scout/config/ScoutProperties.java` (`RepositorySweep.goneListVisits`) — a list gone at its source.
+  `scout/config/ScoutProperties.java` (`RepositorySweep.goneListVisits`) — a list on GitHub gone at its source.
+- `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GoneWebPages.java`, `WebPageLists.java`
+  (`readNow`), `GitHubAwesomeCollector.java` (`pageHit`); `scout/ListSeeds.kt` (`goneChecked`, `notGone`,
+  `forgotten`, `GoneWebPageRule`), `scout/internal/JdbcListSeedStore.java`;
+  `backend/libs/core/src/main/java/ai/helper2/catalog/GoneWebLists.java`, `usecase/ForgetGoneWebList.java`,
+  `internal/JdbcGoneWebLists.java`; `V2026.11.9.5__list_seed_gone_checks.sql`;
+  `sources/config/CollectorProperties.java` (`WebPages.goneChecks`) — a web page gone at its site.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/LanguageDetector.kt` — detection rules.
 - `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/QueryTranslation.kt` — `start`, `await`,
   `withTranslation`; `SearchResources.kt` — early and late sources (`startSources`); `Ports.kt` — `QueryTranslator`; `QueryAnalyzer.kt`.
@@ -233,7 +291,9 @@ whether a query finds a resource there:
   `scout/usecase/RunScoutTest.kt`, `search/web/CardMapperTest.kt`, `api/ResourceFoundInApiIT.java` (the lists of a
   resource, their order and the cap), `ResourcePage.test.tsx`; `catalog/usecase/ForgetGoneListsTest.java`,
   `catalog/internal/JdbcGoneListsIT.java`, `JdbcRepositoryVisitsIT.java` (the count), `SweepRepositoriesTest.kt`
-  (a list gone at its source).
+  (a list gone at its source); `sources/github/scout/GoneWebPagesTest.java`, `WebPageListsTest.java`
+  (`uc030Br012…`), `catalog/usecase/ForgetGoneWebListTest.java`, `catalog/internal/JdbcGoneWebListsIT.java`,
+  `scout/internal/JdbcListSeedStoreIT.java` (a web page gone at its site).
 
 ## Alternatives considered
 
@@ -266,6 +326,27 @@ whether a query finds a resource there:
   same call, one more table. **On the list's own source record, `extra.vitality.notFoundVisits`** — chosen: the
   sweep already visits that record and stores `notFoundAt` and `gone` there, so there is no migration, no call and
   one writer.
+- **Where the count of a web page lives.** `list_seed.read_failures` — counts every failed read, a time-out as
+  much as a 404, and steers the retry rule: reading it as "gone" would remove a list after three time-outs. On the
+  own source record, as for GitHub — a list page of a directory host has no record, so two places for one rule.
+  **Two columns on `list_seed`, `gone_checks` and `gone_since`** — chosen: one migration, the row every web page
+  list has, next to the count of failed reads it is the stricter twin of.
+- **What happens to a gone list discovery added.**
+
+  | | The row is removed (chosen) | The row stays |
+  |---|---|---|
+  | Place among the 100 | Freed | Held until an administrator removes the list |
+  | Cost of a dead page | None | 1 read and up to 2 status requests a week, and one of the 10 reads of its day |
+  | When the page is back | Added again when a search of discovery finds it | Read at its next weekly try |
+  | A candidate accepted later | Still named by the list (Known limits) | The row could say that the list is gone |
+  | Failure mode | A page a search keeps finding is added, fails and is removed again: 3 reads and at most 4 status requests over 2 days a round | The 100 fill with dead pages and discovery adds no list, with nothing that says why |
+  | Load for one person | None | A list to clean by hand |
+
+  The row that stays is the simpler code and the trap: the cap fills in silence. A page an administrator added is
+  the other case: its row is a person's decision and is never removed by the system.
+- **A redirect leaves the count** — see point 17: starting it again is the choice that removes less.
+- **Following the redirect to see whether the page moved** — a second request to an address the site chose, for a
+  rule that only needs "gone or not". The moved page is a new list for a person to add.
 - **The collector decides that a list is gone** (a 404 on `/repos/{owner}/{repo}` or on the README in
   `AwesomeCrawl`) — it sees only the lists of this pass: a deleted repository leaves the search results and is never
   asked again. A missing README of a repository that still exists is not "gone" either.
@@ -292,6 +373,18 @@ whether a query finds a resource there:
 - A GitHub that wrongly answers "not found" for a list on three visits in a row, over more than a day, removes what
   the list named until the collector reads the list again. The sweep's guard (more than one repository in five
   missing is not believed) stands in front of it.
+- A web page that was deleted stops naming its resources at the third pass that cannot read it and whose status
+  request is answered 404 or 410: its weekly read, then the tries of the two next days, so at most 9 days after it
+  went with a pass a day. A site that answers 404 for a page that
+  exists, on three checks over a day, removes what the page named until its next good read; a list discovery added
+  is then found again only by a search.
+- The status requests of this rule count on the caps of [0057](ADR-0057-follow-list-links.md) point 12 (200 a
+  day, 30 a host, robots.txt included). One failed read asks at most 2 (the page, and the robots.txt of a host not
+  asked that day). At most 10 lists discovery added are read a day and an administrator adds at most 50 lists, so
+  a day asks at most 120, and only when every read fails. A check a cap refused does not count and is made again
+  at the next failed read.
+- Our server calls the site of a list page itself, where only the live web processor did. The site sees the
+  address of our server and our User-Agent. The Privacy page says so.
 
 ### Measurement
 
@@ -347,7 +440,7 @@ OWASP LLM Top 10: the translator's answer is untrusted (point 7); no model reads
 | Orchestration | Covered: translation in parallel with early sources; the list index is part of the Scout pass, a failure is logged and the next pass rebuilds. |
 | Tool & API | Covered: the same GitHub calls as before for the lists. |
 | Knowledge & RAG | Covered: full-text recall by language, by name words and by list words, ranked below direct matches. Embeddings of list text deferred. |
-| Data | Covered: `h2_name_words` and `search_vector` in V1, two derived list tables with FK cascade and no retention period; no text column. The rows of a list on GitHub go when its repository is gone (point 17). |
+| Data | Covered: `h2_name_words` and `search_vector` in V1, two derived list tables with FK cascade and no retention period; no text column. The rows of a list go when it is gone at its source (point 17): two columns on `list_seed` count the checks of a web page. |
 | Guardrails | Covered: untrusted translation, cleaning, caps, bind parameters, half weight. |
 | Observability | Covered: translation budget gauge, a log line per list pass. |
 | Evaluation | Gap, deferred: the search set has no grades yet ([0046](ADR-0046-evaluation-guide-and-search.md)); the owner/name cases are store-level ITs, not graded metrics. |
@@ -364,19 +457,24 @@ Tracked privately (S9.6.3).
 - A search waits for the slowest answering source up to its deadline: Tavily (6 s) sets the worst case, and a non-English query can start most sources up to 2.5 s later for translation.
 - The English/Italian lexicon still runs next to translation, so Italian gets two kinds of help and other languages rely on the model.
 - Awesome-list words are English-stemmed: a list in another language matches only exact word forms. An entry whose repository was renamed since the list was written links the old URL and is left out of the index.
-- A curated list that is a web page, and a list on GitHub whose repository stays but whose README is deleted, keep
-  the rows of their last read: nothing says that such a list is gone (point 17).
+- A list on GitHub whose repository stays but whose README is deleted keeps the rows of its last read: nothing
+  says that such a list is gone (point 17).
+- A web page is checked only after a failed read. A page that answers 200 with an empty page, a sign-in wall or a
+  "not found" text is a failed read with a status that says "there": it keeps what it named. So does a page
+  whose site redirects it, a page robots.txt keeps us from asking about, and a page that is not read (switch off,
+  host never read, removed from the lists to read).
+- A candidate a list page of a directory host proposed, accepted after the page is gone, is still named by it:
+  one row in `directory_list_entry` that no later read writes again. The catalog has no row for such a list, and
+  the row in `list_seed` of a list discovery added is removed, so nothing says on accept that the list is gone.
 - A list that left the top lists of the collector's search and still exists keeps the rows of its last read.
 - With the repository sweep off (`H2_SCOUT_REPOSITORY_SWEEP_ENABLED=false`, or no GitHub token) no list is ever gone.
-- No metric counts the lists forgotten: `ForgetGoneLists` writes one log line per batch that forgot a list.
 
 ### Open points
 
 - The exact-title boost for owner/name titles and the half weight of list words are decided on the graded search set.
 - A renamed repository is not matched by its record URL.
 - The list index is not language-aware.
-- A web page that no longer exists keeps naming its resources: the page reader does not say that a page is gone
-  (point 17).
+- A list page of a directory host that is gone still names a candidate accepted later (Known limits).
 
 ## Diagrams
 

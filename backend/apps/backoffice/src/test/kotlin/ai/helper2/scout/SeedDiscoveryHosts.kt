@@ -96,9 +96,29 @@ class InMemoryListSeedStore : ListSeedStore {
   }
 
   override fun readSucceeded(address: String, reading: ListReading) {
-    seeds.computeIfPresent(address) { _, seed -> seed.copy(readFailures = 0) }
+    seeds.computeIfPresent(address) { _, seed ->
+      seed.copy(readFailures = 0, goneChecks = 0, goneSince = null)
+    }
     if (address in seeds) readings[address] = reading
   }
 
+  override fun followed(address: String, followed: List<ListReading.Followed>) {
+    readings.computeIfPresent(address) { _, reading -> reading.copy(followed = followed) }
+  }
+
   override fun lastReads(): Map<String, ListReading> = readings.toMap()
+
+  override fun goneChecked(address: String, at: Instant): ListSeed? =
+    seeds.computeIfPresent(address) { _, seed ->
+      seed.copy(goneChecks = seed.goneChecks + 1, goneSince = seed.goneSince ?: at)
+    }
+
+  override fun notGone(address: String) {
+    seeds.computeIfPresent(address) { _, seed -> seed.copy(goneChecks = 0, goneSince = null) }
+  }
+
+  override fun forgotten(address: String) {
+    readings.remove(address)
+    if (seeds[address]?.origin == ListOrigin.DISCOVERY) seeds.remove(address)
+  }
 }

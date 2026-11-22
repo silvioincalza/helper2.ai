@@ -25,7 +25,8 @@ import tools.jackson.databind.node.ArrayNode;
 class JdbcListSeedStore implements ListSeedStore {
 
   private static final String COLUMNS =
-      "kind, address, added_by, added_at, reason, read_tried_at, read_failures, origin";
+      "kind, address, added_by, added_at, reason, read_tried_at, read_failures, origin, gone_checks,"
+          + " gone_since";
 
   private final JdbcClient jdbc;
   private final ObjectMapper json;
@@ -84,7 +85,12 @@ class JdbcListSeedStore implements ListSeedStore {
   @Transactional
   @Override
   public void readSucceeded(String address, ListReading reading) {
-    jdbc.sql("UPDATE list_seed SET read_failures = 0 WHERE address = :address")
+    // UC-030 BR-012: a good read says the page exists, so the count of gone checks starts again.
+    jdbc.sql(
+            """
+            UPDATE list_seed SET read_failures = 0, gone_checks = 0, gone_since = NULL
+            WHERE address = :address
+            """)
         .param("address", address)
         .update();
     jdbc.sql(
@@ -97,7 +103,8 @@ class JdbcListSeedStore implements ListSeedStore {
             ON CONFLICT (address) DO UPDATE SET
                 read_at = EXCLUDED.read_at, headings = EXCLUDED.headings,
                 entries = EXCLUDED.entries, links = EXCLUDED.links,
-                text_lines = EXCLUDED.text_lines, linked_items = EXCLUDED.linked_items
+                text_lines = EXCLUDED.text_lines, linked_items = EXCLUDED.linked_items,
+                followed = '[]'
             """)
         .param("address", address)
         .param("at", Timestamp.from(reading.getReadAt()))
@@ -109,18 +116,73 @@ class JdbcListSeedStore implements ListSeedStore {
         .update();
   }
 
+  // UC-030 BR-013: what following gave belongs to one read; a new read starts it again.
+  @Override
+  public void followed(String address, List<ListReading.Followed> followed) {
+    ArrayNode rows = json.createArrayNode();
+    for (ListReading.Followed f : followed) {
+      rows.addObject()
+          .put("link", f.getLink())
+          .put("item", f.getItem())
+          .put("steps", f.getSteps())
+          .put("decidedBy", f.getDecidedBy());
+    }
+    jdbc.sql(
+            "UPDATE list_seed_last_read SET followed = CAST(:followed AS jsonb) WHERE address = :address")
+        .param("followed", json.writeValueAsString(rows))
+        .param("address", address)
+        .update();
+  }
+
   @Override
   public Map<String, ListReading> lastReads() {
     Map<String, ListReading> readings = new LinkedHashMap<>();
     jdbc.sql(
             """
-            SELECT address, read_at, headings, entries, links, text_lines, linked_items
+            SELECT address, read_at, headings, entries, links, text_lines, linked_items, followed
             FROM list_seed_last_read ORDER BY address
             """)
         .query(rs -> {
           readings.put(rs.getString("address"), reading(rs));
         });
     return readings;
+  }
+
+  // UC-030 BR-012: the checks in a row that said the page is gone, and when the first of them was.
+  @Override
+  public @Nullable ListSeed goneChecked(String address, Instant at) {
+    return jdbc.sql(
+            """
+            UPDATE list_seed SET gone_checks = gone_checks + 1, gone_since = coalesce(gone_since, :at)
+            WHERE address = :address AND kind = 'WEB_PAGE'
+            RETURNING %s
+            """
+                .formatted(COLUMNS))
+        .param("at", Timestamp.from(at))
+        .param("address", address)
+        .query((rs, i) -> seed(rs))
+        .optional()
+        .orElse(null);
+  }
+
+  @Override
+  public void notGone(String address) {
+    jdbc.sql("UPDATE list_seed SET gone_checks = 0, gone_since = NULL WHERE address = :address")
+        .param("address", address)
+        .update();
+  }
+
+  // UC-030 BR-012: a page that is gone keeps no last read; a list discovery added goes whole, and
+  // its last read with it.
+  @Transactional
+  @Override
+  public void forgotten(String address) {
+    jdbc.sql("DELETE FROM list_seed_last_read WHERE address = :address")
+        .param("address", address)
+        .update();
+    jdbc.sql("DELETE FROM list_seed WHERE address = :address AND origin = 'DISCOVERY'")
+        .param("address", address)
+        .update();
   }
 
   private String headings(ListReading reading) {
@@ -178,17 +240,28 @@ class JdbcListSeedStore implements ListSeedStore {
               l.path("headingPath").asString(""),
               l.path("entryText").asString("")));
     }
+    List<ListReading.Followed> followed = new ArrayList<>();
+    for (JsonNode f : json.readTree(rs.getString("followed"))) {
+      followed.add(
+          new ListReading.Followed(
+              f.path("link").asString(""),
+              f.path("item").isString() ? f.path("item").asString() : null,
+              f.path("steps").asInt(0),
+              f.path("decidedBy").isString() ? f.path("decidedBy").asString() : null));
+    }
     return new ListReading(
         rs.getTimestamp("read_at").toInstant(),
         headings,
         entries,
         links,
         rs.getInt("text_lines"),
-        rs.getInt("linked_items"));
+        rs.getInt("linked_items"),
+        followed);
   }
 
   private static ListSeed seed(ResultSet rs) throws SQLException {
     Timestamp tried = rs.getTimestamp("read_tried_at");
+    Timestamp goneSince = rs.getTimestamp("gone_since");
     return new ListSeed(
         ListKind.valueOf(rs.getString("kind")),
         rs.getString("address"),
@@ -197,6 +270,8 @@ class JdbcListSeedStore implements ListSeedStore {
         rs.getString("reason"),
         tried == null ? null : tried.toInstant(),
         rs.getInt("read_failures"),
-        ListOrigin.valueOf(rs.getString("origin")));
+        ListOrigin.valueOf(rs.getString("origin")),
+        rs.getInt("gone_checks"),
+        goneSince == null ? null : goneSince.toInstant());
   }
 }

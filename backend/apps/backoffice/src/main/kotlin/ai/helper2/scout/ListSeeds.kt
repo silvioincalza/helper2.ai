@@ -34,6 +34,8 @@ constructor(
   val readTriedAt: Instant? = null,
   val readFailures: Int = 0,
   val origin: ListOrigin = ListOrigin.ADMINISTRATOR,
+  val goneChecks: Int = 0,
+  val goneSince: Instant? = null,
 ) {
   val id: UUID
     get() = ListAddresses.idOf(address)
@@ -42,13 +44,16 @@ constructor(
     get() = ListAddresses.identityOf(kind, address)
 }
 
-data class ListReading(
+data class ListReading
+@JvmOverloads
+constructor(
   val readAt: Instant,
   val headings: List<String>,
   val entries: List<Entry>,
   val links: List<Link>,
   val textLines: Int,
   val linkedItems: Int,
+  val followed: List<Followed> = emptyList(),
 ) {
   data class Entry(
     val repository: String,
@@ -65,6 +70,12 @@ data class ListReading(
     val headingPath: String,
     val entryText: String,
   )
+
+  /**
+   * UC-030 BR-013: what following one link of the list gave: the address of the item's own page, or
+   * nothing. [decidedBy] says who decided that the page is the item's: `code` or `model`.
+   */
+  data class Followed(val link: String, val item: String?, val steps: Int, val decidedBy: String?)
 }
 
 interface ListSeedStore {
@@ -78,7 +89,38 @@ interface ListSeedStore {
 
   fun readSucceeded(address: String, reading: ListReading)
 
+  /** UC-030 BR-013: keeps what following the links of the last read of a page gave. */
+  fun followed(address: String, followed: List<ListReading.Followed>)
+
   fun lastReads(): Map<String, ListReading>
+
+  /**
+   * UC-030 BR-012: one more status check in a row said that the web page is gone. Gives the list
+   * with its new count, or nothing when the list is no longer a list to read.
+   */
+  fun goneChecked(address: String, at: Instant): ListSeed?
+
+  /** UC-030 BR-012: the site answered for the page, so the count of gone checks starts again. */
+  fun notGone(address: String)
+
+  /**
+   * UC-030 BR-012: a web page that is gone keeps no last read, and a list discovery added is no
+   * longer a list to read.
+   */
+  fun forgotten(address: String)
+}
+
+/**
+ * UC-030 BR-012: where the Scout hands a web page list whose site says the page is gone. True when
+ * the catalog held something the list named.
+ */
+fun interface GoneWebPageRule {
+  fun forget(list: CanonicalUrl, at: Instant): Boolean
+
+  companion object {
+    /** Counts the lists gone at their source that no longer name their resources, by kind. */
+    const val FORGOTTEN = "helper2.scout.lists.forgotten"
+  }
 }
 
 /** Where discovery hands a list page it found on a directory host whose lists are read. */

@@ -5,6 +5,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 
 import ai.helper2.platform.quota.QuotaCounter;
 import ai.helper2.platform.quota.QuotaKeys;
+import ai.helper2.platform.resilience.CallRefused;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
@@ -20,11 +21,13 @@ import ai.helper2.scout.ListReading;
 import ai.helper2.scout.ListSeed;
 import ai.helper2.scout.ListText;
 import ai.helper2.scout.PageReader;
+import ai.helper2.scout.PageStatus;
 import ai.helper2.scout.ReadPage;
 import ai.helper2.scout.ScoutCursor;
 import ai.helper2.scout.SeedDiscoveryHosts;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
+import ai.helper2.search.Vitality;
 import ai.helper2.shared.CategoryCatalog;
 import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.shared.ResourceType;
@@ -181,6 +184,40 @@ class WebPageListsTest {
             Duration.ofHours(1),
             discoveredReadsPerDay,
             clock));
+  }
+
+  final List<String> statusAsked = new ArrayList<>();
+  final List<String> forgotten = new ArrayList<>();
+  PageStatus status = new PageStatus.Answered(404, null);
+
+  /** A collector that asks the site of a page whose read failed (UC-030 BR-012). */
+  GitHubAwesomeCollector collectorThatChecksGonePages() {
+    GoneWebPages gone =
+        new GoneWebPages(
+            address -> {
+              statusAsked.add(address.toString());
+              return status;
+            },
+            added,
+            (list, at) -> forgotten.add(list.getValue()),
+            3,
+            meters);
+    return collector(
+        new WebPageLists(
+            added,
+            pages,
+            new ScoutLiveWebCredits(credits, keys, () -> 40L, meters),
+            neverRead,
+            Duration.ofDays(7),
+            Duration.ofHours(1),
+            discoveredReadsPerDay,
+            clock,
+            null,
+            gone));
+  }
+
+  CollectedBatch pass(GitHubAwesomeCollector collector) {
+    return collector.collect(ScoutCursor.candidatesHeldBack(null, null), 500);
   }
 
   GitHubAwesomeCollector collector(WebPageLists webPages) {
@@ -834,5 +871,206 @@ class WebPageListsTest {
         .filteredOn(l -> l.getUrl().getValue().equals(list))
         .singleElement()
         .satisfies(l -> assertThat(l.getOnDirectoryHost()).isTrue());
+  }
+
+  @Test
+  void uc030Br012AWebPageItsSiteSaysIsGoneOnThreeChecksOverADayGivesNothingAnyMore() {
+    addPage(PAGE);
+    GitHubAwesomeCollector collector = collectorThatChecksGonePages();
+    assertThat(listHits(pass(collector))).extracting(SourceHit::getExternalId).contains(PAGE_ID);
+    pages.failure = new SourceFailure.Unavailable("the page could not be read");
+    clock.pass(7);
+
+    CollectedBatch first = pass(collector);
+    clock.pass(1);
+    CollectedBatch second = pass(collector);
+    assertThat(listHits(first)).extracting(SourceHit::getExternalId).contains(PAGE_ID);
+    assertThat(listHits(second)).extracting(SourceHit::getExternalId).contains(PAGE_ID);
+    assertThat(forgotten).isEmpty();
+    clock.pass(1);
+
+    CollectedBatch third = pass(collector);
+
+    assertThat(statusAsked).containsExactly(PAGE, PAGE, PAGE);
+    assertThat(forgotten).containsExactly(PAGE_ID);
+    assertThat(listHits(third)).isEmpty();
+    assertThat(third.getLists()).isEmpty();
+    assertThat(added.lastReads()).isEmpty();
+    assertThat(added.all()).extracting(ListSeed::getAddress).containsExactly(PAGE);
+
+    clock.pass(7);
+    assertThat(pass(collector).getLists()).isEmpty();
+  }
+
+  @Test
+  void uc030Br012AGoneListPageOfADirectoryHostIsNoLongerAListToRead() {
+    String list = "https://futurepedia.io/best-ai-coding-tools";
+    directoryHost("futurepedia.io", true);
+    addDiscovered(list);
+    GitHubAwesomeCollector collector = collectorThatChecksGonePages();
+    assertThat(pass(collector).getLists()).extracting(l -> l.getUrl().getValue()).contains(list);
+    pages.failure = new SourceFailure.Unavailable("the page could not be read");
+    clock.pass(7);
+
+    pass(collector);
+    clock.pass(1);
+    pass(collector);
+    clock.pass(1);
+    CollectedBatch third = pass(collector);
+
+    assertThat(forgotten).containsExactly(list);
+    assertThat(third.getLists()).isEmpty();
+    assertThat(third.getCandidates()).isEmpty();
+    assertThat(added.all()).isEmpty();
+  }
+
+  @Test
+  void uc030Br012TheStatusOfAPageIsNeverAskedWhenItsReadGaveThePage() {
+    addPage(PAGE);
+    GitHubAwesomeCollector collector = collectorThatChecksGonePages();
+
+    pass(collector);
+    clock.pass(7);
+    pass(collector);
+
+    assertThat(pages.asked).containsExactly(PAGE, PAGE);
+    assertThat(statusAsked).isEmpty();
+  }
+
+  @Test
+  void uc030Br012AnyOtherAnswerKeepsWhatTheLastReadGave() {
+    addPage(PAGE);
+    GitHubAwesomeCollector collector = collectorThatChecksGonePages();
+    pass(collector);
+    pages.failure = new SourceFailure.Unavailable("the page could not be read");
+    status = new PageStatus.Refused(PageStatus.Reason.TIMEOUT);
+    clock.pass(7);
+
+    for (int day = 0; day < 4; day++) {
+      assertThat(listHits(pass(collector))).extracting(SourceHit::getExternalId).contains(PAGE_ID);
+      clock.pass(1);
+    }
+
+    assertThat(forgotten).isEmpty();
+    assertThat(added.lastReads()).containsKey(PAGE);
+    assertThat(added.all().getFirst().getGoneChecks()).isZero();
+  }
+
+  @Test
+  void uc030Br012AGoodReadStartsTheCountOfGoneChecksAgain() {
+    addPage(PAGE);
+    GitHubAwesomeCollector collector = collectorThatChecksGonePages();
+    pass(collector);
+    pages.failure = new SourceFailure.Unavailable("the page could not be read");
+    clock.pass(7);
+    pass(collector);
+    clock.pass(1);
+    pass(collector);
+    assertThat(added.all().getFirst().getGoneChecks()).isEqualTo(2);
+    pages.failure = null;
+    clock.pass(1);
+
+    pass(collector);
+
+    assertThat(added.all().getFirst().getGoneChecks()).isZero();
+    assertThat(forgotten).isEmpty();
+  }
+
+  @Test
+  void uc030Br012APageThatIsNotReadIsNeverChecked() {
+    String switchedOff = "https://futurepedia.io/best-ai-coding-tools";
+    String neverReadPage = "https://www.coursera.org/articles/ai-tools";
+    directoryHost("futurepedia.io", true);
+    addDiscovered(switchedOff);
+    addPage(neverReadPage);
+    addPage(PAGE);
+    GitHubAwesomeCollector collector = collectorThatChecksGonePages();
+    pass(collector);
+    directoryHost("futurepedia.io", false);
+    pages.failure = new SourceFailure.Unavailable("the page could not be read");
+
+    // The page that is still read is not due yet: no read, so no check.
+    clock.pass(1);
+    CollectedBatch batch = pass(collector);
+
+    assertThat(statusAsked).isEmpty();
+    assertThat(batch.getLists())
+        .extracting(l -> l.getUrl().getValue())
+        .containsExactlyInAnyOrder(PAGE_ID, switchedOff);
+
+    // Due again: only the page that is read, and whose read failed, is checked.
+    clock.pass(7);
+    pass(collector);
+
+    assertThat(statusAsked).containsExactly(PAGE);
+  }
+
+  @Test
+  void uc030Br012WithThePageReaderOffNoPageIsChecked() {
+    addPage(PAGE);
+    GitHubAwesomeCollector collector = collectorThatChecksGonePages();
+    pass(collector);
+    pages.available = false;
+    clock.pass(7);
+
+    pass(collector);
+
+    assertThat(statusAsked).isEmpty();
+  }
+
+  @Test
+  void uc030Br012AReadOurOwnCircuitRefusedIsNoFailedReadOfThePage() {
+    addPage(PAGE);
+    GitHubAwesomeCollector collector = collectorThatChecksGonePages();
+    pass(collector);
+    pages.failure = new CallRefused("live-web", CallRefused.Reason.CIRCUIT_OPEN, null);
+    clock.pass(7);
+
+    CollectedBatch batch = pass(collector);
+
+    assertThat(statusAsked).isEmpty();
+    assertThat(listHits(batch)).extracting(SourceHit::getExternalId).contains(PAGE_ID);
+  }
+
+  @Test
+  void uc030Br012WhenThePageExistsAgainItsNextReadRecordsAgainWhatItNames() {
+    addPage(PAGE);
+    GitHubAwesomeCollector collector = collectorThatChecksGonePages();
+    pass(collector);
+    pages.failure = new SourceFailure.Unavailable("the page could not be read");
+    clock.pass(7);
+    pass(collector);
+    clock.pass(1);
+    pass(collector);
+    clock.pass(1);
+    pass(collector);
+    assertThat(forgotten).containsExactly(PAGE_ID);
+    pages.failure = null;
+    clock.pass(7);
+
+    CollectedBatch back = pass(collector);
+
+    assertThat(back.getLists()).extracting(l -> l.getUrl().getValue()).containsExactly(PAGE_ID);
+    assertThat(added.all().getFirst().getGoneChecks()).isZero();
+    // UC-018 BR-009: the read that gives the page again states it, which removes the mark "gone".
+    assertThat(listHits(back))
+        .filteredOn(h -> h.getExternalId().equals(PAGE_ID))
+        .singleElement()
+        .satisfies(h -> assertThat(h.getVitality()).isEqualTo(new Vitality(false)));
+  }
+
+  @Test
+  void uc030Br012APageUsedFromItsStoredReadStatesNothingAboutItself() {
+    addPage(PAGE);
+    GitHubAwesomeCollector collector = collectorThatChecksGonePages();
+    pass(collector);
+    clock.pass(1);
+
+    CollectedBatch stored = pass(collector);
+
+    assertThat(listHits(stored))
+        .filteredOn(h -> h.getExternalId().equals(PAGE_ID))
+        .singleElement()
+        .satisfies(h -> assertThat(h.getVitality()).isEqualTo(Vitality.UNKNOWN));
   }
 }

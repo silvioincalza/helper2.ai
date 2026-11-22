@@ -59,7 +59,7 @@ the guide work long before that, and what makes the wait feel long is the first 
      [0031](ADR-0031-guide-pipeline.md)), `helper2.guide.budget.remaining`,
      `helper2.guide.judge{kind,evaluator,verdict,verify,prompt}` (the guide judge, [0046](ADR-0046-evaluation-guide-and-search.md)),
      `helper2.search.translation.budget.remaining`;
-   - Scout: `helper2.scout.run`, `helper2.scout.cycle`, `helper2.scout.repository_sweep{outcome}` (a record the sweep visited, or `failed` for a batch, [0020](ADR-0020-resource-vitality.md)), `helper2.scout.items{source,kind}`, `helper2.scout.last.success{source}` (the newest SUCCEEDED `scout_run` of
+   - Scout: `helper2.scout.run`, `helper2.scout.cycle`, `helper2.scout.repository_sweep{outcome}` (a record the sweep visited, or `failed` for a batch, [0020](ADR-0020-resource-vitality.md)), `helper2.scout.lists.gone.checks{outcome}` (a status check of a web page list whose read failed) and `helper2.scout.lists.forgotten{kind}` (a list gone at its source that no longer names its resources, `github` or `web-page`; [0023](ADR-0023-catalog-full-text-index.md) point 17), `helper2.scout.items{source,kind}`, `helper2.scout.last.success{source}` (the newest SUCCEEDED `scout_run` of
      each collector, read from Postgres at most every 30 s, so every replica reports it from start-up),
      `helper2.scout.interval{source}` (each collector's run interval, in seconds, from start-up),
      `helper2.scout.enabled` (1 when the Scout runs on its schedule on this environment, 0 when it is off),
