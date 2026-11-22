@@ -65,6 +65,11 @@ read as a fix of that release. What a release branch gained must reach `main` ag
    - **a patch** (`patch-of: YYYY.N`): takes the head of `release/YYYY.N`, where the fixes arrived by pull
      request, and picks `release-version.sh next-patch`. It refuses a branch whose last version is neither released nor used up (`used/vYYYY.N.P`, §8),
      and a branch with nothing since that version.
+   - **Merge commits, never squash, around a release.** A pull request into `release/YYYY.N` (`main` brought in, a
+     fix, the version pull request) and the pull request of a release back into `main` (§10) are merged with a merge
+     commit. So the release branch holds the commits of `main` it brings, and every tag is in `main`'s history:
+     GitHub's notes (§9) list the pull requests of `main` since the release before, and bringing `main` in or the
+     release back has no conflict. A pull request of a feature into `main` is squashed.
    Then it pushes the version commit (§2) to `release-bump/YYYY.N.P` and opens the pull request into
    `release/YYYY.N`. Run again, it keeps a pushed `release-bump/YYYY.N.P` and an open pull request. The owner merges it. That push runs `cd.yml` on the release branch: CI, then the images of the
    commit, built, signed and scanned like on `main` ([0044](ADR-0044-ci-cd-and-supply-chain.md)).

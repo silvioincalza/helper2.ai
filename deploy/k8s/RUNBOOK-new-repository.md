@@ -81,7 +81,8 @@ for f in main release tags; do gh api -X POST repos/$R/rulesets --input $S/rules
 
 What they hold:
 
-- Squash merges only, and the branch deleted after the merge. No auto-merge.
+- Squash merges into `main`; merge commits into `release/**` and for a release back into `main`. The branch is
+  deleted after the merge. No auto-merge.
 - Secret scanning with push protection. Dependabot alerts and security-update pull requests; `.github/dependabot.yml`
   bumps the versions every week.
 - `main`: pull requests only, every review thread resolved, a Copilot review on each push, the check `ci-ok` green
@@ -177,7 +178,7 @@ images, then deploys staging. A release also needs a green push run of its commi
 after this run, with `release-prepare`. Check:
 
 - the run is green and staging answers: `curl -s -o /dev/null -w '%{http_code}\n' https://helper2.incalza.me/`;
-- the pull request showed the check `ci-ok`, and the merge button offered squash only;
+- the pull request showed the check `ci-ok`, and the merge button offered squash and merge commit;
 - the next nightly `guide-eval` run reaches staging.
 
 Prod gets the next release: [CI.md, Releases](CI.md), step by step in
