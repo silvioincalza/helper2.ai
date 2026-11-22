@@ -21,7 +21,11 @@ case "$what" in
   backend) backend ;;
   frontend) frontend ;;
   docs) docs ;;
-  all) docs && frontend && backend ;;
+  all)
+    docs
+    frontend
+    backend
+    ;;
   *) echo "usage: scripts/verify.sh [backend|frontend|docs|all]" >&2; exit 64 ;;
 esac
 
