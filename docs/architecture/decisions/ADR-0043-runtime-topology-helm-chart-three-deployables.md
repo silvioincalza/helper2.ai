@@ -373,7 +373,6 @@ Layers 2, 5, 6, 7, 8, 11 and 14 do not change with the topology.
 ### Open points
 
 - The web image does not keep the assets of the release before; the schema owner is a superuser; the Redis split is not narrower than one user per app; the apps share one env Secret.
-- The Scout stays on in staging after the tag.
 
 ## Diagrams
 

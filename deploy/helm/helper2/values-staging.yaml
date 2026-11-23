@@ -49,7 +49,7 @@ backoffice:
   image:
     repository: harbor-i.infra.incalza.me/helper2/apps/helper2-backoffice
   adminBaseUrl: https://helper2-admin.incalza.me
-  scoutEnabled: true
+  scoutEnabled: false
 backup:
   enabled: true
   timeZone: Europe/Zurich
