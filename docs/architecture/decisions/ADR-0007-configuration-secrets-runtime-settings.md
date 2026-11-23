@@ -1,6 +1,12 @@
 # 0007 — Configuration, secrets, runtime settings
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0001](ADR-0001-stack-and-runtime.md), [0004](ADR-0004-persistence-and-the-schema.md), [0005](ADR-0005-redis-as-a-disposable-cache.md), [0010](ADR-0010-data-retention.md), [0014](ADR-0014-evidence-gated-enrichment.md), [0027](ADR-0027-live-web-store-first-daily-quota.md), [0032](ADR-0032-guide-cost-guard-and-answer-cache.md), [0036](ADR-0036-identity-and-the-admin-host.md), [0038](ADR-0038-back-office-and-review.md)
+
+**Requirements:** C-012
 
 ## Context
 The apps need database and Redis passwords, model and source application programming interface (API) keys, and

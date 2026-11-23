@@ -1,6 +1,12 @@
 # 0024 — Vector search
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0004](ADR-0004-persistence-and-the-schema.md), [0022](ADR-0022-federated-search.md), [0025](ADR-0025-ranking.md).
+
+**Requirements:** NFR-003, C-002
 
 ## Context
 

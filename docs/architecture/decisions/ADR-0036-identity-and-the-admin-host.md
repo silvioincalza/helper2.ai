@@ -1,6 +1,12 @@
 # 0036 — Identity and the admin host
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0003](ADR-0003-contract-first-rest.md), [0004](ADR-0004-persistence-and-the-schema.md), [0005](ADR-0005-redis-as-a-disposable-cache.md), [0007](ADR-0007-configuration-secrets-runtime-settings.md), [0010](ADR-0010-data-retention.md), [0037](ADR-0037-http-edge.md), [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md).
+
+**Requirements:** NFR-012
 
 ## Context
 

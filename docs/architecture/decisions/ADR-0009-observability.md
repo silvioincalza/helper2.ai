@@ -1,6 +1,12 @@
 # 0009 — Observability
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0001](ADR-0001-stack-and-runtime.md), [0006](ADR-0006-outbound-calls-and-resilience.md), [0008](ADR-0008-llm-integration.md), [0022](ADR-0022-federated-search.md)
+
+**Requirements:** C-006, C-014
 
 ## Context
 One search calls up to nine sources in parallel; one guide question calls a model several times. When an answer is

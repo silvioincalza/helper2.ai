@@ -1,6 +1,12 @@
 # 0015 — Reference projects
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0006](ADR-0006-outbound-calls-and-resilience.md), [0011](ADR-0011-scout-runner.md), [0012](ADR-0012-scout-collectors-and-events.md), [0013](ADR-0013-discovery.md), [0046](ADR-0046-evaluation-guide-and-search.md)
+
+**Requirements:** NFR-011
 
 ## Context
 The first graded search set ([0046](ADR-0046-evaluation-guide-and-search.md), 20 queries) showed that most misses are not a ranking problem. In 14 of 20

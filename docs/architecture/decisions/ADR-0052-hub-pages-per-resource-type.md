@@ -1,6 +1,12 @@
 # 0052 — Hub pages per resource type
 
+**Status:** Accepted
+
+**Date:** 2026-11-19
+
 **Depends on:** [0003](ADR-0003-contract-first-rest.md), [0023](ADR-0023-catalog-full-text-index.md), [0039](ADR-0039-frontend-one-box-state-in-the-url.md), [0040](ADR-0040-design-system.md), [0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md), [0050](ADR-0050-frontend-feature-boundaries.md).
+
+**Requirements:** C-014
 
 ## Context
 

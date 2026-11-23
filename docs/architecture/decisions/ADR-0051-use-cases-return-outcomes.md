@@ -1,6 +1,12 @@
 # 0051 — Use cases return outcomes
 
+**Status:** Accepted
+
+**Date:** 2026-11-18
+
 **Depends on:** [0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0003](ADR-0003-contract-first-rest.md), [0036](ADR-0036-identity-and-the-admin-host.md).
+
+**Requirements:** C-014
 
 ## Context
 

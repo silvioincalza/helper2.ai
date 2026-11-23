@@ -1,6 +1,12 @@
 # 0011 — Scout runner
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0004](ADR-0004-persistence-and-the-schema.md), [0006](ADR-0006-outbound-calls-and-resilience.md), [0008](ADR-0008-llm-integration.md)
+
+**Requirements:** NFR-014, C-008
 
 ## Context
 Live search only shows what sources return for one query. To answer from its own index (keyword and vector search,

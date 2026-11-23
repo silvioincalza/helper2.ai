@@ -1,6 +1,12 @@
 # 0050 — Frontend: feature boundaries and import style
 
+**Status:** Accepted
+
+**Date:** 2026-11-18
+
 **Depends on:** [0039](ADR-0039-frontend-one-box-state-in-the-url.md), [0044](ADR-0044-ci-cd-and-supply-chain.md), [0047](ADR-0047-code-format-and-dead-code-audit.md).
+
+**Requirements:** C-014
 
 The backend has the same kind of rule for its modules in [0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md).
 

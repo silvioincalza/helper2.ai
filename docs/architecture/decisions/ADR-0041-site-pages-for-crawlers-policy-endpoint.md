@@ -1,6 +1,12 @@
 # 0041 — Site: pages for crawlers, policy endpoint
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0001](ADR-0001-stack-and-runtime.md), [0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0003](ADR-0003-contract-first-rest.md), [0007](ADR-0007-configuration-secrets-runtime-settings.md), [0010](ADR-0010-data-retention.md), [0027](ADR-0027-live-web-store-first-daily-quota.md), [0032](ADR-0032-guide-cost-guard-and-answer-cache.md), [0033](ADR-0033-marking-ai-written-text-research-trail.md), [0037](ADR-0037-http-edge.md), [0039](ADR-0039-frontend-one-box-state-in-the-url.md), [0040](ADR-0040-design-system.md).
+
+**Requirements:** C-005
 
 ## Context
 

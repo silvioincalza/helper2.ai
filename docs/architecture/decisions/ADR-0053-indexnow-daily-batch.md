@@ -1,6 +1,12 @@
 # 0053 — IndexNow: a daily batch of changed pages
 
+**Status:** Accepted
+
+**Date:** 2026-11-19
+
 **Depends on:** [0006](ADR-0006-outbound-calls-and-resilience.md), [0007](ADR-0007-configuration-secrets-runtime-settings.md), [0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md), [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md).
+
+**Requirements:** C-008
 
 ## Context
 

@@ -1,5 +1,9 @@
 # 0056 — A rating from the votes directories state
 
+**Status:** Accepted
+
+**Date:** 2026-11-21
+
 **Depends on:** [0007](ADR-0007-configuration-secrets-runtime-settings.md), [0010](ADR-0010-data-retention.md), [0013](ADR-0013-discovery.md), [0025](ADR-0025-ranking.md), [0027](ADR-0027-live-web-store-first-daily-quota.md), [0038](ADR-0038-back-office-and-review.md), [0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md), [0046](ADR-0046-evaluation-guide-and-search.md), [0055](ADR-0055-directory-lists.md)
 
 **Requirements:** NFR-005, NFR-012, NFR-015, C-008, C-012, C-014

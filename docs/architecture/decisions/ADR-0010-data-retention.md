@@ -1,6 +1,12 @@
 # 0010 — Data retention
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0004](ADR-0004-persistence-and-the-schema.md), [0005](ADR-0005-redis-as-a-disposable-cache.md), [0009](ADR-0009-observability.md), [0036](ADR-0036-identity-and-the-admin-host.md)
+
+**Requirements:** C-006, C-016
 
 ## Context
 Helper2 keeps three kinds of data: what sources said (the catalog), what the Scout and the model did (run history,

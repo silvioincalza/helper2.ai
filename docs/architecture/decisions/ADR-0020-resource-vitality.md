@@ -1,6 +1,12 @@
 # 0020 — Resource vitality
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0012](ADR-0012-scout-collectors-and-events.md), [0022](ADR-0022-federated-search.md), [0025](ADR-0025-ranking.md)
+
+**Requirements:** NFR-005
 
 ## Context
 Helper2.ai is a helper: a result must be something the user can use or build with today. On 11 Nov 2026 most

@@ -1,6 +1,12 @@
 # 0026 — Filters, facets, categories
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0004](ADR-0004-persistence-and-the-schema.md), [0013](ADR-0013-discovery.md), [0022](ADR-0022-federated-search.md), [0031](ADR-0031-guide-pipeline.md), [0032](ADR-0032-guide-cost-guard-and-answer-cache.md), [0033](ADR-0033-marking-ai-written-text-research-trail.md), [0040](ADR-0040-design-system.md), [0046](ADR-0046-evaluation-guide-and-search.md).
+
+**Requirements:** NFR-005
 
 ## Context
 

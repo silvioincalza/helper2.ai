@@ -1,6 +1,12 @@
 # 0033 — Marking AI-written text, research trail
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0003](ADR-0003-contract-first-rest.md), [0008](ADR-0008-llm-integration.md), [0014](ADR-0014-evidence-gated-enrichment.md), [0023](ADR-0023-catalog-full-text-index.md), [0031](ADR-0031-guide-pipeline.md), [0032](ADR-0032-guide-cost-guard-and-answer-cache.md), [0034](ADR-0034-setup-guide.md), [0039](ADR-0039-frontend-one-box-state-in-the-url.md).
+
+**Requirements:** NFR-010, NFR-013, C-005
 
 ## Context
 

@@ -1,6 +1,12 @@
 # 0045 — Releases and versions
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0001](ADR-0001-stack-and-runtime.md), [0004](ADR-0004-persistence-and-the-schema.md), [0010](ADR-0010-data-retention.md), [0044](ADR-0044-ci-cd-and-supply-chain.md).
+
+**Requirements:** C-011, C-014
 
 ## Context
 

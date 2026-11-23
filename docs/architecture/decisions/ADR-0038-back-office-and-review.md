@@ -1,6 +1,12 @@
 # 0038 — Back office and review
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0004](ADR-0004-persistence-and-the-schema.md), [0007](ADR-0007-configuration-secrets-runtime-settings.md), [0011](ADR-0011-scout-runner.md), [0012](ADR-0012-scout-collectors-and-events.md), [0013](ADR-0013-discovery.md), [0014](ADR-0014-evidence-gated-enrichment.md), [0027](ADR-0027-live-web-store-first-daily-quota.md), [0028](ADR-0028-home-examples.md), [0032](ADR-0032-guide-cost-guard-and-answer-cache.md), [0033](ADR-0033-marking-ai-written-text-research-trail.md), [0036](ADR-0036-identity-and-the-admin-host.md), [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md).
+
+**Requirements:** NFR-007, NFR-012, NFR-014
 
 ## Context
 

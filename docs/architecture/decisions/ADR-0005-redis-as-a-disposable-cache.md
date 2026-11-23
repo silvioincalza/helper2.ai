@@ -1,6 +1,12 @@
 # 0005 — Redis as a disposable cache
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0004](ADR-0004-persistence-and-the-schema.md), [0006](ADR-0006-outbound-calls-and-resilience.md)
+
+**Requirements:** NFR-003, NFR-007
 
 ## Context
 Live sources are slow (seconds) and rate-limited. The daily model budgets must survive a restart. All of this

@@ -1,6 +1,12 @@
 # 0031 — Guide pipeline
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0008](ADR-0008-llm-integration.md), [0009](ADR-0009-observability.md), [0012](ADR-0012-scout-collectors-and-events.md), [0014](ADR-0014-evidence-gated-enrichment.md), [0022](ADR-0022-federated-search.md), [0024](ADR-0024-vector-search.md), [0025](ADR-0025-ranking.md), [0027](ADR-0027-live-web-store-first-daily-quota.md), [0032](ADR-0032-guide-cost-guard-and-answer-cache.md), [0033](ADR-0033-marking-ai-written-text-research-trail.md), [0034](ADR-0034-setup-guide.md), [0046](ADR-0046-evaluation-guide-and-search.md).
+
+**Requirements:** NFR-002, NFR-004, C-003
 
 ## Context
 

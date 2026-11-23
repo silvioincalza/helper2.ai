@@ -1,6 +1,12 @@
 # 0025 — Ranking
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0004](ADR-0004-persistence-and-the-schema.md), [0022](ADR-0022-federated-search.md).
+
+**Requirements:** NFR-001, NFR-011
 
 ## Context
 

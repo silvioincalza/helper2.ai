@@ -1,6 +1,12 @@
 # 0046 — Evaluation: guide and search
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0008](ADR-0008-llm-integration.md), [0022](ADR-0022-federated-search.md), [0024](ADR-0024-vector-search.md), [0025](ADR-0025-ranking.md), [0031](ADR-0031-guide-pipeline.md), [0032](ADR-0032-guide-cost-guard-and-answer-cache.md), [0034](ADR-0034-setup-guide.md).
+
+**Requirements:** NFR-002, NFR-011
 
 ## Context
 
