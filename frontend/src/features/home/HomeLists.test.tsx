@@ -53,28 +53,24 @@ const upcoming = (items: ResultCard[], generatedAt = '2026-11-05T09:00:00Z') => 
   'GET /events/upcoming': () => ({ generatedAt, items }),
 });
 
-const table = async (name: string) => {
+const list = async (name: string) => {
   const section = (await screen.findByRole('heading', { name, level: 2 })).closest(
     'section',
   ) as HTMLElement;
-  return { section, table: await within(section).findByRole('table', { name }) };
+  return { section, list: await within(section).findByRole('list', { name }) };
 };
-const bodyRows = (t: HTMLElement) => within(t).getAllByRole('row').slice(1);
+const bodyRows = (l: HTMLElement) => within(l).getAllByRole('listitem');
 
-describe('New in the catalog and Coming up on a wide screen: two tables like ls -l', () => {
-  it('a table has column headers: date, type, title, source', async () => {
+describe('New in the catalog and Coming up on a wide screen: two columns of log rows', () => {
+  it('a row shows the date, [type], title and source; no table', async () => {
     mockApi({ 'GET /recent': () => makeRecent({ items: news(2) }) });
     renderApp('/');
-    const { table: newsTable } = await table('New in the catalog');
-    expect(
-      within(newsTable)
-        .getAllByRole('columnheader')
-        .map((h) => h.textContent),
-    ).toEqual(['Date', 'Type', 'Title', 'Source']);
+    const { list: newsTable } = await list('New in the catalog');
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
     await within(newsTable).findByRole('link', { name: 'News item 0' });
     const [first] = bodyRows(newsTable);
     expect(first).toHaveTextContent('Oct 26');
-    expect(first).toHaveTextContent('MCP server');
+    expect(first).toHaveTextContent('Oct 26 [MCP server]');
     expect(first).toHaveTextContent('github.com');
     expect(within(first!).getByRole('link', { name: 'News item 0' })).toHaveAttribute(
       'href',
@@ -86,7 +82,7 @@ describe('New in the catalog and Coming up on a wide screen: two tables like ls 
   it('shows six rows and opens the rest in place', async () => {
     mockApi({ 'GET /recent': () => makeRecent({ items: news(8), total: 8 }) });
     renderApp('/');
-    const { section, table: t } = await table('New in the catalog');
+    const { section, list: t } = await list('New in the catalog');
     await within(t).findByRole('link', { name: 'News item 0' });
     expect(bodyRows(t)).toHaveLength(6);
     const more = within(section).getByRole('button', { name: 'show all 8' });
@@ -107,7 +103,7 @@ describe('New in the catalog and Coming up on a wide screen: two tables like ls 
       ...upcoming([event('Zurich AI Meetup', '2026-11-20T00:00:00Z')]),
     });
     renderApp('/');
-    const { section, table: t } = await table('New in the catalog');
+    const { section, list: t } = await list('New in the catalog');
     await within(t).findByRole('link', { name: 'News item 0' });
     expect(within(section).queryByRole('button', { name: /pause|play/i })).not.toBeInTheDocument();
     expect(within(section).queryByRole('status')).not.toBeInTheDocument();
@@ -116,7 +112,7 @@ describe('New in the catalog and Coming up on a wide screen: two tables like ls 
   it('Coming up links to the Events page', async () => {
     mockApi(upcoming([event('Zurich AI Meetup', '2026-11-20T00:00:00Z')]));
     renderApp('/');
-    const { section } = await table('Coming up');
+    const { section } = await list('Coming up');
     expect(await within(section).findByRole('link', { name: 'All events ›' })).toHaveAttribute(
       'href',
       '/events',
@@ -126,18 +122,20 @@ describe('New in the catalog and Coming up on a wide screen: two tables like ls 
   it('takes the total from the API; the button counts only the rows it opens', async () => {
     mockApi({ 'GET /recent': () => makeRecent({ items: news(7), total: 38 }) });
     renderApp('/');
-    const { section } = await table('New in the catalog');
+    const { section } = await list('New in the catalog');
     const more = await within(section).findByRole('button', { name: 'show all 7' });
     expect(within(section).getByText('38')).toBeInTheDocument();
     await userEvent.click(more);
-    expect(bodyRows(within(section).getByRole('table'))).toHaveLength(7);
+    expect(
+      bodyRows(within(section).getByRole('list', { name: 'New in the catalog' })),
+    ).toHaveLength(7);
     expect(within(section).queryByText(/more/)).not.toBeInTheDocument();
   });
 
   it('asks the API for up to 60 rows', async () => {
     const m = mockApi({ 'GET /recent': () => makeRecent({ items: news(2) }) });
     renderApp('/');
-    await table('New in the catalog');
+    await list('New in the catalog');
     expect(m.callsTo('GET', '/recent')[0]?.search).toContain('size=60');
   });
 
@@ -156,7 +154,7 @@ describe('New in the catalog and Coming up on a wide screen: two tables like ls 
         }),
     });
     renderApp('/');
-    const { table: t } = await table('New in the catalog');
+    const { list: t } = await list('New in the catalog');
     await within(t).findByRole('link', { name: 'Last year' });
     expect(bodyRows(t)[0]).toHaveTextContent('Dec 30, 2026');
   });
@@ -164,12 +162,12 @@ describe('New in the catalog and Coming up on a wide screen: two tables like ls 
   it('a list that fits shows no button', async () => {
     mockApi({ 'GET /recent': () => makeRecent({ items: news(6) }) });
     renderApp('/');
-    const { section, table: t } = await table('New in the catalog');
+    const { section, list: t } = await list('New in the catalog');
     await within(t).findByRole('link', { name: 'News item 5' });
     expect(within(section).queryByRole('button', { name: /show all/ })).not.toBeInTheDocument();
   });
 
-  it('a long source is cut to the width of its column, and its full name is its tooltip', async () => {
+  it('a long source shows in full under the title', async () => {
     const host = 'brief-and-proof-lab.hklilinjie.chatgpt.site';
     mockApi({
       'GET /recent': () =>
@@ -183,11 +181,10 @@ describe('New in the catalog and Coming up on a wide screen: two tables like ls 
         }),
     });
     renderApp('/');
-    const { table: t } = await table('New in the catalog');
+    const { list: t } = await list('New in the catalog');
     await within(t).findByRole('link', { name: 'Brief & Proof' });
     const source = within(t).getByText(host);
-    expect(source).toHaveClass('h2-cell-meta__text');
-    expect(source).toHaveAttribute('title', host);
+    expect(source).toHaveClass('meta-line');
   });
 
   it('a row with no stated date says when helper2.ai first saw it', async () => {
@@ -214,7 +211,7 @@ describe('New in the catalog and Coming up on a wide screen: two tables like ls 
         }),
     });
     renderApp('/');
-    const { table: t } = await table('New in the catalog');
+    const { list: t } = await list('New in the catalog');
     await within(t).findByRole('link', { name: 'Undated' });
     expect(bodyRows(t)[0]).toHaveTextContent('seen Nov 1');
   });
@@ -234,12 +231,7 @@ describe('New in the catalog and Coming up on a wide screen: two tables like ls 
       ]),
     );
     renderApp('/');
-    const { section, table: t } = await table('Coming up');
-    expect(
-      within(t)
-        .getAllByRole('columnheader')
-        .map((h) => h.textContent),
-    ).toEqual(['When', 'Type', 'Event', 'Where']);
+    const { section, list: t } = await list('Coming up');
     await within(t).findByRole('link', { name: 'Agent Hackathon' });
     const [running, meetup, unlabelled] = bodyRows(t);
     expect(within(running!).getByText('on now')).toBeInTheDocument();
@@ -267,13 +259,15 @@ describe('New in the catalog and Coming up on a wide screen: two tables like ls 
       ]),
     );
     renderApp('/');
-    const { table: t } = await table('Coming up');
+    const { list: t } = await list('Coming up');
     await within(t).findByRole('link', { name: 'Zurich AI Hackathon' });
     const [ai, stated] = bodyRows(t);
     expect(within(ai!).getByText('Extracted by AI')).toBeInTheDocument();
     expect(within(ai!).getByText('Hackathon').closest('[data-ai-generated]')).not.toBeNull();
     expect(
-      within(ai!).getByText('Zurich, Switzerland').closest('[data-ai-generated]'),
+      within(ai!)
+        .getByText(/Zurich, Switzerland/)
+        .closest('[data-ai-generated]'),
     ).not.toBeNull();
     expect(ai!.querySelector('time')!.closest('[data-ai-generated]')).not.toBeNull();
     expect(stated!.querySelector('[data-ai-generated]')).toBeNull();
@@ -283,7 +277,7 @@ describe('New in the catalog and Coming up on a wide screen: two tables like ls 
   it('does not read the rows aloud on load: only loading, error and empty are announced', async () => {
     mockApi(upcoming([event('NeurIPS 2026', '2026-12-06T00:00:00Z')]));
     renderApp('/');
-    const { section, table: t } = await table('Coming up');
+    const { section, list: t } = await list('Coming up');
     await within(t).findByRole('link', { name: 'NeurIPS 2026' });
     expect(t.closest('[aria-live]')).toBeNull();
     expect(section.querySelector('[aria-live]')).not.toBeNull();

@@ -103,7 +103,6 @@ What covers what, the lowest first. Every `z-index` in the public CSS is one of 
 | Token | Value | What |
 |---|---|---|
 | `z-raised` | 1 | A link or a button inside a row whose title link covers the whole row: the host and Save in a result row. |
-| `z-list-columns` | 1 | The column names of a home list while the list scrolls under them. |
 | `z-list-head` | 2 | The head of a home list, and the two tabs on a phone. |
 | `z-popover` | 5 | A small list that opens under its button: More types on the results page. |
 | `z-pinned` | 10 | The pinned home search box. |
@@ -140,7 +139,7 @@ Apart from the radar mark, icons are small stroke glyphs beside words, never alo
 
 1. **Hero**, centred, with no line above it: the title, one `h1` on two lines: "helper2.ai" in `accent-ink` (same size and weight), then "The metasearch for the AI ecosystem."; one line on what it does. Around it the radar (see Radar).
 2. **Pinned search box**, full width up to 820px: box, Search, Ask the guide, one hint line (the keys with a mouse; "Search, or tap Ask for picks with proof." on a touch screen), the "Try:" chips, the radar legend ("5-10 of N sources at a time", the three colours, a link to the Sources page). It sticks under the header while the page scrolls; once the title is gone, the hints and legend fold away and it gets `shadow-pinned`.
-3. **New in the catalog** and **Coming up**: two tables side by side, like `ls -l`, stacked below 920px; tabs below 768px. See HomeLists.
+3. **New in the catalog** and **Coming up**: two lists of log rows side by side, stacked below 920px; tabs with the same log rows below 768px. See HomeLists.
 4. **What helper2 does for you**: a quiet strip of three steps.
 
 On phones (below 720px) the title and text fold away after 24px of scroll; the search box stays pinned; the lists scroll under it. Back at the top, everything opens again. News and Events move from the header into the menu.
@@ -228,7 +227,7 @@ The boards in [docs/mockups/boards](../../docs/mockups/boards) are the reference
 | **SearchBox** | Box, **Search** (primary, ↵) and **Ask the guide** (outline, ⇧↵; the icon with the words, never the icon alone). Up to 720px it says **Ask**; its accessible name stays "Ask the guide". Up to 520px the box takes the full row and the two buttons share the row under it. No word count decides anything. Pinned on Home; in the header elsewhere. |
 | **PinnedSearchBar** | The home box with hint, chips and legend; sticks under the header; compact once scrolled. |
 | **Radar** | See Radar. |
-| **HomeLists** | New in the catalog, Coming up: one component, `TermList`. A `$ helper2 new · N` line (N = `total` from the API), `ls -l` columns, dashed rules, titles and tabs in Geist, the rest in Geist Mono. Wide: two tables (DATE · TYPE · TITLE · SOURCE, WHEN · TYPE · EVENT · WHERE), "on now" in `status-ok-ink`, `$ helper2 new --all · show all N` expands in place; Coming up also links to the Events page ("All events ›"). Below 768px: a tablist `> new in the catalog N | coming up N` (real tab buttons, 44px) with log rows. No terminal windows, no blinking cursor, no lines that print in. More rows than it shows: the list moves like a news ticker (principle 7), with Pause and Play above it and "Paused" beside them while it stands. Rows open the resource page. While a list scrolls by, its head, column names (wide) or tabs (phone) stay under the pinned box until the list ends. Loading is a Skeleton of the rows; empty and error (with Retry) are StatePanels. |
+| **HomeLists** | New in the catalog, Coming up: one component, `TermList`. A `$ helper2 new · N` line (N = `total` from the API), log rows with dashed rules (the date and `[type]` in a fixed column, the title with its source or place under it), titles and tabs in Geist, the rest in Geist Mono. Wide: the two lists side by side, "on now" in `status-ok-ink`, `$ helper2 new --all · show all N` expands in place; Coming up also links to the Events page ("All events ›"). Below 768px: a tablist `> new in the catalog N | coming up N` (real tab buttons, 44px) with log rows. No terminal windows, no blinking cursor, no lines that print in. More rows than it shows: the list moves like a news ticker (principle 7), with Pause and Play above it and "Paused" beside them while it stands. Rows open the resource page. While a list scrolls by, its head (wide) or its tabs (phone) stay under the pinned box until the list ends. Loading is a Skeleton of the rows; empty and error (with Retry) are StatePanels. |
 | **ListPages** | Sources, Saved and the back office: the heading in Geist with `$ helper2 … · N` (N from the API), tables in Geist Mono with UPPERCASE column headers and dashed rules, names that are titles in Geist, a status as a coloured word with a glyph (✓ ! × ○) in the radar's colours. A wide table scrolls in its own box on a phone. Loading, empty and error as in HomeLists. |
 | **PickCard** | Rank, name, AI-written reason with its label and check note, the checked quote, Open ↗, Details, Save. |
 | **GuideSteps** | The streamed steps while the guide works. |

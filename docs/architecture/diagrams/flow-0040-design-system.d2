@@ -1,5 +1,5 @@
 # Flowchart: the design system on Home, from the home page to the guide. Home loads the sources once for the
-# radar and its legend, and the two lists (tables on a wide screen, tabs on a phone); the search box stays pinned; a
+# radar and its legend, and the two lists (log rows in two columns on a wide screen, tabs on a phone); the search box stays pinned; a
 # search opens the results; the guide runs only when asked (Ask the guide, or Shift+Enter).
 # Code: frontend/src/features/home/Home.tsx, features/home/HomeRadar.tsx, radarLayout.ts, lib/radarRotation.ts, radarClock.ts,
 #   useRadarMotion.ts, RadarLegend.tsx, TermList.tsx, ticker.ts, HomeLists.tsx, HomeTabs.tsx, features/feeds/feeds.ts, lib/sourceCounts.ts, shell/Layout.tsx (header, footer),
@@ -28,11 +28,11 @@ home: Home {
   paint: "Beam passes a dot:\npop, glow, fade to 0.22" {class: app}
   bar: "Search box, pinned\nunder the header" {class: app}
   wide: "Wider than 768 px?" {class: decision}
-  tables: "TermList as two tables, ls -l\n(helper2 new · N line, Show all in place)" {class: app}
+  columns: "TermList as two columns of log rows\n(helper2 new · N line, Show all in place)" {class: app}
   tabs: "TermList in tabs:\n> new in the catalog N | coming up N\n(log rows)" {class: app}
   feeds: "GET /api/v1/recent\nGET /api/v1/events/upcoming?days=90\n(total for Show all N)" {class: ext}
   measure: "ResizeObserver measures\nthe pinned box (--pinned-h)" {class: app}
-  stick: "While a list scrolls by: its head\n(and column names or tabs) stays under\nthe pinned box until the list ends" {class: app}
+  stick: "While a list scrolls by: its head\n(or its tabs) stays under\nthe pinned box until the list ends" {class: app}
   more: "A list has more rows\nthan it shows?" {class: decision}
   fixed: "Rows stand still" {class: app}
   can_move: "Reduced motion\nor motion off?" {class: decision}
@@ -51,12 +51,12 @@ home: Home {
   next -> paint
   wait -> held: mouse leaves
   hero -> bar -> wide
-  wide -> tables: yes
+  wide -> columns: yes
   wide -> tabs: no
-  tables -> feeds
+  columns -> feeds
   tabs -> feeds
   bar -> measure -> stick
-  tables -> stick
+  columns -> stick
   tabs -> stick
   feeds -> more
   more -> fixed: no
