@@ -64,6 +64,7 @@ spec:
                   gzip -t "$f.tmp"
                   [ "$(wc -c < "$f.tmp")" -gt 1024 ]
                   mv "$f.tmp" "$f"
+                  echo "dump: $f"
                   ls -1 /backup/helper2-*.sql.gz | cut -c17-26 | sort -ru | tail -n +{{ add1 .Values.backup.retentionDays }} | while read -r d; do rm -f /backup/helper2-"$d"*.sql.gz; done
                   find /backup -name 'helper2-*.sql.gz' -mtime +{{ sub .Values.backup.retentionDays 1 }} -delete
                   ls -l /backup

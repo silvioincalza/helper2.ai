@@ -150,6 +150,13 @@ read as a fix of that release. What a release branch gained must reach `main` ag
     the release before must keep working on the new schema, because the canary migrates prod's database while the
     release before still serves it. A release that cannot follow that rule is released with `canary` unticked, in a
     maintenance window: no canary, the version tag, prod by version, then the tag.
+    **A release with a migration takes its own dump first.** The prod job compares the migration folder with the
+    release prod runs; when a file changed (`R__` scripts included: Flyway runs them again) or the running release
+    is unknown, it runs `pg-backup` once more right before the canary, or before prod with no canary. The dump is
+    verified like the nightly one and the run names it; a failed dump stops the release before prod's database is
+    touched. A rerun of the version keeps the dump its first run took, before its canary. A code
+    rollback runs on the schema the release left; the way back for the schema is `database.sh restore` of that dump,
+    with both apps stopped, then the rollback. It loses what was written after the dump.
 
 ### Tags, branches and what may deploy
 12. **Tags are immutable.** A release tag is never moved or deleted; a fix is a new patch. A GitHub tag ruleset on
@@ -204,6 +211,8 @@ read as a fix of that release. What a release branch gained must reach `main` ag
 - `.github/scripts/released-migrations.sh` — the forward-only rule over every release of the history: `check`,
   `--self-test`.
 - `.github/scripts/release-notes.sh` — GitHub's notes without the pull requests of the release itself, `--self-test`.
+- `deploy/k8s/database.sh` (`make release-dump`, `make restore`) — the release's dump and the restore of a named
+  dump, `--self-test`; `templates/backup.yaml` names each dump in its log.
 - `deploy/helm/helper2` (`canary.*` values, `templates/canary.yaml`, the canary names in `_helpers.tpl`) — the
   canary-only release.
 - `deploy/k8s/Makefile` (`canary`, `canary-smoke`, `uncanary`, `retag`, the canary part of `chart-check`) and
@@ -294,6 +303,8 @@ read as a fix of that release. What a release branch gained must reach `main` ag
   is released, or the next year starts again at `.1.0`. A rollout that fails after the version tag in Harbor uses the
   number up (Harbor keeps it on that digest): the fix is the next patch. A run that fails after prod and before the tag leaves prod on a version
   with no tag and no GitHub release: run the failed `publish` job again.
+- A restore of the release's dump loses everything written after it, and prod is down from the stop of the apps to
+  the end of the rollback. The dump is pruned with the nightly ones, so the way back for the schema lasts 7 days.
 - The canary shares prod's Postgres and Redis: its migrate Job changes prod's schema before the rollout, and a failed
   canary leaves the schema migrated. Its start-up publishes its build to the settings the back office shows, until the
   next pods of the release start. Its smoke test reads the public host only, and spends one search (live web credits

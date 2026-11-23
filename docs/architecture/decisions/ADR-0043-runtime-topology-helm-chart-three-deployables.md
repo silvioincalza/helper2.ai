@@ -236,7 +236,8 @@ database connections. A change to the web app would rebuild and redeploy the bac
 19. **Per environment.** The back office runs the Scout once a day at 03:07 UTC (`backoffice.scoutCron`; each replica
     checks every 10 minutes, `H2_SCOUT_TICK`, and a restart does not add a run; each collector runs at most once a
     day) with at most 200 enrichments per run (`backoffice.scoutMaxEnrichments`); the daily enrichment cap (500) still
-    applies. Staging has no backup. Its Scout is on only to fill an empty database before a first release; after
+    applies. Staging has the nightly backup and its restore check, with no off-site copy: the rehearsal of a
+    release's way back for the database runs there ([0045](ADR-0045-releases-and-versions.md) §11). Its Scout is on only to fill an empty database before a first release; after
     the tag it goes off again.
 
 ### Code

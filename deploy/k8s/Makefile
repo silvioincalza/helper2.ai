@@ -19,7 +19,7 @@ ifeq ($(filter $(ENV),staging prod),)
 $(error ENV must be staging or prod)
 endif
 
-.PHONY: help credentials backup-credentials image retag sbom backoffice-sbom web-sbom postgres-sbom postgres-image embedder-sbom embedder-image chart-check check-env release-ready deploy diff rollback status canary canary-smoke uncanary
+.PHONY: help credentials backup-credentials image retag sbom backoffice-sbom web-sbom postgres-sbom postgres-image embedder-sbom embedder-image chart-check check-env release-ready deploy diff rollback status canary canary-smoke uncanary release-dump restore
 
 help: ## this list
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -508,6 +508,14 @@ canary-smoke: ## smoke test of the canary through the public host with its heade
 uncanary: ## remove the canary of ENV, when there is one
 	helm -n $(NS) uninstall helper2-canary --ignore-not-found --wait --timeout 5m
 
+DUMP ?=
+release-dump: ## the dump of the release VERSION, a run of pg-backup verified like the nightly one; prints its name
+	@./database.sh dump $(NS) "$(VERSION)"
+
+restore: ## replace ENV's whole database with DUMP from the pg-backup volume: both apps and the canary stopped first; asks for the namespace
+	@read -rp "restore $(NS) from $(DUMP): everything written after the dump is lost. Type $(NS): " typed; \
+	./database.sh restore $(NS) '$(DUMP)' "$$typed"
+
 status: ## ENV's pods, then fails unless the release is deployed, every Deployment and StatefulSet is rolled out, this revision's migrate Job completed and the public site answers 200 on SMOKE_PATHS
 	kubectl -n $(NS) get pods -o wide
 	./check-release.sh $(NS) $(SMOKE_URLS)
@@ -677,6 +685,10 @@ chart-check-status:
 	@set -euo pipefail; \
 	echo "== deploy and status fail the job when the release is not healthy (check-release.sh), on the page and on one API read; deploy goes back to the revision deployed before the upgrade"; \
 	./check-release.sh --self-test; \
+	echo "== the release's dump and the restore (database.sh): a failed or unnamed dump stops the release; a restore refuses another namespace, a running app or a dump that does not read back in full"; \
+	./database.sh --self-test; \
+	grep -qF 'echo "dump: $$f"' <(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --show-only templates/backup.yaml) \
+		|| { echo "backup: the dump job must name its dump in its log (echo \"dump: \$$f\"), the release reads it"; exit 1; }; \
 	dry=$$($(MAKE) --no-print-directory -s -n status ENV=prod); \
 	grep -qxF './check-release.sh helper2-prod https://helper2.ai/ https://helper2.ai/api/v1/sources' <<< "$$dry" \
 		|| { echo "make status does not run check-release.sh on the public page and API: $$dry"; exit 1; }; \
