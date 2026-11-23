@@ -343,15 +343,24 @@ counter of its own.
 ## OQ-029: Are Google Analytics and Google's ads and consent tool secondary actors of UC-016?
 
 **Element:** UC-016  
-**Raised by:** review of pull request #1051, 2026-11-23  
+**Raised by:** reviewer agent (review of pull request #1051), 2026-11-23  
 **Blocking:** No  
 **Status:** Open  
 
 The goal and BR-002, BR-003 and BR-005 have the site count visits with Google Analytics, show Google ads and load
-Google's consent tool, each only when it is configured. The **Secondary Actors:** line names only the Payment
-Provider, the use case diagram of `site` has no actor for them, and the External systems table of
-`docs/architecture/stack.md` has no row for them. The settings live in `ai.helper2.site.monetisation`
-(`ga4MeasurementId`, `adsenseClient`, `adsTxt`), the scripts in `frontend/src/features/monetisation`
-(`AnalyticsConsent.tsx`, `AdSenseSlot.tsx`). Readings: (a) they are secondary actors: UC-016 and its diagram name
-them (one actor for Google's analytics and ads, or one each), and the stack gets a row each; (b) they are not: the
-visitor's browser loads Google's scripts and the backend calls nothing, so they stay out, and the use case says why.
+Google's consent tool, each only when it is configured, and ads and the consent tool also only while the Google ads
+switch is on (UC-028 BR-001). [ADR 0042](architecture/decisions/ADR-0042-monetisation.md) decides this setup. The
+**Secondary Actors:** line names only the Payment Provider, the use case diagram of `site` has no actor for the
+Google tools, and the External systems table of `docs/architecture/stack.md` has no row for them. The settings live
+in `ai.helper2.site.monetisation` in `backend/apps/public` (`ga4MeasurementId`, `adsenseClient`, `adsenseSlot`,
+`adsenseSlotSearch`, `adsenseSlotGuide`, `adsEnabled`). The browser loads the scripts: Google Analytics in
+`frontend/src/lib/analytics.ts`, the consent tool in `frontend/src/lib/googleConsent.ts`, the ads in
+`frontend/src/features/monetisation/AdSenseSlot.tsx`.
+
+The Payment Provider is in the same position: the visitor's browser goes to GitHub's or Stripe's page (BR-001) and
+the backend calls neither, yet UC-016 and its diagram name it, and the stack lists it. The answer applies to both.
+Readings: (a) a system the visitor's browser reaches for a use case is a secondary actor: UC-016 and its diagram name
+the Google tools (one actor for Google, or one each), and the stack gets a row each, located in the frontend code
+that loads it; (b) only a system the backend calls is a secondary actor: the Google tools stay out, and the Payment
+Provider leaves UC-016, its diagram and the stack too; (c) the Payment Provider stays an actor because the visitor
+pays there and leaves the site, while the Google tools only run inside the site's page and stay out.
