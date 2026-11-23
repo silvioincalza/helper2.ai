@@ -15,6 +15,10 @@ on:
         description: first line of the release notes, for a breaking change (a migration that drops or rewrites data, an API break). Empty = none
         type: string
         default: ''
+      notes_since:
+        description: a tag on main the release notes start after, when the release below shares no commit with main (its pull requests were squashed). Not a v* tag. Empty = the release below
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -29,6 +33,7 @@ jobs:
     timeout-minutes: 10
     env:
       VERSION: ${{ inputs.version }}
+      NOTES_SINCE: ${{ inputs.notes_since }}
     outputs:
       sha: ${{ steps.check.outputs.sha }}
       commit: ${{ steps.check.outputs.commit }}
@@ -60,6 +65,13 @@ jobs:
           [[ -z $used || $used == "$sha" ]] \
             || { echo "::error::$VERSION is used up on ${used::12}, release/$LINE is at ${sha::12} now: run release-prepare with patch-of $LINE (ADR 0045)"; exit 1; }
           base=$(git merge-base "$sha" refs/remotes/origin/main)
+          if [[ -n $NOTES_SINCE ]]; then
+            [[ $NOTES_SINCE != v* ]] || { echo "::error::notes_since names a release tag: leave it empty to start after the release below"; exit 1; }
+            since=$(git rev-parse --verify --quiet "refs/tags/$NOTES_SINCE^{commit}") \
+              || { echo "::error::notes_since: no tag $NOTES_SINCE"; exit 1; }
+            git merge-base --is-ancestor "$since" "$base" \
+              || { echo "::error::notes_since: $NOTES_SINCE (${since::12}) is not in the history of main that release/$LINE took"; exit 1; }
+          fi
           version=$(git tag -l 'v*' 'used/v*' | .github/scripts/release-version.sh check "v$VERSION" "$(git log -1 --format=%ct "$base")" "$(date +%s)" 2>&1) \
             || { echo "::error::$version"; exit 1; }
           gradle=$(git show "$sha:backend/build.gradle.kts" | sed -n 's/^version = "\(.*\)"$/\1/p')
@@ -213,6 +225,7 @@ jobs:
       VERSION: ${{ inputs.version }}
       LINE: ${{ needs.check.outputs.line }}
       HEADLINE: ${{ inputs.headline }}
+      NOTES_SINCE: ${{ inputs.notes_since }}
       SHA: ${{ needs.check.outputs.sha }}
       RUN: ${{ needs.built.outputs.run }}
     steps:
@@ -238,6 +251,7 @@ jobs:
             echo "$tag names ${SHA::12} already"; exit 0
           fi
           previous=$({ git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; echo "$tag"; } | sort -uV | grep -Fx -B1 -- "$tag" | head -1)
+          [[ -z $NOTES_SINCE ]] || previous=$NOTES_SINCE
           since=()
           [[ $previous == "$tag" ]] || since=(-f previous_tag_name="$previous")
           notes=$(mktemp)

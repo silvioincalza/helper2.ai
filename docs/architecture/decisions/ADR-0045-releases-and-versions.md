@@ -134,6 +134,10 @@ read as a fix of that release. What a release branch gained must reach `main` ag
    the pull requests of `main` the release ships and none of its own: `release-notes.sh` leaves out a pull request
    into a branch other than `main` (`main` brought in, a fix carried over, the version pull request) and one from
    `release-merge/*` (a release back into `main`). A pull request it cannot read stops the job before the tag.
+   A release below whose branch holds no commit of `main` (its pull requests were squashed) would put every pull
+   request of `main` since its branch was cut in the notes: `release` then gets `notes_since`, a tag on the commit of
+   `main` that release took (not a `v*` tag), and the notes start after it. `check` refuses a `notes_since` that is not
+   in the history of `main` the branch took.
 10. **Last, the pull request back into `main`.** The `publish` job makes `release-merge/vYYYY.N.P` from the tag,
     merges `main` into it, and opens its pull request into `main`: the version and, for a patch, its fixes. When
     `main` carries a higher version (a patch of an older release), a commit first puts `main`'s version back, so the
