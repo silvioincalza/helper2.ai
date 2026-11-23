@@ -368,3 +368,19 @@ pays there and leaves the site, while the Google tools only run inside the site'
 **Answer:** (c)  
 **Answered by:** the human in the loop, 2026-11-23  
 **Resolved in:** UC-016  
+
+## OQ-030: How old may the stored web results be that a failed or skipped web search shows?
+
+**Element:** UC-001 BR-006  
+**Raised by:** /use-case-implement, 2026-11-23  
+**Blocking:** No  
+**Status:** Open  
+**Assumed:** the code shows stored web results up to 7 days old, the retention of BR-009.  
+
+BR-006 says a source that fails later shows an answer at most 24 hours old as a cached answer. A4 step 2 and A5 step 2
+show the last stored answer "when one is recent enough". For the live web search the code uses the 7 days stored web
+results are kept (BR-009) instead of the 24 hours: a web search that fails, is paused, or is skipped because the
+visitor's daily web searches are used up shows stored web results up to 7 days old (`SourceFanOut.stale`). Readings:
+(a) the 24 hours of BR-006 hold for the web search too, and the code changes; (b) a web search falls back to stored
+web results for as long as they are kept, and BR-006 says so; (c) another bound for the web search, stated in
+BR-009.

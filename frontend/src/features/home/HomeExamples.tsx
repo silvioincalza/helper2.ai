@@ -47,6 +47,7 @@ function served(pool: HomeExamplePool): Chip[] {
   }));
 }
 
+// UC-001 BR-014: only the examples UC-003 BR-008 serves.
 function loadPool(lang: string, signal: AbortSignal): Promise<HomeExamplePool | null> {
   return new Promise((resolve) => {
     const ctrl = new AbortController();

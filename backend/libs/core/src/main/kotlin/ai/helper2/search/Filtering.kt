@@ -84,6 +84,7 @@ object Filtering {
       matches(it, filters, except = null)
     }
 
+  // UC-001 BR-018: a chosen value leaves out results that do not state it.
   internal fun matches(r: MergedResult, filters: SearchFilters, except: String?): Boolean {
     for (facet in FACETS) {
       if (facet.name == except) continue
@@ -117,6 +118,7 @@ object Filtering {
 data class FacetCount(val value: String, val count: Int)
 
 object Facets {
+  // UC-001 BR-018: each filter counts its values and the not-stated one.
   @JvmStatic
   fun compute(results: List<MergedResult>, filters: SearchFilters): Map<String, List<FacetCount>> =
     FACETS.associate { facet ->
@@ -138,6 +140,7 @@ object Facets {
 }
 
 object Sorting {
+  // UC-001 BR-017: relevance, newest or recently updated; no date comes last.
   @JvmStatic
   fun sort(results: List<MergedResult>, order: SortOrder): List<MergedResult> =
     when (order) {

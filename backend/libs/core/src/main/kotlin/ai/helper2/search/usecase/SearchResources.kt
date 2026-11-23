@@ -165,10 +165,12 @@ constructor(
     return merger.merge(attempts.flatMap { it.hits }.filterNot(::onShadowLibrary), contexts)
   }
 
+  // UC-001 BR-013: results on shadow libraries are never shown.
   private fun onShadowLibrary(hit: SourceHit): Boolean =
     shadowLibraries.isShadowLibrary(hit.url.host) ||
       shadowLibraries.isShadowLibrary(hit.canonicalUrl.host)
 
+  // UC-001 BR-022: a hosted app only the catalog returns is left out.
   private fun confirmedNow(merged: List<MergedResult>): List<MergedResult> {
     val prefixes = sources.mapNotNull { it.descriptor.confirmsUrlPrefix }
     if (prefixes.isEmpty()) return merged
@@ -201,6 +203,7 @@ constructor(
       analyzed.requiredVariants.first().split(' '),
     )
 
+  // UC-001 BR-002: one page of the sorted results; the contract bounds page and size.
   private fun pageOf(sorted: List<MergedResult>, request: SearchRequest): List<MergedResult> =
     sorted.drop(request.page * request.size).take(request.size)
 
@@ -208,6 +211,7 @@ constructor(
     if (quota == null || sources.none { it.descriptor.metered && it.descriptor.enabled }) null
     else quota.left(asker)
 
+  // UC-001 BR-005: each source is asked for at most perSourceLimit results.
   private fun sourceQuery(request: SearchRequest, analyzed: AnalyzedQuery, language: String?) =
     SourceQuery(
       request.text.trim(),
