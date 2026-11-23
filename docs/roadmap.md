@@ -10,11 +10,11 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
+- [S1.1.7 The stack page names the identity and payment providers](https://github.com/silvioincalza/helper2.ai/issues/1050)
 - [T1.11.3 The roadmap page lists the open stories of today](https://github.com/silvioincalza/helper2.ai/issues/786)
 
 ### Next
 
-- [S1.3.6 The four indexes that no query uses removed](https://github.com/silvioincalza/helper2.ai/issues/156)
 - [S1.10.3 My session not to be evicted when the cache fills](https://github.com/silvioincalza/helper2.ai/issues/179)
 
 ### Later
@@ -37,9 +37,11 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S2.2.6 The `linkedin-scout`, `course-scout` and live web events collectors fixed](https://github.com/silvioincalza/helper2.ai/issues/191)
 - [S2.3.6 The cause of a GitHub GraphQL answer without data named by the awesome-list collector](https://github.com/silvioincalza/helper2.ai/issues/428)
 - [S2.3.9 A web page that lists AI resources is split into its items, and each item is checked](https://github.com/silvioincalza/helper2.ai/issues/843)
+- [S2.3.27 A list that is gone does not name a candidate accepted later](https://github.com/silvioincalza/helper2.ai/issues/1013)
 - [S2.10.3 A source record to stay with its resource](https://github.com/silvioincalza/helper2.ai/issues/360)
 - [S2.10.6 A refused package join on the admin review list, and accepting it joins](https://github.com/silvioincalza/helper2.ai/issues/490)
 - [S2.11.3 Every source and collector to state its vitality facts](https://github.com/silvioincalza/helper2.ai/issues/215)
+- [S2.11.7 Likes and downloads of Hugging Face models, Spaces and npm packages are read again on a schedule](https://github.com/silvioincalza/helper2.ai/issues/976)
 
 ### Later
 
@@ -47,10 +49,12 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S2.3.5 Each row of `discovery_host` to show how many candidates it kept and dropped in the last 30 days](https://github.com/silvioincalza/helper2.ai/issues/197)
 - [S2.3.12 A PyPI package a list links to is read by its name](https://github.com/silvioincalza/helper2.ai/issues/850)
 - [S2.3.13 A Hugging Face dataset or Space a list links to is read by its id](https://github.com/silvioincalza/helper2.ai/issues/851)
+- [S2.3.19 Proposal: a rating from the comments on directories](https://github.com/silvioincalza/helper2.ai/issues/974)
 - [S2.4.6 Resources enriched before the gap round to get one](https://github.com/silvioincalza/helper2.ai/issues/203)
 - [S2.7.2 BigQuery reached without a long-lived key](https://github.com/silvioincalza/helper2.ai/issues/207)
 - [S2.10.7 An official package without a scope to join the repository its provenance names](https://github.com/silvioincalza/helper2.ai/issues/493)
 - [S2.11.5 A fork ahead of an archived parent treated as the living project, and repositories on other hosts visited](https://github.com/silvioincalza/helper2.ai/issues/803)
+- [S2.11.8 A PyPI package takes its popularity from its public repository](https://github.com/silvioincalza/helper2.ai/issues/977)
 - [S2.13.1 To ask for a new source from the Sources page](https://github.com/silvioincalza/helper2.ai/issues/218)
 - [S2.14.1 Hackathons, meetups, talks and workshops found automatically](https://github.com/silvioincalza/helper2.ai/issues/219)
 - [S2.15.1 PHP, Swift, C, C++, Elixir and Dart as platforms](https://github.com/silvioincalza/helper2.ai/issues/220)
@@ -66,7 +70,6 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S3.1.6 A result card whose link and text come from one source](https://github.com/silvioincalza/helper2.ai/issues/559)
 - [S3.3.2 The embedding indexer to send texts in batches again](https://github.com/silvioincalza/helper2.ai/issues/231)
 - [S3.3.6 Production embeds with the model in the cluster](https://github.com/silvioincalza/helper2.ai/issues/892)
-- [S3.4.4 "awesome list" in a query hints the type AWESOME_LIST, with a new ranking baseline](https://github.com/silvioincalza/helper2.ai/issues/635)
 - [S3.5.5 `CategoryMatcher` measured on 150 labelled resources](https://github.com/silvioincalza/helper2.ai/issues/239)
 - [S3.8.3 Function words read in the language of the question](https://github.com/silvioincalza/helper2.ai/issues/574)
 - [S3.10.2 A strong Space on the first page](https://github.com/silvioincalza/helper2.ai/issues/249)
@@ -201,7 +204,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Next
 
-- [S11.1.2 Spec-lint as a CI check](https://github.com/silvioincalza/helper2.ai/issues/925)
 - [S11.1.3 Decision rights for coding assistants](https://github.com/silvioincalza/helper2.ai/issues/926)
 - [S11.2.1 A vision in the AI Unified Process template](https://github.com/silvioincalza/helper2.ai/issues/927)
 - [S11.2.2 Requirements that match the vision and the use cases](https://github.com/silvioincalza/helper2.ai/issues/928)
@@ -209,12 +211,6 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S11.3.1 An entity model that matches the schema](https://github.com/silvioincalza/helper2.ai/issues/930)
 - [S11.3.2 Use case specifications ready for approval](https://github.com/silvioincalza/helper2.ai/issues/931)
 - [S11.3.3 ADRs with a status and the requirements they serve](https://github.com/silvioincalza/helper2.ai/issues/932)
-- [S11.6.1 Eval data and design tokens out of the backup folder](https://github.com/silvioincalza/helper2.ai/issues/937)
-- [S11.6.2 Each backup page rewritten into the specification or removed](https://github.com/silvioincalza/helper2.ai/issues/938)
-- [S11.7.1 One workflow in AGENTS.md and CLAUDE.md](https://github.com/silvioincalza/helper2.ai/issues/939)
-- [S11.7.2 Specialist agents that read the specification first](https://github.com/silvioincalza/helper2.ai/issues/940)
-- [S11.7.3 Commands mapped onto the AI Unified Process skills](https://github.com/silvioincalza/helper2.ai/issues/941)
-- [S11.7.4 Backlog stories that name their use cases](https://github.com/silvioincalza/helper2.ai/issues/942)
 
 ### Later
 
