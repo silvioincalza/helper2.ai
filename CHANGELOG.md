@@ -6,7 +6,153 @@ the year, the number of the release in that year's month series and the patch
 ([ADR 0045](docs/architecture/decisions/ADR-0045-releases-and-versions.md)). A breaking change goes on the first line of the
 release notes.
 
-## 2026.11.3 (unreleased)
+## Unreleased
+
+On `main`, not yet on a release branch.
+
+### What users get
+
+- **The home lists** stand side by side as log rows on wide screens: the date and type in a fixed column, the title
+  with its source in full under it. Phones keep the tabs.
+
+### What operators run
+
+- **Two migrations**, `V2026.11.11.1` and `V2026.11.11.2`, both additive: the audit log takes the removal of a
+  discovered list that is gone, and an audit value or reason holds up to 1000 characters.
+- **Lists with a long address** are added and removed in the back office, and the audit entry keeps a curated value and
+  the address of a removed resource whole.
+- **Releases:** a pull request into a release branch and a release's pull request back into `main` are merged with a
+  merge commit, so a release branch carries `main`'s history.
+
+## 2026.11.10 (2026-11-22)
+
+A patch of 2026.11.9.
+
+### What users get
+
+- **Directory lists find the item's own site:** a link of a list is followed, at most 3 steps, to the page of the item
+  itself, also when the same entry links an excluded site such as x.com.
+- **A web page list that its site says is gone** no longer names its resources.
+
+### What operators run
+
+- **Two migrations**, `V2026.11.10.1` and `V2026.11.10.2`, both additive.
+- **robots.txt and caps:** when robots.txt redirects to the www twin and that request meets a daily cap, a host cap or
+  an open circuit, the link waits instead of being recorded as refused for a day.
+
+## 2026.11.9 (2026-11-22)
+
+### What users get
+
+- **10 web searches a day** for search and 10 for the guide, for each visitor.
+- **A rating from 1 to 5** on the resource page, from the votes the directories state, with the number of directories
+  it comes from. It does not change the order of the results.
+- **Fresher popularity:** the repository sweep reads the stars of a GitHub repository again.
+- **Better facts:** the re-check tests every field that must state its value; a LinkedIn post is never the event.
+- **The guide** reads the model's answer as a stream, so the first words come sooner.
+
+### What operators run
+
+- **Three migrations**, `V2026.11.9.1` to `V2026.11.9.3`, all additive.
+- **The embedding model runs in the cluster:** one `helper2-embedder` for prod and staging, 4 threads and 4 CPU in
+  prod, no hosted endpoint. Prod indexes one text every 3 s, staging one a minute.
+- **Directory host lists:** the Scout reads the lists of a directory host only after an administrator turns the
+  reading on for that host. A list page waits for review and is never indexed by itself; what a list named is kept
+  until the list is read again, and a GitHub list that is gone no longer names its resources.
+- **Runtime settings:** the Scout's daily search and page-read credits are set on the Settings page, 1,000 a day by
+  default, at most 3,000. A runtime switch is shown, changed and audited as true or false.
+- **Google ads** start and stop from the back office: one box below the search results and one below a guide answer.
+  The switch is off in prod.
+- **The guide judge runs in prod**, on its own daily cap.
+- **Logs and alerts:** the live web credits alert fires at 2,500 a day; an unavailable source, a failed query
+  embedding and a refused embedding batch each leave their reason in the log.
+- **The public app gets only its own addresses**; the web image answers the rest.
+
+## 2026.11.8 (2026-11-20)
+
+### What users get
+
+- **The site for crawlers and shares.** The pages carry a body a crawler can read, the sitemap is an index of parts,
+  a hub page per resource type lists its newest resources, `/llms.txt` says what helper2.ai is, and a shared link
+  shows an image. Changed pages go to IndexNow once a day.
+- **The resource page shows every list** a resource was found in.
+- **Search:** new words start without the filters of the words before; a word for the user's own device is not sent
+  to the keyword sources.
+- **The guide** rides out a short provider outage; each guide model has its own circuit.
+- **The Privacy page** names the countries where the AI models run.
+
+### What operators run
+
+- **Five migrations**, `V2026.11.8.1` to `V2026.11.8.5`. `V2026.11.8.1` rewrites the prompt version of past
+  enrichment runs to the prompt hash.
+- **Lists the Scout reads** are added in the back office: GitHub lists and web pages. Every link of a list entry goes
+  to the rule of its kind; an arXiv paper or an npm package a list links to is read from its source. A sweep visits
+  every record with a GitHub repository.
+- **Review research:** bulk Accept takes the candidates the research kept, with the values it confirmed, and refuses
+  research a later edit made stale. A decided candidate still shows its research.
+- **An admin removes a resource** that is not about AI, and the Scout does not add it again.
+- **Bulk work runs on the fast model.** A text the embedding provider refused stays left out across restarts.
+- **Each backup run writes its own dump**, so a run by hand keeps the nightly one.
+
+## 2026.11.7 (2026-11-18)
+
+### What operators run
+
+- **The review research assistant runs on prod.**
+- **The awesome-list re-check** survives a missing README, a rate limit and an open circuit.
+
+## 2026.11.6 (2026-11-18)
+
+`V2026.11.6.5` rewrites data: a course candidate's note moves into its details and the note is set to NULL. The
+release before reads both forms, so the canary is safe.
+
+### What users get
+
+- **Skeleton loaders** on every page that loads data.
+- **No shadow library is ever a result**, from any source.
+- **An awesome list is its own type** and is never taken for the tool it lists.
+- **The guide prompts** state only the rules the code enforces.
+- **A request that ends after sign-in** replaced its session no longer fails.
+
+### What operators run
+
+- **Seven migrations**, `V2026.11.6.1` to `V2026.11.6.7`. The public app role gets no right on new tables or on the
+  back office's locks.
+- **Research on review candidates:** every step stored and streamed, a live run can be watched, queued runs wait for
+  the budget, and tool results reach the models cleaned and escaped.
+- **The back office keeps** the list of shadow libraries no search shows, and a known target can be a tool such as
+  VS Code.
+- **A judge on staging** scores the claims the guide's verify step checked.
+
+## 2026.11.5 (2026-11-18)
+
+### What users get
+
+- **Events:** the Events page lists every upcoming event, with AI conferences from confs.tech; the Scout reads the
+  page of an undated event, and a conference with side events is one event.
+- **The guide** proposes five picks and shows the first three that pass every check; every quote links the page that
+  holds it.
+- **Search:** MIT stays a search term; one weak word like prompt or agent does not make a resource about AI; a
+  package build for one system, an MCP server of a collection repository and a stranger's package are each handled
+  as what they are.
+- **The Privacy page** states how long past events are kept.
+
+### What operators run
+
+- **The back office:** the review list reads as titles, 50 rows a page; the Scout runs page shows the latest run of
+  every source, failures first; the Overview groups the enrichment issues of the last 7 days; the catalog is checked
+  against the AI word rule.
+- **Alerts:** one on a single out-of-memory kill; the Scout stale alerts follow each collector's interval.
+- **Redis's memory limit** is 3.5 times `maxmemory`, so an AOF rewrite cannot get it OOM-killed.
+- **A release branch** can be cut from main's commit.
+
+## 2026.11.4 (2026-11-16)
+
+### What operators run
+
+- **A text the embedding provider refuses** no longer blocks the indexer.
+
+## 2026.11.3 (2026-11-16)
 
 The first release of this repository. It is the starting point: the product as it is released.
 
