@@ -339,3 +339,19 @@ At most 10 lists discovery added are read per day. The count is taken from the l
 that fails and is tried again on the same day counts once: a day can go past 10 reads. Three tries a page and the
 Scout's daily credits bound it. Readings: (a) accepted, the bounds are enough; (b) count every try, which needs a
 counter of its own.
+
+## OQ-029: Are Google Analytics and Google's ads and consent tool secondary actors of UC-016?
+
+**Element:** UC-016  
+**Raised by:** review of pull request #1051, 2026-11-23  
+**Blocking:** No  
+**Status:** Open  
+
+The goal and BR-002, BR-003 and BR-005 have the site count visits with Google Analytics, show Google ads and load
+Google's consent tool, each only when it is configured. The **Secondary Actors:** line names only the Payment
+Provider, the use case diagram of `site` has no actor for them, and the External systems table of
+`docs/architecture/stack.md` has no row for them. The settings live in `ai.helper2.site.monetisation`
+(`ga4MeasurementId`, `adsenseClient`, `adsTxt`), the scripts in `frontend/src/features/monetisation`
+(`AnalyticsConsent.tsx`, `AdSenseSlot.tsx`). Readings: (a) they are secondary actors: UC-016 and its diagram name
+them (one actor for Google's analytics and ads, or one each), and the stack gets a row each; (b) they are not: the
+visitor's browser loads Google's scripts and the backend calls nothing, so they stay out, and the use case says why.
