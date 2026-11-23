@@ -16,7 +16,7 @@ job_state() {
 }
 
 dump() {
-  local ns=$1 version=$2 job state name
+  local ns=$1 version=$2 job state name log start
   namespace_ok "$ns" || {
     echo "database.sh: $ns is not helper2-staging or helper2-prod" >&2
     return 1
@@ -45,7 +45,19 @@ dump() {
     echo "database.sh: the dump job $job is $state: no dump for $version, the release stops here" >&2
     return 1
   }
-  name=$(kubectl -n "$ns" logs "job/$job" -c dump | sed -n 's|^dump: /backup/||p' | tail -n 1)
+  log=$(kubectl -n "$ns" logs "job/$job" -c dump) || {
+    echo "database.sh: the log of $job cannot be read: no dump for $version, the release stops here" >&2
+    return 1
+  }
+  name=$(sed -n 's|^dump: /backup/||p' <<< "$log" | tail -n 1)
+  if [[ -z $name ]]; then
+    # A pg-backup CronJob whose dump step prints no dump line still lists /backup: its dump is the newest file
+    # named no earlier than the job's start.
+    start=$(kubectl -n "$ns" get job "$job" -o jsonpath='{.status.startTime}') || start=
+    start=${start//:/}
+    [[ -z $start ]] || name=$(grep -oE 'helper2-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}Z\.sql\.gz' <<< "$log" | sort -u |
+      awk -v from="helper2-$start" '$0 >= from' | tail -n 1)
+  fi
   [[ $name =~ $DUMP_NAME ]] || {
     echo "database.sh: the dump job $job names no dump in its log" >&2
     return 1
@@ -54,15 +66,26 @@ dump() {
 }
 
 apps_stopped() {
-  local ns=$1 app running
+  # Called in an || list, so errexit is off here: every read that fails returns 1 itself, as a running app does.
+  local ns=$1 app running jobs
   for app in $APPS; do
-    running=$(kubectl -n "$ns" get pods -l "app=$app" -o name)
+    running=$(kubectl -n "$ns" get pods -l "app=$app" -o name) || {
+      echo "database.sh: the pods of $app in $ns cannot be read" >&2
+      return 1
+    }
     [[ -z $running ]] || {
       echo "database.sh: $app still runs in $ns ($running)" >&2
       return 1
     }
   done
-  running=$(kubectl -n "$ns" get jobs -o json | jq -r '.items[] | select(.metadata.name | test("^helper2-(canary-)?migrate-")) | select((.status.active // 0) > 0) | .metadata.name')
+  jobs=$(kubectl -n "$ns" get jobs -o json) || {
+    echo "database.sh: the jobs in $ns cannot be read" >&2
+    return 1
+  }
+  running=$(jq -r '.items[] | select(.metadata.name | test("^helper2-(canary-)?migrate-")) | select((.status.active // 0) > 0) | .metadata.name' <<< "$jobs") || {
+    echo "database.sh: the jobs in $ns do not read as a job list" >&2
+    return 1
+  }
   [[ -z $running ]] || {
     echo "database.sh: the migrate job $running runs in $ns" >&2
     return 1
@@ -126,11 +149,13 @@ fake_cluster() {
 #!/usr/bin/env bash
 echo "$*" >> "$FAKE_DIR/calls"
 case " $* " in
+  *" get job pg-backup-release-"*" jsonpath="*) printf '%s' "${FAKE_START-2026-11-23T01:30:00Z}" ;;
   *" get job pg-backup-release-"*)
     [[ -z ${FAKE_NO_JOB:-} || -e $FAKE_DIR/created ]] || exit 1
     printf '{"status": {"conditions": [{"type": "%s", "status": "True"}]}}\n' "${FAKE_DUMP_JOB:-Complete}" ;;
   *" logs job/"*) printf '%s\n' "${FAKE_DUMP_LOG-dump: /backup/helper2-2026-11-23T013000Z.sql.gz}" ;;
   *" get pods -l app="*)
+    [[ -z ${FAKE_PODS_FAIL:-} ]] || exit 1
     all="$*"
     app=${all##*app=}
     app=${app%% *}
@@ -138,7 +163,9 @@ case " $* " in
     if [[ $app == helper2 && -n ${FAKE_STARTS_AT_SECOND_CHECK:-} ]] && [[ -e $FAKE_DIR/checked ]]; then echo "pod/helper2-2"; fi
     [[ $app != helper2-canary ]] || touch "$FAKE_DIR/checked"
     ;;
-  *" get jobs -o json "*) printf '{"items": [%s]}\n' "${FAKE_JOBS:-}" ;;
+  *" get jobs -o json "*)
+    [[ -z ${FAKE_JOBS_FAIL:-} ]] || exit 1
+    printf '{"items": [%s]}\n' "${FAKE_JOBS:-}" ;;
   *" get statefulset postgres "*) echo harbor/postgres:18 ;;
   *" exec pg-restore -- sh -ec test -f "*) [[ ${FAKE_DUMP:-whole} == whole ]] ;;
   *" exec pg-restore -- sh -ec printf "*) echo "-- the dump" ;;
@@ -187,12 +214,16 @@ restore refuses a canary|untouched|FAKE_RUNNING=helper2-canary|restore helper2-s
 restore refuses a running migrate job|untouched|FAKE_JOBS={"metadata":{"name":"helper2-migrate-9"},"status":{"active":1}}|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
 restore refuses an app that started while the dump was read|untouched|FAKE_STARTS_AT_SECOND_CHECK=1|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
 restore refuses a dump that does not read back in full|untouched|FAKE_DUMP=cut|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
+restore refuses when the pods cannot be read|untouched|FAKE_PODS_FAIL=1|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
+restore refuses when the jobs cannot be read|untouched|FAKE_JOBS_FAIL=1|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
 dump names the dump of the release|named|NONE=1|dump helper2-prod 2026.11.12
 dump runs pg-backup once when the release has no dump yet|made|FAKE_NO_JOB=1|dump helper2-prod 2026.11.12
 dump of a rerun keeps the dump of the earlier run, taken before its canary|kept|NONE=1|dump helper2-prod 2026.11.12
 dump fails with a failed job|fail|FAKE_DUMP_JOB=Failed|dump helper2-prod 2026.11.12
 dump fails with a job that does not finish|fail|FAKE_DUMP_JOB=Suspended|dump helper2-prod 2026.11.12
 dump fails when the log names no dump|fail|FAKE_DUMP_LOG=done|dump helper2-prod 2026.11.12
+dump of a CronJob with no dump line names the newest file from its start|named|FAKE_DUMP_LOG=-rw-r--r--_70_9_helper2-2026-11-22T013000Z.sql.gz_-rw-r--r--_70_9_helper2-2026-11-23T013000Z.sql.gz|dump helper2-prod 2026.11.12
+dump of a CronJob with no dump line fails when no file is from its start|fail|FAKE_DUMP_LOG=-rw-r--r--_70_9_helper2-2026-11-22T013000Z.sql.gz|dump helper2-prod 2026.11.12
 dump refuses a version that is not YYYY.N.P|fail|NONE=1|dump helper2-prod 2026.11
 EOF_CASES
   if [[ $fails -gt 0 ]]; then
