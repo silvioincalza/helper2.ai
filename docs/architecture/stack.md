@@ -40,8 +40,8 @@ feature folders of the frontend). The project has no browser test layer.
 | Source Provider   | [sources.md](sources.md) | `ai.helper2.sources` (one package per source: `github`, `huggingface`, `arxiv`, `npm`, `pypi`, `hackernews`, `tavily`, `feeds`, ...) |
 | Embedding Service | –        | `ai.helper2.catalog.internal` (`NvidiaEmbedder`) |
 | Search Engine     | –        | `ai.helper2.catalog` (IndexNow: `catalog.schedule`, `catalog.config`) |
-| Identity Provider | –        | `ai.helper2.identity.security` in both apps (GitHub through Spring Security OAuth2 login, profile `oauth-github`; [ADR 0036](decisions/ADR-0036-identity-and-the-admin-host.md)) |
-| Payment Provider  | –        | `ai.helper2.site.monetisation` in `backend/apps/public` (links to GitHub Sponsors and a Stripe payment link; the visitor pays on the provider's page) |
+| Identity Provider | –        | `ai.helper2.identity.config` in `backend/libs/core` (`WebSecurity.oauthUsers` reads the provider's reply, `NoProviderTokens` keeps no token) and `ai.helper2.identity.security` in both apps (the `oauth2Login` wiring). GitHub through Spring Security OAuth2 login, profile `oauth-github`; [ADR 0036](decisions/ADR-0036-identity-and-the-admin-host.md) |
+| Payment Provider  | –        | `ai.helper2.site.monetisation` in `backend/apps/public` (serves the links) and `frontend/src/features/monetisation` (shows them). GitHub Sponsors and a Stripe payment or donation link; the visitor pays on the provider's page |
 
 ## Module layout
 
