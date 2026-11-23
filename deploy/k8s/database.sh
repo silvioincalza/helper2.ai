@@ -26,8 +26,16 @@ dump() {
     return 1
   }
   job=pg-backup-release-${version//./-}
-  kubectl -n "$ns" delete job "$job" --ignore-not-found --wait > /dev/null
-  kubectl -n "$ns" create job --from=cronjob/pg-backup "$job" > /dev/null
+  state=none
+  if kubectl -n "$ns" get job "$job" -o name > /dev/null 2>&1; then
+    state=$(job_state "$ns" "$job")
+  fi
+  if [[ $state == complete ]]; then
+    echo "database.sh: $job finished in an earlier run: its dump, taken before that run's canary, stays the way back" >&2
+  else
+    kubectl -n "$ns" delete job "$job" --ignore-not-found --wait > /dev/null
+    kubectl -n "$ns" create job --from=cronjob/pg-backup "$job" > /dev/null
+  fi
   for ((i = 0; i < TRIES; i++)); do
     state=$(job_state "$ns" "$job")
     [[ $state == running ]] || break
@@ -42,7 +50,6 @@ dump() {
     echo "database.sh: the dump job $job names no dump in its log" >&2
     return 1
   }
-  kubectl -n "$ns" delete job "$job" --wait > /dev/null
   echo "$name"
 }
 
@@ -109,8 +116,8 @@ EOF
     return 1
   }
   echo "restoring $ns from $file: the whole database is replaced, in one transaction"
-  kubectl -n "$ns" exec "$READER" -- sh -ec "printf 'DROP SCHEMA public CASCADE;\nCREATE SCHEMA public;\n'; gzip -dc /backup/$file" |
-    kubectl -n "$ns" exec -i postgres-0 -- psql -U helper2 -d helper2 -v ON_ERROR_STOP=1 --single-transaction -q
+  kubectl -n "$ns" exec "$READER" -- sh -ec "printf 'BEGIN;\nDROP SCHEMA public CASCADE;\nCREATE SCHEMA public AUTHORIZATION pg_database_owner;\nGRANT USAGE ON SCHEMA public TO PUBLIC;\n'; gzip -dc /backup/$file; printf 'COMMIT;\n'" |
+    kubectl -n "$ns" exec -i postgres-0 -- psql -U helper2 -d helper2 -v ON_ERROR_STOP=1 -q
   echo "$ns runs $file. The apps stay stopped: bring back the release that runs on this schema (make ENV=${ns#helper2-} rollback, or a deploy of that release)"
 }
 
@@ -119,7 +126,9 @@ fake_cluster() {
 #!/usr/bin/env bash
 echo "$*" >> "$FAKE_DIR/calls"
 case " $* " in
-  *" get job pg-backup-release-"*) printf '{"status": {"conditions": [{"type": "%s", "status": "True"}]}}\n' "${FAKE_DUMP_JOB:-Complete}" ;;
+  *" get job pg-backup-release-"*)
+    [[ -z ${FAKE_NO_JOB:-} || -e $FAKE_DIR/created ]] || exit 1
+    printf '{"status": {"conditions": [{"type": "%s", "status": "True"}]}}\n' "${FAKE_DUMP_JOB:-Complete}" ;;
   *" logs job/"*) printf '%s\n' "${FAKE_DUMP_LOG-dump: /backup/helper2-2026-11-23T013000Z.sql.gz}" ;;
   *" get pods -l app="*)
     all="$*"
@@ -134,7 +143,8 @@ case " $* " in
   *" exec pg-restore -- sh -ec test -f "*) [[ ${FAKE_DUMP:-whole} == whole ]] ;;
   *" exec pg-restore -- sh -ec printf "*) echo "-- the dump" ;;
   *" exec -i postgres-0 "*) cat > "$FAKE_DIR/loaded" ;;
-  *" delete "* | *" create job "* | *" apply "* | *" wait "*) cat > /dev/null 2>&1 || true ;;
+  *" create job "*) touch "$FAKE_DIR/created" ;;
+  *" delete "* | *" apply "* | *" wait "*) cat > /dev/null 2>&1 || true ;;
   *) echo "fake kubectl: unexpected $*" >&2; exit 2 ;;
 esac
 SH
@@ -149,13 +159,16 @@ self_test() {
   mkdir "$dir/bin"
   fake_cluster "$dir/bin"
   while IFS='|' read -r name want env args; do
-    rm -f "$dir/calls" "$dir/loaded" "$dir/checked"
+    rm -f "$dir/calls" "$dir/loaded" "$dir/checked" "$dir/created"
     # shellcheck disable=SC2086
     if out=$(env -i PATH="$dir/bin:$PATH" FAKE_DIR="$dir" POLL=0 TRIES=3 $env "$0" $args 2>&1 < /dev/null); then got=ok; else got=fail; fi
     case $want in
-      loaded) [[ $got == ok && -s $dir/loaded ]] && got=loaded ;;
+      loaded) [[ $got == ok && -s $dir/loaded ]] && ! grep -q -- --single-transaction "$dir/calls" &&
+        grep 'exec pg-restore -- sh -ec printf' "$dir/calls" | grep -q "^.*'BEGIN;.*DROP SCHEMA public CASCADE;.*gzip -dc /backup/[^;]*; printf 'COMMIT;.n'\$" && got=loaded ;;
       untouched) [[ $got == fail && ! -e $dir/loaded ]] && ! grep -q 'postgres-0' "$dir/calls" 2> /dev/null && got=untouched ;;
       named) [[ $got == ok && ${out##*$'\n'} == helper2-2026-11-23T013000Z.sql.gz ]] && got=named ;;
+      made) [[ $got == ok && -e $dir/created && ${out##*$'\n'} == helper2-2026-11-23T013000Z.sql.gz ]] && got=made ;;
+      kept) [[ $got == ok && ! -e $dir/created ]] && ! grep -q ' delete job' "$dir/calls" && got=kept ;;
     esac
     if [[ $got == "$want" ]]; then
       echo "ok   $name"
@@ -175,6 +188,8 @@ restore refuses a running migrate job|untouched|FAKE_JOBS={"metadata":{"name":"h
 restore refuses an app that started while the dump was read|untouched|FAKE_STARTS_AT_SECOND_CHECK=1|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
 restore refuses a dump that does not read back in full|untouched|FAKE_DUMP=cut|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
 dump names the dump of the release|named|NONE=1|dump helper2-prod 2026.11.12
+dump runs pg-backup once when the release has no dump yet|made|FAKE_NO_JOB=1|dump helper2-prod 2026.11.12
+dump of a rerun keeps the dump of the earlier run, taken before its canary|kept|NONE=1|dump helper2-prod 2026.11.12
 dump fails with a failed job|fail|FAKE_DUMP_JOB=Failed|dump helper2-prod 2026.11.12
 dump fails with a job that does not finish|fail|FAKE_DUMP_JOB=Suspended|dump helper2-prod 2026.11.12
 dump fails when the log names no dump|fail|FAKE_DUMP_LOG=done|dump helper2-prod 2026.11.12

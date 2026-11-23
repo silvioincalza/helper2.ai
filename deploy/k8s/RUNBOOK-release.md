@@ -29,9 +29,10 @@ A release keeps prod's database. Nothing is dumped, dropped or loaded.
 - **Redis** is kept. Sessions, rate-limit windows and the day's counters stay. The guide-answer cache is kept per
   build, so the new release starts with an empty one, once.
 - **The dump is the only way back for data.** A release that changes a file under
-  `backend/libs/schema/src/main/resources/db/migration` since the release below it takes its own dump of prod's
+  `backend/libs/schema/src/main/resources/db/migration` over the release prod runs takes its own dump of prod's
   database right before the canary (no canary: right before prod), a run of `pg-backup` verified like the nightly
-  one, and names it in its run summary. A failed dump stops the release before anything touches prod. The nightly
+  one, and names it in its run summary. A failed dump stops the release before anything touches prod, and so does
+  a failed off-site upload: the bucket must answer on a release day. The nightly
   dump (`pg-backup`, 02:30, 7 days, with the off-site copy) covers the rest. A restore replaces the whole database
   and loses what was written after the dump (section 5).
 
@@ -119,7 +120,7 @@ release, and the rollout replaces the pods one at a time. Only a release with `c
 | 2 | **(Owner)** | Merge the version pull request with a merge commit (`gh pr merge <n> --merge`). The ruleset of `release/**` wants `ci-ok` on it: when the pull request shows no check, start CI on its branch with `gh workflow run ci.yml -R $R --ref release-bump/YYYY.N.P` | **(workflow)** the push runs `cd` on the release branch: CI, the images built, signed and scanned. `gh run list -R $R --workflow cd.yml --branch release/YYYY.N --limit 1` is green | Fix the branch by pull request into `release/YYYY.N`; each push builds again |
 | 3 | **(Owner)** | Run `release` from `main` with `version`. `headline` for a breaking change. `canary` unticked only for the maintenance window of check 5 | **(workflow)** jobs `check` and `built` are green: the branch, the version rule, the seven files, staging ran the commit a `.0` is cut from, the CD run of the branch passed | Nothing reached prod and no tag exists. Fix what the error names, run `release` again |
 | 4 | **(Owner)** | Read the summary of `check` (version, commit, the commit it is cut from), then approve the job `prod`: [the release runs](https://github.com/silvioincalza/helper2.ai/actions/workflows/release.yml) → the run → Review deployments | The job `prod / deploy` starts on the self-hosted runner | Reject: nothing reached prod |
-| 5a | **(workflow)** | A release with a migration (job `check` says so): the dump of prod's database, `make release-dump`, a run of `pg-backup` | The run summary names the dump `helper2-<UTC date>T<UTC time>Z.sql.gz` and the restore command | The job fails before the canary: nothing reached prod, no tag, the version is free. Read the log of the Job `pg-backup-release-YYYY-N-P` |
+| 5a | **(workflow)** | A release whose migration folder differs from the release prod runs: the dump of prod's database, `make release-dump`, the Job `pg-backup-release-YYYY-N-P` from `pg-backup`. A rerun of the version keeps the dump of the Job that finished, taken before the first canary | The run summary names the dump `helper2-<UTC date>T<UTC time>Z.sql.gz` and the restore command | The job fails before the canary: nothing reached prod, no tag, the version is free. Read the Job's logs (`-c dump`, `-c upload`) |
 | 5 | **(workflow)** | The canary: its migrate Job on prod's database, one public app pod and one web pod, reached only with the run's header. Then the smoke test through `https://helper2.ai`, with the header and without | The run summary says the canary passed and is removed | The canary is removed and the job fails. Prod runs the release before. No tag anywhere, the version is still free. A migration the canary ran stays in the schema |
 | 6 | **(workflow)** | The version tag `YYYY.N.P` in Harbor, on the three images of the commit | The step log says `tagged …` for each image | From here a failure uses the version up: see section 5 |
 | 7 | **(workflow)** | `make diff`, then `make deploy`: prod by version, by digest, and the check after it (release deployed, workloads rolled out, migrate Job complete, `/` and `/api/v1/sources` answer 200) | The step ends with `release helper2 in helper2-prod is healthy`; then `make status` passes | The release goes back by itself to the revision deployed before, is checked once more, and the job fails |
@@ -215,7 +216,9 @@ make -C deploy/k8s ENV=prod status
 that is missing or does not read back to its last line; then it replaces the whole database in one transaction, so a
 load that fails leaves it as it was. It loses everything written after the dump: the recovery point is the release's
 dump, and prod is down from the stop to the end of the rollback. The owner decides it before the window, not in it.
-The dump is on the volume `pg-backup` and off-site, and is pruned with the nightly ones (7 days).
+The dump is on the volume `pg-backup` and off-site, and is pruned with the nightly ones (7 days). After a canary
+that migrated and failed, the way back is the dump of that version's run: a patch released after it dumps the
+migrated schema.
 
 **An interrupted Helm run** leaves the release `pending-…`. `make deploy` recovers it first, by a rollback to the
 last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Never `helm uninstall`.
@@ -225,7 +228,8 @@ last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Ne
 1. The pull request back into `main` is merged (step 9), and its branch is gone.
 2. `CHANGELOG.md` on `main`: the entry of the version no longer says unreleased. By pull request.
 3. The release's story is closed by its pull request, and the Project follows.
-4. No canary is left (`helm -n helper2-prod list`). The release's dump job deleted itself once it named the dump.
+4. No canary is left (`helm -n helper2-prod list`). Once the release is healthy and kept, its dump Job is deleted:
+   `kubectl -n helper2-prod delete job pg-backup-release-YYYY-N-P --ignore-not-found` (the dump stays on the volume).
 5. The first release with the restore check runs it once by hand, then the CronJob takes over every Sunday:
 
    ```bash

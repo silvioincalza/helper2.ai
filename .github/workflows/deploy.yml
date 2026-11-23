@@ -27,10 +27,6 @@ on:
         description: release.yml only, false for a release whose migration the release before it cannot run on (a maintenance window); no canary, prod by version straight away
         type: boolean
         default: true
-      release-dump:
-        description: release.yml only, true for a release that brings a migration. Prod's database is dumped before the canary (or before prod, with no canary), and the release names the dump; a failed dump stops the release
-        type: boolean
-        default: false
       release-commit:
         description: release.yml only, the full commit its checks passed, the head of release/YYYY.N
         type: string
@@ -244,11 +240,25 @@ jobs:
 
       - name: Dump of the database (release with a migration)
         id: dump
-        if: inputs.release-version != '' && inputs.release-dump
+        if: inputs.release-version != ''
         env:
           VERSION: ${{ inputs.release-version }}
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
         run: |
           set -euo pipefail
+          migrations=$GITHUB_WORKSPACE/backend/libs/schema/src/main/resources/db/migration
+          running=$(kubectl -n "helper2-$ENV" get deployment helper2 \
+            -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}' 2>/dev/null || true)
+          running=${running%@*}
+          running=${running##*:}
+          ref=$running
+          [[ ! $running =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || ref=v$running
+          if [[ -n $running ]] && git rev-parse --verify --quiet "$ref^{commit}" > /dev/null \
+            && git diff --quiet "$ref" "$RELEASE_COMMIT" -- "$migrations"; then
+            echo "$VERSION brings no migration over $running, which $ENV runs: no dump of its own" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "$VERSION brings a migration over ${running:-an unknown release} (or its commit is unknown): $ENV's database is dumped first"
           dump=$(make --no-print-directory release-dump VERSION="$VERSION")
           echo "dump=$dump" >> "$GITHUB_OUTPUT"
           echo "Dump before $VERSION: \`$dump\` on the volume pg-backup of helper2-$ENV. Way back for the data: \`make -C deploy/k8s ENV=$ENV restore DUMP=$dump\` (RUNBOOK-release.md, Going back)" >> "$GITHUB_STEP_SUMMARY"

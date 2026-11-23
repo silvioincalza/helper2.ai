@@ -514,7 +514,7 @@ release-dump: ## the dump of the release VERSION, a run of pg-backup verified li
 
 restore: ## replace ENV's whole database with DUMP from the pg-backup volume: both apps and the canary stopped first; asks for the namespace
 	@read -rp "restore $(NS) from $(DUMP): everything written after the dump is lost. Type $(NS): " typed; \
-	./database.sh restore $(NS) "$(DUMP)" "$$typed"
+	./database.sh restore $(NS) '$(DUMP)' "$$typed"
 
 status: ## ENV's pods, then fails unless the release is deployed, every Deployment and StatefulSet is rolled out, this revision's migrate Job completed and the public site answers 200 on SMOKE_PATHS
 	kubectl -n $(NS) get pods -o wide

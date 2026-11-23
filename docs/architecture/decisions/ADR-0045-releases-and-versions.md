@@ -143,10 +143,11 @@ read as a fix of that release. What a release branch gained must reach `main` ag
     the release before must keep working on the new schema, because the canary migrates prod's database while the
     release before still serves it. A release that cannot follow that rule is released with `canary` unticked, in a
     maintenance window: no canary, the version tag, prod by version, then the tag.
-    **A release with a migration takes its own dump first.** The job `check` compares the migration folder with the
-    release below; when a file changed (`R__` scripts included: Flyway runs them again), the prod job runs
-    `pg-backup` once more right before the canary, or before prod with no canary. The dump is verified like the
-    nightly one and the run names it; a failed dump stops the release before prod's database is touched. A code
+    **A release with a migration takes its own dump first.** The prod job compares the migration folder with the
+    release prod runs; when a file changed (`R__` scripts included: Flyway runs them again) or the running release
+    is unknown, it runs `pg-backup` once more right before the canary, or before prod with no canary. The dump is
+    verified like the nightly one and the run names it; a failed dump stops the release before prod's database is
+    touched. A rerun of the version keeps the dump its first run took, before its canary. A code
     rollback runs on the schema the release left; the way back for the schema is `database.sh restore` of that dump,
     with both apps stopped, then the rollback. It loses what was written after the dump.
 
