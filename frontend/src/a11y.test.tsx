@@ -71,7 +71,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     });
 
     for (const theme of ['light', 'dark'] as const) {
-      it(`wide screen, ${theme} theme: the two tables`, async () => {
+      it(`wide screen, ${theme} theme: the two lists`, async () => {
         document.documentElement.dataset.theme = theme;
         mockApi(lists);
         const { container } = renderApp('/');

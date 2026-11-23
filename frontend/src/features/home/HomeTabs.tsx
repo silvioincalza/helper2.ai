@@ -136,13 +136,12 @@ function TabPanel<Row extends { id: string }>({
     >
       <TermList
         id={id}
-        layout="log"
+        inTab
         title={texts.title}
         command={command}
         feed={feed}
         errorText={texts.error}
         emptyText={texts.empty}
-        columns={[]}
         cells={cells}
         {...(id === 'events' ? { seeAll: { to: '/events', label: t('lists.seeAllEvents') } } : {})}
       />

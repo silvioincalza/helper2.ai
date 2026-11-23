@@ -1092,15 +1092,6 @@
   },
   "lists": {
     "tabs": "New in the catalog and Coming up",
-    "col": {
-      "date": "Date",
-      "type": "Type",
-      "title": "Title",
-      "source": "Source",
-      "when": "When",
-      "event": "Event",
-      "where": "Where"
-    },
     "showAll": "show all {{count}}",
     "showFewer": "show fewer",
     "seeAllEvents": "All events ›",

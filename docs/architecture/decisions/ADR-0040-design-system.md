@@ -88,10 +88,11 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
    pinned, the hint, the examples and the legend fold away. Up to 720 px the title and the radar fold away after
    24 px of scroll and open again at the top. **What helper2 does** follows the lists as a quiet strip of three steps.
 7. **New in the catalog and Coming up: one list component** (`TermList`). A terminal style without terminal windows: a
-   `$ helper2 new · N` line (N = `total` from the API), `ls -l` columns with dashed rules. Above 768 px two tables
-   side by side: DATE · TYPE · TITLE · SOURCE and WHEN · TYPE · EVENT · WHERE, a running event "on now". Up to 768 px
-   one panel with two tabs, `> new in the catalog N | coming up N` (real tabs: `role="tab"`, arrow keys, Home, End), and
-   log rows. New in the catalog is tools and research from our own index (`GET /recent`, the last 7 days); Coming up asks
+   `$ helper2 new · N` line (N = `total` from the API) and log rows with dashed rules: the date and `[type]` in a fixed
+   monospace column, the title with its source, or when and where, under it. Above 768 px the two lists side by side
+   (stacked up to 920 px), a running event "on now". Up to 768 px one panel with two tabs, `> new in the catalog N |
+   coming up N` (real tabs: `role="tab"`, arrow keys, Home, End), and the same log rows. (Changed on 23 Nov 2026: the
+   wide screen had two `ls -l` tables; the log rows read faster and phones and wide screens now share one row.) New in the catalog is tools and research from our own index (`GET /recent`, the last 7 days); Coming up asks
    `GET /events/upcoming?days=90`. Six rows show; `$ helper2 new --all · show all N` opens the rest in place, and
    Coming up ends with **All events ›**, to the Events page. While a list scrolls by, its head stays under the pinned
    box until the list ends. Loading, empty and error (with Retry) are the same in both.
