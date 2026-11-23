@@ -1,6 +1,12 @@
 # 0003 — Contract-first REST
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0001](ADR-0001-stack-and-runtime.md), [0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md)
+
+**Requirements:** NFR-005
 
 ## Context
 The backend (Java and Kotlin) and the frontend (TypeScript) change in the same pull request. Hand-written

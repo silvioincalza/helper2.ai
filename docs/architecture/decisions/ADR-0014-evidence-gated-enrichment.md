@@ -1,6 +1,12 @@
 # 0014 — Evidence-gated enrichment
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0004](ADR-0004-persistence-and-the-schema.md), [0006](ADR-0006-outbound-calls-and-resilience.md), [0008](ADR-0008-llm-integration.md), [0010](ADR-0010-data-retention.md), [0011](ADR-0011-scout-runner.md), [0012](ADR-0012-scout-collectors-and-events.md), [0013](ADR-0013-discovery.md), [0027](ADR-0027-live-web-store-first-daily-quota.md), [0033](ADR-0033-marking-ai-written-text-research-trail.md)
+
+**Requirements:** NFR-005, NFR-014, C-003
 
 ## Context
 Sources give a title, a description and a few facts. Search, filters and the resource page work better with more:

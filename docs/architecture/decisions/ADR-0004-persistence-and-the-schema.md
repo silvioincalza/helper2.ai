@@ -1,6 +1,12 @@
 # 0004 — Persistence and the schema
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0001](ADR-0001-stack-and-runtime.md), [0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0005](ADR-0005-redis-as-a-disposable-cache.md), [0007](ADR-0007-configuration-secrets-runtime-settings.md), [0036](ADR-0036-identity-and-the-admin-host.md), [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md)
+
+**Requirements:** NFR-001, NFR-005
 
 ## Context
 The same resource reaches Helper2 from many places: a GitHub repository, its npm package, a Hugging Face

@@ -1,6 +1,12 @@
 # 0028 — Home examples
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0022](ADR-0022-federated-search.md), [0025](ADR-0025-ranking.md), [0036](ADR-0036-identity-and-the-admin-host.md), [0038](ADR-0038-back-office-and-review.md), [0040](ADR-0040-design-system.md), [0046](ADR-0046-evaluation-guide-and-search.md).
+
+**Requirements:** NFR-011
 
 ## Context
 

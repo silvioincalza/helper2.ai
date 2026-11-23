@@ -1,6 +1,12 @@
 # 0040 — Design system
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0031](ADR-0031-guide-pipeline.md), [0032](ADR-0032-guide-cost-guard-and-answer-cache.md), [0033](ADR-0033-marking-ai-written-text-research-trail.md), [0036](ADR-0036-identity-and-the-admin-host.md), [0039](ADR-0039-frontend-one-box-state-in-the-url.md), [0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md), [0042](ADR-0042-monetisation.md).
+
+**Requirements:** NFR-009
 
 ## Context
 

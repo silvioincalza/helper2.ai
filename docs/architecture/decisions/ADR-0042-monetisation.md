@@ -1,6 +1,12 @@
 # 0042 — Monetisation
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0033](ADR-0033-marking-ai-written-text-research-trail.md), [0037](ADR-0037-http-edge.md), [0039](ADR-0039-frontend-one-box-state-in-the-url.md), [0040](ADR-0040-design-system.md), [0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md), [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md).
+
+**Requirements:** C-007, C-016
 
 ## Context
 

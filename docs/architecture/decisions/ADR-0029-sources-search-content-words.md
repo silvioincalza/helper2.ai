@@ -1,6 +1,12 @@
 # 0029 — Sources search content words
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0022](ADR-0022-federated-search.md), [0023](ADR-0023-catalog-full-text-index.md), [0025](ADR-0025-ranking.md), [0046](ADR-0046-evaluation-guide-and-search.md).
+
+**Requirements:** NFR-011
 
 ## Context
 

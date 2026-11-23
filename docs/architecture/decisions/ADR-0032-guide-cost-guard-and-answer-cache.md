@@ -1,6 +1,12 @@
 # 0032 — Guide cost guard and answer cache
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0004](ADR-0004-persistence-and-the-schema.md), [0005](ADR-0005-redis-as-a-disposable-cache.md), [0006](ADR-0006-outbound-calls-and-resilience.md), [0007](ADR-0007-configuration-secrets-runtime-settings.md), [0008](ADR-0008-llm-integration.md), [0010](ADR-0010-data-retention.md), [0024](ADR-0024-vector-search.md), [0026](ADR-0026-filters-facets-categories.md), [0027](ADR-0027-live-web-store-first-daily-quota.md), [0031](ADR-0031-guide-pipeline.md), [0033](ADR-0033-marking-ai-written-text-research-trail.md), [0037](ADR-0037-http-edge.md), [0046](ADR-0046-evaluation-guide-and-search.md).
+
+**Requirements:** NFR-006, NFR-007, NFR-008
 
 ## Context
 

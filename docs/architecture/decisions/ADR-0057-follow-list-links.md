@@ -1,5 +1,9 @@
 # 0057 — A link of a directory list is followed to the page of the item
 
+**Status:** Accepted
+
+**Date:** 2026-11-21
+
 **Depends on:** [0006](ADR-0006-outbound-calls-and-resilience.md), [0007](ADR-0007-configuration-secrets-runtime-settings.md), [0010](ADR-0010-data-retention.md), [0012](ADR-0012-scout-collectors-and-events.md), [0013](ADR-0013-discovery.md), [0014](ADR-0014-evidence-gated-enrichment.md), [0027](ADR-0027-live-web-store-first-daily-quota.md), [0055](ADR-0055-directory-lists.md), [0056](ADR-0056-directory-rating.md)
 
 **Requirements:** NFR-005, NFR-015, C-005, C-006, C-008, C-012, C-014, C-016

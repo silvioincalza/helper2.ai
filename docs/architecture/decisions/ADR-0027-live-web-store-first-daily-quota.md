@@ -1,6 +1,12 @@
 # 0027 — Live web: store first, daily quota
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0005](ADR-0005-redis-as-a-disposable-cache.md), [0006](ADR-0006-outbound-calls-and-resilience.md), [0010](ADR-0010-data-retention.md), [0022](ADR-0022-federated-search.md), [0032](ADR-0032-guide-cost-guard-and-answer-cache.md), [0036](ADR-0036-identity-and-the-admin-host.md).
+
+**Requirements:** NFR-015, C-008
 
 ## Context
 

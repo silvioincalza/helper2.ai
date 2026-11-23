@@ -1,6 +1,12 @@
 # 0017 — PyPI through BigQuery
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0006](ADR-0006-outbound-calls-and-resilience.md), [0011](ADR-0011-scout-runner.md), [0012](ADR-0012-scout-collectors-and-events.md), [0015](ADR-0015-reference-projects.md)
+
+**Requirements:** C-008, C-014
 
 ## Context
 Python is the main language of AI libraries, and PyPI has no search API: its JSON API reads one package whose name

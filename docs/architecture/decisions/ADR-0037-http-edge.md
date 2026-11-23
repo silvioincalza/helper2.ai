@@ -1,6 +1,12 @@
 # 0037 — HTTP edge
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0001](ADR-0001-stack-and-runtime.md), [0005](ADR-0005-redis-as-a-disposable-cache.md), [0006](ADR-0006-outbound-calls-and-resilience.md), [0007](ADR-0007-configuration-secrets-runtime-settings.md), [0036](ADR-0036-identity-and-the-admin-host.md).
+
+**Requirements:** NFR-006, NFR-015
 
 ## Context
 

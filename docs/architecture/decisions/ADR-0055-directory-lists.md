@@ -1,5 +1,9 @@
 # 0055 — Lists of directory hosts
 
+**Status:** Accepted
+
+**Date:** 2026-11-21
+
 **Depends on:** [0007](ADR-0007-configuration-secrets-runtime-settings.md), [0010](ADR-0010-data-retention.md), [0012](ADR-0012-scout-collectors-and-events.md), [0013](ADR-0013-discovery.md), [0023](ADR-0023-catalog-full-text-index.md), [0027](ADR-0027-live-web-store-first-daily-quota.md), [0036](ADR-0036-identity-and-the-admin-host.md), [0038](ADR-0038-back-office-and-review.md)
 
 **Requirements:** NFR-012, NFR-015, C-008, C-012, C-014

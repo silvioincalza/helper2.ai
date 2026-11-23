@@ -1,6 +1,12 @@
 # 0030 — Hacker News as a live source
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0022](ADR-0022-federated-search.md), [0025](ADR-0025-ranking.md), [0029](ADR-0029-sources-search-content-words.md).
+
+**Requirements:** NFR-011, C-008
 
 ## Context
 

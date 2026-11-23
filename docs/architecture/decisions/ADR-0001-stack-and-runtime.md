@@ -1,6 +1,12 @@
 # 0001 — Stack and runtime
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** no other ADR.
+
+**Requirements:** C-011, C-014
 
 ## Context
 Helper2.ai is built and run by one person. It must call public application programming interfaces (APIs) and a Large Language Model (LLM),

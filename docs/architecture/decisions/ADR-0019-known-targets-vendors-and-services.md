@@ -1,6 +1,12 @@
 # 0019 — Known targets: vendors and services
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0004](ADR-0004-persistence-and-the-schema.md), [0011](ADR-0011-scout-runner.md), [0014](ADR-0014-evidence-gated-enrichment.md), [0015](ADR-0015-reference-projects.md), [0033](ADR-0033-marking-ai-written-text-research-trail.md), [0038](ADR-0038-back-office-and-review.md)
+
+**Requirements:** NFR-005
 
 ## Context
 A relationship says what a resource works with. Its target is a catalog resource, or a vendor: a company with no

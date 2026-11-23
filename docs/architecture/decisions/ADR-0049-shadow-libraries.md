@@ -1,6 +1,12 @@
 # 0049 — Shadow libraries
 
+**Status:** Accepted
+
+**Date:** 2026-11-18
+
 **Depends on:** [0004](ADR-0004-persistence-and-the-schema.md),
+
+**Requirements:** C-008
 [0007](ADR-0007-configuration-secrets-runtime-settings.md), [0010](ADR-0010-data-retention.md),
 [0013](ADR-0013-discovery.md), [0022](ADR-0022-federated-search.md), [0027](ADR-0027-live-web-store-first-daily-quota.md),
 [0036](ADR-0036-identity-and-the-admin-host.md), [0038](ADR-0038-back-office-and-review.md),

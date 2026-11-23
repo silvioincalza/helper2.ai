@@ -1,6 +1,12 @@
 # 0034 — Setup guide
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0004](ADR-0004-persistence-and-the-schema.md), [0031](ADR-0031-guide-pipeline.md).
+
+**Requirements:** NFR-005, C-003
 
 ## Context
 
