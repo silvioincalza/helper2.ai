@@ -78,6 +78,29 @@ class QueryAnalyzerLanguagesTest {
     delimiter = '|',
     value =
       [
+        "en | awesome list for rag | rag",
+        "en | rag awesome-list | rag",
+        "it | lista awesome per rag | rag",
+        "de | Awesome-Liste für RAG | rag",
+        "fr | liste awesome pour rag | rag",
+        "es | lista awesome de rag | rag",
+      ],
+  )
+  fun `a phrase for an awesome list hints the type and is not content`(
+    lang: String,
+    query: String,
+    content: String,
+  ) {
+    val analyzed = analyzer.analyze(query)
+    assertEquals(setOf(ResourceType.AWESOME_LIST), analyzed.typeHints, lang)
+    assertEquals(listOf(content), analyzed.contentTerms, lang)
+  }
+
+  @ParameterizedTest(name = "{0}: {1}")
+  @CsvSource(
+    delimiter = '|',
+    value =
+      [
         "en | find a tool for notes of meetings | notes meetings",
         "it | trovare uno strumento per note di riunioni | strumento note riunioni",
         "de | finden ein Werkzeug für Notizen von Meetings | notizen meetings",
