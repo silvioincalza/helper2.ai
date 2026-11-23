@@ -10,7 +10,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S1.1.7 The stack page names the identity and payment providers](https://github.com/silvioincalza/helper2.ai/issues/1050)
 - [T1.11.3 The roadmap page lists the open stories of today](https://github.com/silvioincalza/helper2.ai/issues/786)
 
 ### Next
@@ -201,10 +200,6 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S10.12.1 The main journeys automated in a browser](https://github.com/silvioincalza/helper2.ai/issues/357)
 
 ## E11 Spec-driven docs with the AI Unified Process
-
-### Now
-
-- [S11.3.6 The question on Google's analytics and ads in UC-016 is in the open questions page](https://github.com/silvioincalza/helper2.ai/issues/1052)
 
 ### Next
 
