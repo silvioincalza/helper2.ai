@@ -243,7 +243,7 @@ jobs:
           notes=$(mktemp)
           [[ -z $HEADLINE ]] || printf '%s\n\n' "$HEADLINE" > "$notes"
           gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" -f tag_name="$tag" -f target_commitish="$SHA" \
-            "${since[@]}" --jq .body >> "$notes"
+            "${since[@]}" --jq .body | .github/scripts/release-notes.sh >> "$notes"
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
             tag -a "$tag" "$SHA" -F "$notes"
           git -c "$PUSH_AUTH" push --quiet origin "refs/tags/$tag"
