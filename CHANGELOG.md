@@ -12,6 +12,17 @@ On `main`, not yet on a release branch.
 
 ### What users get
 
+- **"awesome list" or "curated list" in a search** asks for awesome lists, in every language the search reads.
+
+### What operators run
+
+- **Release notes** list the pull requests of `main` a release ships and none of the release's own pull requests;
+  `release` takes `notes_since` for a release below that holds no commit of `main`.
+
+## 2026.12.0 (2026-11-23)
+
+### What users get
+
 - **The home lists** stand side by side as log rows on wide screens: the date and type in a fixed column, the title
   with its source in full under it. Phones keep the tabs.
 
