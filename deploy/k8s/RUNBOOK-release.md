@@ -221,6 +221,21 @@ The dump is on the volume `pg-backup` and off-site, and is pruned with the night
 that migrated and failed, the way back is the dump of that version's run: a patch released after it dumps the
 migrated schema.
 
+**The rehearsal, on staging**, before the first release that needs it: staging has the same `pg-backup` (no
+off-site copy) and runs `main`. With staging on a commit before a migration that `main` brings:
+
+```bash
+make -C deploy/k8s ENV=staging release-dump VERSION=<the next version>   # prints the dump's name
+gh workflow run cd.yml -R $R --ref main                                  # staging migrates
+kubectl -n helper2-staging scale deployment/helper2 deployment/helper2-backoffice --replicas=0
+make -C deploy/k8s ENV=staging restore DUMP=<the dump>
+make -C deploy/k8s ENV=staging rollback
+make -C deploy/k8s ENV=staging status
+```
+
+It holds when `status` passes, Flyway's history on staging ends at the release before, and the time from the
+stop to `status` is written in the release's story: that is prod's time down for this way back.
+
 **An interrupted Helm run** leaves the release `pending-…`. `make deploy` recovers it first, by a rollback to the
 last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Never `helm uninstall`.
 
