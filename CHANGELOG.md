@@ -12,21 +12,61 @@ On `main`, not yet on a release branch.
 
 ### What users get
 
-- **Ads below the results and below a guide answer:** at most one AdSense box each, with its own ad unit, only while
-  the setting is on.
-- **The guide** reads its model calls as a stream.
+- **The home lists** stand side by side as log rows on wide screens: the date and type in a fixed column, the title
+  with its source in full under it. Phones keep the tabs.
 
 ### What operators run
 
-- **The embedding model runs in the cluster**, in the namespace only, one embedder for production and staging; no
-  hosted endpoint. Production indexes one text every 3 s, staging one a minute.
-- **The Google ads start and stop from the back office**; the AdSense go-live has a runbook. A runtime switch is shown,
-  changed and audited as true or false.
+- **Two migrations**, `V2026.11.11.1` and `V2026.11.11.2`, both additive: the audit log takes the removal of a
+  discovered list that is gone, and an audit value or reason holds up to 1000 characters.
+- **Lists with a long address** are added and removed in the back office, and the audit entry keeps a curated value and
+  the address of a removed resource whole.
+- **Releases:** a pull request into a release branch and a release's pull request back into `main` are merged with a
+  merge commit, so a release branch carries `main`'s history.
+
+## 2026.11.10 (2026-11-22)
+
+A patch of 2026.11.9.
+
+### What users get
+
+- **Directory lists find the item's own site:** a link of a list is followed, at most 3 steps, to the page of the item
+  itself, also when the same entry links an excluded site such as x.com.
+- **A web page list that its site says is gone** no longer names its resources.
+
+### What operators run
+
+- **Two migrations**, `V2026.11.10.1` and `V2026.11.10.2`, both additive.
+- **robots.txt and caps:** when robots.txt redirects to the www twin and that request meets a daily cap, a host cap or
+  an open circuit, the link waits instead of being recorded as refused for a day.
+
+## 2026.11.9 (2026-11-22)
+
+### What users get
+
+- **10 web searches a day** for search and 10 for the guide, for each visitor.
+- **A rating from 1 to 5** on the resource page, from the votes the directories state, with the number of directories
+  it comes from. It does not change the order of the results.
+- **Fresher popularity:** the repository sweep reads the stars of a GitHub repository again.
+- **Better facts:** the re-check tests every field that must state its value; a LinkedIn post is never the event.
+- **The guide** reads the model's answer as a stream, so the first words come sooner.
+
+### What operators run
+
+- **Three migrations**, `V2026.11.9.1` to `V2026.11.9.3`, all additive.
+- **The embedding model runs in the cluster:** one `helper2-embedder` for prod and staging, 4 threads and 4 CPU in
+  prod, no hosted endpoint. Prod indexes one text every 3 s, staging one a minute.
+- **Directory host lists:** the Scout reads the lists of a directory host only after an administrator turns the
+  reading on for that host. A list page waits for review and is never indexed by itself; what a list named is kept
+  until the list is read again, and a GitHub list that is gone no longer names its resources.
+- **Runtime settings:** the Scout's daily search and page-read credits are set on the Settings page, 1,000 a day by
+  default, at most 3,000. A runtime switch is shown, changed and audited as true or false.
+- **Google ads** start and stop from the back office: one box below the search results and one below a guide answer.
+  The switch is off in prod.
 - **The guide judge runs in prod**, on its own daily cap.
+- **Logs and alerts:** the live web credits alert fires at 2,500 a day; an unavailable source, a failed query
+  embedding and a refused embedding batch each leave their reason in the log.
 - **The public app gets only its own addresses**; the web image answers the rest.
-- **Logs and alerts:** an unavailable source is logged with its id and reason, a failed query embedding is logged, a
-  refused embedding batch has its own reason.
-- **The Scout** never takes a LinkedIn post for the event.
 
 ## 2026.11.8 (2026-11-20)
 
