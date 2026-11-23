@@ -251,10 +251,15 @@ jobs:
             -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}' 2>/dev/null || true)
           running=${running%@*}
           running=${running##*:}
-          ref=$running
-          [[ ! $running =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || ref=v$running
-          if [[ -n $running ]] && git rev-parse --verify --quiet "$ref^{commit}" > /dev/null \
-            && git diff --quiet "$ref" "$RELEASE_COMMIT" -- "$migrations"; then
+          from=
+          if [[ $running =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            from=$(git rev-parse --verify --quiet "refs/tags/v$running^{commit}") || from=
+            [[ -z $from || $(git ls-remote origin "refs/tags/v$running^{}" | cut -f1) == "$from" ]] || from=
+          elif [[ $running =~ ^[0-9a-f]{12}$ && -z $(git for-each-ref "refs/tags/$running" "refs/heads/$running" "refs/remotes/origin/$running") ]]; then
+            from=$(git rev-parse --verify --quiet "$running^{commit}") || from=
+            [[ $from == "$running"* ]] || from=
+          fi
+          if [[ -n $from ]] && git diff --quiet "$from" "$RELEASE_COMMIT" -- "$migrations"; then
             echo "$VERSION brings no migration over $running, which $ENV runs: no dump of its own" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
