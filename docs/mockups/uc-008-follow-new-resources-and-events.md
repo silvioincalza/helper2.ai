@@ -12,6 +12,8 @@ Screen notes for UC-008: what the page shows, step by step and in each state. Th
 4. A row is its title, never a description (no AI-written text). The title opens the resource page ([UC-007](uc-007-view-resource-details.md)). A date shows its year only when it is not the current year.
 5. A list shows its first six rows. `$ helper2 new --all · show all 24` opens the rest in place; **show fewer** closes them. The heading shows the API's total. When the API counts more than it sends (it sends at most 60), the heading still shows the total and **show all** counts only the rows it opens. A list with more rows than it shows moves like a news ticker: one row every 4 seconds. Hover, focus or a tap holds it, and on a phone a scroll of the page. It moves again when the mouse or the focus leaves, or after the tap. Under reduced motion, or with motion off on the account page, it never moves. Coming up ends with **All events ›**, to the Events page.
 
+The three layouts looked at for these lists (log in two columns, tabs, table): [home lists layouts](images/uc-008-home-lists-layouts.png).
+
 **Exit:** a row's name to its resource page, the box, the examples.
 
 | State | Behavior |
