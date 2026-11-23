@@ -130,7 +130,10 @@ read as a fix of that release. What a release branch gained must reach `main` ag
 9. **Then the tag and the GitHub release.** Only after prod is healthy the `publish` job tags the head of the branch
    `vYYYY.N.P` (annotated; the notes are the `headline`, then GitHub's notes from the pull requests since the release
    below), pushes the tag, publishes the GitHub release with the commit and the three image names, and attaches the
-   SBOMs of the CD run of the branch. Run again, it finishes what is missing and leaves what exists.
+   SBOMs of the CD run of the branch. Run again, it finishes what is missing and leaves what exists. The notes list
+   the pull requests of `main` the release ships and none of its own: `release-notes.sh` leaves out a pull request
+   into a branch other than `main` (`main` brought in, a fix carried over, the version pull request) and one from
+   `release-merge/*` (a release back into `main`). A pull request it cannot read stops the job before the tag.
 10. **Last, the pull request back into `main`.** The `publish` job makes `release-merge/vYYYY.N.P` from the tag,
     merges `main` into it, and opens its pull request into `main`: the version and, for a patch, its fixes. When
     `main` carries a higher version (a patch of an older release), a commit first puts `main`'s version back, so the
@@ -196,6 +199,7 @@ read as a fix of that release. What a release branch gained must reach `main` ag
   plus the version (`only-version-files`).
 - `.github/scripts/released-migrations.sh` — the forward-only rule over every release of the history: `check`,
   `--self-test`.
+- `.github/scripts/release-notes.sh` — GitHub's notes without the pull requests of the release itself, `--self-test`.
 - `deploy/helm/helper2` (`canary.*` values, `templates/canary.yaml`, the canary names in `_helpers.tpl`) — the
   canary-only release.
 - `deploy/k8s/Makefile` (`canary`, `canary-smoke`, `uncanary`, `retag`, the canary part of `chart-check`) and
