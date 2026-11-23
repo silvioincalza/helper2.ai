@@ -129,8 +129,12 @@ read as a fix of that release. What a release branch gained must reach `main` ag
    needs `rollback: true`.
 9. **Then the tag and the GitHub release.** Only after prod is healthy the `publish` job tags the head of the branch
    `vYYYY.N.P` (annotated; the notes are the `headline`, then GitHub's notes from the pull requests since the release
-   below), pushes the tag, publishes the GitHub release with the commit and the three image names, and attaches the
-   SBOMs of the CD run of the branch. Run again, it finishes what is missing and leaves what exists.
+   below, without the `chore(release):` pull requests that only bring `main`, a fix or the version), pushes the tag,
+   publishes the GitHub release with the commit and the three image names, and attaches the SBOMs of the CD run of the
+   branch. Run again, it finishes what is missing and leaves what exists. A release below whose branch holds no commit
+   of `main` (its pull requests were squashed) would put every pull request of `main` since its branch was cut in the
+   notes: `release` then gets `notes_since`, a tag on the commit of `main` that release took (not a `v*` tag), and the
+   notes start after it. `check` refuses a `notes_since` that is not in the history of `main` the branch took.
 10. **Last, the pull request back into `main`.** The `publish` job makes `release-merge/vYYYY.N.P` from the tag,
     merges `main` into it, and opens its pull request into `main`: the version and, for a patch, its fixes. When
     `main` carries a higher version (a patch of an older release), a commit first puts `main`'s version back, so the
