@@ -13,7 +13,8 @@ The index query must also stay well inside its 3 s timeout on the production cat
 
 1. **Query analysis without a model** (`QueryAnalyzer`). Type words become type hints and are removed from the required words:
    "library", "libraries", "package", "libreria" → `LIBRARY`; "model", "models", "modello" → `MODEL`; "dataset(s)" →
-   `DATASET`; "server(s)" next to "mcp" → `MCP_SERVER`. Fixed synonym groups (postgres/postgresql, js/javascript,
+   `DATASET`; "awesome list(s)", "curated list(s)", "lista curata" → `AWESOME_LIST`; "server(s)" next to "mcp" →
+   `MCP_SERVER`. Fixed synonym groups (postgres/postgresql, js/javascript,
    ts/typescript, k8s/kubernetes) give up to 4 required-word variants. A fixed English/Italian lexicon adds use cases
    and English expansions, shown to the user.
 2. **Index query in two stages** (`JdbcCatalogSearch.searchSql`). A row is retrieved when any word matches
