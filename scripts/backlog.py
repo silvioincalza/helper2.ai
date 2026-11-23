@@ -69,7 +69,7 @@ ISSUE_FIELDS_QUERY = """query($owner:String!,$name:String!){repository(owner:$ow
     ... on IssueFieldSingleSelect{id name options{id name}} ... on IssueFieldText{id name}}}}}"""
 BUDGET_QUERY = "query{rateLimit{remaining resetAt}}"
 PROJECTS_QUERY = """query($owner:String!){repositoryOwner(login:$owner){... on ProjectV2Owner{
-  projectsV2(first:100){nodes{id number title}}}}}"""
+  projectsV2(first:100){nodes{id number title repositories(first:100){nodes{nameWithOwner}}}}}}}"""
 FIELDS_QUERY = """query($project:ID!){node(id:$project){... on ProjectV2{fields(first:50){nodes{
   ... on ProjectV2FieldCommon{id name} ... on ProjectV2SingleSelectField{options{id name}}}}}}}"""
 ITEMS_QUERY = """query($project:ID!,$endCursor:String){node(id:$project){... on ProjectV2{
@@ -360,13 +360,18 @@ class GhCli:
     def project(self, owner: str, title: str) -> dict | None:
         listed = self.graphql(PROJECTS_QUERY, owner=owner)["repositoryOwner"]["projectsV2"]["nodes"]
         found = next((p for p in listed if p["title"] == title), None)
-        return found and {"number": str(found["number"]), "id": found["id"], "owner": owner}
+        return found and {
+            "number": str(found["number"]),
+            "id": found["id"],
+            "owner": owner,
+            "repos": [r["nameWithOwner"] for r in found["repositories"]["nodes"]],
+        }
 
     def create_project(self, owner: str, title: str) -> dict | None:
         made = self.change(
             f"create the Project {title}", ["project", "create", "--owner", owner, "--title", title, "--format", "json"]
         )
-        return made and {"number": str(made["number"]), "id": made["id"], "owner": owner}
+        return made and {"number": str(made["number"]), "id": made["id"], "owner": owner, "repos": []}
 
     def link_project(self, project: dict, repo: str) -> None:
         self.change(
@@ -688,7 +693,8 @@ class Import:
         if project is None:
             print(f"project {title}: it does not exist yet, so its fields and items are not compared")
             return
-        self.github.link_project(project, self.repo)
+        if self.repo.lower() not in {repo.lower() for repo in project["repos"]}:
+            self.github.link_project(project, self.repo)
         fields = self.sync_fields(project)
         items = self.github.items(project, list(self.field_kinds))
         known = [(x, issues[x["id"]]) for x in entries(self.doc) if issues[x["id"]] is not None]
@@ -918,13 +924,14 @@ class FakeGitHub:
         return self.board
 
     def create_project(self, owner, title):
-        self.board = {"number": "1", "id": "P1", "owner": owner}
+        self.board = {"number": "1", "id": "P1", "owner": owner, "repos": []}
         self.board_fields = {STATUS: {"id": "F0", "options": {"Todo": "o1", "Done": "o2"}}}
         self.writes.append(f"create project {title}")
         return self.board
 
     def link_project(self, project, repo):
-        pass
+        self.board["repos"].append(repo)
+        self.writes.append(f"link project to {repo}")
 
     def fields(self, project):
         return copy.deepcopy(self.board_fields)
@@ -1075,9 +1082,20 @@ def self_test() -> None:
         word in public for word in ("clerk", "card table", "lawyer", "grant")
     )
 
+    cases["the first run links the Project to the repository once"] = (
+        github.writes.count(f"link project to {SAMPLE['repo']}") == 1 and github.board["repos"] == [SAMPLE["repo"]]
+    )
+
     github.writes.clear()
     second = imported(SAMPLE, github)
     cases["a second run writes nothing"] = github.writes == [] and "issues: 0 created, 0 updated, 7 unchanged" in second
+
+    other_case = FakeGitHub()
+    imported(SAMPLE, other_case)
+    other_case.board["repos"] = [SAMPLE["repo"].upper()]
+    other_case.writes.clear()
+    imported(SAMPLE, other_case)
+    cases["a Project linked to the repository in another letter case is not linked again"] = other_case.writes == []
 
     changed = copy.deepcopy(SAMPLE)
     changed["stories"][2]["title"] = "To browse by category and price"
@@ -1174,6 +1192,7 @@ def self_test() -> None:
     cases["a dry run runs no command that writes"] = dry_run_writes_nothing()
     cases["a second import waits for the first and stops when it does not end"] = second_import_waits()
     cases["a throttled command is tried again, and another failure stops at once"] = throttled_command_is_tried_again()
+    cases["a Project is read with the repositories it is linked to"] = project_reads_linked_repositories()
     cases["a throttled command is not tried again when the hourly limit is used up"] = throttled_command_stops_without_budget()
     cases["the issues and the Project items are read page by page"] = reads_are_paged()
     cases["field values are written twenty per request, and nothing to write sends nothing"] = writes_are_batched()
@@ -1348,6 +1367,14 @@ def stop_of(action) -> str:
     except SystemExit as stop:
         return str(stop.code)
     return ""
+
+
+def project_reads_linked_repositories() -> bool:
+    linked = {"nodes": [{"nameWithOwner": "example/shop"}]}
+    node = {"id": "P1", "number": 4, "title": "Board", "repositories": linked}
+    github = Scripted([replied({"data": {"repositoryOwner": {"projectsV2": {"nodes": [node]}}}})])
+    found = quiet(lambda: github.project("example", "Board"))
+    return found == {"number": "4", "id": "P1", "owner": "example", "repos": ["example/shop"]}
 
 
 def throttled_command_is_tried_again() -> bool:
