@@ -693,7 +693,7 @@ class Import:
         if project is None:
             print(f"project {title}: it does not exist yet, so its fields and items are not compared")
             return
-        if self.repo not in project["repos"]:
+        if self.repo.lower() not in {repo.lower() for repo in project["repos"]}:
             self.github.link_project(project, self.repo)
         fields = self.sync_fields(project)
         items = self.github.items(project, list(self.field_kinds))
@@ -1089,6 +1089,14 @@ def self_test() -> None:
     github.writes.clear()
     second = imported(SAMPLE, github)
     cases["a second run writes nothing"] = github.writes == [] and "issues: 0 created, 0 updated, 7 unchanged" in second
+
+    other_case = FakeGitHub()
+    imported(SAMPLE, other_case)
+    other_case.board["repos"] = [SAMPLE["repo"].upper()]
+    other_case.writes.clear()
+    imported(SAMPLE, other_case)
+    cases["a Project linked to the repository in another letter case is not linked again"] = other_case.writes == []
+
     changed = copy.deepcopy(SAMPLE)
     changed["stories"][2]["title"] = "To browse by category and price"
     changed["stories"][2]["priority"] = "Next"
@@ -1184,6 +1192,7 @@ def self_test() -> None:
     cases["a dry run runs no command that writes"] = dry_run_writes_nothing()
     cases["a second import waits for the first and stops when it does not end"] = second_import_waits()
     cases["a throttled command is tried again, and another failure stops at once"] = throttled_command_is_tried_again()
+    cases["a Project is read with the repositories it is linked to"] = project_reads_linked_repositories()
     cases["a throttled command is not tried again when the hourly limit is used up"] = throttled_command_stops_without_budget()
     cases["the issues and the Project items are read page by page"] = reads_are_paged()
     cases["field values are written twenty per request, and nothing to write sends nothing"] = writes_are_batched()
@@ -1358,6 +1367,14 @@ def stop_of(action) -> str:
     except SystemExit as stop:
         return str(stop.code)
     return ""
+
+
+def project_reads_linked_repositories() -> bool:
+    linked = {"nodes": [{"nameWithOwner": "example/shop"}]}
+    node = {"id": "P1", "number": 4, "title": "Board", "repositories": linked}
+    github = Scripted([replied({"data": {"repositoryOwner": {"projectsV2": {"nodes": [node]}}}})])
+    found = quiet(lambda: github.project("example", "Board"))
+    return found == {"number": "4", "id": "P1", "owner": "example", "repos": ["example/shop"]}
 
 
 def throttled_command_is_tried_again() -> bool:
