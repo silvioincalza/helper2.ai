@@ -201,6 +201,10 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E11 Spec-driven docs with the AI Unified Process
 
+### Now
+
+- [S11.3.7 The answer to the question on Google's tools and the Payment Provider in UC-016 is in the open questions page](https://github.com/silvioincalza/helper2.ai/issues/1055)
+
 ### Next
 
 - [S11.1.3 Decision rights for coding assistants](https://github.com/silvioincalza/helper2.ai/issues/926)
