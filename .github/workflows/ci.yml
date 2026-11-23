@@ -46,6 +46,7 @@ jobs:
       - run: .github/scripts/bump-version.sh --self-test
       - run: .github/scripts/ci-ok.sh --self-test
       - run: .github/scripts/branch-name.sh --self-test
+      - run: .github/scripts/release-notes.sh --self-test
       - name: Branch name
         if: github.event_name == 'pull_request'
         env:
