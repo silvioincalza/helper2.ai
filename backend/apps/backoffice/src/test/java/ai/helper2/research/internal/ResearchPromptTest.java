@@ -2,17 +2,16 @@ package ai.helper2.research.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ai.helper2.platform.llm.ModelCallMetrics;
 import org.junit.jupiter.api.Test;
 
 class ResearchPromptTest {
 
   @Test
-  void theWordingOfThePromptIsPinnedToItsLabel() {
-    assertThat(ModelCallMetrics.promptVersion(ResearchConfiguration.prompt()))
-        .as("a new wording of %s needs a new PROMPT_VERSION", ResearchConfiguration.PROMPT)
-        .isEqualTo("2da501eb");
-    assertThat(SpringAiResearchModel.PROMPT_VERSION).isEqualTo("research-v3");
+  void thePromptLimitsSearchesAndRepeatedCalls() {
+    assertThat(ResearchConfiguration.prompt())
+        .contains("at most 4 of them web_search")
+        .contains("Never make the same call twice")
+        .contains("Do not search again for a value you could not find");
   }
 
   @Test

@@ -31,10 +31,10 @@ describe('states: every state says what happened and offers a next step', () => 
       '[role="status"]',
     );
     expect(status).not.toBeNull();
-    expect(document.querySelectorAll('.h2-skeleton__row')).toHaveLength(4);
+    expect(document.querySelectorAll('.h2-results__skeleton .h2-skel__row')).toHaveLength(4);
     release();
     expect((await screen.findAllByText('Acme Translator')).length).toBeGreaterThan(0);
-    expect(document.querySelector('.h2-skeleton')).toBeNull();
+    expect(document.querySelector('.h2-results__skeleton')).toBeNull();
   });
 
   it('guide answering: the list is already there while the picks bar reads', async () => {

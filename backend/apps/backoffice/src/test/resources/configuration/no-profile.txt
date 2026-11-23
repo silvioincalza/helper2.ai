@@ -1,3 +1,4 @@
+helper2.admin.ads-enabled = ${H2_ADS_ENABLED:false}  =>  false
 helper2.admin.grafana-url = ${H2_ADMIN_GRAFANA_URL:}  =>  <empty>
 helper2.admin.guide-daily-model-calls = ${H2_GUIDE_DAILY_MODEL_CALLS:600}  =>  600
 helper2.admin.public-base-url = ${H2_PUBLIC_BASE_URL:https://helper2.ai}  =>  https://helper2.ai
@@ -504,6 +505,7 @@ helper2.categories[9].words[1] = chrome extension
 helper2.categories[9].words[2] = firefox add on
 helper2.categories[9].words[3] = firefox extension
 helper2.categories[9].words[4] = extension for chrome
+helper2.cluster-lock.table = shedlock
 helper2.embedding.api-key = ${H2_NVIDIA_API_KEY:}  =>  <empty>
 helper2.embedding.base-url = ${H2_NVIDIA_EMBEDDING_BASE_URL:https://integrate.api.nvidia.com/v1}  =>  https://integrate.api.nvidia.com/v1
 helper2.embedding.dimensions = 1024
@@ -570,6 +572,14 @@ helper2.http.pool-wait = 250ms
 helper2.identity.admins = ${H2_ADMINS:}  =>  <empty>
 helper2.identity.frontend-url = /admin
 helper2.identity.metrics-public = ${H2_METRICS_PUBLIC:false}  =>  false
+helper2.indexnow.batch = 10000
+helper2.indexnow.cron = ${H2_INDEXNOW_CRON:0 47 5 * * *}  =>  0 47 5 * * *
+helper2.indexnow.endpoint = https://api.indexnow.org/indexnow
+helper2.indexnow.key = ${H2_INDEXNOW_KEY:}  =>  <empty>
+helper2.indexnow.noindex = ${H2_NOINDEX:false}  =>  false
+helper2.indexnow.public-base-url = ${H2_PUBLIC_BASE_URL:https://helper2.ai}  =>  https://helper2.ai
+helper2.indexnow.timeout = PT20S
+helper2.indexnow.window = PT25H
 helper2.llm.chat-model = ${spring.ai.openai.chat.model:}  =>  <empty>
 helper2.llm.chat-provider = ${spring.ai.model.chat}  =>  none
 helper2.llm.fast-model = <empty>
@@ -582,19 +592,20 @@ helper2.rate-limit.guide-per-minute = ${H2_RATE_LIMIT_GUIDE_PER_MINUTE:10}  =>  
 helper2.rate-limit.recent-per-minute = ${H2_RATE_LIMIT_RECENT_PER_MINUTE:60}  =>  60
 helper2.rate-limit.report-per-hour = ${H2_RATE_LIMIT_REPORT_PER_HOUR:20}  =>  20
 helper2.rate-limit.search-per-minute = ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:120}  =>  120
+helper2.research.check-url-deadline = ${H2_RESEARCH_CHECK_URL_DEADLINE:PT20S}  =>  PT20S
 helper2.research.concurrency = ${H2_RESEARCH_CONCURRENCY:4}  =>  4
 helper2.research.daily-model-calls = ${H2_RESEARCH_DAILY_MODEL_CALLS:3000}  =>  3000
 helper2.research.daily-page-reads = ${H2_RESEARCH_DAILY_PAGE_READS:300}  =>  300
 helper2.research.enabled = ${H2_RESEARCH_ENABLED:true}  =>  true
+helper2.research.max-streams = ${H2_RESEARCH_MAX_STREAMS:8}  =>  8
 helper2.research.max-tokens = ${H2_RESEARCH_MAX_TOKENS:4096}  =>  4096
-helper2.research.model = ${H2_RESEARCH_MODEL:REASONING}  =>  REASONING
+helper2.research.model = ${H2_RESEARCH_MODEL:FAST}  =>  FAST
 helper2.research.tick = ${H2_RESEARCH_TICK:PT2S}  =>  PT2S
 helper2.retention.admin-audit = ${H2_RETENTION_ADMIN_AUDIT:P730D}  =>  P730D
 helper2.retention.backups = ${H2_RETENTION_BACKUPS:P7D}  =>  P7D
 helper2.retention.cron = ${H2_RETENTION_CRON:0 17 3 * * *}  =>  0 17 3 * * *
 helper2.retention.enrichment-runs = ${H2_RETENTION_ENRICHMENT_RUNS:P90D}  =>  P90D
 helper2.retention.inactive-accounts = ${H2_RETENTION_INACTIVE_ACCOUNTS:P730D}  =>  P730D
-helper2.retention.list-index = ${H2_RETENTION_LIST_INDEX:P30D}  =>  P30D
 helper2.retention.live-web-results = ${H2_RETENTION_LIVE_WEB_RESULTS:P7D}  =>  P7D
 helper2.retention.observed-unseen = ${H2_RETENTION_OBSERVED_UNSEEN:P180D}  =>  P180D
 helper2.retention.past-events = ${H2_RETENTION_PAST_EVENTS:P3650D}  =>  P3650D
@@ -615,7 +626,7 @@ helper2.scout.courses.interval = ${H2_SCOUT_COURSES_INTERVAL:P7D}  =>  P7D
 helper2.scout.courses.platforms = coursera.org=Coursera, oreilly.com=O'Reilly, edx.org=edX, udemy.com=Udemy, deeplearning.ai=DeepLearning.AI, huggingface.co/learn=Hugging Face Learn, cloud.google.com/learn=Google Cloud, aws.amazon.com/certification=AWS, learn.microsoft.com/en-us/credentials=Microsoft Learn, nvidia.com=NVIDIA
 helper2.scout.courses.query = new artificial intelligence course or certification
 helper2.scout.cron = ${H2_SCOUT_CRON:0 7 3 * * *}  =>  0 7 3 * * *
-helper2.scout.daily-credits = ${H2_SCOUT_DAILY_CREDITS:40}  =>  40
+helper2.scout.daily-credits = ${H2_SCOUT_DAILY_CREDITS:1000}  =>  1000
 helper2.scout.daily-enrichment-calls = ${H2_SCOUT_DAILY_ENRICHMENT_CALLS:500}  =>  500
 helper2.scout.discovery.exclude-domains = youtube.com, reddit.com, x.com, twitter.com, facebook.com, instagram.com, tiktok.com, linkedin.com, pinterest.com, quora.com, producthunt.com, theresanaiforthat.com, futurepedia.io, futuretools.io, toolify.ai, topai.tools, aitools.fyi, g2.com, capterra.com, getapp.com, softwareadvice.com, trustradius.com, trustpilot.com, alternativeto.net, saasworthy.com
 helper2.scout.discovery.interval = ${H2_SCOUT_DISCOVERY_INTERVAL:P7D}  =>  P7D
@@ -624,7 +635,8 @@ helper2.scout.discovery.min-score = 0.4
 helper2.scout.discovery.search-depth = ${H2_SCOUT_DISCOVERY_DEPTH:advanced}  =>  advanced
 helper2.scout.enabled = ${H2_SCOUT_ENABLED:false}  =>  false
 helper2.scout.enrich-max-tokens = ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}  =>  8192
-helper2.scout.evidence.daily-page-read-credits = ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:20}  =>  20
+helper2.scout.enrichment-model = ${H2_SCOUT_ENRICHMENT_MODEL:FAST}  =>  FAST
+helper2.scout.evidence.daily-page-read-credits = ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:1000}  =>  1000
 helper2.scout.evidence.page-read-ttl = ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}  =>  P30D
 helper2.scout.evidence.page-text-ttl = ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}  =>  PT24H
 helper2.scout.gap-daily-calls = ${H2_SCOUT_GAP_DAILY_CALLS:400}  =>  400
@@ -633,7 +645,11 @@ helper2.scout.github-awesome.classify-batch = 25
 helper2.scout.github-awesome.classify-max-tokens = 8192
 helper2.scout.github-awesome.interval = ${H2_SCOUT_AWESOME_INTERVAL:P1D}  =>  P1D
 helper2.scout.github-awesome.links.exclude-domains = arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org, discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com, kaggle.com, npmjs.com, pypi.org, gitlab.com, bitbucket.org, apps.apple.com, play.google.com, chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
+helper2.scout.github-awesome.links.max-models-per-pass = 100
+helper2.scout.github-awesome.links.max-packages-per-pass = 100
+helper2.scout.github-awesome.links.max-papers-per-pass = 200
 helper2.scout.github-awesome.links.max-per-pass = 500
+helper2.scout.github-awesome.links.model-index-min-likes = 10
 helper2.scout.github-awesome.links.per-day = ${H2_SCOUT_AWESOME_LINKS_PER_DAY:50}  =>  50
 helper2.scout.github-awesome.max-entries-per-pass = 1000
 helper2.scout.github-awesome.max-entries-per-run = ${H2_SCOUT_AWESOME_PER_RUN:1000}  =>  1000
@@ -645,6 +661,18 @@ helper2.scout.github-awesome.min-repo-stars = 50
 helper2.scout.github-awesome.nested.max-depth = ${H2_SCOUT_AWESOME_NESTED_DEPTH:2}  =>  2
 helper2.scout.github-awesome.nested.max-lists-per-run = ${H2_SCOUT_AWESOME_NESTED_LISTS:30}  =>  30
 helper2.scout.github-awesome.topic-queries = topic:awesome-list topic:llm, topic:awesome topic:llm, topic:awesome-list topic:artificial-intelligence, topic:awesome-list topic:ai-agents, topic:awesome topic:mcp, topic:awesome topic:generative-ai
+helper2.scout.github-awesome.web-pages.discovered-reads-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_DISCOVERED_READS_PER_DAY:10}  =>  10
+helper2.scout.github-awesome.web-pages.follow.check-calls-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_CHECK_CALLS_PER_DAY:50}  =>  50
+helper2.scout.github-awesome.web-pages.follow.check-max-tokens = 8192
+helper2.scout.github-awesome.web-pages.follow.status-requests-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_DAY:200}  =>  200
+helper2.scout.github-awesome.web-pages.follow.status-requests-per-host-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_HOST_PER_DAY:30}  =>  30
+helper2.scout.github-awesome.web-pages.follow.steps-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STEPS_PER_DAY:100}  =>  100
+helper2.scout.github-awesome.web-pages.gone-checks = ${H2_SCOUT_AWESOME_WEB_PAGES_GONE_CHECKS:3}  =>  3
+helper2.scout.github-awesome.web-pages.item-page-reads-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_ITEM_PAGE_READS_PER_DAY:100}  =>  100
+helper2.scout.github-awesome.web-pages.max-discovered = ${H2_SCOUT_AWESOME_WEB_PAGES_MAX_DISCOVERED:100}  =>  100
+helper2.scout.github-awesome.web-pages.never-read = ${H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ:coursera.org=its terms forbid automated reading without written consent}  =>  coursera.org=its terms forbid automated reading without written consent
+helper2.scout.github-awesome.web-pages.read-every = ${H2_SCOUT_AWESOME_WEB_PAGES_EVERY:P7D}  =>  P7D
+helper2.scout.github-awesome.web-pages.retry-after = ${H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER:PT1H}  =>  PT1H
 helper2.scout.github-sdks.deps-dev-url = ${H2_SCOUT_SDKS_DEPS_DEV_URL:https://api.deps.dev}  =>  https://api.deps.dev
 helper2.scout.github-sdks.interval = ${H2_SCOUT_SDKS_INTERVAL:P7D}  =>  P7D
 helper2.scout.github-sdks.languages = ${H2_SCOUT_SDKS_LANGUAGES:Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000}  =>  Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000
@@ -678,6 +706,7 @@ helper2.scout.live-web-events.interval = ${H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL:P7D
 helper2.scout.live-web-events.max-pages = ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}  =>  20
 helper2.scout.live-web-events.queries = upcoming AI hackathons, upcoming AI meetups and talks, upcoming AI conferences and summits, upcoming AI workshops
 helper2.scout.live-web-events.read-max-tokens = 800
+helper2.scout.live-web-events.read-model = ${H2_SCOUT_EVENT_READER_MODEL:FAST}  =>  FAST
 helper2.scout.live-web-events.reader-daily-calls = ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}  =>  40
 helper2.scout.live-web.interval = ${H2_SCOUT_LIVE_WEB_INTERVAL:P5D}  =>  P5D
 helper2.scout.live-web.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen
@@ -690,8 +719,14 @@ helper2.scout.pypi.candidates-per-day = ${H2_SCOUT_PYPI_CANDIDATES_PER_DAY:20}  
 helper2.scout.pypi.interval = ${H2_SCOUT_PYPI_INTERVAL:P1D}  =>  P1D
 helper2.scout.pypi.max-bytes-billed = ${H2_SCOUT_PYPI_MAX_BYTES_BILLED:20000000000}  =>  20000000000
 helper2.scout.pypi.project = ${H2_PYPI_BIGQUERY_PROJECT:}  =>  <empty>
+helper2.scout.repository-sweep.batch = ${H2_SCOUT_REPOSITORY_SWEEP_BATCH:50}  =>  50
+helper2.scout.repository-sweep.enabled = ${H2_SCOUT_REPOSITORY_SWEEP_ENABLED:true}  =>  true
+helper2.scout.repository-sweep.every = ${H2_SCOUT_REPOSITORY_SWEEP_EVERY:PT10M}  =>  PT10M
+helper2.scout.repository-sweep.gone-list-visits = ${H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS:3}  =>  3
+helper2.scout.repository-sweep.initial-delay = PT2M
 helper2.scout.tick = ${H2_SCOUT_TICK:PT10M}  =>  PT10M
 helper2.search.per-source-limit = ${H2_SEARCH_PER_SOURCE_LIMIT:30}  =>  30
+helper2.search.ranking.rating-weight = ${H2_SEARCH_RANKING_RATING_WEIGHT:0}  =>  0
 helper2.search.stale-for = ${H2_SEARCH_STALE_FOR:24h}  =>  24h
 helper2.search.translate-timeout = ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}  =>  2500
 helper2.search.translation.daily-calls = ${H2_SEARCH_DAILY_TRANSLATIONS:300}  =>  300
@@ -699,8 +734,8 @@ helper2.search.translation.ttl = ${H2_SEARCH_TRANSLATION_TTL:24h}  =>  24h
 helper2.search.web.fresh-general = ${H2_LIVE_WEB_FRESH_GENERAL:PT48H}  =>  PT48H
 helper2.search.web.fresh-time-bound = ${H2_LIVE_WEB_FRESH_TIMEBOUND:PT24H}  =>  PT24H
 helper2.search.web.quota.global-daily-credits = ${H2_LIVE_WEB_DAILY_CREDITS:}  =>  <empty>
-helper2.search.web.quota.guest.guide = ${H2_LIVE_WEB_GUEST_GUIDE:3}  =>  3
-helper2.search.web.quota.guest.search = ${H2_LIVE_WEB_GUEST_SEARCH:3}  =>  3
+helper2.search.web.quota.guest.guide = ${H2_LIVE_WEB_GUEST_GUIDE:10}  =>  10
+helper2.search.web.quota.guest.search = ${H2_LIVE_WEB_GUEST_SEARCH:10}  =>  10
 helper2.sources.ai-deadlines.base-url = https://api.github.com
 helper2.sources.ai-deadlines.cache-ttl = 30m
 helper2.sources.ai-deadlines.deadline = ${H2_SOURCE_AI_DEADLINES_DEADLINE:}  =>  <empty>
@@ -910,6 +945,7 @@ resilience4j.circuitbreaker.instances.collector-live-web-scout.base-config = col
 resilience4j.circuitbreaker.instances.collector-mcp-registry.base-config = collector
 resilience4j.circuitbreaker.instances.collector-news-feeds.base-config = collector
 resilience4j.circuitbreaker.instances.collector-pypi.base-config = collector
+resilience4j.circuitbreaker.instances.collector-repository-sweep.base-config = collector
 resilience4j.circuitbreaker.instances.db-cache.failure-rate-threshold = 50
 resilience4j.circuitbreaker.instances.db-cache.minimum-number-of-calls = 3
 resilience4j.circuitbreaker.instances.db-cache.permitted-number-of-calls-in-half-open-state = 2
@@ -923,6 +959,7 @@ resilience4j.circuitbreaker.instances.llm-chat.ignore-exception-predicate = ai.h
 resilience4j.circuitbreaker.instances.llm-embed-index.base-config = model
 resilience4j.circuitbreaker.instances.llm-embed-index.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$RejectedInput
 resilience4j.circuitbreaker.instances.llm-embed.base-config = model
+resilience4j.circuitbreaker.instances.page-status.base-config = collector
 resilience4j.circuitbreaker.instances.redis.base-config = store
 resilience4j.circuitbreaker.instances.research-huggingface.base-config = collector
 resilience4j.circuitbreaker.instances.research-web-search.base-config = collector
@@ -962,6 +999,7 @@ resilience4j.retry.instances.collector-live-web-scout.base-config = collector
 resilience4j.retry.instances.collector-mcp-registry.base-config = collector
 resilience4j.retry.instances.collector-news-feeds.base-config = collector
 resilience4j.retry.instances.collector-pypi.base-config = collector
+resilience4j.retry.instances.collector-repository-sweep.base-config = collector
 server.forward-headers-strategy = ${H2_FORWARD_HEADERS_STRATEGY:none}  =>  none
 server.port = ${H2_PORT:8080}  =>  8080
 server.servlet.session.cookie.http-only = true

@@ -1,13 +1,12 @@
-import type { ReactNode, Ref } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Icon } from '@/ui/Icon';
+import { Icon } from './Icon';
 import './ui.css';
 
 export function StatePanel({
   tone,
   title,
   level,
-  headingRef,
   live = false,
   children,
   next,
@@ -15,7 +14,6 @@ export function StatePanel({
   tone: 'error' | 'notice';
   title: string;
   level: number;
-  headingRef?: Ref<HTMLHeadingElement> | undefined;
   live?: boolean;
   children?: ReactNode;
   next?: ReactNode;
@@ -24,7 +22,7 @@ export function StatePanel({
   const role = tone === 'error' ? 'alert' : live ? 'status' : undefined;
   return (
     <div role={role} className={`h2-state h2-state--${tone}`}>
-      <Tag ref={headingRef} tabIndex={headingRef ? -1 : undefined} className="h2-state__title">
+      <Tag className="h2-state__title">
         {tone === 'error' && <Icon name="warn" />}
         {title}
       </Tag>

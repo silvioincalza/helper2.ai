@@ -67,7 +67,7 @@ class SourceCircuitIT {
     NpmSource npm =
         new NpmSource(
             new SourceSettings(
-                true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ofMinutes(30)),
+                true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ofMinutes(30), null),
             TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
             clock);
     return new SearchResources(

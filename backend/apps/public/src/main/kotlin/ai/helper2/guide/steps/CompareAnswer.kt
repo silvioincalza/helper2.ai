@@ -175,7 +175,7 @@ internal class CompareAnswer(
     val ok = cell != null && c != null && check == null
     if (cell != null && !ok) gate.rejected++
     if (c != null && check != null) gate.removed += RemovedSuggestion(c.result.title, check)
-    return if (ok) ComparisonCell(s.key, cell!!.text.trim(), cell.quote.trim())
+    return if (ok) ComparisonCell(s.key, cell.text!!.trim(), cell.quote!!.trim())
     else ComparisonCell(s.key, null, null)
   }
 

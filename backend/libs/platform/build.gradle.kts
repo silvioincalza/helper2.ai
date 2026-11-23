@@ -12,6 +12,7 @@ dependencies {
   api("org.springframework.boot:spring-boot-starter-data-redis")
   api("org.springframework.ai:spring-ai-starter-model-openai")
   api("org.apache.httpcomponents.client5:httpclient5")
+  api("org.apache.commons:commons-lang3")
   api("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.11.0")
   api("io.github.resilience4j:resilience4j-circuitbreaker")
   api("io.github.resilience4j:resilience4j-bulkhead")
@@ -23,6 +24,8 @@ dependencies {
   testFixturesApi("org.testcontainers:testcontainers-junit-jupiter")
   testFixturesApi("org.testcontainers:testcontainers-postgresql")
   testFixturesApi("net.ttddyy:datasource-proxy:1.11.1")
+  testFixturesApi("com.tngtech.archunit:archunit-junit5:${property("archunitVersion")}")
+  testFixturesApi("org.springframework.modulith:spring-modulith-core")
   testFixturesApi(project(":libs:schema"))
 }
 
@@ -39,5 +42,13 @@ tasks.named<Test>("test") {
   inputs
     .files(rootProject.files("../deploy/helm/helper2/files/redis-users.acl"))
     .withPropertyName("redisUsers")
+    .withPathSensitivity(PathSensitivity.RELATIVE)
+  inputs
+    .files(rootProject.files("../.env.example", "../deploy/k8s/app.env.example"))
+    .withPropertyName("envGuides")
+    .withPathSensitivity(PathSensitivity.RELATIVE)
+  inputs
+    .dir(rootProject.file("../deploy/helm/helper2/templates"))
+    .withPropertyName("chartTemplates")
     .withPathSensitivity(PathSensitivity.RELATIVE)
 }

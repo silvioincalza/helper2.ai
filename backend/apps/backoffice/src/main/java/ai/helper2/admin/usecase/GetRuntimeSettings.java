@@ -19,7 +19,7 @@ public class GetRuntimeSettings {
       long version,
       List<RuntimeSettingStore.Change> history) {
     public String described() {
-      String shown = value == null ? "no cap" : Long.toString(value);
+      String shown = setting.shown(value);
       return overridden ? shown : "default " + shown;
     }
   }
@@ -32,8 +32,11 @@ public class GetRuntimeSettings {
     this.runtime = runtime;
   }
 
-  public List<State> all() {
-    return Arrays.stream(RuntimeSetting.values()).map(this::of).toList();
+  public List<State> of(RuntimeSetting.Kind kind) {
+    return Arrays.stream(RuntimeSetting.values())
+        .filter(s -> s.kind() == kind)
+        .map(this::of)
+        .toList();
   }
 
   public State of(RuntimeSetting setting) {

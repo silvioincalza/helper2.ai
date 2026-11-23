@@ -7,13 +7,13 @@ import ai.helper2.search.SearchSource;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
+import ai.helper2.search.Vitality;
 import ai.helper2.shared.Audience;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.PlatformBuild;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
@@ -24,6 +24,7 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 
@@ -38,20 +39,19 @@ public class NpmSource implements SearchSource {
     this.clock = clock;
     this.http = builder.baseUrl(settings.baseUrl()).build();
     this.descriptor =
-        new SourceDescriptor(
-            "npm",
-            "npm registry",
-            "npm",
-            true,
-            SourceMode.LIVE,
-            URI.create("https://www.npmjs.com"),
-            URI.create("https://docs.npmjs.com/policies/open-source-terms"),
-            "Package metadata from the npm registry API",
-            EnumSet.of(ResourceType.LIBRARY, ResourceType.MCP_SERVER, ResourceType.AGENT),
-            settings.timeout(),
-            settings.cacheTtl(),
-            settings.enabled(),
-            40);
+        SourceDescriptor.external(
+                "npm",
+                "npm registry",
+                "npm",
+                SourceMode.LIVE,
+                URI.create("https://www.npmjs.com"),
+                EnumSet.of(ResourceType.LIBRARY, ResourceType.MCP_SERVER, ResourceType.AGENT),
+                settings.timeout(),
+                settings.cacheTtl())
+            .withTerms(URI.create("https://docs.npmjs.com/policies/open-source-terms"))
+            .withAttribution("Package metadata from the npm registry API")
+            .enabledWhen(settings.enabled())
+            .withPriority(40);
   }
 
   @Override
@@ -122,27 +122,63 @@ public class NpmSource implements SearchSource {
                     now))
             : List.of();
     return new SourceHit(
-        "npm",
-        name,
-        HttpClients.link(url, canonical),
-        canonical,
-        CanonicalUrl.of(HttpClients.text(p.path("links"), "repository")),
-        name,
-        description,
-        ValueOrigin.SOURCE_PROVIDED,
-        Classification.typeOf(name, description, keywords, ResourceType.LIBRARY),
-        Audience.BUILD_WITH_AI,
-        null,
-        Set.of(),
-        keywords,
-        license,
-        null,
-        Set.of("node"),
-        Classification.openSource(license),
-        DateFact.unknown(),
-        DateFact.fromSource(HttpClients.instant(p, "date"), "npm", now),
-        pop,
-        now,
-        position);
+            "npm",
+            name,
+            HttpClients.link(url, canonical),
+            canonical,
+            name,
+            Classification.typeOf(name, description, keywords, ResourceType.LIBRARY),
+            now)
+        .withRepository(CanonicalUrl.of(HttpClients.text(p.path("links"), "repository")))
+        .withDescription(description)
+        .withAudience(Audience.BUILD_WITH_AI)
+        .withTags(keywords)
+        .withLicense(license, Classification.openSource(license))
+        .withPlatforms(Set.of("node"))
+        .withUpdated(DateFact.fromSource(HttpClients.instant(p, "date"), "npm", now))
+        .withPopularity(pop)
+        .withRank(position);
+  }
+
+  public static @Nullable SourceHit ofLatestVersion(
+      JsonNode version, String sourceId, Instant now) {
+    String name = HttpClients.text(version, "name");
+    if (name == null || PlatformBuild.isPlatformBuild(name)) {
+      return null;
+    }
+    CanonicalUrl canonical = CanonicalUrl.of("https://www.npmjs.com/package/" + name);
+    String description = HttpClients.text(version, "description");
+    Set<String> keywords = new LinkedHashSet<>();
+    version
+        .path("keywords")
+        .forEach(k -> {
+          if (k.isString()) {
+            keywords.add(k.asString().toLowerCase());
+          }
+        });
+    if (canonical == null || !Classification.isAiRelated(name, description, keywords)) {
+      return null;
+    }
+    String stated = HttpClients.text(version, "license");
+    String license = stated == null ? null : ResultMerger.normalizeLicense(stated);
+    JsonNode repository = version.path("repository");
+    String repositoryUrl =
+        repository.isString() ? repository.asString() : HttpClients.text(repository, "url");
+    boolean deprecated = HttpClients.text(version, "deprecated") != null;
+    return new SourceHit(
+            sourceId,
+            canonical.getValue(),
+            URI.create(canonical.getValue()),
+            canonical,
+            name,
+            Classification.typeOf(name, description, keywords, ResourceType.LIBRARY),
+            now)
+        .withRepository(CanonicalUrl.of(repositoryUrl))
+        .withDescription(description)
+        .withAudience(Audience.BUILD_WITH_AI)
+        .withTags(keywords)
+        .withLicense(license, Classification.openSource(license))
+        .withPlatforms(Set.of("node"))
+        .withVitality(new Vitality(null, null, deprecated));
   }
 }

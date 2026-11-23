@@ -4,6 +4,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.platform.settings.Setting;
+import ai.helper2.testing.architecture.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.lang.ArchRule;
@@ -11,14 +12,9 @@ import org.junit.jupiter.api.Test;
 
 class SettingFactoriesTest {
 
-  private static final JavaClasses CLASSES =
-      new ClassFileImporter()
-          .withImportOption(new DoNotIncludeTestFixtures())
-          .importPackages("ai.helper2");
-
   @Test
   void onlyTheFactoriesBuildASetting() {
-    onlyFactoriesBuildASetting().check(CLASSES);
+    onlyFactoriesBuildASetting().check(ProductionClasses.onTheClasspath());
   }
 
   @Test

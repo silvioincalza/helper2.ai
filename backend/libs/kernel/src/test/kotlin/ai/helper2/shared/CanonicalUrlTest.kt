@@ -23,6 +23,36 @@ class CanonicalUrlTest {
   }
 
   @Test
+  fun `a hugging face model is an owner and a name, not a dataset, a space or a page of the site`() {
+    assertEquals(
+      "openai/whisper-large-v3",
+      CanonicalUrl.of("https://hf.co/openai/whisper-large-v3/tree/main")?.huggingFaceModel,
+    )
+    assertEquals(null, CanonicalUrl.of("https://huggingface.co/datasets/acme/qa")?.huggingFaceModel)
+    assertEquals(null, CanonicalUrl.of("https://huggingface.co/spaces/acme/demo")?.huggingFaceModel)
+    assertEquals(null, CanonicalUrl.of("https://huggingface.co/docs/hub")?.huggingFaceModel)
+    assertEquals(null, CanonicalUrl.of("https://huggingface.co/learn/agents")?.huggingFaceModel)
+    assertEquals(null, CanonicalUrl.of("https://huggingface.co/openai")?.huggingFaceModel)
+    assertEquals(null, CanonicalUrl.of("https://example.com/openai/whisper")?.huggingFaceModel)
+  }
+
+  @Test
+  fun `an arxiv paper is one id whatever the view, the version and the file ending`() {
+    assertEquals("1706.03762", CanonicalUrl.of("https://arxiv.org/abs/1706.03762v5")?.arxivPaper)
+    assertEquals("1706.03762", CanonicalUrl.of("https://arxiv.org/pdf/1706.03762.pdf")?.arxivPaper)
+    assertEquals("1706.03762", CanonicalUrl.of("https://hf.co/papers/1706.03762")?.arxivPaper)
+    assertEquals("cs/0112017", CanonicalUrl.of("https://arxiv.org/abs/cs/0112017v1")?.arxivPaper)
+    assertEquals(
+      "math.GT/0309136",
+      CanonicalUrl.of("https://arxiv.org/pdf/math.GT/0309136")?.arxivPaper,
+    )
+    assertEquals(null, CanonicalUrl.of("https://arxiv.org/abs/1706.03762,1706.03763")?.arxivPaper)
+    assertEquals(null, CanonicalUrl.of("https://arxiv.org/list/cs.AI/recent")?.arxivPaper)
+    assertEquals(null, CanonicalUrl.of("https://arxiv.org/abs/attention-is-all")?.arxivPaper)
+    assertEquals(null, CanonicalUrl.of("https://example.com/abs/1706.03762")?.arxivPaper)
+  }
+
+  @Test
   fun `a github repository is an owner and a repo, not a page of the site`() {
     assertEquals(
       true,

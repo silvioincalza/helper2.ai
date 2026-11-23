@@ -51,23 +51,36 @@ class BookmarksController implements BookmarksApi {
     if (!resourceId.equals(body.getResourceId())) {
       throw new BadRequestException("resourceId in the path and the body differ");
     }
-    return ResponseEntity.ok(dto(addBookmark.add(signIn.userId(), bookmark(body))));
+    return switch (addBookmark.add(signIn.userId(), bookmark(body))) {
+      case AddBookmark.Outcome.Added added -> ResponseEntity.ok(dto(added.bookmark()));
+      case AddBookmark.Outcome.InvalidUrl invalid -> throw invalidUrl();
+      case AddBookmark.Outcome.OverLimit over -> throw overLimit(over.limit());
+    };
   }
 
   @Override
   public ResponseEntity<List<BookmarkDto>> mergeLocalBookmarks(List<BookmarkRequestDto> body) {
-    return ResponseEntity.ok(
-        mergeLocalBookmarks
-            .merge(signIn.userId(), body.stream().map(BookmarksController::bookmark).toList())
-            .stream()
-            .map(BookmarksController::dto)
-            .toList());
+    List<Bookmark> local = body.stream().map(BookmarksController::bookmark).toList();
+    return switch (mergeLocalBookmarks.merge(signIn.userId(), local)) {
+      case MergeLocalBookmarks.Outcome.Merged merged ->
+          ResponseEntity.ok(merged.bookmarks().stream().map(BookmarksController::dto).toList());
+      case MergeLocalBookmarks.Outcome.InvalidUrl invalid -> throw invalidUrl();
+      case MergeLocalBookmarks.Outcome.OverLimit over -> throw overLimit(over.limit());
+    };
   }
 
   @Override
   public ResponseEntity<Void> deleteBookmark(UUID resourceId) {
     removeBookmark.remove(signIn.userId(), resourceId);
     return ResponseEntity.noContent().build();
+  }
+
+  private static BadRequestException invalidUrl() {
+    return new BadRequestException("invalid bookmark url");
+  }
+
+  private static BadRequestException overLimit(int limit) {
+    return new BadRequestException("At most " + limit + " bookmarks per account.");
   }
 
   private static Bookmark bookmark(BookmarkRequestDto r) {

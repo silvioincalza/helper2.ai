@@ -21,6 +21,7 @@ import ai.helper2.scout.LlmUnavailable
 import ai.helper2.scout.Material
 import ai.helper2.scout.ModelAnswerInvalid
 import ai.helper2.scout.Proposal
+import ai.helper2.scout.ProposedField
 import ai.helper2.scout.ProposedRelationship
 import ai.helper2.scout.RunLock
 import ai.helper2.scout.RunStatus
@@ -71,14 +72,25 @@ private val NO_LOCK =
     override fun <T : Any> runExclusively(task: Supplier<T>): T? = task.get()
   }
 
-private fun material() =
+private val EVIDENCE_ID = UUID.randomUUID()
+
+private const val SOURCE_TEXT = "Postgres MCP server. Works with Claude Desktop and Cursor."
+
+private fun material(title: String = "x") =
   EnrichmentMaterial(
     EnrichmentInput(
-      "x",
-      listOf(Material(UUID.randomUUID(), URI("https://x.example"), NOW, "text")),
+      title,
+      listOf(Material(EVIDENCE_ID, URI("https://x.example"), NOW, SOURCE_TEXT)),
     ),
     "fp",
   )
+
+private fun cited(field: String, value: String, excerpt: String) =
+  ProposedField(field, value, listOf(Citation(EVIDENCE_ID.toString(), excerpt)))
+
+private val STATED = cited("platforms", "desktop", "Works with Claude Desktop and Cursor")
+
+private val INVENTED = cited("pricing", "FREE", "Completely free forever")
 
 class RunScoutTest {
 
@@ -321,6 +333,93 @@ class RunScoutTest {
   }
 
   @Test
+  fun `a run counts each enrichment as what became of it, in its summary and in its counters`() {
+    val answers = listOf("validated", "partial", "failed", "no material", "store down", "no slot")
+    val saved = mutableListOf<EnrichmentOutcome>()
+    val store =
+      object : FakeEnrichmentStore() {
+        override fun load(resourceId: UUID): EnrichmentMaterial? =
+          when (val answer = answers[changedIds.indexOf(resourceId)]) {
+            "no material" -> null
+            "store down" -> throw IllegalStateException("connection reset")
+            else -> material(answer)
+          }
+
+        override fun save(
+          resourceId: UUID,
+          model: EnrichmentModel,
+          inputFingerprint: String,
+          startedAt: java.time.Instant,
+          result: ValidationResult?,
+          outcome: EnrichmentOutcome,
+          failure: String?,
+          extraEvidence: String?,
+        ) {
+          saved += outcome
+        }
+      }
+    val model =
+      object : EnrichmentModel {
+        override val provider = "fake"
+        override val model = "m"
+        override val promptVersion = "enrich-v3"
+
+        override fun propose(input: EnrichmentInput): EnrichmentProposal =
+          when (input.resourceTitle) {
+            "validated" -> EnrichmentProposal(fields = listOf(STATED))
+            "partial" -> EnrichmentProposal(fields = listOf(STATED, INVENTED))
+            else -> throw ModelAnswerInvalid("answer contains no JSON object")
+          }
+      }
+    val meters = SimpleMeterRegistry()
+    val requested = mutableListOf<UUID>()
+    val hits = answers.indices.map { hit("mcp", "https://github.com/a/r$it") }
+    val c = FakeCollector(descriptor("mcp")) { CollectedBatch(hits, null, "cp") }
+
+    val run =
+      RunScout(
+          listOf(c),
+          history,
+          catalog,
+          EnrichResource(model, store, clock),
+          clock,
+          NO_LOCK,
+          maxEnrichmentsPerRun = { 5 },
+          backlog = backlog(requested = requested) { emptyList() },
+          meters = meters,
+        )
+        .runNow()!!
+        .single()
+
+    assertEquals(
+      listOf(EnrichmentOutcome.VALIDATED, EnrichmentOutcome.PARTIAL, EnrichmentOutcome.FAILED),
+      saved,
+    )
+    assertEquals(RunStatus.SUCCEEDED, run.status)
+    assertEquals(6, run.itemsSeen)
+    assertEquals(6, run.itemsChanged)
+    assertEquals(2, run.enrichmentsQueued)
+    assertEquals(
+      "2 enrichments failed; the backlog retries them. " +
+        "1 enrichment rejected; nothing was kept. " +
+        "1 changed resource waits for the backlog (enrichment budget spent)",
+      run.message,
+    )
+    assertEquals(
+      changedIds.drop(4),
+      requested,
+      "a failure the enrichment recorded is retried by the backlog rule, without a request",
+    )
+    fun items(kind: String) =
+      meters.get("helper2.scout.items").tags("source", "mcp", "kind", kind).counter().count()
+    assertEquals(6.0, items("seen"))
+    assertEquals(6.0, items("changed"))
+    assertEquals(2.0, items("queued"))
+    assertEquals(2.0, items("failed"))
+    assertEquals(1.0, items("rejected"))
+  }
+
+  @Test
   fun `the run interval of every collector is a gauge from the start, before any run`() {
     val meters = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
     val weekly = FakeCollector(descriptor("weekly"), Duration.ofDays(7)) { CollectedBatch.notDue() }
@@ -379,6 +478,39 @@ class RunScoutTest {
       calls += sourceId to externalIds
       return Withdrawal(externalIds.size, 1, kept)
     }
+  }
+
+  @Test
+  fun `the hits a collector writes for another of its sources are indexed under that source too`() {
+    val calls = mutableListOf<Pair<String, List<String>>>()
+    val index = CatalogIndex { results, sourceId ->
+      calls += sourceId to results.flatMap { r -> r.hits.map { it.sourceId } }
+      results.map { it.id.value }
+    }
+    val lists = descriptor("lists")
+    val c =
+      object : Collector {
+        override val descriptor = descriptor("awesome")
+
+        override fun runEvery(): Duration = Duration.ZERO
+
+        override fun alsoWrites() = listOf(lists)
+
+        override fun collect(checkpoint: String?, resumeCursor: String?, maxItems: Int) =
+          CollectedBatch(
+            listOf(
+              hit("awesome", "https://github.com/a/x", type = ResourceType.MCP_SERVER),
+              hit("lists", "https://acme.dev/best-ai-tools", type = ResourceType.AWESOME_LIST),
+            ),
+            null,
+            "cp",
+          )
+      }
+
+    RunScout(listOf(c), history, index, null, clock, NO_LOCK).runNow()
+
+    assertEquals(listOf("awesome", "lists"), calls.map { it.first })
+    assertEquals(listOf("awesome", "lists"), calls.first().second)
   }
 
   @Test
@@ -887,7 +1019,8 @@ class RunScoutTest {
       override val available = available
 
       override fun propose(input: EnrichmentInput): EnrichmentProposal =
-        if (available) EnrichmentProposal() else throw LlmUnavailable("no model")
+        if (available) EnrichmentProposal(fields = listOf(STATED))
+        else throw LlmUnavailable("no model")
     }
 
   @Test

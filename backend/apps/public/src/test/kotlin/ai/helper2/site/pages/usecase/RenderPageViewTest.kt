@@ -7,14 +7,19 @@ import ai.helper2.search.hit
 import ai.helper2.shared.DateFact
 import ai.helper2.shared.ResourceType
 import ai.helper2.shared.WebSources
+import ai.helper2.site.pages.Related
 import java.time.LocalDate
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class RenderPageViewTest {
 
-  private fun view(source: String) =
+  private fun view(
+    source: String,
+    foundIn: ResourceDetail.FoundIn = ResourceDetail.FoundIn.NO_LIST,
+  ) =
     RenderPage.view(
       ResourceDetail(
         ResultMerger()
@@ -35,8 +40,23 @@ class RenderPageViewTest {
         null,
         emptyList(),
         null,
+        foundIn,
+        null,
       )
     )
+
+  @Test
+  fun `the lists a resource was found in are on the server page, as links to their pages`() {
+    val list = UUID.randomUUID()
+    val found =
+      ResourceDetail.FoundIn(
+        listOf(ResourceDetail.ListEntry(list, "acme/awesome-events", "Hackathons")),
+        3,
+      )
+
+    assertEquals(listOf(Related(list, "acme/awesome-events")), view("ai-deadlines", found).foundIn)
+    assertEquals(emptyList(), view("ai-deadlines").foundIn)
+  }
 
   @Test
   fun `days and place an AI model read stay off the server page`() {

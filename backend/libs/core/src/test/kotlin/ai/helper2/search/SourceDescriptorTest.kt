@@ -49,4 +49,88 @@ class SourceDescriptorTest {
     assertFailsWith<IllegalArgumentException> { index.copy(shortName = "Thirteen char") }
     assertFailsWith<IllegalArgumentException> { index.copy(shortName = " ") }
   }
+
+  @Test
+  fun `an external source built by name is the one built by position`() {
+    val byName =
+      SourceDescriptor.external(
+          "live-web",
+          "Live web search",
+          "Web",
+          SourceMode.LIVE,
+          URI.create("https://helper2.ai/sources"),
+          setOf(ResourceType.NEWS),
+          Duration.ofSeconds(3),
+          Duration.ofMinutes(10),
+        )
+        .withTerms(URI.create("https://helper2.ai/terms"))
+        .withAttribution("Web results")
+        .enabledWhen(false)
+        .withPriority(48)
+        .askedWithTheWebQuery()
+        .askedWithoutTranslation()
+        .filteringByDate()
+        .browsing()
+        .metered()
+        .inFamily("discovery")
+        .confirmingUrlsUnder("https://huggingface.co/spaces/")
+
+    assertEquals(
+      SourceDescriptor(
+        id = "live-web",
+        name = "Live web search",
+        shortName = "Web",
+        external = true,
+        mode = SourceMode.LIVE,
+        homepage = URI.create("https://helper2.ai/sources"),
+        termsUrl = URI.create("https://helper2.ai/terms"),
+        attribution = "Web results",
+        resourceTypes = setOf(ResourceType.NEWS),
+        timeout = Duration.ofSeconds(3),
+        cacheTtl = Duration.ofMinutes(10),
+        enabled = false,
+        priority = 48,
+        usesWebQuery = true,
+        usesTranslation = false,
+        filtersByDate = true,
+        browses = true,
+        metered = true,
+        family = "discovery",
+        confirmsUrlPrefix = "https://huggingface.co/spaces/",
+      ),
+      byName,
+    )
+  }
+
+  @Test
+  fun `a source built by name without a step keeps what a source has when nothing is said`() {
+    val inHouse =
+      SourceDescriptor.inHouse(
+        "curated",
+        "Hand-picked list",
+        "Curated",
+        SourceMode.CURATED,
+        URI.create("https://helper2.ai/sources"),
+        setOf(ResourceType.PRODUCT),
+        Duration.ofSeconds(3),
+        Duration.ZERO,
+      )
+
+    assertEquals(
+      SourceDescriptor(
+        id = "curated",
+        name = "Hand-picked list",
+        shortName = "Curated",
+        external = false,
+        mode = SourceMode.CURATED,
+        homepage = URI.create("https://helper2.ai/sources"),
+        termsUrl = null,
+        attribution = null,
+        resourceTypes = setOf(ResourceType.PRODUCT),
+        timeout = Duration.ofSeconds(3),
+        cacheTtl = Duration.ZERO,
+      ),
+      inHouse,
+    )
+  }
 }

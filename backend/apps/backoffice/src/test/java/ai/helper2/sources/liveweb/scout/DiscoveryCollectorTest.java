@@ -8,6 +8,7 @@ import ai.helper2.platform.quota.QuotaKeys;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
+import ai.helper2.scout.DiscoveredLists;
 import ai.helper2.scout.DiscoveryHost;
 import ai.helper2.scout.HostKind;
 import ai.helper2.scout.InMemoryDiscoveryHostStore;
@@ -27,6 +28,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +77,13 @@ class DiscoveryCollectorTest {
   final QuotaKeys keys = new QuotaKeys("", SourceFixtures.CLOCK);
   final SimpleMeterRegistry meters = new SimpleMeterRegistry();
   final InMemoryDiscoveryHostStore hosts = SeedDiscoveryHosts.store();
+  final List<String> addedLists = new ArrayList<>();
+  DiscoveredLists.Outcome listOutcome = DiscoveredLists.Outcome.ADDED;
+  final DiscoveredLists discoveredLists =
+      (page, foundBy) -> {
+        addedLists.add(foundBy + " " + page.getValue());
+        return listOutcome;
+      };
 
   @AfterEach
   void stop() {
@@ -118,15 +127,17 @@ class DiscoveryCollectorTest {
   DiscoveryCollector collector(
       Resilience resilience, String token, long cap, DiscoveryCategory... all) {
     return new DiscoveryCollector(
-        new SourceSettings(true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(
+            true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
         resilience,
         new DiscoveryCollector.Search("advanced", 10),
         all[0],
         List.of(all),
-        new ScoutLiveWebCredits(counter, keys, cap, meters),
+        new ScoutLiveWebCredits(counter, keys, () -> cap, meters),
         hosts,
+        discoveredLists,
         SourceFixtures.SHADOW_LIBRARIES);
   }
 
@@ -181,6 +192,100 @@ class DiscoveryCollectorTest {
     assertThat(batch.getCandidates())
         .extracting(c -> c.getUrl().getValue())
         .doesNotContain("https://openwebui.com");
+  }
+
+  @Test
+  void uc019Br001AListPageOfADirectoryHostIsProposedForReviewNotIndexed() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    hosts.add(
+        new DiscoveryHost(
+            "example-lists.com", HostKind.DIRECTORY, "1", Instant.EPOCH, "a directory"));
+
+    CollectedBatch batch = collector(SELF_HOSTED, LOCAL_AI).collect(null, null, 1000);
+
+    String list = "https://example-lists.com/blog/12-best-self-hosted-llm-apps";
+    assertThat(batch.getHits()).isEmpty();
+    assertThat(batch.getCandidates())
+        .filteredOn(c -> c.getUrl().getValue().equals(list))
+        .singleElement()
+        .satisfies(c -> assertThat(c.getType()).isEqualTo(ResourceType.ARTICLE));
+  }
+
+  @Test
+  void uc030Br003AListPageOfADirectoryHostWhoseListsAreReadIsAddedAsAListToRead() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    hosts.add(
+        new DiscoveryHost(
+            "example-lists.com", HostKind.DIRECTORY, "1", Instant.EPOCH, "a directory", true));
+
+    CollectedBatch batch = collector(SELF_HOSTED, LOCAL_AI).collect(null, null, 1000);
+
+    String list = "https://example-lists.com/blog/12-best-self-hosted-llm-apps";
+    assertThat(addedLists).containsExactly("discovery-self-hosted " + list);
+    assertThat(batch.getHits()).isEmpty();
+    assertThat(batch.getCandidates()).extracting(c -> c.getUrl().getValue()).doesNotContain(list);
+  }
+
+  @Test
+  void uc030Br003TheSearchStillExcludesADirectoryHostWhoseSwitchIsOff() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    DiscoveryCategory health =
+        category("health", ResourceType.PRODUCT, List.of("health app"), List.of());
+    hosts.add(
+        new DiscoveryHost("youtube.com", HostKind.DIRECTORY, "1", Instant.EPOCH, "a directory"));
+
+    collector(health).collect(null, null, 1000);
+
+    assertThat(server.requestBodies.get(0)).contains("\"exclude_domains\":[\"youtube.com\"]");
+  }
+
+  @Test
+  void uc030Br003TheSearchNoLongerExcludesADirectoryHostWhoseSwitchIsOn() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    DiscoveryCategory health =
+        category("health", ResourceType.PRODUCT, List.of("health app"), List.of());
+    hosts.add(
+        new DiscoveryHost(
+            "youtube.com", HostKind.DIRECTORY, "1", Instant.EPOCH, "a directory", true));
+
+    collector(health).collect(null, null, 1000);
+
+    assertThat(server.requestBodies.get(0)).doesNotContain("exclude_domains");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void uc030Br003AListPageTheRulesOfAnAddedPageRefuseWaitsForReviewAsWithTheSwitchOff() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    hosts.add(
+        new DiscoveryHost(
+            "example-lists.com", HostKind.DIRECTORY, "1", Instant.EPOCH, "a directory", true));
+    listOutcome = DiscoveredLists.Outcome.WAITS_FOR_REVIEW;
+
+    CollectedBatch batch = collector(SELF_HOSTED, LOCAL_AI).collect(null, null, 1000);
+
+    String list = "https://example-lists.com/blog/12-best-self-hosted-llm-apps";
+    assertThat(batch.getHits()).isEmpty();
+    assertThat(batch.getCandidates())
+        .filteredOn(c -> c.getUrl().getValue().equals(list))
+        .singleElement()
+        .satisfies(c -> {
+          assertThat(c.getType()).isEqualTo(ResourceType.ARTICLE);
+          assertThat((Map<String, Object>) c.getFacts().get("discovery"))
+              .containsEntry("shape", "LIST_TO_REVIEW");
+        });
+  }
+
+  @Test
+  void uc030Br003WithTheSwitchOffNoListIsAdded() {
+    server.route("/search", FixtureServer.Reply.ok(RESULTS));
+    hosts.add(
+        new DiscoveryHost(
+            "example-lists.com", HostKind.DIRECTORY, "1", Instant.EPOCH, "a directory"));
+
+    collector(SELF_HOSTED, LOCAL_AI).collect(null, null, 1000);
+
+    assertThat(addedLists).isEmpty();
   }
 
   @Test
@@ -429,15 +534,16 @@ class DiscoveryCollectorTest {
 
   private DiscoveryCollector secondOfTheList() {
     return new DiscoveryCollector(
-        new SourceSettings(true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(true, server.baseUrl(), "t", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
         Resilience.NONE,
         new DiscoveryCollector.Search("advanced", 10),
         SELF_HOSTED,
         List.of(LOCAL_AI, SELF_HOSTED),
-        new ScoutLiveWebCredits(counter, keys, 40, meters),
+        new ScoutLiveWebCredits(counter, keys, () -> 40L, meters),
         SeedDiscoveryHosts.store(),
+        discoveredLists,
         SourceFixtures.SHADOW_LIBRARIES);
   }
 

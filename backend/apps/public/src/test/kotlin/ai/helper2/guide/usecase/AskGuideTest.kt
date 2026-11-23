@@ -33,6 +33,7 @@ import ai.helper2.guide.WorkGate
 import ai.helper2.guide.steps.rankBand
 import ai.helper2.guide.wantsReading
 import ai.helper2.platform.quota.QuotaKeys
+import ai.helper2.search.ListedNames
 import ai.helper2.search.NoticeCode
 import ai.helper2.search.ResultObserver
 import ai.helper2.search.SearchCache
@@ -393,6 +394,26 @@ class AskGuideTest {
     assertEquals(first.copy(search = second.search), second)
     assertEquals(first.search.results, second.search.results)
     assertEquals("", second.search.request.text, "the stored copy keeps no request text")
+  }
+
+  @Test
+  fun `a cached answer that cites a name listed since then is a miss and is answered again`() {
+    val model = CountingModel(whisperPick())
+    val listed = ListedNames()
+    val guide =
+      AskGuide(
+        search,
+        model,
+        clock,
+        cache = GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()),
+        shadowLibraries = listed.libraries,
+      )
+    guide.ask(need, null)
+
+    listed.add("huggingface")
+    guide.ask(need, null)
+
+    assertEquals(4, model.calls)
   }
 
   @Test
@@ -1094,6 +1115,63 @@ class AskGuideTest {
     observed(whisperPick()).ask(need, null)
 
     assertEquals(1.0, meters.find("helper2.guide.picks").counters().sumOf { it.count() })
+  }
+
+  private fun quoteOrigins(found: String) =
+    meters.counter("helper2.guide.quote_origin", "part", "pick", "found", found).count()
+
+  @Test
+  fun `every quote of a fresh answer is counted by its part and by whether a page holds it`() {
+    val picks = observed(null).ask(need, null).recommendations
+
+    assertTrue(picks.isNotEmpty())
+    assertEquals(picks.count { it.quotedFrom != null }.toDouble(), quoteOrigins("true"))
+    assertEquals(picks.count { it.quotedFrom == null }.toDouble(), quoteOrigins("false"))
+  }
+
+  @Test
+  fun `a quote that no record holds is counted as not found`() {
+    val curated =
+      object : SearchSource {
+        override val descriptor = descriptor("curated")
+
+        override fun search(query: SourceQuery): List<SourceHit> =
+          listOf(
+            hit(
+              "curated",
+              "https://example.org/speech-tool",
+              title = "speech-tool",
+              type = ResourceType.MODEL,
+              description =
+                "An open speech recognition model you can self-host on your own hardware",
+            )
+          )
+      }
+    val curatedSearch =
+      SearchResources(listOf(curated), noCache, ResultObserver { emptyMap() }, executor, clock)
+
+    val pick =
+      AskGuide(curatedSearch, null, clock, observations = observations, meters = meters)
+        .ask(need, null)
+        .recommendations
+        .single()
+
+    assertEquals(null, pick.quotedFrom)
+    assertEquals(1.0, quoteOrigins("false"))
+    assertEquals(0.0, quoteOrigins("true"))
+  }
+
+  @Test
+  fun `an answer served from the cache does not count its quotes again`() {
+    val guide =
+      observed(whisperPick(), GuideAnswerCache(Duration.ofHours(24), clock, MemoryAnswerStore()))
+
+    guide.ask(need, null)
+    val afterTheFreshAnswer = quoteOrigins("true") + quoteOrigins("false")
+    guide.ask(need, null)
+
+    assertTrue(afterTheFreshAnswer > 0.0)
+    assertEquals(afterTheFreshAnswer, quoteOrigins("true") + quoteOrigins("false"))
   }
 
   private fun step(name: String, intent: String = "suggest") =

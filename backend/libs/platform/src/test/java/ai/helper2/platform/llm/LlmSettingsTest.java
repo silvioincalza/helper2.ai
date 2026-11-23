@@ -25,6 +25,20 @@ class LlmSettingsTest {
   }
 
   @Test
+  void aTierNamesItsModel() {
+    LlmSettings both = new LlmSettings("openai", "", "nano", "super");
+    assertThat(both.model(ModelTier.FAST)).isEqualTo("nano");
+    assertThat(both.model(ModelTier.REASONING)).isEqualTo("super");
+    assertThat(new LlmSettings("openai", "", "", "super").model(ModelTier.FAST))
+        .as("an empty fast model falls back")
+        .isEqualTo("super");
+    LlmSettings none = new LlmSettings("openai", "", null, null);
+    assertThat(none.has(ModelTier.FAST)).isFalse();
+    assertThat(none.has(ModelTier.REASONING)).isFalse();
+    assertThat(both.has(ModelTier.FAST)).isTrue();
+  }
+
+  @Test
   void theProviderLabelFallsBackToTheSpringAiProvider() {
     assertThat(new LlmSettings("openai", " ", "", "").provider()).isEqualTo("openai");
     assertThat(new LlmSettings("openai", "nebius-token-factory", "", "").provider())

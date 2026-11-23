@@ -24,7 +24,7 @@ interface Tokens {
 }
 
 const tokens = JSON.parse(
-  readFileSync(join(process.cwd(), '../docs/design/system/tokens.json'), 'utf8'),
+  readFileSync(join(process.cwd(), 'design/tokens.json'), 'utf8'),
 ) as Tokens;
 const src = join(process.cwd(), 'src');
 const css = readFileSync(join(src, 'styles/tokens.css'), 'utf8');

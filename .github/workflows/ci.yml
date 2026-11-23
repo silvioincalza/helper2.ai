@@ -31,9 +31,11 @@ jobs:
       backend-libs: ${{ steps.map.outputs.backend-libs }}
       backend-public: ${{ steps.map.outputs.backend-public }}
       backend-backoffice: ${{ steps.map.outputs.backend-backoffice }}
+      backend-architecture: ${{ steps.map.outputs.backend-architecture }}
       chart: ${{ steps.map.outputs.chart }}
       monitoring: ${{ steps.map.outputs.monitoring }}
       postgres: ${{ steps.map.outputs.postgres }}
+      embedder: ${{ steps.map.outputs.embedder }}
       diagrams: ${{ steps.map.outputs.diagrams }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -41,6 +43,7 @@ jobs:
           fetch-depth: 0
       - run: .github/scripts/changes.sh --self-test
       - run: .github/scripts/release-version.sh --self-test
+      - run: .github/scripts/bump-version.sh --self-test
       - run: .github/scripts/ci-ok.sh --self-test
       - run: .github/scripts/branch-name.sh --self-test
       - name: Branch name
@@ -49,6 +52,8 @@ jobs:
           HEAD_REF: ${{ github.head_ref }}
         run: .github/scripts/branch-name.sh "$HEAD_REF"
       - name: Released migrations are unchanged
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
           set -euo pipefail
           .github/scripts/released-migrations.sh --self-test
@@ -78,7 +83,7 @@ jobs:
           if [[ $FULL == true ]]; then
             .github/scripts/changes.sh --all | tee -a "$GITHUB_OUTPUT"
           else
-            .github/scripts/changes.sh "$BASE" HEAD | tee -a "$GITHUB_OUTPUT"
+            .github/scripts/changes.sh --pull-request "$BASE" HEAD | tee -a "$GITHUB_OUTPUT"
           fi
 
   frontend-check:
@@ -216,7 +221,11 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name != 'push' }}
           build-caches: backend-libs-build-cache
-      - run: ./gradlew --no-daemon -p libs test
+      - run: |
+          set -euo pipefail
+          tasks=(:spotlessCheck spotlessCheck test)
+          if [[ -d loadtest ]]; then tasks+=(:loadtest:spotlessCheck :loadtest:gatlingClasses); fi
+          ./gradlew --no-daemon -p libs "${tasks[@]}"
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -257,7 +266,7 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name != 'push' }}
           build-caches: backend-public-build-cache
-      - run: ./gradlew --no-daemon -p apps/public test
+      - run: ./gradlew --no-daemon -p apps/public spotlessCheck test
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -298,11 +307,34 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name != 'push' }}
           build-caches: backend-backoffice-build-cache
-      - run: ./gradlew --no-daemon -p apps/backoffice test
+      - run: ./gradlew --no-daemon -p apps/backoffice spotlessCheck test
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: backend-backoffice-test-reports
+          path: backend/**/build/reports/tests/
+          retention-days: 7
+
+  backend-architecture-test:
+    needs: [changes, backend-libs-build]
+    if: ${{ !cancelled() && needs.changes.outputs.backend-architecture == 'true' && contains(fromJSON('["success", "skipped"]'), needs.backend-libs-build.result) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/backend-setup
+        with:
+          cache-read-only: ${{ github.event_name != 'push' }}
+          build-caches: ${{ needs.backend-libs-build.result == 'success' && 'backend-libs-build-cache' || '' }}
+      - name: Format, compile and run the tests that read every backend project
+        run: ./gradlew --no-daemon -p architecture spotlessCheck test
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: backend-architecture-test-reports
           path: backend/**/build/reports/tests/
           retention-days: 7
 
@@ -373,6 +405,39 @@ jobs:
           fi
           echo "postgres.image.tag ${old:-none} -> $new"
 
+  embedder:
+    needs: changes
+    if: needs.changes.outputs.embedder == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: API tests
+        working-directory: deploy/embedder
+        run: python3 -m unittest -q test_embedding_api
+      - name: Changed, and tag bumped?
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          VALUES: deploy/helm/helper2/values.yaml
+        run: |
+          set -euo pipefail
+          if git diff --quiet "$BASE" HEAD -- deploy/embedder ':!deploy/embedder/test_embedding_api.py' ':!deploy/embedder/requirements.in'; then
+            echo "the embedder image is unchanged"; exit 0
+          fi
+          tag() {
+            git cat-file -e "$1:$VALUES" 2> /dev/null || return 0
+            git show "$1:$VALUES" | yq '.embedder.image.tag'
+          }
+          old=$(tag "$BASE"); new=$(tag HEAD)
+          if [[ $old == "$new" ]]; then
+            echo "::error file=$VALUES::deploy/embedder changed but embedder.image.tag is still $old: a pushed tag is never rebuilt, so set a new one"
+            exit 1
+          fi
+          echo "embedder.image.tag ${old:-none} -> $new"
+
   chart:
     needs: changes
     if: needs.changes.outputs.chart == 'true'
@@ -430,15 +495,32 @@ jobs:
           version: v0.9.0
           ldflags: -X github.com/d2lang/d2/lib/version.Version=v0.9.0
       - name: Re-render and compare
-        working-directory: docs/diagrams
+        working-directory: docs/architecture/diagrams
         run: |
           set -euo pipefail
           ./render.sh
           if [[ -n $(git status --porcelain -- .) ]]; then
             git status --short -- .
-            echo "::error::docs/diagrams is not what d2 v0.9.0 renders: run docs/diagrams/render.sh with d2 v0.9.0 and commit the result"
+            echo "::error::docs/architecture/diagrams is not what d2 v0.9.0 renders: run docs/architecture/diagrams/render.sh with d2 v0.9.0 and commit the result"
             exit 1
           fi
+
+  spec-lint:
+    needs: changes
+    if: needs.changes.outputs.diagrams == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ai-unified-process/marketplace
+          ref: 50da3882098042be961944b0861f450a8ce9fb02
+          path: .aiup
+          sparse-checkout: aiup-core
+          persist-credentials: false
+      - name: Lint the specification
+        run: scripts/spec-lint.sh .aiup
 
   ci-ok:
     if: always()
@@ -455,11 +537,14 @@ jobs:
       - backend-public-test
       - backend-backoffice-build
       - backend-backoffice-test
+      - backend-architecture-test
       - package
       - postgres-tag
+      - embedder
       - chart
       - monitoring
       - diagrams
+      - spec-lint
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

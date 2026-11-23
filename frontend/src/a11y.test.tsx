@@ -71,7 +71,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     });
 
     for (const theme of ['light', 'dark'] as const) {
-      it(`wide screen, ${theme} theme: the two tables`, async () => {
+      it(`wide screen, ${theme} theme: the two lists`, async () => {
         document.documentElement.dataset.theme = theme;
         mockApi(lists);
         const { container } = renderApp('/');
@@ -237,6 +237,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
   });
 
   it('sources, admin', async () => {
+    const retold = 'Wrong price: the pricing page says free';
     mockApi({
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () => ({
@@ -246,7 +247,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
             kind: 'USER_REPORT',
             status: 'OPEN',
             reason: 'Wrong price',
-            details: 'It is free',
+            details: { shape: 'TEXT', text: 'It is free' },
             resourceId: ID,
             resourceTitle: 'Acme',
             createdAt: '2026-10-21T10:00:00Z',
@@ -259,7 +260,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
           id: '66666666-6666-5666-8666-666666666666',
           kind: 'ENRICHMENT_VALIDATION',
           status: 'OPEN',
-          reason: 'Wrong price',
+          reason: retold,
           createdAt: '2026-10-21T10:00:00Z',
         }),
       'GET /admin/scout-runs': () => [
@@ -363,8 +364,18 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
             at: '2026-11-01T09:00:00Z',
             outcome: 'ACCEPTED',
           },
+          {
+            id: '99999999-9999-5999-8999-999999999998',
+            adminId: '12345',
+            action: 'SET_FIELD',
+            targetId: null,
+            at: '2026-11-01T10:00:00Z',
+            outcome: 'SET description',
+            before: 'short',
+            after: 'word '.repeat(200),
+          },
         ],
-        total: 1,
+        total: 2,
       }),
       'GET /me/bookmarks': () => [],
       'GET /sources': () => HEALTH_SOURCES,
@@ -380,13 +391,13 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
     expect(await axeViolations(ov.container)).toEqual([]);
     ov.unmount();
     const review = renderAdmin('/admin/review');
-    await within(await screen.findByRole('main')).findByText('Wrong price', { selector: 'button' });
     await screen.findByText('Free for everyone.');
+    await within(await screen.findByRole('main')).findByText(retold, { selector: 'button' });
     expect(await axeViolations(review.container)).toEqual([]);
     await userEvent.click(screen.getByRole('button', { name: 'Keys (?)' }));
     expect(await axeViolations(review.container)).toEqual([]);
     await userEvent.click(screen.getByRole('button', { name: 'Close' }));
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Pick: Wrong price' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: `Pick: ${retold}` }));
     expect(await axeViolations(review.container)).toEqual([]);
     await userEvent.click(screen.getByRole('button', { name: 'Reject' }));
     await screen.findByRole('dialog', { name: 'Reject 1 item?' });
@@ -449,7 +460,7 @@ describe('a11y smoke (axe, color-contrast excluded: not computable in jsdom)', (
             kind: 'USER_REPORT',
             status: 'OPEN',
             reason: 'Wrong price',
-            details: 'It is free',
+            details: { shape: 'TEXT', text: 'It is free' },
             resourceId: ID,
             resourceTitle: 'Acme',
             createdAt: '2026-10-21T10:00:00Z',

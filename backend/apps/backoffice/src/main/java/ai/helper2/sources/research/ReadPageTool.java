@@ -13,10 +13,12 @@ public final class ReadPageTool implements ResearchTool {
   private final PageReader reader;
   private final DailyBudget reads;
   private final PublicAddresses addresses;
+  private final ShadowLibraries shadowLibraries;
 
   public ReadPageTool(PageReader reader, DailyBudget reads, ShadowLibraries shadowLibraries) {
     this.reader = reader;
     this.reads = reads;
+    this.shadowLibraries = shadowLibraries;
     this.addresses = new PublicAddresses(shadowLibraries);
   }
 
@@ -59,6 +61,18 @@ public final class ReadPageTool implements ResearchTool {
       return new Output("the page has no readable text", null);
     }
     ReadPage page = pages.getFirst();
+    if (!endsOnAKeptAddress(page)) {
+      return Output.error("not read: the page ends on a shadow library or an address with no host");
+    }
     return new Output(page.getRaw(), page.getUrl());
+  }
+
+  private boolean endsOnAKeptAddress(ReadPage page) {
+    try {
+      String host = URI.create(page.getUrl()).getHost();
+      return host != null && !shadowLibraries.isShadowLibrary(host);
+    } catch (IllegalArgumentException e) {
+      return false;
+    }
   }
 }

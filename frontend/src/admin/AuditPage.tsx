@@ -2,16 +2,20 @@ import './adminText';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import { Pagination } from '@/admin/Pagination';
+import { Pagination } from './Pagination';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { ScrollBox } from '@/ui/ScrollBox';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { formatDate } from '@/lib/format';
-import { AdminEmpty, AdminHead, AdminLoading } from './AdminHead';
+import { AdminEmpty, AdminHead } from './AdminHead';
+import { Excerpt } from './Excerpt';
+import { TableSkeleton } from '@/ui/Skeleton';
 
 const PAGE_SIZE = 20;
 const COMMAND = 'helper2 audit';
+// UC-013 BR-004: the actor of an action no administrator took.
+const SYSTEM = 'system';
 
 export default function AuditPage() {
   const { t } = useTranslation();
@@ -37,7 +41,7 @@ export default function AuditPage() {
         headingRef={heading}
       />
       {entries.loading ? (
-        <AdminLoading command={COMMAND} />
+        <TableSkeleton />
       ) : entries.error !== undefined ? (
         <StatePanel
           tone="error"
@@ -70,15 +74,20 @@ export default function AuditPage() {
                     {(e.before || e.after) && (
                       <>
                         {' · '}
-                        {t('admin.audit.change', {
-                          before: e.before ?? '—',
-                          after: e.after ?? '—',
-                        })}
+                        <Excerpt text={e.before ?? '—'} of={t('admin.audit.before')} />{' '}
+                        <span aria-hidden="true">→</span>
+                        <span className="sr-only">{t('admin.audit.becomes')}</span>{' '}
+                        <Excerpt text={e.after ?? '—'} of={t('admin.audit.after')} />
                       </>
                     )}
-                    {e.reason && <span className="muted"> · {e.reason}</span>}
+                    {e.reason && (
+                      <span className="muted">
+                        {' · '}
+                        <Excerpt text={e.reason} of={t('admin.audit.reason')} />
+                      </span>
+                    )}
                   </td>
-                  <td>{e.adminId}</td>
+                  <td>{e.adminId === SYSTEM ? t('admin.audit.system') : e.adminId}</td>
                 </tr>
               ))}
             </tbody>

@@ -147,20 +147,17 @@ class DemoSourcesConfiguration {
 
   private static SourceDescriptor descriptor(
       String id, String name, String shortName, Duration timeout, int priority) {
-    return new SourceDescriptor(
-        id,
-        name,
-        shortName,
-        true,
-        SourceMode.DEMO,
-        DEMO_HOME,
-        null,
-        "Fixture data for demos and tests. Not real.",
-        EnumSet.allOf(ResourceType.class),
-        timeout,
-        Duration.ofMinutes(5),
-        true,
-        priority);
+    return SourceDescriptor.external(
+            id,
+            name,
+            shortName,
+            SourceMode.DEMO,
+            DEMO_HOME,
+            EnumSet.allOf(ResourceType.class),
+            timeout,
+            Duration.ofMinutes(5))
+        .withAttribution("Fixture data for demos and tests. Not real.")
+        .withPriority(priority);
   }
 
   static List<SourceHit> fixtures(Instant now) {
@@ -251,29 +248,18 @@ class DemoSourcesConfiguration {
       Instant now,
       int rank,
       Set<String> tags) {
-    return new SourceHit(
-        source,
-        ext,
-        URI.create(url),
-        CanonicalUrl.of(url),
-        null,
-        title,
-        description,
-        ValueOrigin.DEMO,
-        type,
-        audience,
-        null,
-        new ai.helper2.search.QueryAnalyzer()
-            .useCasesOf(title, description, String.join(" ", tags)),
-        tags,
-        license,
-        null,
-        Set.of(),
-        Classification.openSource(license),
-        DateFact.fromSource(published == null ? null : Instant.parse(published), source, now),
-        DateFact.fromSource(updated == null ? null : Instant.parse(updated), source, now),
-        List.of(),
-        now,
-        rank);
+    return new SourceHit(source, ext, URI.create(url), CanonicalUrl.of(url), title, type, now)
+        .withDescription(description, ValueOrigin.DEMO)
+        .withAudience(audience)
+        .withUseCases(
+            new ai.helper2.search.QueryAnalyzer()
+                .useCasesOf(title, description, String.join(" ", tags)))
+        .withTags(tags)
+        .withLicense(license, Classification.openSource(license))
+        .withPublished(
+            DateFact.fromSource(published == null ? null : Instant.parse(published), source, now))
+        .withUpdated(
+            DateFact.fromSource(updated == null ? null : Instant.parse(updated), source, now))
+        .withRank(rank);
   }
 }

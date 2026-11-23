@@ -1,21 +1,21 @@
 import { upTo } from '@/lib/breakpoints';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
 import { sortOrderValues } from '@/api/schema';
 import type { SearchResponse } from '@/api/types';
-import { ActiveFilters } from '@/features/search/ActiveFilters';
-import { FilterFacets } from '@/features/search/FilterFacets';
+import { ActiveFilters } from './ActiveFilters';
+import { FilterFacets } from './FilterFacets';
 import { GuidePicks } from '@/features/guide/GuidePicks';
 import { WebSearchesLeft, webLineExpected } from '@/features/guide/WebSearchesLeft';
-import { ResultsTimeline } from '@/features/search/ResultsTimeline';
+import { ResultsTimeline } from './ResultsTimeline';
 import { NoticeList } from '@/ui/NoticeList';
 import { SourceTiles } from '@/ui/SourceTiles';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { useCategories, type Categories } from '@/hooks/useCategories';
-import { useGuideStream } from '@/hooks/useGuideStream';
+import { useGuideStream, type GuideStream } from '@/features/guide/useGuideStream';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { aiMark, aiSource, marksFieldsOf } from '@/lib/aiMark';
 import { guidePicks, picksById, type GuidePick } from '@/lib/selection';
@@ -46,6 +46,7 @@ import { ResultRow } from './ResultRow';
 import { ResultsAsOf } from './ResultsAsOf';
 import { ResultsSkeleton } from './ResultsSkeleton';
 import { SupportWhileSearching } from '@/features/monetisation/SupportWhileSearching';
+import { AdSenseSlot } from '@/features/monetisation/AdSenseSlot';
 import { SourceLine } from './SourceLine';
 import { TypeTabs } from './TypeTabs';
 import './results.css';
@@ -95,6 +96,11 @@ export function Results() {
     if (announce.current) announce.current.textContent = text;
   }, []);
   const found = search.loading || failed ? 0 : (search.data?.total ?? 0);
+  const [adQuery, setAdQuery] = useState<string | null>(null);
+  if (!search.loading) {
+    const answered = !failed && (search.data?.results.length ?? 0) > 0 ? state.q : null;
+    if (answered !== adQuery) setAdQuery(answered);
+  }
   useEffect(() => {
     say(found > 0 ? t('results.found', { count: found }) : '');
   }, [found, key, say, t]);
@@ -113,6 +119,7 @@ export function Results() {
           webLine={webLineExpected(shown?.webSearches)}
         />
       )}
+      {asked && guideAnswered(stream) && <AdSenseSlot key={asked} placement="guide" />}
       {search.loading &&
         (shown ? (
           <p role="status" className="h2-results__loading-line">
@@ -158,11 +165,18 @@ export function Results() {
             picks={picks}
             say={say}
             ask={asked || !clampQuestion(state.q) ? undefined : () => ask(state.q)}
+            adQuery={adQuery}
           />
         </div>
       )}
     </ResultKeys>
   );
+}
+
+function guideAnswered(stream: GuideStream): boolean {
+  const { answer, busy, error } = stream;
+  if (busy || error !== null || answer === null) return false;
+  return answer.status !== 'NEEDS_CLARIFICATION' && guidePicks(answer).length > 0;
 }
 
 function ResultsBody({
@@ -175,6 +189,7 @@ function ResultsBody({
   say,
   ask,
   loading,
+  adQuery,
 }: {
   res: SearchResponse;
   loading: boolean;
@@ -185,6 +200,7 @@ function ResultsBody({
   picks: readonly GuidePick[];
   say: (text: string) => void;
   ask?: (() => void) | undefined;
+  adQuery: string | null;
 }) {
   const { t } = useTranslation();
   const categories = useCategories();
@@ -200,7 +216,6 @@ function ResultsBody({
   const useCaseHints = res.interpretation.detectedUseCases.filter(
     (u) => !isSelected(state.filters.useCase, u),
   );
-  const heading = useRef<HTMLHeadingElement>(null);
   const more = useMorePages(res, toApiParams({ ...state, page: 0 }), state.page);
   const listRef = useRef<HTMLDivElement>(null);
   const [focusPage, setFocusPage] = useState<number | null>(null);
@@ -230,7 +245,6 @@ function ResultsBody({
         state={state}
         update={update}
         retry={retry}
-        heading={heading}
         coverage={!nothingSearched}
         categories={categories}
       />
@@ -309,12 +323,7 @@ function ResultsBody({
           <p>{t('results.emptyTryOther')}</p>
         </StatePanel>
       ) : (
-        <div
-          ref={listRef}
-          {...(marksFieldsOf(res.aiContent, 'results[')
-            ? { 'data-ai-provider': res.aiContent?.provider }
-            : {})}
-        >
+        <div ref={listRef} {...aiSource(listedDescriptionsSource(res.aiContent))}>
           {state.view === 'timeline' ? (
             <ResultsTimeline cards={more.cards} />
           ) : (
@@ -347,6 +356,7 @@ function ResultsBody({
           )}
         </div>
       )}
+      {adQuery !== null && <AdSenseSlot key={adQuery} placement="search" />}
 
       <section id="h2-sources" className="h2-results__sources" aria-labelledby="h2-sources-h">
         <h2 id="h2-sources-h" className="h2-results__fan">
@@ -369,7 +379,6 @@ function ListHead({
   state,
   update,
   retry,
-  heading,
   coverage,
   categories,
 }: {
@@ -378,7 +387,6 @@ function ListHead({
   state: SearchState;
   update: (s: SearchState) => void;
   retry: () => void;
-  heading: RefObject<HTMLHeadingElement | null>;
   coverage: boolean;
   categories: Categories;
 }) {
@@ -393,7 +401,7 @@ function ListHead({
   return (
     <>
       <div className="h2-all">
-        <h2 ref={heading} tabIndex={-1} id="all-h" className="h2-all__title">
+        <h2 tabIndex={-1} id="all-h" className="h2-all__title">
           {t('results.all')}{' '}
           <span className="h2-all__cmd">
             <span aria-hidden="true">
@@ -510,6 +518,14 @@ function AlsoSearched({
       )}
     </p>
   );
+}
+
+function listedDescriptionsSource(
+  marker: SearchResponse['aiContent'],
+): SearchResponse['aiContent'] {
+  if (!marker || !marksFieldsOf(marker, 'results[')) return null;
+  const modelsOfTheStoredDescriptionsAreNotKept: string[] = [];
+  return { ...marker, models: modelsOfTheStoredDescriptionsAreNotKept };
 }
 
 function searchedNothing(res: SearchResponse): boolean {

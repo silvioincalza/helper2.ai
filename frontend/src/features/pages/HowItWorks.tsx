@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import type { TocEntry } from '@/features/pages/TextPage';
-import { textOf, type TextEntry, type TextValues } from '@/features/pages/TextSections';
+import type { TocEntry } from './TextPage';
+import { textOf, type TextEntry, type TextValues } from './TextSections';
 
 const HOW_STEPS = ['search', 'choose', 'check'] as const;
 const RULES = ['notStated', 'dates', 'unchecked', 'fallback'] as const;

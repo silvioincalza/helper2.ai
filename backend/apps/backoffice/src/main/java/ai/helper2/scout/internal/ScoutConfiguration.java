@@ -2,12 +2,17 @@ package ai.helper2.scout.internal;
 
 import ai.helper2.catalog.AwesomeListText;
 import ai.helper2.catalog.CatalogWriter.Forgotten;
+import ai.helper2.catalog.DirectoryListIndex;
+import ai.helper2.catalog.DirectoryRatingIndex;
 import ai.helper2.catalog.KnownTargetCandidates;
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.catalog.ScoutPolicy;
+import ai.helper2.catalog.usecase.ForgetGoneWebList;
 import ai.helper2.catalog.usecase.ForgetWithdrawnRecords;
 import ai.helper2.catalog.usecase.IndexAwesomeLists;
 import ai.helper2.catalog.usecase.IndexResources;
 import ai.helper2.catalog.usecase.LinkKnownRelationshipTargets;
+import ai.helper2.catalog.usecase.NameResourceByList;
 import ai.helper2.catalog.usecase.ProposeKnownTargets;
 import ai.helper2.platform.AuditTrail;
 import ai.helper2.platform.ClusterLock;
@@ -37,10 +42,14 @@ import ai.helper2.scout.EnrichmentStore;
 import ai.helper2.scout.EvidenceValidator;
 import ai.helper2.scout.ExtraEvidence;
 import ai.helper2.scout.GapBudget;
+import ai.helper2.scout.GoneListSeeds;
+import ai.helper2.scout.GoneWebPageRule;
+import ai.helper2.scout.HostsNeverRead;
 import ai.helper2.scout.KnownTargetProposals;
 import ai.helper2.scout.KnownTargets;
 import ai.helper2.scout.LastSuccesses;
 import ai.helper2.scout.ListIndex;
+import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.ListText;
 import ai.helper2.scout.LlmUnavailable;
 import ai.helper2.scout.OfficialPages;
@@ -53,7 +62,6 @@ import ai.helper2.scout.RunLock;
 import ai.helper2.scout.ScheduledRun;
 import ai.helper2.scout.ScheduledRunStore;
 import ai.helper2.scout.ScoutStore;
-import ai.helper2.scout.UnitOfWork;
 import ai.helper2.scout.Withdrawal;
 import ai.helper2.scout.WithdrawnRecords;
 import ai.helper2.scout.admission.AdmissionPolicy;
@@ -64,10 +72,13 @@ import ai.helper2.scout.config.ScoutProperties;
 import ai.helper2.scout.usecase.CatalogLookup;
 import ai.helper2.scout.usecase.EditCandidate;
 import ai.helper2.scout.usecase.EnrichResource;
+import ai.helper2.scout.usecase.ForgetGoneListSeed;
 import ai.helper2.scout.usecase.IndexAcceptedCandidate;
 import ai.helper2.scout.usecase.ListScoutRuns;
 import ai.helper2.scout.usecase.ListedResource;
 import ai.helper2.scout.usecase.ManageDiscoveryHosts;
+import ai.helper2.scout.usecase.ManageListSeeds;
+import ai.helper2.scout.usecase.NamingLists;
 import ai.helper2.scout.usecase.PrioritiseEnrichment;
 import ai.helper2.scout.usecase.RecheckEnrichments;
 import ai.helper2.scout.usecase.RequeueEnrichment;
@@ -79,6 +90,7 @@ import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.VitalityPolicy;
 import ai.helper2.search.WebSearchQuota;
 import ai.helper2.shared.CollectorIds;
+import ai.helper2.shared.UnitOfWork;
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -92,6 +104,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
@@ -111,8 +124,6 @@ import org.springframework.scheduling.config.FixedDelayTask;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
@@ -135,7 +146,7 @@ class ScoutConfiguration {
     int dailyCalls = scout.dailyEnrichmentCalls();
     IntSupplier limit = runtime.declare(RuntimeSetting.SCOUT_DAILY_ENRICHMENT_CALLS, dailyCalls);
     ChatModel model = chatModel.getIfAvailable();
-    if (!llm.usable(model) || !llm.hasReasoningModel()) {
+    if (!llm.usable(model) || !llm.has(scout.enrichmentModel())) {
       log.info("No LLM configured: enrichment disabled, deterministic source metadata only");
       return new UnavailableModel();
     }
@@ -144,13 +155,20 @@ class ScoutConfiguration {
         .description("Scout enrichment model calls left under today's cap (UTC day)")
         .register(meters);
     log.info(
-        "LLM enrichment enabled: provider={}, model={}, maxTokens={}, dailyCalls={}",
+        "LLM enrichment enabled: provider={}, model={} ({}), maxTokens={}, dailyCalls={}",
         llm.provider(),
-        llm.reasoningModel(),
+        llm.model(scout.enrichmentModel()),
+        scout.enrichmentModel(),
         maxTokens,
         dailyCalls);
     return new SpringAiEnrichmentModel(
-        model, llm.provider(), llm.reasoningModel(), maxTokens, budget, metrics, resilience);
+        model,
+        llm.provider(),
+        llm.model(scout.enrichmentModel()),
+        maxTokens,
+        budget,
+        metrics,
+        resilience);
   }
 
   @Bean
@@ -214,7 +232,8 @@ class ScoutConfiguration {
                 scout.enrichMaxTokens(),
                 "tokens",
                 "H2_NEBIUS_ENRICH_MAX_TOKENS"),
-            Setting.model("scout.enrichmentModel", "Enrichment model", model, null),
+            Setting.model(
+                "scout.enrichmentModel", "Enrichment model", model, "H2_SCOUT_ENRICHMENT_MODEL"),
             Setting.version("scout.enrichmentPrompt", "Enrichment prompt version", promptVersion)));
   }
 
@@ -263,9 +282,37 @@ class ScoutConfiguration {
   }
 
   @Bean
-  ListIndex listIndex(IndexAwesomeLists indexAwesomeLists) {
-    return lists ->
-        indexAwesomeLists.replace(lists.stream().map(ScoutConfiguration::catalogText).toList());
+  ListIndex listIndex(
+      IndexAwesomeLists indexAwesomeLists,
+      DirectoryListIndex directoryLists,
+      DirectoryRatingIndex directoryRatings) {
+    return lists -> {
+      // UC-030 BR-009: a list page of a directory host is kept by its address, not as a resource.
+      lists.stream()
+          .filter(ListText::getOnDirectoryHost)
+          .map(ScoutConfiguration::directoryList)
+          .forEach(directoryLists::replace);
+      indexAwesomeLists.replace(
+          lists.stream()
+              .filter(list -> !list.getOnDirectoryHost())
+              .map(ScoutConfiguration::catalogText)
+              .toList());
+      // UC-030 BR-010: the figures a directory states are kept with what its list names. They come
+      // last: a rating that cannot be written never keeps a list from being indexed.
+      lists.stream()
+          .map(ListText::getRatings)
+          .filter(Objects::nonNull)
+          .forEach(directoryRatings::replace);
+    };
+  }
+
+  private static DirectoryListIndex.DirectoryList directoryList(ListText list) {
+    return new DirectoryListIndex.DirectoryList(
+        list.getUrl(),
+        list.getDirectoryListTitle(),
+        list.getEntries().stream()
+            .map(e -> new DirectoryListIndex.Entry(e.getUrl(), e.getHeadingPath()))
+            .toList());
   }
 
   private static AwesomeListText catalogText(ListText list) {
@@ -285,6 +332,11 @@ class ScoutConfiguration {
   static final Duration RUN_LOCK_LEASE = Duration.ofMinutes(2);
 
   static final Duration LAST_SUCCESS_FRESH_FOR = Duration.ofSeconds(30);
+
+  @Bean
+  MeterBinder scoutEnabledGauge(ScoutProperties scout) {
+    return new ScoutEnabledGauge(scout.enabled());
+  }
 
   @Bean
   MeterBinder scoutLastSuccessGauges(
@@ -340,20 +392,25 @@ class ScoutConfiguration {
       Resilience resilience,
       CallCounter budgetCounter,
       RuntimeSettings runtime,
-      ScoutProperties scout) {
+      ScoutProperties scout,
+      ScoutPolicy scoutPolicy) {
     int maxItemsPerRun = scout.maxItemsPerRun();
     IntSupplier maxEnrichmentsPerRun =
         runtime.declare(RuntimeSetting.SCOUT_MAX_ENRICHMENTS_PER_RUN, scout.maxEnrichmentsPerRun());
     IntSupplier gapDailyCalls =
         runtime.declare(RuntimeSetting.SCOUT_GAP_DAILY_CALLS, scout.gapDailyCalls());
+    IntSupplier dailyPageReadCredits =
+        runtime.declare(
+            RuntimeSetting.SCOUT_PAGE_READ_DAILY_CREDITS, scout.evidence().dailyPageReadCredits());
     OfficialPages pages =
         officialPages(
             pageReader.getIfAvailable(),
             domainRoots.getIfAvailable(),
             webSearchQuota.getIfAvailable(),
             sharedCaches.getIfAvailable(),
-            pageTextCache(redis.getIfAvailable(), json, resilience, scout.evidence()),
-            scout.evidence(),
+            pageTextCache(redis.getIfAvailable(), json, resilience, scoutPolicy.pageText()),
+            dailyPageReadCredits,
+            scoutPolicy.pageRead(),
             clock,
             budgetCounter,
             meters);
@@ -392,30 +449,28 @@ class ScoutConfiguration {
       @Nullable WebSearchQuota quota,
       @Nullable SharedCaches caches,
       PageTextCache textCache,
-      ScoutProperties.Evidence evidence,
+      IntSupplier dailyPageReadCredits,
+      Duration pageReadTtl,
       Clock clock,
       CallCounter counter,
       MeterRegistry meters) {
-    if (reader == null
-        || !reader.getAvailable()
-        || roots == null
-        || evidence.dailyPageReadCredits() <= 0) {
-      log.info("Evidence ladder: product pages off (no reader, no key or no credits)");
+    if (reader == null || !reader.getAvailable() || roots == null) {
+      log.info("Evidence ladder: product pages off (no reader or no key)");
       return null;
     }
+    // UC-028 BR-002: the limit is read at each page read; 0 turns the reads off until it is raised.
     DailyBudget credits =
-        new DailyBudget(evidence.dailyPageReadCredits(), clock, "scout-evidence-extract", counter);
+        new DailyBudget(dailyPageReadCredits, clock, "scout-evidence-extract", counter);
     Gauge.builder("helper2.scout.evidence.credits.remaining", credits, DailyBudget::remaining)
         .description("Page reads left for product pages under today's cap (UTC day)")
         .register(meters);
     PageLedger ledger =
         caches == null
             ? PageLedger.NONE
-            : new SharedCachePageLedger(
-                caches.named(SharedCachePageLedger.CACHE), evidence.pageReadTtl());
+            : new SharedCachePageLedger(caches.named(SharedCachePageLedger.CACHE), pageReadTtl);
     log.info(
         "Evidence ladder: product pages on, {} Extract credits a day",
-        evidence.dailyPageReadCredits());
+        dailyPageReadCredits.getAsInt());
     return new OfficialPages(
         reader,
         new PageReaderCreditBudget(credits, quota, meters),
@@ -429,10 +484,10 @@ class ScoutConfiguration {
       @Nullable StringRedisTemplate redis,
       ObjectMapper json,
       Resilience resilience,
-      ScoutProperties.Evidence evidence) {
+      Duration pageTextTtl) {
     return redis == null
         ? PageTextCache.NONE
-        : new RedisPageTextCache(redis, json, resilience, evidence.pageTextTtl());
+        : new RedisPageTextCache(redis, json, resilience, pageTextTtl);
   }
 
   static GapBudget gapBudget(
@@ -460,20 +515,28 @@ class ScoutConfiguration {
       CatalogIndex index,
       ReviewQueue queue,
       ResourceCandidateJson details,
+      NameResourceByList nameByList,
       Clock clock) {
+    NamingLists namingLists =
+        (resource, title, list) ->
+            nameByList.name(
+                resource,
+                title,
+                new NameResourceByList.NamingList(
+                    list.getUrl(), list.getHeadingPath(), list.getDirectoryListTitle()));
     CatalogLookup lookup =
         url ->
             queue
                 .listedAs(url.getValue())
                 .map(l -> new ListedResource(l.resourceId(), l.title()))
                 .orElse(null);
-    return new IndexAcceptedCandidate(collectors, index, lookup, details, clock);
+    return new IndexAcceptedCandidate(collectors, index, lookup, details, namingLists, clock);
   }
 
   @Bean
   EditCandidate editCandidate(
-      ReviewQueueCandidateItems items, AuditTrail audit, UnitOfWork scoutUnitOfWork, Clock clock) {
-    return new EditCandidate(items, audit, scoutUnitOfWork, clock);
+      ReviewQueueCandidateItems items, AuditTrail audit, UnitOfWork unitOfWork, Clock clock) {
+    return new EditCandidate(items, audit, unitOfWork, clock);
   }
 
   @Bean
@@ -482,24 +545,13 @@ class ScoutConfiguration {
   }
 
   @Bean
-  UnitOfWork scoutUnitOfWork(PlatformTransactionManager transactions) {
-    TransactionTemplate template = new TransactionTemplate(transactions);
-    return new UnitOfWork() {
-      @Override
-      public <T> T run(Supplier<T> work) {
-        return template.execute(status -> work.get());
-      }
-    };
-  }
-
-  @Bean
   RequeueEnrichment requeueEnrichment(
       EnrichmentBacklog backlog,
       EnrichmentQueueControl control,
       AuditTrail audit,
-      UnitOfWork scoutUnitOfWork,
+      UnitOfWork unitOfWork,
       Clock clock) {
-    return new RequeueEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
+    return new RequeueEnrichment(backlog, control, audit, unitOfWork, clock);
   }
 
   @Bean
@@ -512,15 +564,37 @@ class ScoutConfiguration {
       EnrichmentBacklog backlog,
       EnrichmentQueueControl control,
       AuditTrail audit,
-      UnitOfWork scoutUnitOfWork,
+      UnitOfWork unitOfWork,
       Clock clock) {
-    return new SkipEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
+    return new SkipEnrichment(backlog, control, audit, unitOfWork, clock);
   }
 
   @Bean
   ManageDiscoveryHosts manageDiscoveryHosts(
-      DiscoveryHostStore hosts, AuditTrail audit, UnitOfWork scoutUnitOfWork, Clock clock) {
-    return new ManageDiscoveryHosts(hosts, audit, scoutUnitOfWork, clock);
+      DiscoveryHostStore hosts, AuditTrail audit, UnitOfWork unitOfWork, Clock clock) {
+    return new ManageDiscoveryHosts(hosts, audit, unitOfWork, clock);
+  }
+
+  // UC-030 BR-012: the Scout hands a web page list that is gone to the catalog.
+  @Bean
+  GoneWebPageRule goneWebPageRule(ForgetGoneWebList forget) {
+    return forget::forget;
+  }
+
+  // UC-030 BR-012: the Scout's own record of a web page list that is gone, with its audit entry.
+  @Bean
+  GoneListSeeds goneListSeeds(ListSeedStore seeds, AuditTrail audit, UnitOfWork unitOfWork) {
+    return new ForgetGoneListSeed(seeds, audit, unitOfWork);
+  }
+
+  @Bean
+  ManageListSeeds manageListSeeds(
+      ListSeedStore seeds,
+      HostsNeverRead neverRead,
+      AuditTrail audit,
+      UnitOfWork unitOfWork,
+      Clock clock) {
+    return new ManageListSeeds(seeds, neverRead, audit, unitOfWork, clock);
   }
 
   @Bean
@@ -528,9 +602,9 @@ class ScoutConfiguration {
       EnrichmentBacklog backlog,
       EnrichmentQueueControl control,
       AuditTrail audit,
-      UnitOfWork scoutUnitOfWork,
+      UnitOfWork unitOfWork,
       Clock clock) {
-    return new PrioritiseEnrichment(backlog, control, audit, scoutUnitOfWork, clock);
+    return new PrioritiseEnrichment(backlog, control, audit, unitOfWork, clock);
   }
 
   @Bean
@@ -620,7 +694,7 @@ class ScoutConfiguration {
 
     @Override
     public String getPromptVersion() {
-      return SpringAiEnrichmentModel.PROMPT_VERSION;
+      return SpringAiEnrichmentModel.promptVersion();
     }
 
     @Override

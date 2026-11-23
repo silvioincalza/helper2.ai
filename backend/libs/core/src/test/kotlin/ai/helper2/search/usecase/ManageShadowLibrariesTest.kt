@@ -5,7 +5,7 @@ import ai.helper2.search.ShadowLibraries
 import ai.helper2.search.ShadowLibrary
 import ai.helper2.search.ShadowLibraryNames
 import ai.helper2.search.ShadowLibraryStore
-import ai.helper2.search.UnitOfWork
+import ai.helper2.shared.UnitOfWork
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -106,6 +106,43 @@ class ManageShadowLibrariesTest {
     )
     assertEquals(0, transactions)
     assertTrue(audit.isEmpty())
+  }
+
+  @Test
+  fun `a name that would hide a source is refused before anything is written`() {
+    val guarded =
+      ManageShadowLibraries(
+        store,
+        libraries,
+        trail,
+        unitOfWork,
+        Clock.fixed(now, ZoneOffset.UTC),
+        listOf("github.com", "huggingface.co", "news.ycombinator.com", "www.npmjs.com"),
+      )
+
+    listOf("GitHub", "huggingface", "ycombinator", "npmjs").forEach {
+      assertEquals(
+        ManageShadowLibraries.Added.Invalid(ShadowLibraryNames.Problem.A_SOURCE),
+        guarded.add("42", it, null),
+      )
+    }
+    assertIs<ManageShadowLibraries.Added.Done>(guarded.add("42", "sci-hub", null))
+    assertEquals(1, transactions)
+  }
+
+  @Test
+  fun `a listed name that a source uses is named, so startup can warn of it`() {
+    val guarded =
+      ManageShadowLibraries(
+        store,
+        libraries,
+        trail,
+        unitOfWork,
+        Clock.fixed(now, ZoneOffset.UTC),
+        listOf("libgen.example", "github.com"),
+      )
+
+    assertEquals(setOf("libgen"), guarded.namesThatHideASource())
   }
 
   @Test

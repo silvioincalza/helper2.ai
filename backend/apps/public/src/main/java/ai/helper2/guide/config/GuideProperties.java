@@ -50,7 +50,7 @@ public record GuideProperties(
       @Positive int clientConcurrentQuestions,
       @Min(1) @Max(24) int budgetPaceSlots) {}
 
-  public record Judge(String model, @PositiveOrZero int dailyCalls) {
+  public record Judge(String model, @PositiveOrZero int dailyCalls, @Positive int concurrent) {
 
     public boolean on() {
       return model != null && !model.isBlank() && dailyCalls > 0;

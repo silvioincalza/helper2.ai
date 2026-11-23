@@ -5,13 +5,13 @@ import { useMonetisation } from '@/context/MonetisationContext';
 import { isAnalyticsPath, startAnalytics, stopAnalytics, trackPage } from '@/lib/analytics';
 import { CONSENT_KEY, readConsent, writeConsent, type Consent } from '@/lib/consent';
 import {
-  asksForConsent,
+  adPlacement,
   loadGoogleConsent,
   onPrivacyChoices,
   watchConsent,
   type ConsentDecision,
 } from '@/lib/googleConsent';
-import '@/features/monetisation/consent.css';
+import './consent.css';
 
 const OPEN_EVENT = 'h2:consent-open';
 
@@ -25,13 +25,14 @@ export function AnalyticsConsent() {
 }
 
 function GoogleConsent({ client }: { client: string }) {
-  const { ga4MeasurementId } = useMonetisation();
+  const monetisation = useMonetisation();
+  const { ga4MeasurementId } = monetisation;
   const { pathname, search } = useLocation();
   const public_ = isAnalyticsPath(pathname);
   const [toolWanted, setToolWanted] = useState(false);
   const [decision, setDecision] = useState<ConsentDecision | undefined>();
 
-  if (public_ && !toolWanted && asksForConsent(pathname, search)) setToolWanted(true);
+  if (public_ && !toolWanted && adPlacement(pathname, search, monetisation)) setToolWanted(true);
 
   useEffect(() => onPrivacyChoices(() => setToolWanted(true)), []);
 

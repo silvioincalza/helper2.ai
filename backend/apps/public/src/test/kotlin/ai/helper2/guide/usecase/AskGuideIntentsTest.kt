@@ -228,6 +228,11 @@ class AskGuideIntentsTest {
 
   private fun guide(model: GuideModel?) = AskGuide(search, model, clock)
 
+  private fun counted(model: GuideModel?) = AskGuide(search, model, clock, meters = meters)
+
+  private fun quoteOrigins(part: String, found: String) =
+    meters.counter("helper2.guide.quote_origin", "part", part, "found", found).count()
+
   private val meters = SimpleMeterRegistry()
   private val observations =
     ObservationRegistry.create().also {
@@ -710,10 +715,16 @@ class AskGuideIntentsTest {
           )
         },
       )
-    val a = guide(model).ask("Ollama vs LM Studio", null)
+    val a = counted(model).ask("Ollama vs LM Studio", null)
     val c = assertNotNull(a.comparison)
     assertEquals(listOf("Ollama", "LM Studio"), c.subjects.map { it.name })
     assertEquals("ollama", c.subjects[0].result?.title)
+    val cells = c.rows.flatMap { it.cells }
+    assertEquals(
+      cells.count { it.quotedFrom != null }.toDouble(),
+      quoteOrigins("cell", "true"),
+      "every quoted cell is counted as a cell",
+    )
     val licence = c.rows.first { it.aspect == "Licence" }
     assertEquals("MIT", licence.cells[0].text)
     assertEquals(
@@ -924,9 +935,10 @@ class AskGuideIntentsTest {
           )
         },
       )
-    val a = guide(model).ask("what is Ollama?", null)
+    val a = counted(model).ask("what is Ollama?", null)
     val e = assertNotNull(a.explanation)
     assertEquals(1, e.sentences.size)
+    assertEquals(1.0, quoteOrigins("sentence", "true"))
     assertEquals(
       QuotedFrom("s", URI("https://github.com/ollama/ollama")),
       e.sentences.single().quotedFrom,

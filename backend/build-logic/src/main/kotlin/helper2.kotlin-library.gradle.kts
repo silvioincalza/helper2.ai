@@ -32,6 +32,8 @@ extra["resilience4jVersion"] = "2.4.0"
 
 extra["kotlin.version"] = "2.4.21"
 
+extra["archunitVersion"] = "1.5.1"
+
 dependencyManagement {
   imports {
     mavenBom(SpringBootPlugin.BOM_COORDINATES)
@@ -55,7 +57,7 @@ dependencies {
   testImplementation("org.testcontainers:testcontainers-junit-jupiter")
   testImplementation("org.testcontainers:testcontainers-postgresql")
   testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-  testImplementation("com.tngtech.archunit:archunit-junit5:1.5.1")
+  testImplementation("com.tngtech.archunit:archunit-junit5:${property("archunitVersion")}")
   testImplementation("com.networknt:json-schema-validator:3.0.8")
   testImplementation("tools.jackson.dataformat:jackson-dataformat-toml")
   testImplementation("tools.jackson.dataformat:jackson-dataformat-yaml")

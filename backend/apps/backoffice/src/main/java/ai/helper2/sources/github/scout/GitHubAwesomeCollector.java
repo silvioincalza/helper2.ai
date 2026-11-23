@@ -1,17 +1,25 @@
 package ai.helper2.sources.github.scout;
 
-import ai.helper2.platform.http.ObservedHttp;
+import ai.helper2.catalog.DirectoryRatingIndex;
 import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
 import ai.helper2.scout.DiscoveryHostStore;
+import ai.helper2.scout.HostLists;
 import ai.helper2.scout.ListEntryText;
+import ai.helper2.scout.ListKind;
+import ai.helper2.scout.ListSeed;
+import ai.helper2.scout.ListSeedStore;
 import ai.helper2.scout.ListText;
 import ai.helper2.scout.ScoutCursor;
+import ai.helper2.scout.admission.Admission;
+import ai.helper2.scout.admission.AdmissionPolicy;
 import ai.helper2.search.PopularityKind;
 import ai.helper2.search.PopularityMetric;
+import ai.helper2.search.RepositoryJoin;
 import ai.helper2.search.ResultMerger;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
@@ -23,10 +31,14 @@ import ai.helper2.shared.CategoryMatcher;
 import ai.helper2.shared.CollectorIds;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
-import ai.helper2.shared.ValueOrigin;
+import ai.helper2.shared.WebPageTitle;
+import ai.helper2.sources.arxiv.scout.ArxivPaperReader;
 import ai.helper2.sources.classifier.RepoClassifier;
 import ai.helper2.sources.config.CollectorDescriptors;
+import ai.helper2.sources.huggingface.scout.HuggingFaceModelReader;
+import ai.helper2.sources.liveweb.scout.CoursePages;
 import ai.helper2.sources.liveweb.scout.DiscoveryPages;
+import ai.helper2.sources.npm.scout.NpmPackageReader;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
@@ -45,6 +57,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -52,11 +65,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.MissingNode;
 import tools.jackson.databind.node.ObjectNode;
 
 public class GitHubAwesomeCollector implements Collector {
 
   static final String ID = CollectorIds.GITHUB_AWESOME;
+
+  static final String WEB_LISTS_ID = CollectorIds.CURATED_WEB_LISTS;
 
   static final String POLICY = "collector-" + ID;
 
@@ -78,6 +94,9 @@ public class GitHubAwesomeCollector implements Collector {
       Duration maxRunTime,
       long maxReadmeBytesPerRun,
       int maxLinksPerPass,
+      int maxModelsPerPass,
+      int maxPapersPerPass,
+      int maxPackagesPerPass,
       int linksPerDay,
       List<String> excludeDomains) {
 
@@ -85,6 +104,13 @@ public class GitHubAwesomeCollector implements Collector {
       excludeDomains = List.copyOf(excludeDomains);
     }
   }
+
+  public record LinkRules(
+      CoursePages courses,
+      @Nullable HuggingFaceModelReader models,
+      AdmissionPolicy modelAdmission,
+      @Nullable ArxivPaperReader papers,
+      @Nullable NpmPackageReader packages) {}
 
   private final RestClient http;
   private final Clock clock;
@@ -95,11 +121,17 @@ public class GitHubAwesomeCollector implements Collector {
   private final RepoClassifier classifier;
   private final RepoClassifier fallback = new RepoClassifier.Heuristic();
   private final SourceDescriptor descriptor;
+  private final SourceDescriptor webLists;
   private final Deep deep;
-  private final ProductLinks productLinks;
+  private final ListEntryLinks entryLinks;
+  private final LinkRules linkRules;
   private final CategoryMatcher categories;
   private final DiscoveryHostStore hosts;
+  private final ListSeedStore addedLists;
   private final AwesomeMetrics metrics;
+  private final ListReader readmes;
+  private final WebPageLists webPages;
+  private final DirectoryRatingReader ratings;
 
   public GitHubAwesomeCollector(
       SourceSettings settings,
@@ -113,7 +145,85 @@ public class GitHubAwesomeCollector implements Collector {
       RepoClassifier classifier,
       CategoryMatcher categories,
       MeterRegistry meters,
-      DiscoveryHostStore hosts) {
+      DiscoveryHostStore hosts,
+      ListSeedStore addedLists,
+      ShadowLibraries shadowLibraries,
+      LinkRules linkRules) {
+    this(
+        settings,
+        builder,
+        clock,
+        resilience,
+        interval,
+        topicQueries,
+        limits,
+        deep,
+        classifier,
+        categories,
+        meters,
+        hosts,
+        addedLists,
+        shadowLibraries,
+        linkRules,
+        WebPageLists.notRead(addedLists, clock));
+  }
+
+  public GitHubAwesomeCollector(
+      SourceSettings settings,
+      RestClient.Builder builder,
+      Clock clock,
+      Resilience resilience,
+      RunInterval interval,
+      List<String> topicQueries,
+      Limits limits,
+      Deep deep,
+      RepoClassifier classifier,
+      CategoryMatcher categories,
+      MeterRegistry meters,
+      DiscoveryHostStore hosts,
+      ListSeedStore addedLists,
+      ShadowLibraries shadowLibraries,
+      LinkRules linkRules,
+      WebPageLists webPages) {
+    this(
+        settings,
+        builder,
+        clock,
+        resilience,
+        interval,
+        topicQueries,
+        limits,
+        deep,
+        classifier,
+        categories,
+        meters,
+        hosts,
+        addedLists,
+        shadowLibraries,
+        linkRules,
+        webPages,
+        DirectoryRatingReader.listPagesOnly(meters, clock));
+  }
+
+  public GitHubAwesomeCollector(
+      SourceSettings settings,
+      RestClient.Builder builder,
+      Clock clock,
+      Resilience resilience,
+      RunInterval interval,
+      List<String> topicQueries,
+      Limits limits,
+      Deep deep,
+      RepoClassifier classifier,
+      CategoryMatcher categories,
+      MeterRegistry meters,
+      DiscoveryHostStore hosts,
+      ListSeedStore addedLists,
+      ShadowLibraries shadowLibraries,
+      LinkRules linkRules,
+      WebPageLists webPages,
+      DirectoryRatingReader ratings) {
+    this.ratings = ratings;
     this.clock = clock;
     this.resilience = resilience;
     if (settings.enabled()) {
@@ -124,17 +234,34 @@ public class GitHubAwesomeCollector implements Collector {
     this.limits = limits;
     this.classifier = classifier;
     this.deep = deep;
-    this.productLinks = new ProductLinks(deep.excludeDomains());
+    this.linkRules = linkRules;
+    this.entryLinks =
+        new ListEntryLinks(
+            new ProductLinks(deep.excludeDomains(), shadowLibraries),
+            linkRules.courses(),
+            new ListEntryLinks.Readers(
+                linkRules.models() != null && deep.maxModelsPerPass() > 0,
+                linkRules.papers() != null && deep.maxPapersPerPass() > 0,
+                linkRules.packages() != null && deep.maxPackagesPerPass() > 0));
     this.categories = categories;
     this.hosts = hosts;
+    this.addedLists = addedLists;
     this.metrics = new AwesomeMetrics(meters);
     this.http = HttpClients.gitHubClient(builder, settings);
+    this.readmes = new GitHubReadmeReader(http, resilience, clock);
+    this.webPages = webPages;
     this.descriptor = CollectorDescriptors.gitHubAwesome(settings);
+    this.webLists = CollectorDescriptors.curatedWebLists(settings);
   }
 
   @Override
   public SourceDescriptor getDescriptor() {
     return descriptor;
+  }
+
+  @Override
+  public List<SourceDescriptor> alsoWrites() {
+    return List.of(webLists);
   }
 
   @Override
@@ -154,24 +281,32 @@ public class GitHubAwesomeCollector implements Collector {
     if (!interval.allowsPass(cursor.getCheckpoint(), cursor.getResumeCursor(), startedAt)) {
       return CollectedBatch.notDue();
     }
-    DiscoveryPages pages = new DiscoveryPages(hosts.lists());
-    Pass pass = read(discoverListRepos());
+    HostLists hostLists = hosts.lists();
+    DiscoveryPages pages = new DiscoveryPages(hostLists);
+    Pass pass = read(addedLists(), discoverListRepos(), hostLists);
     List<AwesomeListParser.Entry> all =
         pass.entries().stream().sorted(Comparator.comparing(GitHubAwesomeCollector::key)).toList();
     int offset = firstAfter(all, resumeKey(cursor.getOwnResume()));
     List<SourceHit> listHits = listHits(pass.crawl(), startedAt);
     boolean reviewHeldLinksBack = cursor.getCandidatesHeldBack();
-    List<Candidate> candidates =
-        cursor.getOwnResume() == null ? candidates(pass.crawl(), pages) : List.of();
+    boolean firstRunOfThePass = cursor.getOwnResume() == null;
     if (reviewHeldLinksBack || offset >= all.size()) {
-      return batch(listHits, null, startedAt, candidates, pass.texts(), List.of());
+      RoutedLinks links = firstRunOfThePass ? links(pass, pages, startedAt) : RoutedLinks.NONE;
+      return batch(
+          joined(listHits, links.confirmed()),
+          null,
+          startedAt,
+          links.candidates(),
+          searchTexts(pass, links.listedAs(), pages, hostLists),
+          List.of());
     }
     int end =
         Math.min(all.size(), offset + Math.max(1, Math.min(maxItems, limits.maxEntriesPerRun())));
     List<AwesomeListParser.Entry> slice = all.subList(offset, end);
     Set<String> notFound = new HashSet<>();
     Map<String, JsonNode> facts = repoFacts(slice, notFound);
-    List<SourceHit> hits = new ArrayList<>(toHits(slice, facts, offset, startedAt));
+    List<SourceHit> hits =
+        new ArrayList<>(toHits(slice, facts, offset, startedAt, pass.readmeBudget()));
     log.info(
         "awesome lists: entries {}-{} of {}, {} kept as AI resources (classifier {})",
         offset,
@@ -180,13 +315,22 @@ public class GitHubAwesomeCollector implements Collector {
         hits.size(),
         classifier.name());
     hits.addAll(listHits);
+    List<String> withdrawn =
+        withdrawnUnlessListed(withdrawn(slice, facts, trusted(notFound, slice.size())), hits);
+    RoutedLinks links = firstRunOfThePass ? links(pass, pages, startedAt) : RoutedLinks.NONE;
     return batch(
-        hits,
+        joined(hits, links.confirmed()),
         end < all.size() ? RESUME_AFTER + key(all.get(end - 1)) : null,
         startedAt,
-        candidates,
-        pass.texts(),
-        withdrawnUnlessListed(withdrawn(slice, facts, trusted(notFound, slice.size())), hits));
+        links.candidates(),
+        searchTexts(pass, links.listedAs(), pages, hostLists),
+        withdrawn);
+  }
+
+  private static List<SourceHit> joined(List<SourceHit> hits, List<SourceHit> confirmed) {
+    List<SourceHit> all = new ArrayList<>(hits);
+    all.addAll(confirmed);
+    return all;
   }
 
   private CollectedBatch batch(
@@ -257,7 +401,34 @@ public class GitHubAwesomeCollector implements Collector {
     return discoverListRepos().stream().map(ListRepo::fullName).toList();
   }
 
-  record ListRepo(String fullName, JsonNode facts) {}
+  record WebPage(
+      String address, String title, boolean directory, Instant readAt, boolean readInThisPass) {}
+
+  record ListRepo(String fullName, JsonNode facts, @Nullable WebPage page) {
+
+    ListRepo(String fullName, JsonNode facts) {
+      this(fullName, facts, null);
+    }
+
+    static ListRepo webPage(CanonicalUrl url, WebPage page) {
+      return new ListRepo(url.getValue(), MissingNode.getInstance(), page);
+    }
+
+    boolean isOnADirectoryHost() {
+      return page != null && page.directory();
+    }
+
+    @Nullable CanonicalUrl url() {
+      return CanonicalUrl.of(page == null ? GITHUB + fullName : fullName);
+    }
+  }
+
+  private List<String> addedLists() {
+    return addedLists.all().stream()
+        .filter(seed -> seed.getKind() == ListKind.GITHUB_REPOSITORY)
+        .map(ListSeed::getAddress)
+        .toList();
+  }
 
   List<ListRepo> discoverListRepos() {
     Map<String, Long> stars = new HashMap<>();
@@ -308,8 +479,8 @@ public class GitHubAwesomeCollector implements Collector {
   record Pass(
       List<AwesomeListParser.Entry> entries,
       List<ListRepo> read,
-      List<ListText> texts,
-      List<AwesomeCrawl.Read> crawl) {}
+      List<AwesomeCrawl.Read> crawl,
+      ReadmeBudget readmeBudget) {}
 
   static final int MAX_LIST_TEXT_BYTES = 256 * 1024;
 
@@ -317,18 +488,22 @@ public class GitHubAwesomeCollector implements Collector {
 
   private static final String GITHUB = "https://github.com/";
 
-  private Pass read(List<ListRepo> seeds) {
+  private Pass read(List<String> added, List<ListRepo> seeds, HostLists hostLists) {
+    AwesomeCrawl.Limits crawlLimits = crawlLimits();
+    ReadmeBudget budget = AwesomeCrawl.budget(crawlLimits, clock);
     List<AwesomeCrawl.Read> crawl =
-        AwesomeCrawl.crawl(seeds, gitHubLists(), crawlLimits(), clock, metrics);
+        AwesomeCrawl.crawl(
+            added,
+            webPages.read(hostLists, budget, metrics),
+            seeds,
+            gitHubLists(),
+            crawlLimits,
+            budget,
+            metrics);
     Set<String> lists = new HashSet<>();
     crawl.forEach(r -> lists.add(r.list().fullName().toLowerCase(Locale.ROOT)));
     Map<String, AwesomeListParser.Entry> unique = new LinkedHashMap<>();
-    List<ListText> texts = new ArrayList<>();
     for (AwesomeCrawl.Read r : crawl) {
-      ListText text = searchText(r.list(), r.parsed());
-      if (text != null) {
-        texts.add(text);
-      }
       for (AwesomeListParser.Entry e : r.parsed().entries()) {
         String key = e.fullName().toLowerCase(Locale.ROOT);
         if (unique.size() < limits.maxEntriesPerPass() && !lists.contains(key)) {
@@ -337,7 +512,7 @@ public class GitHubAwesomeCollector implements Collector {
       }
     }
     List<ListRepo> read = crawl.stream().map(AwesomeCrawl.Read::list).toList();
-    return new Pass(List.copyOf(unique.values()), read, texts, crawl);
+    return new Pass(List.copyOf(unique.values()), read, crawl, budget);
   }
 
   private AwesomeCrawl.Limits crawlLimits() {
@@ -377,82 +552,455 @@ public class GitHubAwesomeCollector implements Collector {
                 clock));
   }
 
-  private List<Candidate> candidates(List<AwesomeCrawl.Read> crawl, DiscoveryPages pages) {
+  record RoutedLinks(
+      List<Candidate> candidates, List<SourceHit> confirmed, Map<String, CanonicalUrl> listedAs) {
+
+    static final RoutedLinks NONE = new RoutedLinks(List.of(), List.of(), Map.of());
+  }
+
+  private record ModelLink(
+      ListEntryLinks.Model model, AwesomeListParser.Link link, NamingList list) {}
+
+  /** The list a link was found in; a list page of a directory host carries its title. */
+  private record NamingList(CanonicalUrl url, @Nullable String directoryListTitle) {}
+
+  private RoutedLinks links(Pass pass, DiscoveryPages pages, Instant now) {
     Map<String, Candidate> found = new LinkedHashMap<>();
-    for (AwesomeCrawl.Read r : crawl) {
-      CanonicalUrl list = CanonicalUrl.of(GITHUB + r.list().fullName());
+    Map<String, ModelLink> models = new LinkedHashMap<>();
+    Map<String, String> papers = new LinkedHashMap<>();
+    Map<String, String> packages = new LinkedHashMap<>();
+    for (AwesomeCrawl.Read r : pass.crawl()) {
+      CanonicalUrl listUrl = r.list().url();
+      if (listUrl == null) {
+        continue;
+      }
+      NamingList list = new NamingList(listUrl, directoryListTitle(r.list()));
       for (AwesomeListParser.Link link : r.parsed().links()) {
-        ProductLinks.Checked checked = productLinks.check(link.url(), pages);
-        if (checked.site() == null) {
-          metrics.skipped("link-" + checked.skip().tag());
-        } else if (found.containsKey(checked.site().getValue())) {
-          metrics.skipped("link-seen");
-        } else if (found.size() >= deep.maxLinksPerPass()) {
-          metrics.skipped("link-cap");
-        } else if (list != null) {
-          found.put(checked.site().getValue(), candidate(checked.site(), link, list));
+        switch (entryLinks.route(link, pages)) {
+          case ListEntryLinks.Skipped skipped -> metrics.skipped("link-" + skipped.reason());
+          case ListEntryLinks.Model model ->
+              models.putIfAbsent(model.page().getValue(), new ModelLink(model, link, list));
+          case ListEntryLinks.Paper paper ->
+              papers.putIfAbsent(paper.page().getValue(), paper.id());
+          case ListEntryLinks.Package linked ->
+              packages.putIfAbsent(linked.page().getValue(), linked.name());
+          case ListEntryLinks.Course course -> propose(found, courseCandidate(course, link, list));
+          case ListEntryLinks.Product product ->
+              propose(found, candidate(product.site(), link, list, ResourceType.PRODUCT));
+          case ListEntryLinks.Article article ->
+              propose(found, candidate(article.page(), link, list, ResourceType.ARTICLE));
         }
       }
     }
+    Map<String, CanonicalUrl> listedAs = new HashMap<>();
+    List<SourceHit> hits =
+        new ArrayList<>(
+            readModels(List.copyOf(models.values()), found, listedAs, now, pass.readmeBudget()));
+    hits.addAll(readPapers(List.copyOf(papers.values()), now, pass.readmeBudget()));
+    hits.addAll(readPackages(packages, listedAs, now, pass.readmeBudget()));
     metrics.proposed(found.size());
-    return List.copyOf(found.values());
+    return new RoutedLinks(List.copyOf(found.values()), hits, listedAs);
   }
 
-  private Candidate candidate(CanonicalUrl site, AwesomeListParser.Link link, CanonicalUrl list) {
-    String title = link.text().isBlank() ? site.getHost() : link.text();
+  private List<SourceHit> readPapers(List<String> linked, Instant now, ReadmeBudget budget) {
+    List<String> ids =
+        DailyWindow.of(linked.stream().sorted().toList(), deep.maxPapersPerPass(), now);
+    metrics.skipped("paper-cap", linked.size() - ids.size());
+    List<SourceHit> hits = new ArrayList<>();
+    for (int from = 0; from < ids.size(); from += ArxivPaperReader.BATCH) {
+      int left = ids.size() - from;
+      String spent = budget.spent();
+      if (spent != null) {
+        metrics.skipped(spent, left);
+        return hits;
+      }
+      List<String> batch = ids.subList(from, Math.min(ids.size(), from + ArxivPaperReader.BATCH));
+      List<SourceHit> read;
+      try {
+        read = linkRules.papers().read(batch, ID, now);
+      } catch (SourceFailure.RateLimited e) {
+        log.warn("awesome lists: arXiv slot not free, {} papers left for the next pass", left);
+        metrics.skipped("paper-rate-limited", left);
+        return hits;
+      } catch (RuntimeException e) {
+        log.warn(
+            "awesome lists: arXiv unavailable ({}), {} papers left for the next pass",
+            e.getClass().getSimpleName(),
+            left);
+        metrics.skipped("paper-unavailable", left);
+        return hits;
+      }
+      hits.addAll(read);
+      metrics.papersRead(read.size());
+      metrics.skipped("paper-not-kept", batch.size() - read.size());
+    }
+    return hits;
+  }
+
+  private List<SourceHit> readPackages(
+      Map<String, String> nameByPage,
+      Map<String, CanonicalUrl> listedAs,
+      Instant now,
+      ReadmeBudget budget) {
+    List<Map.Entry<String, String>> window =
+        DailyWindow.of(
+            nameByPage.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList(),
+            deep.maxPackagesPerPass(),
+            now);
+    metrics.skipped("package-cap", nameByPage.size() - window.size());
+    List<SourceHit> hits = new ArrayList<>();
+    for (int i = 0; i < window.size(); i++) {
+      Map.Entry<String, String> linked = window.get(i);
+      int left = window.size() - i;
+      String spent = budget.spent();
+      if (spent != null) {
+        metrics.skipped(spent, left);
+        return hits;
+      }
+      NpmPackageReader.Answer answer;
+      try {
+        answer = linkRules.packages().read(linked.getValue(), ID, now);
+      } catch (SourceFailure.RateLimited e) {
+        log.warn("awesome lists: npm rate limit, {} packages left for the next pass", left);
+        metrics.skipped("package-rate-limited", left);
+        return hits;
+      } catch (RuntimeException e) {
+        log.warn(
+            "awesome lists: npm unavailable ({}), {} packages left for the next pass",
+            e.getClass().getSimpleName(),
+            left);
+        metrics.skipped("package-unavailable", left);
+        return hits;
+      }
+      SourceHit found = answer.aiPackage();
+      if (found == null) {
+        metrics.skipped(answer.found() ? "package-not-ai" : "package-not-found");
+      } else {
+        hits.add(found);
+        CanonicalUrl repository = RepositoryJoin.of(found);
+        listedAs.put(linked.getKey(), repository == null ? found.getCanonicalUrl() : repository);
+        metrics.packageRead();
+      }
+    }
+    return hits;
+  }
+
+  private void propose(Map<String, Candidate> found, Candidate candidate) {
+    String url = candidate.getUrl().getValue();
+    if (found.containsKey(url)) {
+      metrics.skipped("link-seen");
+    } else if (found.size() >= deep.maxLinksPerPass()) {
+      metrics.skipped("link-cap");
+    } else {
+      found.put(url, candidate);
+    }
+  }
+
+  private List<SourceHit> readModels(
+      List<ModelLink> links,
+      Map<String, Candidate> found,
+      Map<String, CanonicalUrl> listedAs,
+      Instant now,
+      ReadmeBudget budget) {
+    List<ModelLink> window =
+        DailyWindow.of(
+            links.stream().sorted(Comparator.comparing(l -> l.model().page().getValue())).toList(),
+            deep.maxModelsPerPass(),
+            now);
+    metrics.skipped("model-cap", links.size() - window.size());
+    List<SourceHit> hits = new ArrayList<>();
+    for (int i = 0; i < window.size(); i++) {
+      int left = window.size() - i;
+      String spent = budget.spent();
+      if (spent != null) {
+        metrics.skipped(spent, left);
+        return hits;
+      }
+      ModelLink link = window.get(i);
+      Optional<SourceHit> model;
+      try {
+        model = linkRules.models().read(link.model().id(), ID, now);
+      } catch (SourceFailure.RateLimited e) {
+        log.warn("awesome lists: Hugging Face rate limit, {} models left for the next pass", left);
+        metrics.skipped("model-rate-limited", left);
+        return hits;
+      } catch (RuntimeException e) {
+        log.warn(
+            "awesome lists: Hugging Face unavailable ({}), {} models left for the next pass",
+            e.getClass().getSimpleName(),
+            left);
+        metrics.skipped("model-unavailable", left);
+        return hits;
+      }
+      if (model.isEmpty()) {
+        metrics.skipped("model-not-found");
+      } else if (indexedWithoutAPerson(model.get())) {
+        hits.add(model.get());
+        listedAs.put(link.model().page().getValue(), model.get().getCanonicalUrl());
+        metrics.modelRead();
+      } else {
+        propose(
+            found,
+            candidate(model.get().getCanonicalUrl(), link.link(), link.list(), ResourceType.MODEL));
+      }
+    }
+    return hits;
+  }
+
+  private boolean indexedWithoutAPerson(SourceHit model) {
+    return !(linkRules.modelAdmission().decide(model, ID) instanceof Admission.Review);
+  }
+
+  private Candidate courseCandidate(
+      ListEntryLinks.Course course, AwesomeListParser.Link link, NamingList list) {
+    String title =
+        WebPageTitle.of(ListEntryLinks.title(link, course.page()), course.page().getHost())
+            .getTitle();
+    return new Candidate(
+        course.page(),
+        title,
+        null,
+        course.platform(),
+        ResourceType.COURSE,
+        Set.of(),
+        Map.of(FOUND_IN, foundIn(link, list)));
+  }
+
+  // UC-030 BR-008: a candidate keeps the list that named it, so that the list names it once
+  // accepted.
+  private static Map<String, Object> foundIn(AwesomeListParser.Link link, NamingList list) {
+    Map<String, Object> awesome = new LinkedHashMap<>();
+    awesome.put("list", list.url().getValue());
+    awesome.put("section", link.headingPath());
+    if (list.directoryListTitle() != null) {
+      awesome.put("directoryList", list.directoryListTitle());
+    }
+    return awesome;
+  }
+
+  private static @Nullable String directoryListTitle(ListRepo list) {
+    return list.isOnADirectoryHost() ? list.page().title() : null;
+  }
+
+  private Candidate candidate(
+      CanonicalUrl site, AwesomeListParser.Link link, NamingList list, ResourceType type) {
+    String title =
+        type == ResourceType.MODEL ? site.getHuggingFaceModel() : ListEntryLinks.title(link, site);
     Set<String> tags =
         new LinkedHashSet<>(
             categories.match(
                 new CategoryInput(
                     title, null, List.of(), null, List.of(), List.of(link.headingPath()))));
     Set<String> capped = new LinkedHashSet<>(tags.stream().limit(Candidate.MAX_TAGS).toList());
-    Map<String, Object> awesome = new LinkedHashMap<>();
-    awesome.put("list", list.getValue());
-    awesome.put("section", link.headingPath());
     Map<String, Object> facts = new LinkedHashMap<>();
-    facts.put(FOUND_IN, awesome);
+    facts.put(FOUND_IN, foundIn(link, list));
     facts.put("categories", List.copyOf(capped));
     return new Candidate(
         site,
         title,
         null,
         capped.isEmpty() ? null : String.join(", ", capped),
-        ResourceType.PRODUCT,
+        type,
         capped,
         facts);
   }
 
   static final String FOUND_IN = "awesome";
 
-  private ListText searchText(ListRepo list, AwesomeListParser.Parsed parsed) {
-    CanonicalUrl url = CanonicalUrl.of(GITHUB + list.fullName());
-    if (url == null) {
-      return null;
+  private List<ListText> searchTexts(
+      Pass pass, Map<String, CanonicalUrl> listedAs, DiscoveryPages pages, HostLists hostLists) {
+    List<ListText> texts = new ArrayList<>();
+    List<DirectoryRatingReader.DirectoryList> directoryLists = new ArrayList<>();
+    for (AwesomeCrawl.Read r : pass.crawl()) {
+      CanonicalUrl url = r.list().url();
+      if (url == null) {
+        continue;
+      }
+      List<ListEntryText> entries = searchEntries(r.parsed(), listedAs, pages);
+      texts.add(
+          new ListText(url, r.parsed().headingsText(), entries, directoryListTitle(r.list())));
+      if (r.list().isOnADirectoryHost()) {
+        directoryLists.add(
+            directoryList(url, r, entries, ratedEntries(r.parsed(), listedAs, pages, url)));
+      }
     }
+    // UC-030 BR-010: the rating a directory states travels with what its list names.
+    Map<CanonicalUrl, DirectoryRatingIndex.ListRatings> ratingsOf = new HashMap<>();
+    ratings
+        .read(directoryLists, hostLists, pass.readmeBudget())
+        .forEach(rated -> ratingsOf.put(rated.list(), rated));
+    return texts.stream()
+        .map(text -> ratingsOf.containsKey(text.getUrl()) ? withRatings(text, ratingsOf) : text)
+        .toList();
+  }
+
+  private static ListText withRatings(
+      ListText text, Map<CanonicalUrl, DirectoryRatingIndex.ListRatings> ratingsOf) {
+    return new ListText(
+        text.getUrl(),
+        text.getHeadings(),
+        text.getEntries(),
+        text.getDirectoryListTitle(),
+        ratingsOf.get(text.getUrl()));
+  }
+
+  private static DirectoryRatingReader.DirectoryList directoryList(
+      CanonicalUrl url,
+      AwesomeCrawl.Read read,
+      List<ListEntryText> entries,
+      List<DirectoryRatingReader.Entry> rated) {
+    Set<CanonicalUrl> named = new LinkedHashSet<>();
+    entries.forEach(entry -> named.add(entry.getUrl()));
+    rated.forEach(entry -> named.add(entry.resource()));
+    WebPage page = read.list().page();
+    return new DirectoryRatingReader.DirectoryList(
+        url, page.readAt(), page.readInThisPass(), List.copyOf(named), rated);
+  }
+
+  /**
+   * UC-030 BR-010: the entries of a list that name exactly one resource, each with its text and,
+   * when the entry links to exactly one page of the same directory, that page of the item.
+   */
+  private List<DirectoryRatingReader.Entry> ratedEntries(
+      AwesomeListParser.Parsed parsed,
+      Map<String, CanonicalUrl> listedAs,
+      DiscoveryPages pages,
+      CanonicalUrl list) {
+    Map<String, Set<CanonicalUrl>> resources = new LinkedHashMap<>();
+    Map<String, Set<CanonicalUrl>> itemPages = new HashMap<>();
+    for (AwesomeListParser.Entry e : parsed.entries()) {
+      CanonicalUrl repository = CanonicalUrl.of(GITHUB + e.fullName());
+      if (repository != null && !e.text().isBlank()) {
+        resources.computeIfAbsent(e.text(), text -> new LinkedHashSet<>()).add(repository);
+      }
+    }
+    for (AwesomeListParser.Link link : parsed.links()) {
+      if (link.entryText().isBlank()) {
+        continue;
+      }
+      CanonicalUrl named = namedPage(link, listedAs, pages);
+      CanonicalUrl itemPage = named == null ? entryLinks.directoryItemPage(link, list) : null;
+      if (named != null) {
+        resources.computeIfAbsent(link.entryText(), text -> new LinkedHashSet<>()).add(named);
+      } else if (itemPage != null) {
+        itemPages.computeIfAbsent(link.entryText(), text -> new LinkedHashSet<>()).add(itemPage);
+      }
+    }
+    List<DirectoryRatingReader.Entry> rated = new ArrayList<>();
+    resources.forEach((text, named) -> {
+      Set<CanonicalUrl> ofTheItem = itemPages.getOrDefault(text, Set.of());
+      if (named.size() == 1) {
+        rated.add(
+            new DirectoryRatingReader.Entry(
+                named.iterator().next(),
+                text,
+                ofTheItem.size() == 1 ? ofTheItem.iterator().next() : null));
+      }
+    });
+    return rated;
+  }
+
+  private @Nullable CanonicalUrl namedPage(
+      AwesomeListParser.Link link, Map<String, CanonicalUrl> listedAs, DiscoveryPages pages) {
+    CanonicalUrl confirmed = entryLinks.confirmablePage(link);
+    return confirmed == null
+        ? entryLinks.reviewedPage(link, pages)
+        : listedAs.getOrDefault(confirmed.getValue(), confirmed);
+  }
+
+  private List<ListEntryText> searchEntries(
+      AwesomeListParser.Parsed parsed, Map<String, CanonicalUrl> listedAs, DiscoveryPages pages) {
+    AwesomeListParser.SearchBudget budget =
+        new AwesomeListParser.SearchBudget(limits.maxEntriesPerPass(), MAX_LIST_TEXT_BYTES);
     List<ListEntryText> entries = new ArrayList<>();
-    for (AwesomeListParser.Entry e :
-        parsed.searchEntries(limits.maxEntriesPerPass(), MAX_LIST_TEXT_BYTES)) {
+    for (AwesomeListParser.Entry e : parsed.searchEntries(budget)) {
       CanonicalUrl entryUrl = CanonicalUrl.of(GITHUB + e.fullName());
       if (entryUrl != null) {
         entries.add(new ListEntryText(entryUrl, e.text(), e.headingPath()));
       }
     }
-    return new ListText(url, parsed.headingsText(), entries);
+    for (AwesomeListParser.Link link : parsed.links()) {
+      CanonicalUrl linked = entryLinks.confirmablePage(link);
+      if (linked != null && budget.keeps(link.entryText(), link.headingPath())) {
+        CanonicalUrl resource = listedAs.getOrDefault(linked.getValue(), linked);
+        entries.add(new ListEntryText(resource, link.entryText(), link.headingPath()));
+      }
+    }
+    // UC-030 BR-008: a list names the product, the course and the article its links point to;
+    // they come after the pages a source confirms, so they never take their place in the budget.
+    for (AwesomeListParser.Link link : parsed.links()) {
+      CanonicalUrl reviewed = entryLinks.reviewedPage(link, pages);
+      if (reviewed != null && budget.keeps(link.entryText(), link.headingPath())) {
+        entries.add(new ListEntryText(reviewed, link.entryText(), link.headingPath()));
+      }
+    }
+    return entries;
   }
 
   private static List<SourceHit> listHits(List<AwesomeCrawl.Read> lists, Instant now) {
     List<SourceHit> hits = new ArrayList<>();
     for (AwesomeCrawl.Read read : lists) {
-      ResourceType type =
-          AwesomeLists.isAwesomeList(read.list().fullName(), read.parsed())
-              ? ResourceType.AWESOME_LIST
-              : ResourceType.ARTICLE;
-      SourceHit hit = listHit(read.list(), type, now);
+      // UC-030 BR-009: a list page of a directory host is never a resource of the catalog.
+      if (read.list().isOnADirectoryHost()) {
+        continue;
+      }
+      SourceHit hit =
+          read.list().page() == null
+              ? listHit(read.list(), typeOfRepository(read), now)
+              : pageHit(read.list(), read.list().page(), typeOfWebPage(read), now);
       if (hit != null) {
         hits.add(hit);
       }
     }
     return hits;
+  }
+
+  private static ResourceType typeOfRepository(AwesomeCrawl.Read read) {
+    return AwesomeLists.isAwesomeList(
+            read.list().fullName(), restTopics(read.list().facts()), read.parsed())
+        ? ResourceType.AWESOME_LIST
+        : ResourceType.ARTICLE;
+  }
+
+  private static ResourceType typeOfWebPage(AwesomeCrawl.Read read) {
+    return AwesomeLists.readsAsList(read.parsed())
+        ? ResourceType.AWESOME_LIST
+        : ResourceType.ARTICLE;
+  }
+
+  private static @Nullable SourceHit pageHit(
+      ListRepo list, WebPage page, ResourceType type, Instant now) {
+    CanonicalUrl canonical = list.url();
+    if (canonical == null) {
+      return null;
+    }
+    SourceHit hit =
+        new SourceHit(
+                WEB_LISTS_ID,
+                canonical.getValue(),
+                URI.create(page.address()),
+                canonical,
+                page.title(),
+                type,
+                now)
+            .withAudience(Audience.BOTH)
+            .withTags(Set.of(LIST_TAG));
+    // UC-030 BR-012: a read in this pass says that the page exists. Stating it takes the mark
+    // "gone" off the record of a page that was gone (UC-018 BR-009).
+    return page.readInThisPass() ? hit.withVitality(new Vitality(false)) : hit;
+  }
+
+  private static List<String> restTopics(@Nullable JsonNode repo) {
+    List<String> topics = new ArrayList<>();
+    if (repo != null) {
+      repo.path("topics")
+          .forEach(t -> {
+            if (t.isString()) {
+              topics.add(t.asString());
+            }
+          });
+    }
+    return topics;
   }
 
   private static SourceHit listHit(ListRepo list, ResourceType type, Instant now) {
@@ -473,54 +1021,34 @@ public class GitHubAwesomeCollector implements Collector {
           }
         });
     return new SourceHit(
-        ID,
-        list.fullName(),
-        URI.create(canonical.getValue()),
-        canonical,
-        null,
-        list.fullName(),
-        HttpClients.text(repo, "description"),
-        ValueOrigin.SOURCE_PROVIDED,
-        type,
-        Audience.BOTH,
-        null,
-        Set.of(),
-        tags,
-        license,
-        null,
-        Set.of(),
-        Classification.openSource(license),
-        DateFact.fromSource(HttpClients.instant(repo, "created_at"), "github", now),
-        DateFact.fromSource(HttpClients.instant(repo, "pushed_at"), "github", now),
-        List.of(
-            new PopularityMetric(
-                PopularityKind.GITHUB_STARS,
-                repo.path("stargazers_count").asLong(),
-                "github",
-                now)),
-        now,
-        0);
+            ID,
+            list.fullName(),
+            URI.create(canonical.getValue()),
+            canonical,
+            list.fullName(),
+            type,
+            now)
+        .withDescription(HttpClients.text(repo, "description"))
+        .withAudience(Audience.BOTH)
+        .withTags(tags)
+        .withLicense(license, Classification.openSource(license))
+        .withPublished(DateFact.fromSource(HttpClients.instant(repo, "created_at"), "github", now))
+        .withUpdated(DateFact.fromSource(HttpClients.instant(repo, "pushed_at"), "github", now))
+        .withPopularity(
+            List.of(
+                new PopularityMetric(
+                    PopularityKind.GITHUB_STARS,
+                    repo.path("stargazers_count").asLong(),
+                    "github",
+                    now)));
   }
 
-  static final int README_MAX_BYTES = 5 * 1024 * 1024;
+  static final int README_MAX_BYTES = GitHubReadmeReader.MAX_BYTES;
 
-  static final Duration README_DEADLINE = Duration.ofSeconds(60);
+  static final Duration README_DEADLINE = GitHubReadmeReader.DEADLINE;
 
   private String readme(String list) {
-    String[] parts = list.split("/", 2);
-    return resilience.call(
-        POLICY,
-        () ->
-            HttpClients.getText(
-                () ->
-                    http.get()
-                        .uri("/repos/{owner}/{repo}/readme", parts[0], parts[1])
-                        .header("Accept", "application/vnd.github.raw+json")
-                        .attributes(ObservedHttp.maxResponseBytes(README_MAX_BYTES))
-                        .attributes(ObservedHttp.deadline(README_DEADLINE))
-                        .retrieve()
-                        .body(String.class),
-                clock));
+    return readmes.markdown(list);
   }
 
   Map<String, JsonNode> repoFacts(List<AwesomeListParser.Entry> entries) {
@@ -598,7 +1126,11 @@ public class GitHubAwesomeCollector implements Collector {
   }
 
   private List<SourceHit> toHits(
-      List<AwesomeListParser.Entry> slice, Map<String, JsonNode> facts, int offset, Instant now) {
+      List<AwesomeListParser.Entry> slice,
+      Map<String, JsonNode> facts,
+      int offset,
+      Instant now,
+      ReadmeBudget budget) {
     List<RepoClassifier.Facts> candidates = new ArrayList<>();
     Map<String, JsonNode> byId = new HashMap<>();
     Map<String, Integer> rankById = new HashMap<>();
@@ -624,7 +1156,9 @@ public class GitHubAwesomeCollector implements Collector {
     for (RepoClassifier.Facts f : candidates) {
       RepoClassifier.Verdict v = verdicts.get(f.id());
       if (v != null && v.ai()) {
-        SourceHit hit = toHit(byId.get(f.id()), typeOf(f, v), rankById.get(f.id()), now);
+        ResourceType type = typeOf(f, v, budget);
+        SourceHit hit =
+            type == null ? null : toHit(byId.get(f.id()), type, rankById.get(f.id()), now);
         if (hit != null) {
           hits.add(hit);
         }
@@ -634,27 +1168,60 @@ public class GitHubAwesomeCollector implements Collector {
     return hits;
   }
 
-  private ResourceType typeOf(RepoClassifier.Facts repo, RepoClassifier.Verdict verdict) {
-    if (verdict.type() != ResourceType.AWESOME_LIST || readsAsAwesomeList(repo.fullName())) {
+  private @Nullable ResourceType typeOf(
+      RepoClassifier.Facts repo, RepoClassifier.Verdict verdict, ReadmeBudget budget) {
+    if (verdict.type() != ResourceType.AWESOME_LIST) {
       return verdict.type();
     }
-    return ResourceType.ARTICLE;
+    Optional<Boolean> list = readsAsAwesomeList(repo, budget);
+    if (list.isEmpty()) {
+      return null;
+    }
+    return list.get() ? ResourceType.AWESOME_LIST : typeWithoutTheList(repo);
   }
 
-  private boolean readsAsAwesomeList(String fullName) {
-    if (fullName == null || !AwesomeLists.named(fullName)) {
-      return false;
+  private ResourceType typeWithoutTheList(RepoClassifier.Facts repo) {
+    return fallback.classify(List.of(repo)).get(repo.id()).type();
+  }
+
+  private Optional<Boolean> readsAsAwesomeList(RepoClassifier.Facts repo, ReadmeBudget budget) {
+    String fullName = repo.fullName();
+    if (fullName == null || !AwesomeLists.named(fullName, repo.topics())) {
+      return Optional.of(false);
+    }
+    String spent = budget.spent();
+    if (spent != null) {
+      log.info("awesome lists: README of {} left for the next run ({})", fullName, spent);
+      metrics.skipped(spent);
+      return Optional.empty();
     }
     try {
       String readme = readme(fullName);
-      return readme != null && AwesomeLists.isAwesomeList(fullName, readme);
+      budget.read(readme);
+      return Optional.of(AwesomeLists.isAwesomeList(fullName, repo.topics(), readme));
+    } catch (SourceFailure.RateLimited e) {
+      log.warn("awesome lists: rate limited while reading the README of {}", fullName);
+      throw e;
+    } catch (SourceFailure.Unavailable e) {
+      if (noReadme(e)) {
+        return Optional.of(false);
+      }
+      log.info(
+          "awesome lists: README of {} unavailable ({}), left for the next run",
+          fullName,
+          e.getMessage());
+      return Optional.empty();
     } catch (RuntimeException e) {
       log.info(
-          "awesome lists: README of {} unavailable ({}), typed ARTICLE",
+          "awesome lists: README of {} unavailable ({}), left for the next run",
           fullName,
           e.getClass().getSimpleName());
-      return false;
+      return Optional.empty();
     }
+  }
+
+  private static boolean noReadme(SourceFailure.Unavailable e) {
+    return !e.getTransient() && e.getMessage() != null && e.getMessage().startsWith("HTTP 4");
   }
 
   private Map<String, RepoClassifier.Verdict> classify(List<RepoClassifier.Facts> candidates) {
@@ -716,34 +1283,21 @@ public class GitHubAwesomeCollector implements Collector {
     String license = spdx == null ? null : ResultMerger.normalizeLicense(spdx);
     Set<String> tags = new LinkedHashSet<>(topics(repo));
     Audience audience = type == ResourceType.PRODUCT ? Audience.USE_AI : Audience.BUILD_WITH_AI;
-    return new SourceHit(
-            ID,
-            name,
-            URI.create(url),
-            canonical,
-            null,
-            name,
-            HttpClients.text(repo, "description"),
-            ValueOrigin.SOURCE_PROVIDED,
-            type,
-            audience,
-            null,
-            Set.of(),
-            tags,
-            license,
-            null,
-            Set.of(),
-            Classification.openSource(license),
-            DateFact.fromSource(HttpClients.instant(repo, "createdAt"), "github", now),
-            DateFact.fromSource(HttpClients.instant(repo, "pushedAt"), "github", now),
+    return new SourceHit(ID, name, URI.create(url), canonical, name, type, now)
+        .withDescription(HttpClients.text(repo, "description"))
+        .withAudience(audience)
+        .withTags(tags)
+        .withLicense(license, Classification.openSource(license))
+        .withPublished(DateFact.fromSource(HttpClients.instant(repo, "createdAt"), "github", now))
+        .withUpdated(DateFact.fromSource(HttpClients.instant(repo, "pushedAt"), "github", now))
+        .withPopularity(
             List.of(
                 new PopularityMetric(
                     PopularityKind.GITHUB_STARS,
                     repo.path("stargazerCount").asLong(),
                     "github",
-                    now)),
-            now,
-            rank)
+                    now)))
+        .withRank(rank)
         .withVitality(
             new Vitality(
                 repo.path("isArchived").asBoolean(false), repo.path("isFork").asBoolean(false)));

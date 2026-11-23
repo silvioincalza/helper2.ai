@@ -2,13 +2,21 @@ package ai.helper2.sources.tavily;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
+import ai.helper2.shared.Audience;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.SourceSettings;
 import ai.helper2.testing.FixtureServer;
 import ai.helper2.testing.TestHttp;
+import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
@@ -37,7 +45,7 @@ class TavilySourceTest {
   TavilySource source() {
     return new TavilySource(
         new SourceSettings(
-            true, server.baseUrl(), "test-token", Duration.ofSeconds(2), Duration.ZERO),
+            true, server.baseUrl(), "test-token", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
@@ -85,6 +93,30 @@ class TavilySourceTest {
     server.route("/search", FixtureServer.Reply.ok(PAGE_TITLES));
 
     var hits = source().search(new SourceQuery("vector database", List.of(), null, 10));
+    assertThat(hits.getFirst())
+        .isEqualTo(
+            new SourceHit(
+                "live-web",
+                "https://github.com/crystaldba/postgres-mcp",
+                URI.create("https://github.com/crystaldba/postgres-mcp"),
+                CanonicalUrl.of("https://github.com/crystaldba/postgres-mcp"),
+                null,
+                "crystaldba/postgres-mcp",
+                "Postgres MCP Pro provides configurable read/write access and performance analysis for you and your AI agents.",
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.NEWS,
+                Audience.BOTH,
+                null,
+                Set.of(),
+                Set.of(),
+                null,
+                null,
+                Set.of(),
+                null,
+                DateFact.unknown(),
+                DateFact.unknown(),
+                List.of(),
+                SourceFixtures.CLOCK.instant()));
 
     assertThat(hits)
         .extracting(h -> h.getTitle())
@@ -194,6 +226,59 @@ class TavilySourceTest {
   }
 
   @Test
+  void aResultStatesItsDayItsPositionAndTheTagsTheCallerGives() {
+    JsonNode result =
+        JsonMapper.builder()
+            .build()
+            .readTree(
+                """
+                {"url":"https://www.lists.example.com/blog/llm-tools?utm_source=x","title":"10 Best LLM Tools",
+                 "content":"LLM assistants for writing code.","published_date":"2026-10-01T08:00:00Z"}\
+                """);
+
+    var hit =
+        TavilySource.toHit(
+            result,
+            "discovery-coding",
+            SourceFixtures.CLOCK.instant(),
+            4,
+            ResourceType.ARTICLE,
+            Set.of("list"),
+            SourceFixtures.SHADOW_LIBRARIES);
+
+    assertThat(hit)
+        .isEqualTo(
+            new SourceHit(
+                "discovery-coding",
+                "https://lists.example.com/blog/llm-tools",
+                URI.create("https://www.lists.example.com/blog/llm-tools?utm_source=x"),
+                CanonicalUrl.of("https://lists.example.com/blog/llm-tools"),
+                null,
+                "10 Best LLM Tools",
+                "LLM assistants for writing code.",
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.ARTICLE,
+                Audience.BOTH,
+                null,
+                Set.of(),
+                Set.of("list"),
+                null,
+                null,
+                Set.of(),
+                null,
+                new DateFact(
+                    Instant.parse("2026-10-01T08:00:00Z"),
+                    DatePrecision.INSTANT,
+                    "discovery-coding",
+                    List.of(),
+                    false),
+                DateFact.unknown(),
+                List.of(),
+                SourceFixtures.CLOCK.instant(),
+                4));
+  }
+
+  @Test
   void aTypeTheCallerGivesIsKeptWhateverTheTitleSays() {
     JsonNode result =
         JsonMapper.builder()
@@ -236,7 +321,8 @@ class TavilySourceTest {
                     server.baseUrl(),
                     "test-token",
                     Duration.ofSeconds(2),
-                    Duration.ofMinutes(30)),
+                    Duration.ofMinutes(30),
+                    null),
                 TestHttp.restClientBuilder(
                     Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
                 SourceFixtures.CLOCK,

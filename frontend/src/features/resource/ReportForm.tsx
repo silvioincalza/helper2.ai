@@ -5,11 +5,18 @@ import type { IssueReportRequest } from '@/api/types';
 
 const KINDS: IssueReportRequest['kind'][] = ['WRONG', 'OUTDATED', 'BROKEN_LINK', 'OTHER'];
 
-export function ReportForm({ resourceId }: { resourceId: string }) {
+export function ReportForm({
+  resourceId,
+  field: reported = '',
+}: {
+  resourceId: string;
+  /** The detail the report is about, when the visitor came from it (UC-009 BR-003). */
+  field?: string;
+}) {
   const { t } = useTranslation();
   const uid = useId();
   const [kind, setKind] = useState<IssueReportRequest['kind']>('WRONG');
-  const [field, setField] = useState('');
+  const [field, setField] = useState(reported);
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'failed'>('idle');

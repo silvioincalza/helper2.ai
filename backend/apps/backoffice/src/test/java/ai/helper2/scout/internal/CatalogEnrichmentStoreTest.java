@@ -136,14 +136,6 @@ class CatalogEnrichmentStoreTest {
     public void requestRun(UUID resourceId) {
       requested.add(resourceId);
     }
-
-    @Override
-    public boolean done(String name) {
-      return false;
-    }
-
-    @Override
-    public void markDone(String name) {}
   }
 
   final FakeCandidates candidates = new FakeCandidates();

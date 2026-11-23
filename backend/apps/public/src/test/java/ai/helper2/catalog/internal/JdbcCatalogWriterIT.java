@@ -26,6 +26,7 @@ import ai.helper2.shared.ResourceId;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
 import ai.helper2.shared.ValueOrigin;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -765,6 +766,142 @@ class JdbcCatalogWriterIT {
         .containsExactly(new PopularityMetric(PopularityKind.GITHUB_STARS, 3400, "github", asOf));
   }
 
+  private static PopularityMetric count(PopularityKind kind, long value, Instant asOf) {
+    return new PopularityMetric(kind, value, "github", asOf);
+  }
+
+  private static PopularityMetric stars(long value, Instant asOf) {
+    return count(PopularityKind.GITHUB_STARS, value, asOf);
+  }
+
+  private void observed(String repo, PopularityMetric... counts) {
+    writer.upsert(
+        merge(hit("github", repo, null, Set.of(), List.of(counts))), DataOrigin.OBSERVED, LIVE);
+  }
+
+  private List<PopularityMetric> countsOf(String repo) {
+    return store
+        .findResource(ResourceId.of(CanonicalUrl.of(repo)).getValue())
+        .orElseThrow()
+        .popularity();
+  }
+
+  private BigDecimal popularityOfTheResourceOf(String repo) {
+    return jdbc.sql(
+            """
+            SELECT r.popularity FROM resource r JOIN source_record sr ON sr.resource_id = r.id
+            WHERE sr.source_id = 'github' AND sr.external_id = :id
+            """)
+        .param("id", "github:" + repo)
+        .query(BigDecimal.class)
+        .single();
+  }
+
+  // S2.11.6, ADR-0020 §7 (newest wins per kind of count): a hit that states no stars keeps the
+  // stars
+  // the repository sweep stored, and the popularity of the resource stays (ADR-0025 §3).
+  @Test
+  void aHitThatStatesNoStarsKeepsTheStoredStars() {
+    String repo = "https://github.com/acme/kept-stars-" + run;
+    Instant sweptAt = Instant.parse("2026-11-01T00:00:00Z");
+    observed(repo, stars(1200, sweptAt));
+    BigDecimal before = popularityOfTheResourceOf(repo);
+
+    observed(repo);
+
+    assertThat(countsOf(repo)).containsExactly(stars(1200, sweptAt));
+    assertThat(before).isGreaterThan(BigDecimal.ZERO);
+    assertThat(popularityOfTheResourceOf(repo)).isEqualByComparingTo(before);
+  }
+
+  // S2.11.6, ADR-0020 §7: a count read before the stored one (a hit served from the search cache)
+  // neither lowers nor raises it.
+  @Test
+  void aCountReadBeforeTheStoredOneDoesNotTakeItsPlace() {
+    String repo = "https://github.com/acme/cached-stars-" + run;
+    Instant sweptAt = Instant.parse("2026-11-10T00:00:00Z");
+    Instant cachedAt = Instant.parse("2026-11-09T23:59:59.500Z");
+    observed(repo, stars(5000, sweptAt));
+    BigDecimal before = popularityOfTheResourceOf(repo);
+
+    observed(repo, stars(100, cachedAt));
+    observed(repo, stars(9000, cachedAt));
+
+    assertThat(countsOf(repo)).containsExactly(stars(5000, sweptAt));
+    assertThat(popularityOfTheResourceOf(repo)).isEqualByComparingTo(before);
+  }
+
+  // S2.11.6, ADR-0020 §7: a count read after the stored one takes its place, and so does one read
+  // at the same time; the popularity of the resource follows (ADR-0025 §3).
+  @Test
+  void aCountReadAfterTheStoredOneOrAtTheSameTimeTakesItsPlace() {
+    String repo = "https://github.com/acme/newer-stars-" + run;
+    Instant first = Instant.parse("2026-11-10T00:00:00Z");
+    Instant later = Instant.parse("2026-11-10T00:00:00.250Z");
+    observed(repo, stars(100, first));
+    BigDecimal before = popularityOfTheResourceOf(repo);
+
+    observed(repo, stars(200, first));
+    assertThat(countsOf(repo)).containsExactly(stars(200, first));
+
+    observed(repo, stars(50_000, later));
+    assertThat(countsOf(repo)).containsExactly(stars(50_000, later));
+    assertThat(popularityOfTheResourceOf(repo)).isGreaterThan(before);
+  }
+
+  // S2.11.6, ADR-0020 §7: the counts of a record are merged entry by entry, each kind by its own
+  // date; a kind the hit does not state is untouched.
+  @Test
+  void theCountsOfARecordAreMergedKindByKind() {
+    String repo = "https://github.com/acme/merged-counts-" + run;
+    Instant old = Instant.parse("2026-10-01T00:00:00Z");
+    Instant recent = Instant.parse("2026-11-15T00:00:00Z");
+    Instant between = Instant.parse("2026-11-01T00:00:00Z");
+    observed(repo, stars(10, old), count(PopularityKind.NPM_DOWNLOADS_WEEKLY, 700, recent));
+
+    observed(
+        repo,
+        stars(20, between),
+        count(PopularityKind.NPM_DOWNLOADS_WEEKLY, 1, between),
+        count(PopularityKind.HF_LIKES, 3, between));
+
+    assertThat(countsOf(repo))
+        .containsExactlyInAnyOrder(
+            stars(20, between),
+            count(PopularityKind.NPM_DOWNLOADS_WEEKLY, 700, recent),
+            count(PopularityKind.HF_LIKES, 3, between));
+  }
+
+  // S2.11.6, ADR-0020 §7: a stored count without a date that can be read is older than a dated one.
+  @Test
+  void aStoredCountWithoutAReadableDateGivesWayToADatedOne() {
+    String undated = "https://github.com/acme/undated-stars-" + run;
+    String misdated = "https://github.com/acme/misdated-stars-" + run;
+    Instant longAgo = Instant.parse("2020-01-01T00:00:00Z");
+    observed(undated);
+    observed(misdated);
+    storedCounts(undated, "[{\"kind\": \"GITHUB_STARS\", \"value\": 7}]");
+    storedCounts(
+        misdated, "[{\"kind\": \"GITHUB_STARS\", \"value\": 7, \"asOf\": \"not a date\"}]");
+
+    observed(undated, stars(5, longAgo));
+    observed(misdated, stars(5, longAgo));
+
+    assertThat(countsOf(undated)).containsExactly(stars(5, longAgo));
+    assertThat(countsOf(misdated)).containsExactly(stars(5, longAgo));
+  }
+
+  private void storedCounts(String repo, String counts) {
+    jdbc.sql(
+            """
+            UPDATE source_record SET extra = jsonb_set(extra, '{popularity}', CAST(:counts AS jsonb))
+            WHERE source_id = 'github' AND external_id = :id
+            """)
+        .param("counts", counts)
+        .param("id", "github:" + repo)
+        .update();
+  }
+
   private String vitalityOf(String externalId) {
     return jdbc.sql(
             "SELECT extra ->> 'vitality' FROM source_record WHERE source_id = 'npm' AND external_id = :id")
@@ -851,6 +988,40 @@ class JdbcCatalogWriterIT {
 
     assertThat(statedInTheIndex(url)).isEqualTo(new Vitality(true, true));
     assertThat(checkedAt(url)).isEqualTo(afterTheStatement.toString());
+  }
+
+  @Test
+  void aRepositoryStoredAsGoneIsArchivedInTheIndexUntilItsSourceStatesItAgain() {
+    String url = "https://github.com/acme/gone-" + run;
+    writer.upsert(merge(repository(url, Vitality.UNKNOWN)), DataOrigin.INDEXED, LIVE);
+    Instant before = now.minus(1, ChronoUnit.DAYS);
+    jdbc.sql(
+            """
+            UPDATE source_record
+            SET extra = jsonb_set(extra, '{vitality}', jsonb_build_object(
+                'gone', true, 'notFoundAt', :at::text, 'notFoundVisits', 2, 'checkedAt', :at::text,
+                'visitedAt', :at::text))
+            WHERE source_id = 'github' AND external_id = :id
+            """)
+        .param("at", before.toString())
+        .param("id", "github:" + url)
+        .update();
+    assertThat(statedInTheIndex(url)).isEqualTo(new Vitality(true));
+
+    writer.upsert(merge(repository(url, new Vitality(false, false))), DataOrigin.INDEXED, LIVE);
+
+    assertThat(statedInTheIndex(url)).isEqualTo(new Vitality(false, false));
+    // UC-030 BR-012: a source that states the repository again starts the count of visits again.
+    assertThat(
+            jdbc.sql(
+                    """
+                    SELECT extra -> 'vitality' ->> 'notFoundVisits' FROM source_record
+                    WHERE source_id = 'github' AND external_id = :id
+                    """)
+                .param("id", "github:" + url)
+                .query(String.class)
+                .optional())
+        .isEmpty();
   }
 
   @Test

@@ -16,6 +16,7 @@ import ai.helper2.guide.LEARN_TYPES
 import ai.helper2.guide.ModelActivity
 import ai.helper2.guide.QuoteOrigins
 import ai.helper2.guide.QuoteRecords
+import ai.helper2.guide.QuotedFrom
 import ai.helper2.guide.ReadingKey
 import ai.helper2.guide.ResearchTrail
 import ai.helper2.guide.SimilarQuestions
@@ -46,6 +47,7 @@ import ai.helper2.search.NoticeCode
 import ai.helper2.search.QueryAnalyzer
 import ai.helper2.search.SearchFilters
 import ai.helper2.search.SearchOutcome
+import ai.helper2.search.ShadowLibraries
 import ai.helper2.search.usecase.SearchResources
 import ai.helper2.shared.AudiencePath
 import ai.helper2.shared.Presence
@@ -78,6 +80,7 @@ class AskGuide(
   private val quoteRecords: QuoteRecords = QuoteRecords.NONE,
   private val quoteOrigins: QuoteOrigins = QuoteOrigins(),
   private val judge: GuideJudge = GuideJudge.NONE,
+  private val shadowLibraries: ShadowLibraries = ShadowLibraries.of(),
 ) {
 
   val answersWithModel: Boolean
@@ -192,7 +195,7 @@ class AskGuide(
     tally: Tally,
   ): GuideAnswer {
     val key = cacheKey(q)
-    cache?.get(key)?.let {
+    cached(key)?.let {
       tally.cacheResult = "exact"
       tally.outcome = "cached"
       return it
@@ -231,6 +234,9 @@ class AskGuide(
       turn.settle()
     }
   }
+
+  private fun cached(key: String): GuideAnswer? =
+    cache?.get(key)?.takeUnless { it.citesAShadowLibrary(shadowLibraries) }
 
   private fun cacheKey(q: Question): String {
     val config =
@@ -271,10 +277,13 @@ class AskGuide(
         explanation?.sentences.orEmpty().map { it.source }
     if (quoted.isEmpty()) return this
     val records = quoteRecords.of(quoted.flatMap(quoteOrigins::storedResourcesOf).distinct())
-    fun from(quote: String?, result: MergedResult?) =
-      if (quote.isNullOrBlank() || result == null) null else quoteOrigins.of(quote, result, records)
+    fun from(part: String, quote: String?, result: MergedResult?): QuotedFrom? {
+      if (quote.isNullOrBlank() || result == null) return null
+      return quoteOrigins.of(quote, result, records).also { countQuoteOrigin(part, it) }
+    }
     return copy(
-      recommendations = recommendations.map { it.copy(quotedFrom = from(it.quote, it.result)) },
+      recommendations =
+        recommendations.map { it.copy(quotedFrom = from("pick", it.quote, it.result)) },
       comparison =
         comparison?.let { c ->
           c.copy(
@@ -282,17 +291,27 @@ class AskGuide(
               c.rows.map { row ->
                 row.copy(
                   cells =
-                    row.cells.map { it.copy(quotedFrom = from(it.quote, subjects[it.subjectKey])) }
+                    row.cells.map {
+                      it.copy(quotedFrom = from("cell", it.quote, subjects[it.subjectKey]))
+                    }
                 )
               }
           )
         },
       explanation =
         explanation?.let { e ->
-          e.copy(sentences = e.sentences.map { it.copy(quotedFrom = from(it.quote, it.source)) })
+          e.copy(
+            sentences =
+              e.sentences.map { it.copy(quotedFrom = from("sentence", it.quote, it.source)) }
+          )
         },
     )
   }
+
+  private fun countQuoteOrigin(part: String, origin: QuotedFrom?) =
+    meters
+      .counter("helper2.guide.quote_origin", "part", part, "found", (origin != null).toString())
+      .increment()
 
   private fun answerAndStore(
     q: Question,
@@ -431,7 +450,7 @@ class AskGuide(
       return null
     val probe = similar.probe(q.text, configHash, q.path, r.key(q)) ?: return null
     asked.probe = probe
-    val stored = similar.nearest(probe)?.let(cache::get) ?: return null
+    val stored = similar.nearest(probe)?.let(::cached) ?: return null
     val answer = stored.inTheWordsOf(r.subjects, r.constraints) ?: return null
     asked.reused = true
     return answer.copy(

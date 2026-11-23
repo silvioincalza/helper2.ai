@@ -1,7 +1,6 @@
 package ai.helper2.admin.usecase;
 
 import ai.helper2.platform.AuditTrail;
-import ai.helper2.platform.BadRequestException;
 import ai.helper2.platform.settings.RuntimeSetting;
 import ai.helper2.platform.settings.RuntimeSettingStore;
 import ai.helper2.platform.settings.RuntimeSettings;
@@ -12,11 +11,15 @@ import org.jspecify.annotations.Nullable;
 public class ChangeRuntimeSetting {
 
   public sealed interface Outcome {
-    record Changed(GetRuntimeSettings.State state) implements Outcome {}
+    sealed interface Attempted extends Outcome {}
 
-    record OutOfRange(RuntimeSetting setting) implements Outcome {}
+    record Changed(GetRuntimeSettings.State state) implements Attempted {}
 
-    record Conflict(GetRuntimeSettings.State current) implements Outcome {}
+    record OutOfRange(RuntimeSetting setting) implements Attempted {}
+
+    record Conflict(GetRuntimeSettings.State current) implements Attempted {}
+
+    record InvalidReason() implements Outcome {}
   }
 
   private final RuntimeSettingStore store;
@@ -44,19 +47,22 @@ public class ChangeRuntimeSetting {
       long value,
       long expectedVersion,
       @Nullable String reason) {
+    if (!Reasons.isPlain(reason)) {
+      return new Outcome.InvalidReason();
+    }
     GetRuntimeSettings.State before = settings.of(setting);
     String why = Reasons.clean(reason);
-    Outcome outcome = tryChange(adminId, setting, value, expectedVersion, why);
+    Outcome.Attempted outcome = tryChange(adminId, setting, value, expectedVersion, why);
     audit.record(
         adminId,
         AuditTrail.Action.CHANGE_SETTING,
         setting.key(),
         recorded(outcome),
-        new AuditTrail.Change(before.described(), Long.toString(value), why));
+        new AuditTrail.Change(before.described(), setting.shown(value), why));
     return outcome;
   }
 
-  private Outcome tryChange(
+  private Outcome.Attempted tryChange(
       String adminId,
       RuntimeSetting setting,
       long value,
@@ -74,7 +80,7 @@ public class ChangeRuntimeSetting {
     return new Outcome.Changed(settings.of(setting));
   }
 
-  private static String recorded(Outcome outcome) {
+  private static String recorded(Outcome.Attempted outcome) {
     return switch (outcome) {
       case Outcome.Changed c -> "CHANGED";
       case Outcome.OutOfRange r -> "OUT_OF_RANGE";
@@ -89,22 +95,14 @@ public class ChangeRuntimeSetting {
   static final class Reasons {
     private static final Pattern HIDDEN_CHARACTERS = Pattern.compile("[\\p{Cc}\\p{Cf}]");
 
-    static final int MAX_CHARS = 500;
-
     private Reasons() {}
 
+    static boolean isPlain(@Nullable String reason) {
+      return reason == null || !HIDDEN_CHARACTERS.matcher(reason).find();
+    }
+
     static @Nullable String clean(@Nullable String reason) {
-      if (reason == null || reason.isBlank()) {
-        return null;
-      }
-      if (HIDDEN_CHARACTERS.matcher(reason).find()) {
-        throw new BadRequestException("reason: no control or format characters");
-      }
-      String cleaned = reason.strip();
-      if (cleaned.length() > MAX_CHARS) {
-        throw new BadRequestException("reason: at most " + MAX_CHARS + " characters");
-      }
-      return cleaned;
+      return reason == null || reason.isBlank() ? null : reason.strip();
     }
   }
 }

@@ -15,6 +15,8 @@ final class ResearchEvalScore {
   static final int TARGET_ITEMS = 100;
   static final int TARGET_REJECTS = 20;
 
+  private static final String DUPLICATE = "DUPLICATE";
+
   record Outcome(
       ResearchLabels.Label label,
       ResearchRun.Status status,
@@ -49,6 +51,10 @@ final class ResearchEvalScore {
 
   private ResearchEvalScore() {}
 
+  private static boolean isMeasuredVerdict(ResearchLabels.Label label) {
+    return !DUPLICATE.equals(label.decision());
+  }
+
   static Report score(String model, List<Outcome> outcomes) {
     int failed = 0;
     int verdictAgree = 0;
@@ -66,9 +72,11 @@ final class ResearchEvalScore {
         continue;
       }
       ResearchResult r = o.result();
-      verdictCompared++;
-      if (r.verdict().name().equals(label.decision())) {
-        verdictAgree++;
+      if (isMeasuredVerdict(label)) {
+        verdictCompared++;
+        if (r.verdict().name().equals(label.decision())) {
+          verdictAgree++;
+        }
       }
       List<String> misses = new ArrayList<>();
       for (Map.Entry<String, String> e : label.expected().entrySet()) {

@@ -37,7 +37,7 @@ podman push $REGISTRY/helper2-backoffice:$TAG
 podman push $REGISTRY/helper2-postgres:$PG_TAG
 ```
 
-Three images, one tag ([ADR 0043](../../docs/adr/operations/0043-runtime-topology-helm-chart-three-deployables.md)): `helper2-web` holds the
+Three images, one tag ([ADR 0043](../../docs/architecture/decisions/ADR-0043-runtime-topology-helm-chart-three-deployables.md)): `helper2-web` holds the
 public web app's files (nginx) and the HTML shell, `helper2` is the public app (search, guide, the pages, sign-in
 for users), `helper2-backoffice` the back office (admin, Scout, collectors, enrichment). Each public pod copies the
 shell from `helper2-web` of the same tag when it starts, so build and push all three. Both apps use the same
@@ -50,7 +50,7 @@ moved: one commit, one image.
 example gains keys later, `scripts/env-align.sh deploy/k8s/app.env.example app.env` appends only the ones app.env
 does not have yet, with their comments; it never changes a key that is there (`--dry-run` lists them first). It must
 contain eight different passwords of 32+ characters (`openssl rand -hex 32`;
-[ADR 0004](../../docs/adr/foundation/0004-persistence-and-the-schema.md)). The four database ones may also hold base64 characters
+[ADR 0004](../../docs/architecture/decisions/ADR-0004-persistence-and-the-schema.md)). The four database ones may also hold base64 characters
 (`+ / = _ -`); the four Redis ones only letters and digits: `H2_DATABASE_PASSWORD` (the owner's: Postgres, the
 backup and the migrate Job only), `H2_DATABASE_PUBLIC_PASSWORD` and `H2_DATABASE_BACKOFFICE_PASSWORD` (each app's
 own role), `H2_DATABASE_MONITOR_PASSWORD` (the Postgres exporter's role `h2_monitor`, statistics only), `H2_REDIS_PASSWORD` (Redis' default user, the admin), and `H2_REDIS_PUBLIC_PASSWORD` and
@@ -124,24 +124,46 @@ kubectl -n helper2 port-forward deploy/helper2 8081 &
 curl -s localhost:8081/actuator/health/readiness    # {"status":"UP"}
 ```
 
-Route your host to two Services, both on port 80: exactly these three paths to `helper2-web`, and everything
-else to `helper2`.
+Route your host to two Services, both on port 80: the public app's own addresses to `helper2`, and everything
+else to `helper2-web`.
 
 | Path | Path type | Service |
 |---|---|---|
+| `/(.*/)?[^./]*$` | `ImplementationSpecific` | `helper2` |
+| `/[A-Za-z0-9-]{8,128}\.txt$` | `ImplementationSpecific` | `helper2` |
+| `/api/` | `Prefix` | `helper2` |
+| `/oauth2/` | `Prefix` | `helper2` |
+| `/login/` | `Prefix` | `helper2` |
+| `/sitemaps/` | `Prefix` | `helper2` |
+| `/robots.txt` | `Exact` | `helper2` |
+| `/sitemap.xml` | `Exact` | `helper2` |
+| `/llms.txt` | `Exact` | `helper2` |
+| `/ads.txt` | `Exact` | `helper2` |
+| `/index.html` | `Exact` | `helper2` |
 | `/assets/` | `Prefix` | `helper2-web` |
-| `/theme.js` | `Exact` | `helper2-web` |
-| `/favicon.svg` | `Exact` | `helper2-web` |
-| `/` | `Prefix` | `helper2` |
+| `/` | `Prefix` | `helper2-web` |
 
-The public app serves no web files, and the web pods answer 404 for anything else. A new file in
-`frontend/public` needs a new route here and in `deploy/web/nginx.conf` (the image build stops until both are
-there). For example:
+The first row is every address whose last segment has no dot: the pages, the API and the sign-in
+(`ClientRoutes.owns` in the public app says the same for the pages). The second row is the IndexNow key file. The
+rows after them are the public app's addresses that do have a dot in their last segment. Any other address is a
+file: the web pods serve `/assets/<file>`, `/theme.js`, `/favicon.svg` and `/favicon.ico`, and answer a plain 404
+for the rest, so a request for a file that does not exist never reaches the public app. The public app serves no
+web files. A new file in `frontend/public` needs a new `location` in `deploy/web/nginx.conf` (the image build stops
+until it is there) and no new route. A new address of the public app with a dot in its last segment needs a new row
+here and in your Ingress.
+
+The two regular expressions need the ingress-nginx annotation `nginx.ingress.kubernetes.io/use-regex`. With it
+ingress-nginx matches every path of the host as a regular expression, without regard to case, the longest path
+first, and the first match wins. The rows `/api/` and `/assets/` are also what the canary attaches to
+(`canary.appPaths`, `canary.webPaths`): keep their text and their path type. For example:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
-metadata: { name: helper2, namespace: helper2 }
+metadata:
+  name: helper2
+  namespace: helper2
+  annotations: { nginx.ingress.kubernetes.io/use-regex: "true" }
 spec:
   ingressClassName: nginx
   tls: [{ hosts: [helper2.example.com], secretName: helper2-tls }]   # e.g. issued by cert-manager
@@ -149,14 +171,23 @@ spec:
     - host: helper2.example.com
       http:
         paths:
+          - { path: '/(.*/)?[^./]*$', pathType: ImplementationSpecific, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: '/[A-Za-z0-9-]{8,128}\.txt$', pathType: ImplementationSpecific, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /api/, pathType: Prefix, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /oauth2/, pathType: Prefix, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /login/, pathType: Prefix, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /sitemaps/, pathType: Prefix, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /robots.txt, pathType: Exact, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /sitemap.xml, pathType: Exact, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /llms.txt, pathType: Exact, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /ads.txt, pathType: Exact, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /index.html, pathType: Exact, backend: { service: { name: helper2, port: { number: 80 } } } }
           - { path: /assets/, pathType: Prefix, backend: { service: { name: helper2-web, port: { number: 80 } } } }
-          - { path: /theme.js, pathType: Exact, backend: { service: { name: helper2-web, port: { number: 80 } } } }
-          - { path: /favicon.svg, pathType: Exact, backend: { service: { name: helper2-web, port: { number: 80 } } } }
-          - { path: /, pathType: Prefix, backend: { service: { name: helper2, port: { number: 80 } } } }
+          - { path: /, pathType: Prefix, backend: { service: { name: helper2-web, port: { number: 80 } } } }
 ```
 
 The back office (`/admin`) is its own Deployment, `helper2-backoffice`, behind the Service `helper2-admin`,
-port 80 ([ADR 0036](../../docs/adr/identity/0036-identity-and-the-admin-host.md), [ADR 0043](../../docs/adr/operations/0043-runtime-topology-helm-chart-three-deployables.md)).
+port 80 ([ADR 0036](../../docs/architecture/decisions/ADR-0036-identity-and-the-admin-host.md), [ADR 0043](../../docs/architecture/decisions/ADR-0043-runtime-topology-helm-chart-three-deployables.md)).
 Route it from a host that only your own network can reach (for example an Ingress with a source allow-list),
 never from the public host. The public app has no admin code and answers 404 on `/admin`. Sign in to the
 back office on that host: its GitHub App (or OAuth app) needs the callback
@@ -179,6 +210,7 @@ To upgrade, build a new tag and run the same `helm upgrade --install` command wi
 | Metrics scraping | `networkPolicy.metricsNamespace` of the scraper. The pods carry `prometheus.io/*` annotations (port 8081). |
 | Replicas | `app.replicas` (public app, default 3), `backoffice.replicas` (default 1), `web.replicas` (default 2) |
 | Scout | `backoffice.scoutEnabled`, `backoffice.scoutCron`, `backoffice.scoutMaxEnrichments` |
+| Review research | `backoffice.researchEnabled` (default true, on staging and prod) |
 | Nightly backup | `backup.enabled: true`, see [Backups](#backups) |
 | DNS for the egress policy | `networkPolicy.egress.dns` (default: CoreDNS in `kube-system`) |
 
@@ -192,7 +224,7 @@ The web pods run `web.replicas` replicas, the public app `app.replicas` and the 
 `backoffice.replicas`, each replaced one at a time on upgrade, with a PodDisruptionBudget when there is more than one replica. Every scheduled job runs
 in one of the two apps: the Scout, the collectors, the embedding indexer and the catalog jobs in the back
 office, the guide, account and search retention in the public app. Each runs on one replica at a time (lock
-table `shedlock` in Postgres); rate limits and sign-in sessions are in Redis. What is still per replica:
+table `shedlock` in Postgres for the back office, `public_app_lock` for the public app); rate limits and sign-in sessions are in Redis. What is still per replica:
 [F1.10](https://github.com/silvioincalza/helper2.ai/issues/29).
 
 **Never `helm uninstall`:** it deletes the Postgres and Redis StatefulSets and the Secret. Their PVCs
@@ -206,16 +238,16 @@ stays as the new release migrated it.
 ## Backups
 
 With `backup.enabled: true`, the CronJob `pg-backup` (02:30 in `backup.timeZone`) writes
-`pg_dump --no-owner | gzip` to `/backup/helper2-<date>.sql.gz` on the PVC `pg-backup` (the newest
-`backup.retentionDays` dumps, 7, chosen by the date in their name, and none older than 7 days; kept on
-`helm uninstall`). Use a storage class that outlives a node (`backup.storageClassName`). A failed `pg_dump`
-fails the Job; the dump replaces the old one only after `gzip -t` and a size check, and old dumps are deleted
-after that. `Helper2BackupFailed` fires on a failed Job, `Helper2BackupStale` when no run has succeeded for
+`pg_dump --no-owner | gzip` to `/backup/helper2-<UTC date>T<UTC time>Z.sql.gz` on the PVC `pg-backup`. Each run
+has its own file, so a run by hand (`kubectl create job --from=cronjob/pg-backup`) never replaces the nightly dump.
+It keeps the dumps of the newest `backup.retentionDays` dates in their names, 7, and none older than 7 days; the PVC
+is kept on `helm uninstall`. Use a storage class that outlives a node (`backup.storageClassName`). A failed `pg_dump`
+fails the Job; a dump takes its name only after `gzip -t` and a size check, and old dumps are deleted after that. `Helper2BackupFailed` fires on a failed Job, `Helper2BackupStale` when no run has succeeded for
 36 hours (the stale alert needs one successful run first: check the first night by hand).
 
-**Off-site copy** (`backup.offsite`, off by default): after the dump, rclone encrypts tonight's dump
+**Off-site copy** (`backup.offsite`, off by default): after the dump, rclone encrypts the new dump
 (`rclone crypt`, with the password in the Secret) and copies it to S3-compatible storage (for example
-Cloudflare R2) as `<prefix>/helper2-<date>.sql.gz.bin`. The storage provider never gets the password. rclone never
+Cloudflare R2) as `<prefix>/helper2-<UTC date>T<UTC time>Z.sql.gz.bin`. The storage provider never gets the password. rclone never
 deletes there; retention is the bucket's lifecycle rule. It copies only a dump younger than `backup.offsite.maxAge`
 (24 hours), so a dump the lifecycle rule deleted is not uploaded again: rerun a failed upload the same day. To turn
 it on:
@@ -246,7 +278,7 @@ has succeeded for 8 days (it too needs one successful run first: run the first o
 `CREATE EXTENSION vector` and Flyway's history, so the app starts on it as usual:
 
 ```bash
-NS=helper2; F=helper2-2026-10-27.sql.gz
+NS=helper2; F=helper2-2026-10-27T013000Z.sql.gz
 kubectl -n $NS scale deployment/helper2 --replicas=0
 kubectl -n $NS exec postgres-0 -- psql -U helper2 -d helper2 -v ON_ERROR_STOP=1 \
   -c 'DROP SCHEMA public CASCADE' -c 'CREATE SCHEMA public'
@@ -292,16 +324,21 @@ helper2.ai runs on this chart with [`values-staging.yaml`](../helm/helper2/value
 follows [RUNBOOK-release.md](RUNBOOK-release.md): the checks before, each step and its check, the way back.
 For the nightly guide evaluation, `values-staging.yaml` keeps guide answers one second (`app.guideCacheTtl`) and caps
 guide model calls at 600 a day, the prod cap (`app.dailyLimits.guideModelCalls`: a run, a rerun and checks by hand)
-([ADR 0046](../../docs/adr/operations/0046-evaluation-guide-and-search.md)); prod keeps the defaults.
+([ADR 0046](../../docs/architecture/decisions/ADR-0046-evaluation-guide-and-search.md)); prod keeps the defaults.
 
 The hosted images are signed with a key in OpenBao Transit, and a deploy runs them only after it checked each
 signature, pinned by digest (`image.digest`, `web.image.digest`, `backoffice.image.digest`, `postgres.image.digest`;
-[ADR 0044](../../docs/adr/operations/0044-ci-cd-and-supply-chain.md)). `make diff`, `env-secret` and
+[ADR 0044](../../docs/architecture/decisions/ADR-0044-ci-cd-and-supply-chain.md)). `make diff`, `env-secret` and
 `deploy` check the signatures themselves first (`make verified`, into `<env>/digests.env`) and take the digests only
-from that check. By hand, from the workstation (cosign installed, a token that reads `ci/harbor`):
+from that check. By hand, from the workstation (cosign installed, `BAO_ADDR` set to your OpenBao, a token that reads
+`ci/harbor`):
 
 ```bash
+export BAO_ADDR=https://<your OpenBao>
 make ENV=staging TAG=<tag> deploy
 ```
+
+Every target that reads OpenBao (`credentials`, `backup-credentials`, the signature check) stops with a message when
+`BAO_ADDR` is not set; without it `bao` would try `127.0.0.1:8200`. The scripts run with the bash of macOS (3.2) too.
 
 Without a digest the chart names each image by tag, so another cluster needs no signature.

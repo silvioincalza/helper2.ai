@@ -1,8 +1,10 @@
 package ai.helper2.scout
 
+import ai.helper2.catalog.DirectoryRatingIndex
 import ai.helper2.search.DescribedSource
 import ai.helper2.search.PopularityKind
 import ai.helper2.search.PopularityMetric
+import ai.helper2.search.SourceDescriptor
 import ai.helper2.search.SourceHit
 import ai.helper2.search.Vitality
 import ai.helper2.shared.CanonicalUrl
@@ -45,6 +47,8 @@ interface Collector : DescribedSource {
 
   fun collect(cursor: ScoutCursor, maxItems: Int): CollectedBatch =
     collect(cursor.checkpoint, cursor.resumeCursor, maxItems)
+
+  fun alsoWrites(): List<SourceDescriptor> = emptyList()
 }
 
 data class Candidate
@@ -101,6 +105,19 @@ fun interface CandidateReview {
     propose(sourceId, candidates)
 }
 
-data class ListText(val url: CanonicalUrl, val headings: String, val entries: List<ListEntryText>)
+data class ListText
+@JvmOverloads
+constructor(
+  val url: CanonicalUrl,
+  val headings: String,
+  val entries: List<ListEntryText>,
+  val directoryListTitle: String? = null,
+  /** UC-030 BR-010: the figures a list page of a directory host states for what it names. */
+  val ratings: DirectoryRatingIndex.ListRatings? = null,
+) {
+  /** A list page of a directory host: it names resources and is never a resource itself. */
+  val onDirectoryHost: Boolean
+    get() = directoryListTitle != null
+}
 
 data class ListEntryText(val url: CanonicalUrl, val text: String, val headingPath: String)

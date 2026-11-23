@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.lang3.EnumUtils;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -96,46 +97,54 @@ final class SourceHitCodec {
       for (JsonNode n : root.path("hits")) {
         String sourceId = n.path("sourceId").asString();
         List<PopularityMetric> pop = new ArrayList<>();
-        n.path("popularity")
-            .forEach(p ->
-                pop.add(
-                    new PopularityMetric(
-                        PopularityKind.valueOf(p.path("kind").asString()),
-                        p.path("value").asLong(),
-                        sourceId,
-                        Instant.parse(p.path("asOf").asString()))));
+        for (JsonNode p : n.path("popularity")) {
+          PopularityKind kind = EnumUtils.getEnum(PopularityKind.class, p.path("kind").asString());
+          if (kind != null) {
+            pop.add(
+                new PopularityMetric(
+                    kind,
+                    p.path("value").asLong(),
+                    sourceId,
+                    Instant.parse(p.path("asOf").asString())));
+          }
+        }
         hits.add(
             new SourceHit(
-                sourceId,
-                n.path("externalId").asString(),
-                URI.create(n.path("url").asString()),
-                CanonicalUrl.of(n.path("canonicalUrl").asString()),
-                CanonicalUrl.of(text(n, "repositoryUrl")),
-                n.path("title").asString(),
-                text(n, "description"),
-                ValueOrigin.valueOf(n.path("descriptionOrigin").asString()),
-                ResourceType.valueOf(n.path("type").asString()),
-                Audience.valueOf(n.path("audience").asString()),
-                text(n, "techLevel") == null ? null : TechLevel.valueOf(text(n, "techLevel")),
-                strings(n.path("useCases")),
-                strings(n.path("tags")),
-                text(n, "license"),
-                text(n, "pricing") == null ? null : Pricing.valueOf(text(n, "pricing")),
-                strings(n.path("platforms")),
-                n.has("openSource") ? n.path("openSource").asBoolean() : null,
-                readDate(n.path("published")),
-                readDate(n.path("updated")),
-                pop,
-                Instant.parse(n.path("retrievedAt").asString()),
-                n.path("rank").asInt(),
-                readDate(n.path("eventStart")),
-                readDate(n.path("eventEnd")),
-                text(n, "location"),
-                text(n, "eventKind") == null ? null : EventKind.valueOf(text(n, "eventKind")),
-                text(n, "eventFormat") == null ? null : EventFormat.valueOf(text(n, "eventFormat")),
-                java.util.Map.of(),
-                java.util.Set.of(),
-                foundIn(n.path("foundIn"))));
+                    sourceId,
+                    n.path("externalId").asString(),
+                    URI.create(n.path("url").asString()),
+                    CanonicalUrl.of(n.path("canonicalUrl").asString()),
+                    n.path("title").asString(),
+                    EnumUtils.getEnum(
+                        ResourceType.class, n.path("type").asString(), ResourceType.OTHER),
+                    Instant.parse(n.path("retrievedAt").asString()))
+                .withRepository(CanonicalUrl.of(text(n, "repositoryUrl")))
+                .withDescription(
+                    text(n, "description"),
+                    EnumUtils.getEnum(
+                        ValueOrigin.class,
+                        n.path("descriptionOrigin").asString(),
+                        ValueOrigin.SOURCE_PROVIDED))
+                .withAudience(
+                    EnumUtils.getEnum(
+                        Audience.class, n.path("audience").asString(), Audience.UNKNOWN))
+                .withTechLevel(EnumUtils.getEnum(TechLevel.class, text(n, "techLevel")))
+                .withUseCases(strings(n.path("useCases")))
+                .withTags(strings(n.path("tags")))
+                .withLicense(
+                    text(n, "license"),
+                    n.has("openSource") ? n.path("openSource").asBoolean() : null)
+                .withPricing(EnumUtils.getEnum(Pricing.class, text(n, "pricing")))
+                .withPlatforms(strings(n.path("platforms")))
+                .withPublished(readDate(n.path("published")))
+                .withUpdated(readDate(n.path("updated")))
+                .withPopularity(pop)
+                .withRank(n.path("rank").asInt())
+                .withEventDays(readDate(n.path("eventStart")), readDate(n.path("eventEnd")))
+                .withLocation(text(n, "location"))
+                .withEventKind(EnumUtils.getEnum(EventKind.class, text(n, "eventKind")))
+                .withEventFormat(EnumUtils.getEnum(EventFormat.class, text(n, "eventFormat")))
+                .withFoundIn(foundIn(n.path("foundIn"))));
       }
       return new CachedHits(hits, Instant.parse(root.path("fetchedAt").asString()));
     } catch (RuntimeException e) {
@@ -158,7 +167,8 @@ final class SourceHitCodec {
     }
     return new DateFact(
         Instant.parse(n.path("value").asString()),
-        DatePrecision.valueOf(n.path("precision").asString()),
+        EnumUtils.getEnum(
+            DatePrecision.class, n.path("precision").asString(), DatePrecision.UNKNOWN),
         n.path("sourceId").asString(),
         List.of(),
         false);

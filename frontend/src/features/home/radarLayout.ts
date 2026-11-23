@@ -1,7 +1,6 @@
 import type { SourceInfo } from '@/api/types';
 import { newThisWeek } from '@/lib/sourceCounts';
-
-export type DotTone = 'answering' | 'warn' | 'failed' | 'idle';
+import { toneOf, type DotTone } from '@/lib/sourceHealth';
 
 export interface Rect {
   left: number;
@@ -45,13 +44,6 @@ const FULL_SIZE = 480;
 const SMALLEST = 0.6;
 const DOT = 6;
 const STEPS = 720;
-
-export function toneOf(s: SourceInfo): DotTone {
-  if (s.lastOutcome === 'FAILED') return 'failed';
-  if (s.lastOutcome === 'TIMED_OUT' || s.lastOutcome === 'RATE_LIMITED') return 'warn';
-  if (s.mode === 'CURATED' || !s.lastOutcome || s.lastOutcome === 'SKIPPED') return 'idle';
-  return 'answering';
-}
 
 export function radiusOf(s: SourceInfo, scale = 1): number {
   const added = newThisWeek(s);

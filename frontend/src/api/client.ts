@@ -1,5 +1,7 @@
 import type {
   UpcomingEventsResponse,
+  HubResponse,
+  ResourceType,
   Bookmark,
   BookmarkRequest,
   GuideRequest,
@@ -24,7 +26,7 @@ import type {
 } from './types';
 
 import { guideStreamEventValues } from './schema';
-import { SseParser } from '@/lib/sse';
+import { readSse, SSE_IDLE_TIMEOUT_MS, type SseEvent } from '@/lib/sse';
 import { stampReceived } from '@/lib/sourceAge';
 
 export const API_BASE = '/api/v1';
@@ -49,6 +51,18 @@ export class ApiError extends Error {
 
 export function isSignInAgain(e: unknown): boolean {
   return e instanceof ApiError && e.problem?.code === SIGN_IN_AGAIN_CODE;
+}
+
+interface ProblemFilter {
+  status?: readonly number[];
+  code?: readonly string[];
+}
+
+export function problemDetail(e: unknown, only: ProblemFilter = {}): string | undefined {
+  if (!(e instanceof ApiError)) return undefined;
+  if (only.status && !only.status.includes(e.status)) return undefined;
+  if (only.code && !only.code.includes(e.problem?.code ?? '')) return undefined;
+  return e.problem?.detail || undefined;
 }
 
 export function csrfTokenFrom(cookies: string): string | undefined {
@@ -142,78 +156,43 @@ const STEP_EVENTS: ReadonlySet<string> = new Set(
   guideStreamEventValues.filter((e): e is GuideStepEvent => e !== 'answer' && e !== 'error'),
 );
 
-const GUIDE_IDLE_TIMEOUT_MS = 45_000;
-
 async function askGuideStream(
   body: GuideRequest,
   onStep: (step: GuideStep) => void,
   signal?: AbortSignal,
-  idleMs = GUIDE_IDLE_TIMEOUT_MS,
+  idleMs = SSE_IDLE_TIMEOUT_MS,
 ): Promise<GuideResponse> {
-  const ctrl = new AbortController();
-  let reader: ReadableStreamDefaultReader<string> | undefined;
-  let idle = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const stop = () => {
-    ctrl.abort();
-    void reader?.cancel().catch(() => undefined);
-  };
-  const arm = () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      idle = true;
-      stop();
-    }, idleMs);
-  };
-  signal?.addEventListener('abort', stop, { once: true });
-  if (signal?.aborted) stop();
-
-  const parser = new SseParser();
   let answer: GuideResponse | undefined;
-  const handle = (text: string) => {
-    for (const e of parser.push(text)) {
-      let data: unknown;
-      try {
-        data = JSON.parse(e.data);
-      } catch {
-        throw new ApiError(0, `Unreadable "${e.event}" event`, undefined, 'MALFORMED');
-      }
-      if (e.event === 'answer') answer = data as GuideResponse;
-      else if (e.event === 'error') {
-        const p = data as Problem;
-        throw new ApiError(p.status ?? 500, p.title ?? 'Guide failed', p);
-      } else if (STEP_EVENTS.has(e.event)) onStep({ kind: e.event, data } as GuideStep);
+  const handle = (e: SseEvent) => {
+    let data: unknown;
+    try {
+      data = JSON.parse(e.data);
+    } catch {
+      throw new ApiError(0, `Unreadable "${e.event}" event`, undefined, 'MALFORMED');
     }
+    if (e.event === 'answer') answer = data as GuideResponse;
+    else if (e.event === 'error') {
+      const p = data as Problem;
+      throw new ApiError(p.status ?? 500, p.title ?? 'Guide failed', p);
+    } else if (STEP_EVENTS.has(e.event)) onStep({ kind: e.event, data } as GuideStep);
   };
-
-  arm();
-  try {
-    const res = await send('POST', absolute(`${API_BASE}/guide/stream`), {
+  const open = (streamSignal: AbortSignal) =>
+    send('POST', absolute(`${API_BASE}/guide/stream`), {
       body,
-      signal: ctrl.signal,
+      signal: streamSignal,
       accept: 'text/event-stream, application/problem+json',
     });
-    reader = res.body?.pipeThrough(new TextDecoderStream()).getReader();
-    while (reader && !answer) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      arm();
-      handle(value);
-    }
-    if (idle) throw new ApiError(0, 'The answer stream went quiet', undefined, 'IDLE_TIMEOUT');
-    signal?.throwIfAborted();
-    handle('\n\n');
+
+  try {
+    const end = await readSse(open, handle, { signal, idleMs, until: () => answer !== undefined });
+    if (end === 'idle')
+      throw new ApiError(0, 'The answer stream went quiet', undefined, 'IDLE_TIMEOUT');
     if (!answer)
       throw new ApiError(0, 'The answer stream ended without an answer', undefined, 'ENDED_EARLY');
     return answer;
   } catch (e) {
-    if (idle) throw new ApiError(0, 'The answer stream went quiet', undefined, 'IDLE_TIMEOUT');
     if (e instanceof ApiError || signal?.aborted) throw e;
     throw new ApiError(0, 'The answer stream dropped', undefined, 'DROPPED');
-  } finally {
-    clearTimeout(timer);
-    signal?.removeEventListener('abort', stop);
-    void reader?.cancel().catch(() => undefined);
   }
 }
 
@@ -222,6 +201,8 @@ export const api = {
     request<SearchResponse>('GET', '/search', { query, signal }),
   listRecent: (query: URLSearchParams, signal?: AbortSignal) =>
     request<RecentResponse>('GET', '/recent', { query, signal }),
+  listHub: (type: ResourceType, signal?: AbortSignal) =>
+    request<HubResponse>('GET', `/hubs/${encodeURIComponent(type)}`, { signal }),
   listUpcomingEvents: (query: URLSearchParams, signal?: AbortSignal) =>
     request<UpcomingEventsResponse>('GET', '/events/upcoming', { query, signal }),
   listHomeExamples: (lang: string, signal?: AbortSignal) =>

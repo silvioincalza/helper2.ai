@@ -15,7 +15,6 @@ import ai.helper2.sources.tavily.TavilySource;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,13 +32,11 @@ public class LiveWebNewsCollector implements Collector {
   private static final String SEARCH_DEPTH = "basic";
   private static final int MAX_RESULTS_PER_QUERY = 20;
 
-  private final RestClient http;
   private final Clock clock;
-  private final Resilience resilience;
   private final RunInterval interval;
   private final List<String> queries;
   private final SourceDescriptor descriptor;
-  private final ScoutLiveWebCredits credits;
+  private final ScoutLiveWebSearch liveWeb;
   private final ShadowLibraries shadowLibraries;
 
   public LiveWebNewsCollector(
@@ -53,14 +50,19 @@ public class LiveWebNewsCollector implements Collector {
       ShadowLibraries shadowLibraries) {
     this.clock = clock;
     this.shadowLibraries = shadowLibraries;
-    this.credits = credits.forFeature(FEATURE);
-    this.resilience = resilience;
     if (settings.enabled()) {
       resilience.require(POLICY);
     }
     this.interval = interval;
     this.queries = List.copyOf(queries);
-    this.http = HttpClients.client(builder, settings);
+    this.liveWeb =
+        new ScoutLiveWebSearch(
+            HttpClients.client(builder, settings),
+            clock,
+            resilience,
+            credits.forFeature(FEATURE),
+            POLICY,
+            SEARCH_DEPTH);
     this.descriptor = CollectorDescriptors.liveWebScout(settings, this.queries);
   }
 
@@ -83,24 +85,21 @@ public class LiveWebNewsCollector implements Collector {
     if (queries.isEmpty()) {
       return new CollectedBatch(List.of(), null, startedAt.toString());
     }
-    if (credits.capReached()) {
-      return CollectedBatch.deferred(
-          "Daily live web credit cap of the Scout reached ("
-              + credits.dailyCap()
-              + " credits); next try tomorrow");
+    if (liveWeb.capReached()) {
+      return liveWeb.deferred();
     }
     Map<String, SourceHit> byUrl = new LinkedHashMap<>();
     int perQuery = Math.max(1, Math.min(MAX_RESULTS_PER_QUERY, maxItems / queries.size()));
-    String since = startDate(checkpoint);
+    String since = QueryProgress.startDate(checkpoint);
     Set<String> done = QueryProgress.done(resumeCursor);
     for (String query : queries) {
       if (done.contains(query)) {
         continue;
       }
-      if (credits.capReached()) {
+      if (liveWeb.capReached()) {
         break;
       }
-      JsonNode root = search(requestBody(query, since, perQuery));
+      JsonNode root = liveWeb.search(requestBody(query, since, perQuery));
       for (JsonNode r : root.path("results")) {
         SourceHit hit = TavilySource.toHit(r, ID, startedAt, byUrl.size(), shadowLibraries);
         if (hit != null) {
@@ -128,28 +127,5 @@ public class LiveWebNewsCollector implements Collector {
       body.put("time_range", "week");
     }
     return body;
-  }
-
-  private JsonNode search(Map<String, Object> body) {
-    return resilience.call(
-        POLICY,
-        () ->
-            credits.countedAttempt(
-                SEARCH_DEPTH,
-                () ->
-                    HttpClients.getJson(
-                        () -> http.post().uri("/search").body(body).retrieve().body(String.class),
-                        clock)));
-  }
-
-  static String startDate(String checkpoint) {
-    if (checkpoint == null) {
-      return null;
-    }
-    try {
-      return Instant.parse(checkpoint).atZone(ZoneOffset.UTC).toLocalDate().toString();
-    } catch (java.time.format.DateTimeParseException e) {
-      return null;
-    }
   }
 }

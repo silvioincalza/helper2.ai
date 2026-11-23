@@ -37,7 +37,7 @@ class HuggingFaceTrendingCollectorTest {
 
   HuggingFaceTrendingCollector collector(Duration interval) {
     return new HuggingFaceTrendingCollector(
-        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,

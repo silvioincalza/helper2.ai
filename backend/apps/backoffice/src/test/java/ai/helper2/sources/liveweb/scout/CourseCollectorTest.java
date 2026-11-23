@@ -51,7 +51,8 @@ class CourseCollectorTest {
 
   CourseCollector collector(String token, List<String> platforms, Resilience resilience) {
     return new CourseCollector(
-        new SourceSettings(true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(
+            true, server.baseUrl(), token, Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(
             Duration.ofSeconds(2), io.micrometer.observation.ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
@@ -59,7 +60,7 @@ class CourseCollectorTest {
         new RunInterval(Duration.ofDays(7)),
         "new artificial intelligence course or certification",
         platforms,
-        new ScoutLiveWebCredits(counter, keys, 40, meters));
+        new ScoutLiveWebCredits(counter, keys, () -> 40L, meters));
   }
 
   @Test

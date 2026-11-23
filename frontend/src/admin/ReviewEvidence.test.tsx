@@ -342,4 +342,64 @@ describe('Feature: reviewing with the keyboard (WCAG 2.1.4: keys only inside the
       expect(screen.getByRole('heading', { level: 2, name: 'Review queue' })).toHaveFocus(),
     );
   });
+
+  it('Scenario: UC-024 BR-019 the directory lists that name the resource are named, each with a link to its page', async () => {
+    const one = item(1, { resourceId: '11111111-1111-5111-8111-111111111111' });
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => page([one]),
+      'GET /admin/review-items/*': () =>
+        makeReviewEvidence(one, {
+          directoryLists: [
+            {
+              title: 'Best AI coding tools',
+              page: 'https://futurepedia.io/best-ai-coding-tools',
+              headingPath: 'Editors',
+            },
+            { title: 'Odd page', page: 'javascript:alert(1)', headingPath: '' },
+          ],
+        }),
+    });
+    renderAdmin('/admin/review');
+    const detail = await screen.findByRole('region', { name: 'Item 1' });
+    const lists = await within(detail).findByRole('list', {
+      name: 'Named in 2 directory lists',
+    });
+    const link = within(lists).getByRole('link', { name: 'Best AI coding tools' });
+    expect(link).toHaveAttribute('href', 'https://futurepedia.io/best-ai-coding-tools');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer nofollow');
+    expect(lists).toHaveTextContent('Best AI coding tools under Editors');
+    expect(within(lists).getAllByRole('link')).toHaveLength(1);
+    expect(lists).toHaveTextContent('Odd page');
+  });
+
+  it('Scenario: UC-024 BR-020 the directories whose figures make the rating are named with their figures', async () => {
+    const one = item(1, { resourceId: '11111111-1111-5111-8111-111111111111' });
+    mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/review-items': () => page([one]),
+      'GET /admin/review-items/*': () =>
+        makeReviewEvidence(one, {
+          directoryRatings: [
+            {
+              host: 'futurepedia.io',
+              page: 'https://futurepedia.io/tool/cursor',
+              average: 9.1,
+              scale: 10,
+              votes: 45,
+              readAt: '2026-11-21T10:00:00Z',
+            },
+          ],
+        }),
+    });
+    renderAdmin('/admin/review');
+    const detail = await screen.findByRole('region', { name: 'Item 1' });
+    const ratings = await within(detail).findByRole('list', {
+      name: 'Rated by 1 directory page',
+    });
+    const link = within(ratings).getByRole('link', { name: 'futurepedia.io' });
+    expect(link).toHaveAttribute('href', 'https://futurepedia.io/tool/cursor');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer nofollow');
+    expect(ratings).toHaveTextContent('9.1 out of 10, 45 votes, read');
+  });
 });

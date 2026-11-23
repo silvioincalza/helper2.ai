@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { DiscoveryHostEntry, DiscoveryHosts } from '@/api/types';
 import { axeViolations } from '@/test/a11y';
@@ -13,6 +13,7 @@ const entry = (
 ): DiscoveryHostEntry => ({
   host,
   kind,
+  readsLists: false,
   addedBy: 'migration',
   addedAt: '2026-11-06T22:00:00Z',
   reason,
@@ -39,7 +40,8 @@ function open(handlers: Parameters<typeof mockApi>[0]) {
   const api = mockApi({
     'GET /me': () => ADMIN,
     'GET /admin/config': () => ({ groups: [] }),
-    'GET /admin/runtime-settings': () => ({ overridesActive: 0, settings: [] }),
+    'GET /admin/runtime-settings': () => ({ overridesActive: 0, settings: [], switches: [] }),
+    'GET /admin/list-seeds': () => ({ max: 50, lists: [] }),
     'GET /admin/shadow-libraries': () => ({ max: 200, libraries: [] }),
     'GET /admin/known-targets': () => ({ max: 1000, targets: [] }),
     ...handlers,
@@ -139,6 +141,148 @@ describe('Feature: an admin manages the hosts discovery knows by name (ADR 0013)
     await waitFor(() => expect(screen.getByText('No hosts in this list.')).toBeInTheDocument());
   });
 
+  it('Scenario: the lists stay on screen while they load again', async () => {
+    let hosts = SEED;
+    open({
+      'GET /admin/discovery-hosts': async () => {
+        await new Promise((r) => setTimeout(r, 120));
+        return hosts;
+      },
+      'POST /admin/discovery-hosts': () => {
+        const added = entry('techcrunch.com', 'WRITING');
+        hosts = { ...hosts, hosts: [...hosts.hosts, added] };
+        return json(added, 201);
+      },
+    });
+    const user = userEvent.setup();
+    await screen.findByRole('table', { name: 'Writing sites (1)' });
+
+    await user.type(screen.getByRole('textbox', { name: 'Host' }), 'techcrunch.com');
+    await user.click(screen.getByRole('button', { name: 'Add host' }));
+
+    expect(
+      await screen.findByText('Added: techcrunch.com is now in Writing sites.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: 'Writing sites (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: 'Directories (1)' })).toBeInTheDocument();
+    expect(await screen.findByRole('table', { name: 'Writing sites (2)' })).toBeInTheDocument();
+  });
+
+  it('Scenario: after a remove, focus goes to the list heading or back to the Remove button', async () => {
+    let hosts = SEED;
+    let refuse = false;
+    open({
+      'GET /admin/discovery-hosts': async () => {
+        await new Promise((r) => setTimeout(r, 120));
+        return hosts;
+      },
+      'POST /admin/discovery-hosts/producthunt.com/remove': () => {
+        if (refuse) return duplicate('producthunt.com changed meanwhile');
+        hosts = { ...hosts, hosts: hosts.hosts.filter((h) => h.host !== 'producthunt.com') };
+        return undefined;
+      },
+    });
+    const user = userEvent.setup();
+    await screen.findByRole('table', { name: 'Directories (1)' });
+
+    refuse = true;
+    await user.click(screen.getByRole('button', { name: 'Remove producthunt.com' }));
+    await user.click(screen.getByRole('button', { name: 'Remove host' }));
+    expect(
+      await screen.findByText('Not saved: producthunt.com changed meanwhile'),
+    ).toBeInTheDocument();
+    await waitFor(
+      () =>
+        expect(document.activeElement).toBe(
+          screen.getByRole('button', { name: 'Remove producthunt.com' }),
+        ),
+      { timeout: 2000 },
+    );
+
+    refuse = false;
+    await user.click(screen.getByRole('button', { name: 'Remove producthunt.com' }));
+    await user.click(screen.getByRole('button', { name: 'Remove host' }));
+    await waitFor(
+      () =>
+        expect(document.activeElement).toBe(
+          screen.getByRole('heading', { name: 'Directories (0)' }),
+        ),
+      { timeout: 2000 },
+    );
+  });
+
+  it('Scenario: Cancel closes the review and gives focus back to the Remove button', async () => {
+    open({ 'GET /admin/discovery-hosts': () => SEED });
+    const user = userEvent.setup();
+    await screen.findByRole('table', { name: 'Writing sites (1)' });
+    await user.click(screen.getByRole('button', { name: 'Remove medium.com' }));
+    const review = screen.getByRole('group', { name: 'Remove medium.com from Writing sites?' });
+    await user.click(within(review).getByRole('button', { name: 'Cancel' }));
+    expect(
+      screen.queryByRole('group', { name: 'Remove medium.com from Writing sites?' }),
+    ).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Remove medium.com' })).toHaveFocus(),
+    );
+  });
+
+  it('Scenario: while a change is sent, the buttons stay reachable and send nothing twice', async () => {
+    let release = () => {};
+    const sent = new Promise<void>((r) => {
+      release = r;
+    });
+    const { api } = open({
+      'GET /admin/discovery-hosts': () => SEED,
+      'POST /admin/discovery-hosts': async () => {
+        await sent;
+        return json(entry('techcrunch.com', 'WRITING'), 201);
+      },
+    });
+    const user = userEvent.setup();
+    await screen.findByRole('table', { name: 'Writing sites (1)' });
+
+    await user.type(screen.getByRole('textbox', { name: 'Host' }), 'techcrunch.com');
+    const add = screen.getByRole('button', { name: 'Add host' });
+    const remove = screen.getByRole('button', { name: 'Remove medium.com' });
+    await user.click(add);
+
+    await waitFor(() => expect(add).toHaveAttribute('aria-disabled', 'true'));
+    expect(add).toBeEnabled();
+    expect(remove).toHaveAttribute('aria-disabled', 'true');
+    expect(remove).toBeEnabled();
+    await user.click(add);
+    await user.click(remove);
+    expect(screen.queryByRole('group', { name: /Remove medium.com/ })).not.toBeInTheDocument();
+    expect(api.calls.filter((c) => c.method === 'POST')).toHaveLength(1);
+
+    release();
+    expect(
+      await screen.findByText('Added: techcrunch.com is now in Writing sites.'),
+    ).toBeInTheDocument();
+    expect(add).not.toHaveAttribute('aria-disabled');
+  });
+
+  it('Scenario: a second submit sent before the page redraws sends nothing', async () => {
+    const { api } = open({
+      'GET /admin/discovery-hosts': () => SEED,
+      'POST /admin/discovery-hosts': () => json(entry('techcrunch.com', 'WRITING'), 201),
+    });
+    const user = userEvent.setup();
+    await screen.findByRole('table', { name: 'Writing sites (1)' });
+    await user.type(screen.getByRole('textbox', { name: 'Host' }), 'techcrunch.com');
+    const form = screen.getByRole('form', { name: 'Add a host' });
+
+    act(() => {
+      fireEvent.submit(form);
+      fireEvent.submit(form);
+    });
+
+    expect(
+      await screen.findByText('Added: techcrunch.com is now in Writing sites.'),
+    ).toBeInTheDocument();
+    expect(api.calls.filter((c) => c.method === 'POST')).toHaveLength(1);
+  });
+
   it('Scenario: lists that cannot load offer a retry', async () => {
     open({
       'GET /admin/discovery-hosts': () =>
@@ -146,5 +290,62 @@ describe('Feature: an admin manages the hosts discovery knows by name (ADR 0013)
     });
     expect(await screen.findByText('Could not load the discovery hosts.')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /try again/i }).length).toBeGreaterThan(0);
+  });
+
+  it("Scenario: UC-019 BR-007 an admin turns the reading of a directory host's lists on after a review, and off again", async () => {
+    let hosts = SEED;
+    const { api, container } = open({
+      'GET /admin/discovery-hosts': () => hosts,
+      'POST /admin/discovery-hosts/producthunt.com/list-reading': () => {
+        const now = hosts.hosts.find((h) => h.host === 'producthunt.com')!;
+        const saved = { ...now, readsLists: !now.readsLists };
+        hosts = { ...hosts, hosts: hosts.hosts.map((h) => (h === now ? saved : h)) };
+        return saved;
+      },
+    });
+    const user = userEvent.setup();
+    const directories = await screen.findByRole('table', { name: 'Directories (1)' });
+    expect(within(directories).getByText(/its lists are not read/)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('table', { name: 'Writing sites (1)' })).queryByRole('button', {
+        name: /lists of/,
+      }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Read the lists of producthunt.com' }));
+    const review = screen.getByRole('group', { name: 'Read the lists of producthunt.com?' });
+    expect(within(review).getByText(/Check the host first/)).toBeInTheDocument();
+    expect(api.calls.some((c) => c.method === 'POST')).toBe(false);
+    await settle();
+    expect(await axeViolations(container)).toEqual([]);
+    await user.type(
+      within(review).getByRole('textbox', { name: 'Reason (optional)' }),
+      'checked the host',
+    );
+    await user.click(within(review).getByRole('button', { name: 'Read its lists' }));
+
+    expect(
+      await screen.findByText('The lists of producthunt.com are read from the next run.'),
+    ).toBeInTheDocument();
+    expect(api.calls.find((c) => c.method === 'POST')?.body).toEqual({
+      read: true,
+      reason: 'checked the host',
+    });
+    expect(await screen.findByText(/its lists are read/)).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Stop reading the lists of producthunt.com' }),
+    );
+    const stop = screen.getByRole('group', { name: 'Stop reading the lists of producthunt.com?' });
+    expect(within(stop).getByText(/What they already named stays/)).toBeInTheDocument();
+    await user.click(within(stop).getByRole('button', { name: 'Stop reading' }));
+
+    expect(
+      await screen.findByText('The lists of producthunt.com are no longer read.'),
+    ).toBeInTheDocument();
+    expect(api.calls.filter((c) => c.method === 'POST').at(-1)?.body).toEqual({
+      read: false,
+      reason: null,
+    });
   });
 });

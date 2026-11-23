@@ -13,15 +13,21 @@ import ai.helper2.scout.usecase.CappedReview;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
 import ai.helper2.shared.Audience;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
+import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class PypiCollectorTest {
@@ -50,7 +56,7 @@ class PypiCollectorTest {
 
   private PypiCollector collector() {
     return new PypiCollector(
-        new SourceSettings(true, null, null, Duration.ofSeconds(30), Duration.ZERO),
+        new SourceSettings(true, null, null, Duration.ofSeconds(30), Duration.ZERO, null),
         queries,
         SourceFixtures.CLOCK,
         Resilience.NONE,
@@ -97,6 +103,35 @@ class PypiCollectorTest {
 
     assertThat(batch.getHits()).hasSize(1);
     SourceHit hit = batch.getHits().getFirst();
+    assertThat(hit)
+        .isEqualTo(
+            new SourceHit(
+                "pypi",
+                "Torch_Tools",
+                URI.create("https://pypi.org/project/torch-tools/"),
+                CanonicalUrl.of("https://pypi.org/project/torch-tools"),
+                CanonicalUrl.of("https://github.com/acme/torch-tools"),
+                "Torch_Tools",
+                "Tools for training LLMs",
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.LIBRARY,
+                Audience.BUILD_WITH_AI,
+                null,
+                Set.of(),
+                Set.of("llm", "rag", "training"),
+                "Apache-2.0",
+                null,
+                Set.of("python"),
+                true,
+                DateFact.unknown(),
+                new DateFact(
+                    Instant.parse("2025-10-20T00:00:00Z"),
+                    DatePrecision.INSTANT,
+                    "pypi",
+                    List.of(),
+                    false),
+                List.of(),
+                SourceFixtures.CLOCK.instant()));
     assertThat(hit.getSourceId()).isEqualTo("pypi");
     assertThat(hit.getTitle()).isEqualTo("Torch_Tools");
     assertThat(hit.getUrl().toString()).isEqualTo("https://pypi.org/project/torch-tools/");

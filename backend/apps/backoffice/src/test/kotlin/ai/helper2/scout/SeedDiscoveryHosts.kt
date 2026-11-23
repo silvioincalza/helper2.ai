@@ -71,4 +71,54 @@ class InMemoryDiscoveryHostStore : DiscoveryHostStore {
   override fun add(host: DiscoveryHost): Boolean = hosts.putIfAbsent(host.host, host) == null
 
   override fun remove(host: String): DiscoveryHost? = hosts.remove(host)
+
+  override fun readLists(host: String, on: Boolean): DiscoveryHost? =
+    hosts.computeIfPresent(host) { _, listed ->
+      if (listed.kind == HostKind.DIRECTORY) listed.copy(readsLists = on) else listed
+    }
+}
+
+class InMemoryListSeedStore : ListSeedStore {
+  private val seeds = LinkedHashMap<String, ListSeed>()
+  private val readings = LinkedHashMap<String, ListReading>()
+
+  override fun all(): List<ListSeed> = seeds.values.toList()
+
+  override fun add(seed: ListSeed): Boolean = seeds.putIfAbsent(seed.address, seed) == null
+
+  override fun remove(address: String): ListSeed? =
+    seeds.remove(address).also { readings.remove(address) }
+
+  override fun readStarted(address: String, at: Instant) {
+    seeds.computeIfPresent(address) { _, seed ->
+      seed.copy(readTriedAt = at, readFailures = seed.readFailures + 1)
+    }
+  }
+
+  override fun readSucceeded(address: String, reading: ListReading) {
+    seeds.computeIfPresent(address) { _, seed ->
+      seed.copy(readFailures = 0, goneChecks = 0, goneSince = null)
+    }
+    if (address in seeds) readings[address] = reading
+  }
+
+  override fun followed(address: String, followed: List<ListReading.Followed>) {
+    readings.computeIfPresent(address) { _, reading -> reading.copy(followed = followed) }
+  }
+
+  override fun lastReads(): Map<String, ListReading> = readings.toMap()
+
+  override fun goneChecked(address: String, at: Instant): ListSeed? =
+    seeds.computeIfPresent(address) { _, seed ->
+      seed.copy(goneChecks = seed.goneChecks + 1, goneSince = seed.goneSince ?: at)
+    }
+
+  override fun notGone(address: String) {
+    seeds.computeIfPresent(address) { _, seed -> seed.copy(goneChecks = 0, goneSince = null) }
+  }
+
+  override fun forgotten(address: String): ListSeed? {
+    readings.remove(address)
+    return if (seeds[address]?.origin == ListOrigin.DISCOVERY) seeds.remove(address) else null
+  }
 }

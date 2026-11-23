@@ -1,5 +1,7 @@
 package ai.helper2.site.pages
 
+import ai.helper2.catalog.DirectoryRating
+import ai.helper2.catalog.IndexRule
 import ai.helper2.shared.Pricing
 import ai.helper2.shared.ResourceType
 import ai.helper2.shared.ValueOrigin
@@ -30,7 +32,14 @@ data class PageBody(
   val facts: List<Fact>,
   val sources: List<Link>,
   val related: List<Related>,
+  val foundIn: List<Related> = emptyList(),
+  val listing: Listing? = null,
+  val pages: List<PageLink> = emptyList(),
 )
+
+data class Listing(val heading: String, val items: List<Related>)
+
+data class PageLink(val path: String, val name: String)
 
 data class Fact(val name: String, val value: String)
 
@@ -54,6 +63,8 @@ data class ResourceView(
   val location: String?,
   val sources: List<Link>,
   val related: List<Related>,
+  val foundIn: List<Related> = emptyList(),
+  val rating: DirectoryRating? = null,
 ) {
   val sourceDescription: String?
     get() =
@@ -74,21 +85,11 @@ data class ResourceView(
 }
 
 object IndexPolicy {
-  val INDEXED_TYPES =
-    setOf(
-      ResourceType.PRODUCT,
-      ResourceType.AGENT,
-      ResourceType.MODEL,
-      ResourceType.MCP_SERVER,
-      ResourceType.LIBRARY,
-      ResourceType.SKILL,
-      ResourceType.DATASET,
-      ResourceType.PAPER,
-      ResourceType.EVENT,
-      ResourceType.COURSE,
-    )
+  val INDEXED_TYPES = IndexRule.INDEXED_TYPES
 
-  const val PROMPT_MIN_LENGTH = 200
+  val LISTED_TYPES = IndexRule.LISTED_TYPES
+
+  const val PROMPT_MIN_LENGTH = IndexRule.PROMPT_MIN_LENGTH
 
   fun indexWorthy(r: ResourceView): Boolean {
     val description = r.sourceDescription ?: return false

@@ -10,7 +10,6 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.shared.WebPageTitle;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
@@ -52,25 +51,24 @@ public class TavilySource implements SearchSource {
     this.shadowLibraries = shadowLibraries;
     this.http = HttpClients.client(builder, settings);
     this.descriptor =
-        new SourceDescriptor(
-            "live-web",
-            "Live web search",
-            "Web",
-            true,
-            SourceMode.LIVE,
-            URI.create("https://helper2.ai/sources"),
-            URI.create("https://helper2.ai/terms"),
-            "Web results found by a live web search; each links to the original publisher.",
-            EnumSet.of(ResourceType.NEWS, ResourceType.ARTICLE, ResourceType.EVENT),
-            settings.timeout(),
-            Duration.ZERO,
-            settings.enabled() && settings.hasToken(),
-            48,
-            true,
-            true,
-            true,
-            true,
-            true);
+        SourceDescriptor.external(
+                "live-web",
+                "Live web search",
+                "Web",
+                SourceMode.LIVE,
+                URI.create("https://helper2.ai/sources"),
+                EnumSet.of(ResourceType.NEWS, ResourceType.ARTICLE, ResourceType.EVENT),
+                settings.timeout(),
+                Duration.ZERO)
+            .withTerms(URI.create("https://helper2.ai/terms"))
+            .withAttribution(
+                "Web results found by a live web search; each links to the original publisher.")
+            .enabledWhen(settings.enabled() && settings.hasToken())
+            .withPriority(48)
+            .askedWithTheWebQuery()
+            .filteringByDate()
+            .browsing()
+            .metered();
   }
 
   @Override
@@ -108,7 +106,8 @@ public class TavilySource implements SearchSource {
     if (query.getWebQuery() != null) {
       return query.getWebQuery();
     }
-    String text = HttpClients.queryText(query);
+    String text =
+        String.join(" ", query.getText(), String.join(" ", query.getExpandedTerms())).trim();
     return text + " artificial intelligence";
   }
 
@@ -145,28 +144,19 @@ public class TavilySource implements SearchSource {
     WebPageTitle page = WebPageTitle.of(title, canonical.getHost());
     String snippet = snippet(content != null ? content : page.getDescription());
     return new SourceHit(
-        sourceId,
-        canonical.getValue(),
-        HttpClients.link(url, canonical),
-        canonical,
-        null,
-        page.getTitle(),
-        snippet,
-        ValueOrigin.SOURCE_PROVIDED,
-        type,
-        Audience.BOTH,
-        null,
-        Set.of(),
-        tags,
-        null,
-        null,
-        Set.of(),
-        null,
-        DateFact.fromSource(date(HttpClients.text(r, "published_date")), sourceId, now),
-        DateFact.unknown(),
-        List.of(),
-        now,
-        position);
+            sourceId,
+            canonical.getValue(),
+            HttpClients.link(url, canonical),
+            canonical,
+            page.getTitle(),
+            type,
+            now)
+        .withDescription(snippet)
+        .withAudience(Audience.BOTH)
+        .withTags(tags)
+        .withPublished(
+            DateFact.fromSource(date(HttpClients.text(r, "published_date")), sourceId, now))
+        .withRank(position);
   }
 
   public static boolean isTavilysOwnPage(CanonicalUrl url) {

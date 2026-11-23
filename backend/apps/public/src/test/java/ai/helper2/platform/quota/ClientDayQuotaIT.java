@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ai.helper2.TestcontainersConfiguration;
 import ai.helper2.platform.ClientKey;
-import ai.helper2.platform.llm.RedisCallCounter;
+import ai.helper2.platform.llm.internal.RedisCallCounter;
 import ai.helper2.platform.resilience.Resilience;
 import java.time.Clock;
 import java.time.Duration;

@@ -11,7 +11,6 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.McpRegistryEntry;
 import ai.helper2.shared.ResourceType;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.RunInterval;
@@ -45,20 +44,6 @@ public class McpRegistryCollector implements Collector {
   private final SourceDescriptor descriptor;
   private final RunInterval interval;
   private final int itemsPerRun;
-
-  public McpRegistryCollector(
-      SourceSettings settings, RestClient.Builder builder, Clock clock, Resilience resilience) {
-    this(settings, builder, clock, resilience, new RunInterval(Duration.ZERO));
-  }
-
-  public McpRegistryCollector(
-      SourceSettings settings,
-      RestClient.Builder builder,
-      Clock clock,
-      Resilience resilience,
-      RunInterval interval) {
-    this(settings, builder, clock, resilience, interval, 0);
-  }
 
   public McpRegistryCollector(
       SourceSettings settings,
@@ -182,28 +167,23 @@ public class McpRegistryCollector implements Collector {
     String title = HttpClients.text(s, "title");
     Set<String> platforms = s.path("remotes").isEmpty() ? Set.of("local") : Set.of("remote");
     return new SourceHit(
-        "mcp-registry",
-        name,
-        HttpClients.link(link, canonical),
-        canonical,
-        CanonicalUrl.of(repo),
-        title == null ? name : title,
-        HttpClients.text(s, "description"),
-        ValueOrigin.SOURCE_PROVIDED,
-        ResourceType.MCP_SERVER,
-        Audience.BUILD_WITH_AI,
-        null,
-        Set.of(),
-        Set.of("mcp"),
-        null,
-        null,
-        platforms,
-        null,
-        DateFact.fromSource(HttpClients.instant(meta, "publishedAt"), "mcp-registry", now),
-        DateFact.fromSource(HttpClients.instant(meta, "updatedAt"), "mcp-registry", now),
-        List.of(),
-        now,
-        rank);
+            "mcp-registry",
+            name,
+            HttpClients.link(link, canonical),
+            canonical,
+            title == null ? name : title,
+            ResourceType.MCP_SERVER,
+            now)
+        .withRepository(CanonicalUrl.of(repo))
+        .withDescription(HttpClients.text(s, "description"))
+        .withAudience(Audience.BUILD_WITH_AI)
+        .withTags(Set.of("mcp"))
+        .withPlatforms(platforms)
+        .withPublished(
+            DateFact.fromSource(HttpClients.instant(meta, "publishedAt"), "mcp-registry", now))
+        .withUpdated(
+            DateFact.fromSource(HttpClients.instant(meta, "updatedAt"), "mcp-registry", now))
+        .withRank(rank);
   }
 
   private static final String REGISTRY_ENTRY =

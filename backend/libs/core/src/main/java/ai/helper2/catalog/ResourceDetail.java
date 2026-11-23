@@ -16,7 +16,24 @@ public record ResourceDetail(
     List<Relationship> relationships,
     Summary summary,
     List<SourceRecordInfo> sourceRecords,
-    String enrichmentStatus) {
+    String enrichmentStatus,
+    FoundIn foundIn,
+    @Nullable DirectoryRating rating) {
+
+  public record ListEntry(UUID listId, String listTitle, String headingPath) {}
+
+  /**
+   * The lists that name a resource. A list page of a directory host is no resource and is never in
+   * {@code lists} or {@code more}: {@code directoryLists} counts it.
+   */
+  public record FoundIn(List<ListEntry> lists, int more, int directoryLists) {
+    public static final int MAX_LISTS = 10;
+    public static final FoundIn NO_LIST = new FoundIn(List.of(), 0, 0);
+
+    public FoundIn(List<ListEntry> lists, int more) {
+      this(lists, more, 0);
+    }
+  }
 
   public record Evidence(UUID id, URI sourceUrl, Instant retrievedAt, String excerpt) {}
 
@@ -46,32 +63,9 @@ public record ResourceDetail(
       Verification verification,
       List<Evidence> evidence,
       ValueOrigin origin,
-      @Nullable String model) {
-    public Relationship(
-        String kind,
-        UUID targetId,
-        String targetTitle,
-        Verification verification,
-        List<Evidence> evidence,
-        ValueOrigin origin) {
-      this(kind, targetId, targetTitle, verification, evidence, origin, null);
-    }
+      @Nullable String model) {}
 
-    public Relationship(
-        String kind,
-        UUID targetId,
-        String targetTitle,
-        Verification verification,
-        List<Evidence> evidence) {
-      this(kind, targetId, targetTitle, verification, evidence, ValueOrigin.AI_EXTRACTED);
-    }
-  }
-
-  public record SummaryClaim(String text, List<Evidence> evidence, boolean selfDeclared) {
-    public SummaryClaim(String text, List<Evidence> evidence) {
-      this(text, evidence, false);
-    }
-  }
+  public record SummaryClaim(String text, List<Evidence> evidence, boolean selfDeclared) {}
 
   public record Summary(
       List<SummaryClaim> claims, String model, String promptVersion, Instant generatedAt) {}

@@ -123,6 +123,10 @@
         }
       }
     },
+    "excerpt": {
+      "more": "Show all",
+      "less": "Show less"
+    },
     "audit": {
       "title": "Audit trail",
       "empty": "No entries yet.",
@@ -132,6 +136,11 @@
       "target": "Target",
       "outcome": "Outcome",
       "admin": "Administrator",
+      "system": "System",
+      "before": "value before",
+      "after": "value after",
+      "reason": "reason",
+      "becomes": "becomes",
       "actions": {
         "RESOLVE_REVIEW_ITEM": "Review decision",
         "START_SCOUT_RUN": "Scout run started",
@@ -155,7 +164,13 @@
         "ADD_SHADOW_LIBRARY": "Shadow library added",
         "REMOVE_SHADOW_LIBRARY": "Shadow library removed",
         "SET_FIELD": "Field set by an admin",
-        "DROP_FIELD": "AI value of a field dropped"
+        "DROP_FIELD": "AI value of a field dropped",
+        "REMOVE_RESOURCE": "Resource removed",
+        "CHANGE_SETTING": "Setting changed",
+        "ADD_LIST_SEED": "List to read added",
+        "REMOVE_LIST_SEED": "List to read removed",
+        "READ_DIRECTORY_LISTS": "Reading of a host's lists changed",
+        "REMOVE_GONE_LIST_SEED": "Discovered list removed: gone at its site"
       }
     },
     "budget": {
@@ -179,7 +194,6 @@
         "BUILD_WITH_AI": "Builders"
       },
       "status": {
-        "ACTIVE": "Active",
         "PAUSED": "Paused"
       },
       "origin": {
@@ -257,9 +271,7 @@
         "excerpt": "Search excerpt",
         "foundBy": "Found by",
         "note": "Found by a web search. Accept adds it to the catalog; the next Scout run describes it.",
-        "edited": "Changed by an admin: {{fields}}.",
-        "more": "Show all",
-        "less": "Show less"
+        "edited": "Changed by an admin: {{fields}}."
       },
       "decided": {
         "ACCEPTED_one": "Accepted. {{count}} left.",
@@ -356,9 +368,40 @@
         "restoreLabel": "Restore {{value}} from {{at}}",
         "restore": "Restore"
       },
+      "switches": {
+        "title": "Switches you can change",
+        "lede": "Turn a feature on or off without a deploy. Every replica follows within about 20 seconds, and the audit trail records who changed what and why.",
+        "loadError": "Could not load the switches.",
+        "col": {
+          "setting": "Switch",
+          "now": "Now",
+          "default": "Default",
+          "actions": "Actions"
+        },
+        "turnOn": "Set to true",
+        "turnOff": "Set to false",
+        "turnLabel": "{{action}}: {{label}}",
+        "resetToDefault": "Reset to default",
+        "reviewTitle": "Review the switch",
+        "diff": "{{label}}: {{before}} → {{after}}",
+        "atDefault": "Default",
+        "changed": "Changed",
+        "notInUse": "(not in use)",
+        "reason": "Reason (optional)",
+        "confirm": "Confirm change",
+        "cancel": "Cancel",
+        "saved": "Saved: {{label}} is now {{value}}.",
+        "conflict": "Someone changed this switch first.",
+        "refused": "Not saved: {{detail}}",
+        "failed": "The action failed. Please try again.",
+        "history_one": "History ({{count}})",
+        "history_other": "History ({{count}})",
+        "historyEntry": "{{value}} · by {{who}} · {{at}}",
+        "backToDefault": "back to the default"
+      },
       "hosts": {
         "title": "Discovery hosts",
-        "lede": "Sites discovery knows by name. A post on a writing site is proposed as an article; a page on a directory is never kept. The next discovery run uses your change.",
+        "lede": "Sites discovery knows by name. A post on a writing site is proposed as an article; a page on a directory is never kept. The list pages of a directory are read as lists only after you turn that on for the host, once you have checked the host. The next discovery run uses your change.",
         "addTitle": "Add a host",
         "host": "Host",
         "list": "List",
@@ -395,6 +438,72 @@
           "DIRECTORY": "Its pages can then be proposed as products."
         },
         "confirmRemove": "Remove host",
+        "cancel": "Cancel",
+        "lists": {
+          "on": "its lists are read",
+          "off": "its lists are not read"
+        },
+        "switch": {
+          "on": "Read its lists",
+          "off": "Stop reading its lists"
+        },
+        "switchLabel": {
+          "on": "Read the lists of {{host}}",
+          "off": "Stop reading the lists of {{host}}"
+        },
+        "switchTitle": {
+          "on": "Read the lists of {{host}}?",
+          "off": "Stop reading the lists of {{host}}?"
+        },
+        "switchEffect": {
+          "on": "Check the host first. A list page discovery finds on it is then added to the lists to read and read at most once a week, one live web credit a read. Each link of the list follows the rule of its kind: what its source confirms is indexed, the rest waits in the review list.",
+          "off": "The lists discovery added from this host are no longer read. What they already named stays. A new list page of this host waits in the review list."
+        },
+        "confirmSwitch": {
+          "on": "Read its lists",
+          "off": "Stop reading"
+        },
+        "reading": {
+          "on": "The lists of {{host}} are read from the next run.",
+          "off": "The lists of {{host}} are no longer read."
+        }
+      },
+      "lists": {
+        "title": "Lists to read",
+        "lede": "GitHub lists and web pages you want the Scout to read. The awesome-list collector reads the GitHub lists first at every pass, whatever their stars and name. It reads a web page through the live web page reader, at most once in the days the configuration sets (7 unless changed), for one live web credit of the Scout's daily cap. Repositories in a list are checked like any other; links to other sites go to the review list. A page on a host whose terms forbid automated reading is refused.",
+        "addTitle": "Add a list",
+        "address": "GitHub repository or web page",
+        "reason": "Reason (optional)",
+        "add": "Add list",
+        "empty": "Enter a GitHub repository, such as owner/awesome-llm, or the https address of a web page.",
+        "added": "Added: {{address}} is read at the next pass.",
+        "removed": "Removed: {{address}}.",
+        "refused": "Not saved: {{detail}}",
+        "failed": "The action failed. Please try again.",
+        "loadError": "Could not load the lists to read.",
+        "listTitle_one": "Added lists ({{count}} of {{max}})",
+        "listTitle_other": "Added lists ({{count}} of {{max}})",
+        "none": "No list added. The collector reads the lists its own search finds.",
+        "col": {
+          "list": "List",
+          "added": "Added",
+          "actions": "Actions"
+        },
+        "kind": {
+          "GITHUB_REPOSITORY": "GitHub",
+          "WEB_PAGE": "Web page"
+        },
+        "by": {
+          "ADMINISTRATOR": "by {{who}} · {{at}}",
+          "DISCOVERY": "found by {{who}} on a directory host · {{at}}"
+        },
+        "discovered_one": "{{count}} more list was found by discovery on a directory host whose lists are read. It does not count against the lists you can add.",
+        "discovered_other": "{{count}} more lists were found by discovery on directory hosts whose lists are read. They do not count against the lists you can add.",
+        "remove": "Remove",
+        "removeLabel": "Remove {{address}}",
+        "removeTitle": "Stop reading {{address}}?",
+        "removeEffect": "The list and the resources found in it stay in the catalog. What it named at its last read stays too.",
+        "confirmRemove": "Remove list",
         "cancel": "Cancel"
       },
       "shadow": {
@@ -617,6 +726,12 @@
       "loading": "Loading the evidence…",
       "loadError": "Could not load the evidence.",
       "none": "No run or relationship behind this item. Decide from what it says above.",
+      "directoryLists_one": "Named in {{count}} directory list",
+      "directoryLists_other": "Named in {{count}} directory lists",
+      "directoryListUnder": "under {{heading}}",
+      "directoryRatings_one": "Rated by {{count}} directory page",
+      "directoryRatings_other": "Rated by {{count}} directory pages",
+      "directoryRating": "{{average}} out of {{scale}}, {{count}} votes, read {{date}}",
       "targetCurated": "target chosen by an admin",
       "model": "Model",
       "prompt": "Prompt",
@@ -663,7 +778,7 @@
         "REJECTED_one": "Reject {{count}}",
         "REJECTED_other": "Reject {{count}}"
       },
-      "acceptRule": "Only enrichment checks with no conflict on license, open source or pricing are accepted together. The others stay open: accept them one by one.",
+      "acceptRule": "Accepted together: enrichment checks with no conflict on license, open source or pricing, and candidates the AI research kept with no conflict, with the values it confirmed. The others stay open: accept them one by one.",
       "final": "A decision is final.",
       "allDone_one": "{{count}} done.",
       "allDone_other": "{{count}} done.",
@@ -740,7 +855,18 @@
       "skip": "Skip",
       "skipLabel": "Skip {{title}}",
       "reason": "Not about AI (word rule)",
-      "skipFailed": "Could not skip {{title}}."
+      "skipFailed": "Could not skip {{title}}.",
+      "removed": "Removed",
+      "remove": "Remove",
+      "removeLabel": "Remove {{title}} from the catalog",
+      "removeTitle": "Remove {{title}}?",
+      "removeWhat": "It leaves the catalog with its source records, labels and embedding. The Scout and the review queue skip its address from now on.",
+      "removeFinal": "This cannot be undone here. Adding the address by hand brings it back.",
+      "removeReasonLabel": "Reason (kept in the audit trail)",
+      "removeReason": "Not about AI",
+      "removeCancel": "Cancel",
+      "removeConfirm": "Remove",
+      "removeFailed": "Could not remove {{title}}."
     },
     "research": {
       "bar": "Research with AI",
@@ -752,9 +878,11 @@
       "selected_other": "Research {{count}} selected",
       "page_one": "Research this page ({{count}})",
       "page_other": "Research this page ({{count}})",
+      "split_one": "{{count}} new, {{done}} already researched",
+      "split_other": "{{count}} new, {{done}} already researched",
       "all": "Research all open…",
-      "rejectResearched_one": "Reject the {{count}} researched as reject…",
-      "rejectResearched_other": "Reject the {{count}} researched as reject…",
+      "rejectResearched_one": "Reject {{count}} the AI marked as reject…",
+      "rejectResearched_other": "Reject {{count}} the AI marked as reject…",
       "active_one": "{{count}} run queued or running",
       "active_other": "{{count}} runs queued or running",
       "queued_one": "{{count}} item queued for research.",
@@ -768,20 +896,25 @@
         "CANCELLED": "Cancelled"
       },
       "verdict": {
-        "KEEP": "Done · Keep",
-        "REJECT": "Done · Reject",
-        "DUPLICATE": "Done · Duplicate"
+        "KEEP": "AI: Keep",
+        "REJECT": "AI: Reject",
+        "DUPLICATE": "AI: Duplicate"
       },
       "steps_one": "{{count}} step",
       "steps_other": "{{count}} steps",
+      "watch": "Watch live",
+      "runLine": "Research · {{status}} ·",
       "filter": "Research",
       "filterAny": "Any",
       "filterOption": {
-        "KEEP": "Done · Keep",
-        "REJECT": "Done · Reject",
+        "KEEP": "AI: Keep",
+        "REJECT": "AI: Reject",
+        "DUPLICATE": "AI: Duplicate",
+        "ACTIVE": "Queued or running",
         "NONE": "Not researched"
       },
-      "filterEmpty": "No item on this page matches the research filter. The filter reads this page only: try the next one.",
+      "filterEmpty": "No item matches this research filter.",
+      "filterClear": "Clear the research filter",
       "allTitle": "Research every open candidate?",
       "allItems": "Items to queue",
       "allCalls": "Most model calls",
@@ -791,9 +924,10 @@
       "estimating": "Counting the open candidates…",
       "estimateFailed": "Could not count the open candidates. Close and try again.",
       "close": "Close",
-      "rejectTitle_one": "Reject {{count}} item researched as reject?",
-      "rejectTitle_other": "Reject {{count}} items researched as reject?",
+      "rejectTitle_one": "Reject {{count}} item the AI marked as reject?",
+      "rejectTitle_other": "Reject {{count}} items the AI marked as reject?",
       "rejectLede": "Read each reason. Untick any item you want to look at yourself. Keep and duplicate are never decided in a batch.",
+      "rejectAi": "Reasons written with AI.",
       "rejectNote": "Rejected after research",
       "rejectNoteLabel": "Note for all (optional)",
       "rejectConfirm_one": "Reject {{count}} item",
@@ -832,7 +966,9 @@
         "CONFLICT": "Conflict",
         "NOT_FOUND": "Not found"
       },
-      "none": "—",
+      "none": "None",
+      "nowLabel": "Now:",
+      "proposedLabel": "Proposed:",
       "noChange": "No change",
       "authoritative": "authoritative",
       "pick": "Pick a value for {{name}}",
@@ -840,6 +976,8 @@
       "confirmPick": "Confirm pick",
       "edit": "Edit",
       "keep": "Keep now",
+      "keepRest_one": "Keep the rest as now ({{count}})",
+      "keepRest_other": "Keep the rest as now ({{count}})",
       "undo": "Undo",
       "save": "Save",
       "editLabel": "New value for {{name}}",
@@ -853,14 +991,18 @@
       "progress": "{{done}} of {{count}} changes decided",
       "progressLabel": "Changes decided",
       "accept": "Accept with the confirmed values",
+      "unreadable": "The candidate cannot be read, so the confirmed values cannot be saved.",
       "acceptWhy_one": "Decide {{count}} more change to accept.",
       "acceptWhy_other": "Decide {{count}} more changes to accept.",
       "trace": {
         "title": "Every step of the research",
-        "back": "← Back to the review queue",
+        "back": "Back to the review queue",
+        "gone": "This research is no longer kept (90 days).",
         "meta": "{{model}} · {{steps}} steps · {{tokens}} tokens",
         "live_one": "{{count}} step so far",
         "live_other": "{{count}} steps so far",
+        "stopped": "Live updates stopped.",
+        "reconnect": "Reconnect",
         "plain": "Every request and response as stored. Page text is untrusted: it is shown as plain text, never as a page.",
         "filter": "Show",
         "all": "All steps",
@@ -875,8 +1017,25 @@
         "more": "Show all",
         "less": "Show less",
         "request": "Request",
+        "stepOf": ", step {{seq}}",
         "response": "Response",
+        "byModel": "Written with AI",
         "stepsLabel": "Steps"
+      },
+      "invalid": {
+        "title": "Write a title of 1 to 300 characters.",
+        "type": "Use one of: PRODUCT, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, MODEL, DATASET, ARTICLE, NEWS, EVENT, COURSE, AWESOME_LIST.",
+        "tags": "Write 1 to 12 tags, separated by commas: lowercase letters, digits and hyphens, each up to 40 characters.",
+        "openSource": "Write true or false.",
+        "canonicalUrl": "Write an https address.",
+        "pricing": "Use one of: FREE, FREEMIUM, PAID, OPEN_SOURCE_SELF_HOSTED.",
+        "license": "Write an SPDX id such as MIT or Apache-2.0.",
+        "audience": "Use one of: USE_AI, BUILD_WITH_AI, BOTH.",
+        "techLevel": "Use one of: BEGINNER, INTERMEDIATE, ADVANCED.",
+        "description": "Write a description of 1 to 4,000 characters.",
+        "language": "Write a two-letter language code such as en, or simple.",
+        "publishedAt": "Write a date as YYYY-MM-DD.",
+        "other": "This value cannot be saved."
       }
     }
   },

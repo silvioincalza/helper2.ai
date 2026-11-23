@@ -24,9 +24,12 @@ import type {
   EnrichmentQueueView,
   RuntimeSettings,
   RuntimeSettingState,
+  RuntimeSwitchState,
   DiscoveryHosts,
   DiscoveryHostEntry,
   DiscoveryHostKind,
+  ListSeeds,
+  ListSeedEntry,
   ShadowLibraries,
   ShadowLibraryEntry,
   KnownTargets,
@@ -38,12 +41,15 @@ import type {
   HomeExampleChange,
   HomeExampleInput,
   ReviewResearchDetail,
+  ReviewResearchRun,
+  ReviewResearchStep,
   ReviewResearchEstimate,
   ReviewResearchRuns,
   ReviewResearchStart,
 } from './types';
 
 import { absolute, API_BASE, request, send } from './client';
+import { readSse, type SseEnd } from '@/lib/sse';
 
 export const adminApi = {
   listReviewItems: (
@@ -128,14 +134,27 @@ export const adminApi = {
     }),
   cancelReviewResearch: (runId: string) =>
     request<void>('POST', `/admin/review-research/${encodeURIComponent(runId)}/cancel`),
-  reviewResearchEvents: (runId: string, afterSeq: number, signal?: AbortSignal) =>
-    send(
-      'GET',
-      absolute(
-        `${API_BASE}/admin/review-research/${encodeURIComponent(runId)}/events`,
-        new URLSearchParams({ afterSeq: String(afterSeq) }),
-      ),
-      { accept: 'text/event-stream', signal },
+  reviewResearchEvents: (
+    runId: string,
+    afterSeq: number,
+    on: { step: (step: ReviewResearchStep) => void; run: (run: ReviewResearchRun) => void },
+    signal?: AbortSignal,
+  ): Promise<SseEnd> =>
+    readSse(
+      (streamSignal) =>
+        send(
+          'GET',
+          absolute(
+            `${API_BASE}/admin/review-research/${encodeURIComponent(runId)}/events`,
+            new URLSearchParams({ afterSeq: String(afterSeq) }),
+          ),
+          { accept: 'text/event-stream', signal: streamSignal },
+        ),
+      (e) => {
+        if (e.event === 'step') on.step(JSON.parse(e.data) as ReviewResearchStep);
+        if (e.event === 'status') on.run(JSON.parse(e.data) as ReviewResearchRun);
+      },
+      { signal },
     ),
   getReviewEvidence: (id: string, signal?: AbortSignal) =>
     request<ReviewEvidence>('GET', `/admin/review-items/${encodeURIComponent(id)}/evidence`, {
@@ -194,12 +213,39 @@ export const adminApi = {
       `/admin/runtime-settings/${encodeURIComponent(key)}/reset`,
       { body },
     ),
+  changeRuntimeSwitch: (
+    key: string,
+    body: { on: boolean; version: number; reason: string | null },
+  ) =>
+    request<RuntimeSwitchState>('PUT', `/admin/runtime-switches/${encodeURIComponent(key)}`, {
+      body,
+    }),
+  resetRuntimeSwitch: (key: string, body: { version: number; reason: string | null }) =>
+    request<RuntimeSwitchState>(
+      'POST',
+      `/admin/runtime-switches/${encodeURIComponent(key)}/reset`,
+      { body },
+    ),
   listDiscoveryHosts: (signal?: AbortSignal) =>
     request<DiscoveryHosts>('GET', '/admin/discovery-hosts', { signal }),
   addDiscoveryHost: (body: { host: string; kind: DiscoveryHostKind; reason: string | null }) =>
     request<DiscoveryHostEntry>('POST', '/admin/discovery-hosts', { body }),
   removeDiscoveryHost: (host: string, reason: string | null) =>
     request<void>('POST', `/admin/discovery-hosts/${encodeURIComponent(host)}/remove`, {
+      body: { reason },
+    }),
+  readDirectoryLists: (host: string, read: boolean, reason: string | null) =>
+    request<DiscoveryHostEntry>(
+      'POST',
+      `/admin/discovery-hosts/${encodeURIComponent(host)}/list-reading`,
+      { body: { read, reason } },
+    ),
+  listListSeeds: (signal?: AbortSignal) =>
+    request<ListSeeds>('GET', '/admin/list-seeds', { signal }),
+  addListSeed: (body: { address: string; reason: string | null }) =>
+    request<ListSeedEntry>('POST', '/admin/list-seeds', { body }),
+  removeListSeed: (id: string, reason: string | null) =>
+    request<void>('POST', `/admin/list-seeds/${encodeURIComponent(id)}/remove`, {
       body: { reason },
     }),
   listShadowLibraries: (signal?: AbortSignal) =>
@@ -227,6 +273,10 @@ export const adminApi = {
   skipEnrichment: (resourceId: string, reason: string) =>
     request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/skip`, {
       body: reason.trim() ? { reason: reason.trim() } : {},
+    }),
+  removeResourceNotAboutAi: (resourceId: string, reason: string) =>
+    request<void>('POST', `/admin/ai-check/${encodeURIComponent(resourceId)}/remove`, {
+      body: { reason: reason.trim() },
     }),
   prioritiseEnrichment: (resourceId: string) =>
     request<void>('POST', `/admin/enrichment-queue/${encodeURIComponent(resourceId)}/prioritise`),

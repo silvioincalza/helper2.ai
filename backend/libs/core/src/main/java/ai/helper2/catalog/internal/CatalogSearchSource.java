@@ -113,45 +113,9 @@ public class CatalogSearchSource implements SearchSource {
     return hits.stream()
         .map(h ->
             foundIn.containsKey(h.getExternalId())
-                ? withFoundIn(h, foundIn.get(h.getExternalId()))
+                ? h.withFoundIn(foundIn.get(h.getExternalId()))
                 : h)
         .toList();
-  }
-
-  private static SourceHit withFoundIn(SourceHit h, ListMatch match) {
-    return new SourceHit(
-        h.getSourceId(),
-        h.getExternalId(),
-        h.getUrl(),
-        h.getCanonicalUrl(),
-        h.getRepositoryUrl(),
-        h.getTitle(),
-        h.getDescription(),
-        h.getDescriptionOrigin(),
-        h.getType(),
-        h.getAudience(),
-        h.getTechLevel(),
-        h.getUseCases(),
-        h.getTags(),
-        h.getLicense(),
-        h.getPricing(),
-        h.getPlatforms(),
-        h.getOpenSource(),
-        h.getPublished(),
-        h.getUpdated(),
-        h.getPopularity(),
-        h.getRetrievedAt(),
-        h.getRank(),
-        h.getEventStart(),
-        h.getEventEnd(),
-        h.getLocation(),
-        h.getEventKind(),
-        h.getEventFormat(),
-        h.getFacts(),
-        h.getCategories(),
-        match,
-        h.getCuratedFields(),
-        h.getVitality());
   }
 
   static List<SourceHit> hits(
@@ -170,38 +134,34 @@ public class CatalogSearchSource implements SearchSource {
       StatedEventFacts event = statedEventFacts.getOrDefault(r.id(), StatedEventFacts.UNKNOWN);
       hits.add(
           new SourceHit(
-              descriptor.getId(),
-              r.id().toString(),
-              URI.create(r.url()),
-              canonical,
-              null,
-              r.title(),
-              r.description(),
-              r.descriptionOrigin(),
-              r.type(),
-              r.audience(),
-              r.techLevel(),
-              r.useCases(),
-              r.tags(),
-              r.license(),
-              r.pricing(),
-              r.platforms(),
-              r.openSource(),
-              fact(r.publishedAt(), r.publishedPrecision(), r.publishedSourceId()),
-              fact(r.updatedAt(), DatePrecision.INSTANT, r.updatedSourceId()),
-              r.popularity(),
-              now,
-              i,
-              eventDay(r.eventStartsAt(), event.starts()),
-              eventDay(r.eventEndsAt(), event.ends()),
-              event.location(),
-              event.kind(),
-              event.format(),
-              Map.of(),
-              r.categories(),
-              null,
-              r.curatedFields(),
-              stated.getOrDefault(r.id(), Vitality.UNKNOWN)));
+                  descriptor.getId(),
+                  r.id().toString(),
+                  URI.create(r.url()),
+                  canonical,
+                  r.title(),
+                  r.type(),
+                  now)
+              .withDescription(r.description(), r.descriptionOrigin())
+              .withAudience(r.audience())
+              .withTechLevel(r.techLevel())
+              .withUseCases(r.useCases())
+              .withTags(r.tags())
+              .withLicense(r.license(), r.openSource())
+              .withPricing(r.pricing())
+              .withPlatforms(r.platforms())
+              .withPublished(fact(r.publishedAt(), r.publishedPrecision(), r.publishedSourceId()))
+              .withUpdated(fact(r.updatedAt(), DatePrecision.INSTANT, r.updatedSourceId()))
+              .withPopularity(r.popularity())
+              .withRank(i)
+              .withEventDays(
+                  eventDay(r.eventStartsAt(), event.starts()),
+                  eventDay(r.eventEndsAt(), event.ends()))
+              .withLocation(event.location())
+              .withEventKind(event.kind())
+              .withEventFormat(event.format())
+              .withCategories(r.categories())
+              .withCuratedFields(r.curatedFields())
+              .withVitality(stated.getOrDefault(r.id(), Vitality.UNKNOWN)));
     }
     return hits;
   }

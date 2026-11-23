@@ -65,16 +65,17 @@ tasks.named<Test>("test") {
     .withPropertyName("frontendPages")
     .withPathSensitivity(PathSensitivity.RELATIVE)
   inputs
-    .files(rootProject.files("../docs/eval/search-baseline.json"))
+    .files(rootProject.files("../eval/search-baseline.json"))
     .withPropertyName("rankingBaseline")
     .withPathSensitivity(PathSensitivity.RELATIVE)
   inputs
     .files(
       rootProject.fileTree(".") {
-        include("libs/*/src/*/java/**", "libs/*/src/*/kotlin/**")
-        include("apps/*/src/main/java/**", "apps/*/src/main/kotlin/**")
+        include("apps/public/src/main/kotlin/ai/helper2/guide/**")
+        include("libs/core/src/main/kotlin/ai/helper2/search/**")
+        include("libs/kernel/src/main/kotlin/ai/helper2/shared/**")
       }
     )
-    .withPropertyName("backendSources")
+    .withPropertyName("sourcesTheTestsRead")
     .withPathSensitivity(PathSensitivity.RELATIVE)
 }

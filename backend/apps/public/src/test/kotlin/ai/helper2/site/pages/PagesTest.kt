@@ -1,5 +1,8 @@
 package ai.helper2.site.pages
 
+import ai.helper2.catalog.DirectoryRating
+import ai.helper2.catalog.Slug
+import ai.helper2.catalog.resourcePath
 import ai.helper2.shared.Pricing
 import ai.helper2.shared.ResourceType
 import ai.helper2.shared.ValueOrigin
@@ -27,6 +30,8 @@ class PagesTest {
     origin: ValueOrigin = ValueOrigin.SOURCE_PROVIDED,
     license: String? = "MIT",
     related: List<Related> = emptyList(),
+    foundIn: List<Related> = emptyList(),
+    rating: DirectoryRating? = null,
   ) =
     ResourceView(
       id = id,
@@ -44,7 +49,21 @@ class PagesTest {
       location = null,
       sources = listOf(Link("GitHub", URI.create("https://github.com/acme/postgres-mcp"))),
       related = related,
+      foundIn = foundIn,
+      rating = rating,
     )
+
+  @Test
+  fun `UC-007 BR-011 the page for crawlers gives the rating and the number of directories`() {
+    assertTrue(
+      Pages.facts(resource(rating = DirectoryRating(4.66, 2)))
+        .contains(Fact("Rating", "4.7 out of 5, from 2 directories"))
+    )
+    assertTrue(
+      Pages.facts(resource(rating = DirectoryRating(3.32, 1)))
+        .contains(Fact("Rating", "3.3 out of 5, from 1 directory"))
+    )
+  }
 
   @Test
   fun `a resource page has its own title, the source's description and an absolute canonical`() {
@@ -133,8 +152,18 @@ class PagesTest {
     val related = listOf(Related(UUID.randomUUID(), "pgvector"))
     val body = pages.resource(resource(related = related)).body!!
     assertEquals("postgres-mcp", body.heading)
-    assertEquals(listOf(Fact("Type", "MCP server"), Fact("License", "MIT")), body.facts)
+    assertEquals(
+      listOf(Fact("Type", "MCP server"), Fact("Rating", "Not rated yet"), Fact("License", "MIT")),
+      body.facts,
+    )
     assertEquals(related, body.related)
+    assertEquals(emptyList(), body.foundIn)
+  }
+
+  @Test
+  fun `the body lists the lists a resource was found in`() {
+    val lists = listOf(Related(UUID.randomUUID(), "acme/awesome-mcp"))
+    assertEquals(lists, pages.resource(resource(foundIn = lists)).body!!.foundIn)
   }
 
   @Test
@@ -218,5 +247,127 @@ class PagesTest {
         .build()
         .readTree(Files.readString(Path.of("../frontend/src/i18n/locales/en.json")))
     assertEquals(en.path("home").path("lede").asString(), pages.home().description)
+  }
+
+  private val lists =
+    object : SiteLists {
+      override fun newInCatalog() =
+        (1..25).map { Related(UUID.nameUUIDFromBytes("n$it".toByteArray()), "New tool $it") }
+
+      override fun upcomingEvents() = listOf(Related(id, "AI Summit"))
+
+      override fun hub(type: ResourceType) =
+        (1..60).map {
+          Related(UUID.nameUUIDFromBytes("$type$it".toByteArray()), "${type.name} $it")
+        }
+    }
+
+  @Test
+  fun `every listed site page has a body a crawler can read, with links to the other site pages`() {
+    val listed =
+      PageKind.entries
+        .filter { it != PageKind.RESOURCE }
+        .map { pages.of(it, lists) }
+        .filter { it.robots == Robots.INDEX }
+    assertEquals(7 + Hub.entries.size, listed.size)
+    listed.forEach { head ->
+      val body = head.body!!
+      assertTrue(body.heading.isNotBlank(), head.title)
+      assertEquals(head.description, body.description)
+      assertFalse(body.pages.any { it.path == head.canonicalPath }, head.title)
+      assertEquals(Pages.NAV.size - 1, body.pages.size, head.title)
+    }
+  }
+
+  @Test
+  fun `the home body lists what is new in the catalog, at most 20`() {
+    val listing = pages.of(PageKind.HOME, lists).body!!.listing!!
+    assertEquals("New in the catalog", listing.heading)
+    assertEquals(Pages.MAX_LISTED, listing.items.size)
+    assertEquals("New tool 1", listing.items.first().title)
+  }
+
+  @Test
+  fun `the events body lists the coming events`() {
+    val listing = pages.of(PageKind.EVENTS, lists).body!!.listing!!
+    assertEquals("Coming up", listing.heading)
+    assertEquals(listOf("AI Summit"), listing.items.map { it.title })
+  }
+
+  @Test
+  fun `an empty list leaves no heading, and a page that is not listed has no body`() {
+    assertNull(pages.of(PageKind.HOME).body!!.listing)
+    assertNull(pages.of(PageKind.EVENTS).body!!.listing)
+    assertNull(pages.of(PageKind.SEARCH, lists).body)
+    assertNull(pages.of(PageKind.SAVED, lists).body)
+  }
+
+  @Test
+  fun `every hub page is indexed, names its type and lists its newest 50`() {
+    Hub.entries.forEach { hub ->
+      val head = pages.of(hub.kind, lists)
+      assertEquals(Robots.INDEX, head.robots)
+      assertEquals(hub.path, head.canonicalPath)
+      assertEquals("${hub.label}: newest in the catalog · helper2.ai", head.title)
+      assertTrue(head.title.length <= Pages.TITLE_MAX, head.title)
+      val listing = head.body!!.listing!!
+      assertEquals("Newest change first", listing.heading)
+      assertEquals(Hub.SIZE, listing.items.size)
+      assertEquals("${hub.type.name} 1", listing.items.first().title)
+    }
+  }
+
+  @Test
+  fun `a hub page says what it lists in JSON-LD, one item per link`() {
+    val head = pages.of(PageKind.HUB_MCP_SERVERS, lists)
+    val collection = head.jsonLd.single()
+    assertEquals("CollectionPage", collection["@type"])
+    assertEquals("https://helper2.ai/mcp-servers", collection["url"])
+    val list = collection["mainEntity"] as Map<*, *>
+    assertEquals("ItemList", list["@type"])
+    assertEquals(Hub.SIZE, list["numberOfItems"])
+    val items = list["itemListElement"] as List<*>
+    assertEquals(head.body!!.listing!!.items.size, items.size)
+    val first = items.first() as Map<*, *>
+    assertEquals(1, first["position"])
+    assertEquals("MCP_SERVER 1", first["name"])
+    assertTrue((first["item"] as String).startsWith("https://helper2.ai/resource/"))
+  }
+
+  @Test
+  fun `a hub with no resource is not indexed, and its links are still followed`() {
+    Hub.entries.forEach { hub ->
+      val head = pages.of(hub.kind)
+      assertEquals(Robots.NOINDEX_FOLLOW, head.robots, hub.path)
+      assertTrue(head.jsonLd.isEmpty(), hub.path)
+      assertNull(head.body!!.listing, hub.path)
+      assertEquals(Pages.NAV.size - 1, head.body!!.pages.size, hub.path)
+    }
+  }
+
+  @Test
+  fun `the hub description names only what the list states`() {
+    assertEquals(
+      "MCP servers in the helper2.ai catalog, newest change first, with the license and pricing " +
+        "their sources state.",
+      Hub.MCP_SERVERS.description,
+    )
+  }
+
+  @Test
+  fun `every hub has its own type, and the types without a hub are the ones that are not indexed`() {
+    assertEquals(Hub.entries.size, Hub.entries.map { it.type }.toSet().size)
+    val withoutHub = ResourceType.entries.filter { Hub.of(it) == null }.toSet()
+    assertEquals(
+      setOf(
+        ResourceType.EVENT,
+        ResourceType.NEWS,
+        ResourceType.ARTICLE,
+        ResourceType.AWESOME_LIST,
+        ResourceType.OTHER,
+      ),
+      withoutHub,
+    )
+    assertTrue(Hub.entries.all { it.type in IndexPolicy.LISTED_TYPES })
   }
 }

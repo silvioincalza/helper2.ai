@@ -253,7 +253,7 @@ describe('admin: home examples', () => {
             kind: 'EXAMPLE_CANDIDATE',
             status: 'OPEN',
             reason: 'Drafted example: Translate documents',
-            details: '{"label": "Translate documents"}',
+            details: null,
             draft: {
               label: 'Translate documents',
               query: 'translate documents',
@@ -287,7 +287,7 @@ describe('admin: home examples', () => {
             kind: 'EXAMPLE_CANDIDATE',
             status: 'OPEN',
             reason: 'Drafted example: broken',
-            details: '{"label": "Broken"}',
+            details: { shape: 'TEXT', text: '{"label": "Broken"}' },
             draft: null,
             resourceId: DEEPL,
             resourceTitle: 'DeepL Translator',

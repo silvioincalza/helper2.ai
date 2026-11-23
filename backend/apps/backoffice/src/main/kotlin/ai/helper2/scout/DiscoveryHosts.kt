@@ -1,5 +1,6 @@
 package ai.helper2.scout
 
+import ai.helper2.shared.WebAddresses
 import java.time.Instant
 import java.util.Locale
 
@@ -8,21 +9,46 @@ enum class HostKind {
   DIRECTORY,
 }
 
-data class DiscoveryHost(
+data class DiscoveryHost
+@JvmOverloads
+constructor(
   val host: String,
   val kind: HostKind,
   val addedBy: String,
   val addedAt: Instant,
   val reason: String?,
+  val readsLists: Boolean = false,
 )
 
-data class HostLists(val writing: Set<String>, val directory: Set<String>) {
+/**
+ * The hosts discovery knows by name. [directoryListsRead] holds the directory hosts whose list
+ * pages are read; it is a part of [directory].
+ */
+data class HostLists
+@JvmOverloads
+constructor(
+  val writing: Set<String>,
+  val directory: Set<String>,
+  val directoryListsRead: Set<String> = emptySet(),
+) {
+  fun isDirectory(host: String): Boolean = covers(directory, host)
+
+  // UC-019 BR-007: the lists of a directory host are read only when its switch is on.
+  fun readsListsOf(host: String): Boolean = covers(directoryListsRead, host)
+
+  private fun covers(hosts: Set<String>, host: String): Boolean = hosts.any {
+    host == it || host.endsWith(".$it")
+  }
+
   companion object {
-    fun of(hosts: Collection<DiscoveryHost>): HostLists =
-      HostLists(
+    fun of(hosts: Collection<DiscoveryHost>): HostLists {
+      val directories = hosts.filter { it.kind == HostKind.DIRECTORY }
+      return HostLists(
         hosts.filter { it.kind == HostKind.WRITING }.map { it.host }.toSet(),
-        hosts.filter { it.kind == HostKind.DIRECTORY }.map { it.host }.toSet(),
+        directories.map { it.host }.toSet(),
+        directories.filter { it.readsLists }.map { it.host }.toSet(),
       )
+    }
   }
 }
 
@@ -33,14 +59,14 @@ interface DiscoveryHostStore {
 
   fun remove(host: String): DiscoveryHost?
 
+  fun readLists(host: String, on: Boolean): DiscoveryHost?
+
   fun lists(): HostLists = HostLists.of(all())
 }
 
 object HostNames {
   const val MAX_LENGTH = 253
   private val LABEL = Regex("[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?")
-
-  private val SECOND_LEVEL = setOf("co", "com", "net", "org", "gov", "edu", "ac", "or", "ne", "go")
 
   enum class Problem {
     EMPTY,
@@ -67,9 +93,7 @@ object HostNames {
       return Checked.Invalid(Problem.NOT_A_HOST)
     }
     if (
-      labels.size < 2 ||
-        labels.last().all { it.isDigit() } ||
-        (labels.size == 2 && labels.first() in SECOND_LEVEL)
+      labels.size < 2 || labels.last().all { it.isDigit() } || WebAddresses.isRegistrySuffix(labels)
     ) {
       return Checked.Invalid(Problem.TOO_BROAD)
     }

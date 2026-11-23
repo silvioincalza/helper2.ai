@@ -2,17 +2,18 @@ import './adminText';
 import { useCallback, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import { ApiError } from '@/api/client';
 import type { ShadowLibraryEntry } from '@/api/types';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { formatDate } from '@/lib/format';
+import { TableSkeleton } from '@/ui/Skeleton';
+import { trimOrNull } from './adminModel';
+import { useAdminAction } from './useAdminAction';
+import { useFocusReturn } from './useFocusReturn';
 
-type Notice =
-  | { kind: 'added'; name: string }
-  | { kind: 'removed'; name: string }
-  | { kind: 'refused'; detail: string }
-  | { kind: 'failed' };
+type Done = { kind: 'added'; name: string } | { kind: 'removed'; name: string };
+
+const LIST = 'list';
 
 export function ShadowLibrariesPanel() {
   const { t } = useTranslation();
@@ -24,18 +25,19 @@ export function ShadowLibrariesPanel() {
   const [empty, setEmpty] = useState(false);
   const [removing, setRemoving] = useState<ShadowLibraryEntry | null>(null);
   const [removeReason, setRemoveReason] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const { busy, notice, clearNotice, run } = useAdminAction<Done>(libraries.reload);
   const focusOnMount = useCallback((el: HTMLElement | null) => el?.focus(), []);
+  const focus = useFocusReturn(removing !== null || libraries.loading);
+  const closeRemove = (name: string) => {
+    focus.returnTo(name, LIST);
+    setRemoving(null);
+  };
 
-  const all = libraries.data?.libraries ?? [];
-  const max = libraries.data?.max ?? 0;
-  const refused = (e: unknown): Notice =>
-    e instanceof ApiError && e.problem?.detail
-      ? { kind: 'refused', detail: e.problem.detail }
-      : { kind: 'failed' };
+  const shown = libraries.data ?? libraries.previous;
+  const all = shown?.libraries ?? [];
+  const max = shown?.max ?? 0;
 
-  const add = async (e: FormEvent) => {
+  const add = (e: FormEvent) => {
     e.preventDefault();
     if (busy) return;
     if (name.trim() === '') {
@@ -43,39 +45,28 @@ export function ShadowLibrariesPanel() {
       return;
     }
     setEmpty(false);
-    setBusy(true);
-    try {
+    void run(async () => {
       const saved = await adminApi.addShadowLibrary({
         name: name.trim(),
-        reason: reason.trim() === '' ? null : reason.trim(),
+        reason: trimOrNull(reason),
       });
-      setNotice({ kind: 'added', name: saved.name });
       setName('');
       setReason('');
-    } catch (err) {
-      setNotice(refused(err));
-    } finally {
-      setBusy(false);
-      libraries.reload();
-    }
+      return { kind: 'added', name: saved.name };
+    });
   };
 
-  const confirmRemove = async () => {
-    if (!removing || busy) return;
-    setBusy(true);
-    try {
-      await adminApi.removeShadowLibrary(
-        removing.name,
-        removeReason.trim() === '' ? null : removeReason.trim(),
-      );
-      setNotice({ kind: 'removed', name: removing.name });
-    } catch (err) {
-      setNotice(refused(err));
-    } finally {
-      setRemoving(null);
-      setBusy(false);
-      libraries.reload();
-    }
+  const confirmRemove = () => {
+    if (!removing) return;
+    const gone = removing.name;
+    void run(async () => {
+      try {
+        await adminApi.removeShadowLibrary(gone, trimOrNull(removeReason));
+        return { kind: 'removed', name: gone };
+      } finally {
+        closeRemove(gone);
+      }
+    });
   };
 
   const done = notice?.kind === 'added' || notice?.kind === 'removed';
@@ -130,7 +121,7 @@ export function ShadowLibrariesPanel() {
           />
         </label>
         <div className="h2-admin__tools">
-          <button type="submit" className="btn btn-primary" disabled={busy}>
+          <button type="submit" className="btn btn-primary" aria-disabled={busy || undefined}>
             {t('admin.settings.shadow.add')}
           </button>
         </div>
@@ -154,21 +145,24 @@ export function ShadowLibrariesPanel() {
             <button
               type="button"
               className="btn btn-primary"
-              disabled={busy}
+              aria-disabled={busy || undefined}
               onClick={confirmRemove}
             >
               {t('admin.settings.shadow.confirmRemove')}
             </button>
-            <button type="button" className="btn" disabled={busy} onClick={() => setRemoving(null)}>
+            <button
+              type="button"
+              className="btn"
+              aria-disabled={busy || undefined}
+              onClick={() => !busy && closeRemove(removing.name)}
+            >
               {t('admin.settings.shadow.cancel')}
             </button>
           </div>
         </div>
       )}
       {libraries.loading && all.length === 0 ? (
-        <p role="status" className="muted">
-          {t('common.loading')}
-        </p>
+        <TableSkeleton rows={3} quiet />
       ) : libraries.error !== undefined && all.length === 0 ? (
         <StatePanel
           tone="error"
@@ -178,7 +172,7 @@ export function ShadowLibrariesPanel() {
         />
       ) : (
         <section aria-labelledby="sl-list-h">
-          <h4 id="sl-list-h" className="h2-admin__h">
+          <h4 id="sl-list-h" ref={focus.fallback(LIST)} tabIndex={-1} className="h2-admin__h">
             {t('admin.settings.shadow.listTitle', { count: all.length, max })}
           </h4>
           {all.length === 0 ? (
@@ -208,14 +202,16 @@ export function ShadowLibrariesPanel() {
                       </td>
                       <td>
                         <button
+                          ref={focus.row(l.name)}
                           type="button"
                           className="btn"
-                          disabled={busy}
+                          aria-disabled={busy || undefined}
                           aria-label={t('admin.settings.shadow.removeLabel', { name: l.name })}
                           onClick={() => {
+                            if (busy) return;
                             setRemoving(l);
                             setRemoveReason('');
-                            setNotice(null);
+                            clearNotice();
                           }}
                         >
                           {t('admin.settings.shadow.remove')}

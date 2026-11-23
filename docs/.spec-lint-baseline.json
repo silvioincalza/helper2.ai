@@ -1,0 +1,1237 @@
+{
+  "version": 1,
+  "findings": [
+    {
+      "fingerprint": "e268f060ba0c802feb3aebeca211b81b7a68952d",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0001-stack-and-runtime.md",
+      "element": "ADR-0001",
+      "message": "ADR-0001 has no **Date:** line"
+    },
+    {
+      "fingerprint": "e8522e3bc088f89a0359c8bff46f7d7efdc85798",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0001-stack-and-runtime.md",
+      "element": "ADR-0001",
+      "message": "ADR-0001 has no **Status:** line"
+    },
+    {
+      "fingerprint": "5d05ff7753871310cd6459de8a99515f2fd562b6",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md",
+      "element": "ADR-0002",
+      "message": "ADR-0002 has no **Date:** line"
+    },
+    {
+      "fingerprint": "ff0968a23a9f9577b90ec59021c4d575c91761ac",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md",
+      "element": "ADR-0002",
+      "message": "ADR-0002 has no **Status:** line"
+    },
+    {
+      "fingerprint": "e980b12ced87fd6c9dd2931aa9ffe1bec87a5c44",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0003-contract-first-rest.md",
+      "element": "ADR-0003",
+      "message": "ADR-0003 has no **Date:** line"
+    },
+    {
+      "fingerprint": "33550e75dffba360f6ad11a10c41ec58979e969d",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0003-contract-first-rest.md",
+      "element": "ADR-0003",
+      "message": "ADR-0003 has no **Status:** line"
+    },
+    {
+      "fingerprint": "ca45cc5b79a5e86754965a58aaffc68dfd587f4f",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0004-persistence-and-the-schema.md",
+      "element": "ADR-0004",
+      "message": "ADR-0004 has no **Date:** line"
+    },
+    {
+      "fingerprint": "45ad2f0e5323b88396060bcacce1a9b7c75d685b",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0004-persistence-and-the-schema.md",
+      "element": "ADR-0004",
+      "message": "ADR-0004 has no **Status:** line"
+    },
+    {
+      "fingerprint": "758da641d33bb0072971d158c39e09e44fbdce7d",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0005-redis-as-a-disposable-cache.md",
+      "element": "ADR-0005",
+      "message": "ADR-0005 has no **Date:** line"
+    },
+    {
+      "fingerprint": "e9871992d5ff3af784b7e59977721517e4829930",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0005-redis-as-a-disposable-cache.md",
+      "element": "ADR-0005",
+      "message": "ADR-0005 has no **Status:** line"
+    },
+    {
+      "fingerprint": "905a5dcee24b281e45a797843bc1ffaefbc543c1",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0006-outbound-calls-and-resilience.md",
+      "element": "ADR-0006",
+      "message": "ADR-0006 has no **Date:** line"
+    },
+    {
+      "fingerprint": "471b6c0dc2177b90223b866b2ba6bcd68415bbd1",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0006-outbound-calls-and-resilience.md",
+      "element": "ADR-0006",
+      "message": "ADR-0006 has no **Status:** line"
+    },
+    {
+      "fingerprint": "3cc7e196744040737c9161f4e8765ae1b576f535",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0007-configuration-secrets-runtime-settings.md",
+      "element": "ADR-0007",
+      "message": "ADR-0007 has no **Date:** line"
+    },
+    {
+      "fingerprint": "5db019f44c12bdd07ece46608953811f919253b1",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0007-configuration-secrets-runtime-settings.md",
+      "element": "ADR-0007",
+      "message": "ADR-0007 has no **Status:** line"
+    },
+    {
+      "fingerprint": "2d0e209937a6393c49f0eb6217c19a5fa8436396",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0008-llm-integration.md",
+      "element": "ADR-0008",
+      "message": "ADR-0008 has no **Date:** line"
+    },
+    {
+      "fingerprint": "cac61240a86f8d883ef25f0d04cd28c4d5c60446",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0008-llm-integration.md",
+      "element": "ADR-0008",
+      "message": "ADR-0008 has no **Status:** line"
+    },
+    {
+      "fingerprint": "5eda911135dca5a7ee61e69f4c651d96bac28cf8",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0009-observability.md",
+      "element": "ADR-0009",
+      "message": "ADR-0009 has no **Date:** line"
+    },
+    {
+      "fingerprint": "de32adad2b908d22fec95398e2d49a815c10571c",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0009-observability.md",
+      "element": "ADR-0009",
+      "message": "ADR-0009 has no **Status:** line"
+    },
+    {
+      "fingerprint": "b392c830cf5849124867d87dfd5c32283533910d",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0010-data-retention.md",
+      "element": "ADR-0010",
+      "message": "ADR-0010 has no **Date:** line"
+    },
+    {
+      "fingerprint": "45c47b436f20bb7a4e2f36fc176d3c46037bf128",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0010-data-retention.md",
+      "element": "ADR-0010",
+      "message": "ADR-0010 has no **Status:** line"
+    },
+    {
+      "fingerprint": "532e01c1030985253b3ea9b4707bc6ff2a4161b2",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0011-scout-runner.md",
+      "element": "ADR-0011",
+      "message": "ADR-0011 has no **Date:** line"
+    },
+    {
+      "fingerprint": "75d139f86c750f940101ca54a760d3c580c0b554",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0011-scout-runner.md",
+      "element": "ADR-0011",
+      "message": "ADR-0011 has no **Status:** line"
+    },
+    {
+      "fingerprint": "64c21774b181d4fb641476ff9f6310cc00a3a2ff",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0012-scout-collectors-and-events.md",
+      "element": "ADR-0012",
+      "message": "ADR-0012 has no **Date:** line"
+    },
+    {
+      "fingerprint": "363264471c01b2cb3fe5fba7604f85144a148816",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0012-scout-collectors-and-events.md",
+      "element": "ADR-0012",
+      "message": "ADR-0012 has no **Status:** line"
+    },
+    {
+      "fingerprint": "dfc0e85dd0d0e20f42eb6d9c843d11900c845fc7",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0013-discovery.md",
+      "element": "ADR-0013",
+      "message": "ADR-0013 has no **Date:** line"
+    },
+    {
+      "fingerprint": "cbceee75c9f08f6946ee5a690c09109d3edba447",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0013-discovery.md",
+      "element": "ADR-0013",
+      "message": "ADR-0013 has no **Status:** line"
+    },
+    {
+      "fingerprint": "a92eef0334d3cef34d4d392a36ff1a1d9f504bfa",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0014-evidence-gated-enrichment.md",
+      "element": "ADR-0014",
+      "message": "ADR-0014 has no **Date:** line"
+    },
+    {
+      "fingerprint": "3133fa3e6e04cbb2e151b2e0483d451a8124314c",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0014-evidence-gated-enrichment.md",
+      "element": "ADR-0014",
+      "message": "ADR-0014 has no **Status:** line"
+    },
+    {
+      "fingerprint": "7e063bc205a67b64548b8d19a28dc25d9e32e2d1",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0015-reference-projects.md",
+      "element": "ADR-0015",
+      "message": "ADR-0015 has no **Date:** line"
+    },
+    {
+      "fingerprint": "457c517d9b3a7225647af77b24a2caf992a9a52d",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0015-reference-projects.md",
+      "element": "ADR-0015",
+      "message": "ADR-0015 has no **Status:** line"
+    },
+    {
+      "fingerprint": "3c4995dfe4d96a060e07a3c9366fe2bf646e6dd0",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0016-news-feeds-of-ai-companies.md",
+      "element": "ADR-0016",
+      "message": "ADR-0016 has no **Date:** line"
+    },
+    {
+      "fingerprint": "ee109b4eafe0cfd34939fde3932bfb293ef9ed35",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0016-news-feeds-of-ai-companies.md",
+      "element": "ADR-0016",
+      "message": "ADR-0016 has no **Status:** line"
+    },
+    {
+      "fingerprint": "aa86bc568c2abf15fb980e8c13e06a609df70317",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0017-pypi-through-bigquery.md",
+      "element": "ADR-0017",
+      "message": "ADR-0017 has no **Date:** line"
+    },
+    {
+      "fingerprint": "1b17ebf5933622a4bf96d40755a95c5805d34347",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0017-pypi-through-bigquery.md",
+      "element": "ADR-0017",
+      "message": "ADR-0017 has no **Status:** line"
+    },
+    {
+      "fingerprint": "698910eea4da1294d3f99767e7ae151e55a572b0",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0018-ai-libraries-and-sdks-per-language.md",
+      "element": "ADR-0018",
+      "message": "ADR-0018 has no **Date:** line"
+    },
+    {
+      "fingerprint": "7f9ba400105ce3035cf99ef8f45b98692d16b7b0",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0018-ai-libraries-and-sdks-per-language.md",
+      "element": "ADR-0018",
+      "message": "ADR-0018 has no **Status:** line"
+    },
+    {
+      "fingerprint": "6ba81880b4c65ee9388922034c7c56f3da5ccce6",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0019-known-targets-vendors-and-services.md",
+      "element": "ADR-0019",
+      "message": "ADR-0019 has no **Date:** line"
+    },
+    {
+      "fingerprint": "6eac2f0e7524e73a576c52a817bfd069efbc121e",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0019-known-targets-vendors-and-services.md",
+      "element": "ADR-0019",
+      "message": "ADR-0019 has no **Status:** line"
+    },
+    {
+      "fingerprint": "496f95f08014aeefaa1568b7df45809b29fee6c9",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0020-resource-vitality.md",
+      "element": "ADR-0020",
+      "message": "ADR-0020 has no **Date:** line"
+    },
+    {
+      "fingerprint": "7d69dac912c09cb424d62e09d5047af55a2ca98c",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0020-resource-vitality.md",
+      "element": "ADR-0020",
+      "message": "ADR-0020 has no **Status:** line"
+    },
+    {
+      "fingerprint": "58b67434a0a133661a31d3d8f771bdd0738a7289",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0021-resource-identity-one-resource-per-repository.md",
+      "element": "ADR-0021",
+      "message": "ADR-0021 has no **Date:** line"
+    },
+    {
+      "fingerprint": "b2b3e3c3e598640a4473e08e39dd1a4703e26a60",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0021-resource-identity-one-resource-per-repository.md",
+      "element": "ADR-0021",
+      "message": "ADR-0021 has no **Status:** line"
+    },
+    {
+      "fingerprint": "897176183113448d4f32b0cdbd777fcfea18b3ec",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0022-federated-search.md",
+      "element": "ADR-0022",
+      "message": "ADR-0022 has no **Date:** line"
+    },
+    {
+      "fingerprint": "2c0301adc4b8ffd5d99a5bdc7ad7c64e2abfcddd",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0022-federated-search.md",
+      "element": "ADR-0022",
+      "message": "ADR-0022 has no **Status:** line"
+    },
+    {
+      "fingerprint": "fc77814bbf348c5348925e494d635bdcff48f36c",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0023-catalog-full-text-index.md",
+      "element": "ADR-0023",
+      "message": "ADR-0023 has no **Date:** line"
+    },
+    {
+      "fingerprint": "e1125620200b006ccc1e39398e9b94b52fb6cc92",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0023-catalog-full-text-index.md",
+      "element": "ADR-0023",
+      "message": "ADR-0023 has no **Status:** line"
+    },
+    {
+      "fingerprint": "88735d98be73447e2fa230caf6c636ee3e89e7f0",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0024-vector-search.md",
+      "element": "ADR-0024",
+      "message": "ADR-0024 has no **Date:** line"
+    },
+    {
+      "fingerprint": "7bd43c88a6e8c55c4a9767ef3fb53307554e87cd",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0024-vector-search.md",
+      "element": "ADR-0024",
+      "message": "ADR-0024 has no **Status:** line"
+    },
+    {
+      "fingerprint": "5d86409555a84b5e49cfdf35a46b5e35984a418c",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0025-ranking.md",
+      "element": "ADR-0025",
+      "message": "ADR-0025 has no **Date:** line"
+    },
+    {
+      "fingerprint": "c12369679c4780204db1470aa8bdfc05fd70a470",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0025-ranking.md",
+      "element": "ADR-0025",
+      "message": "ADR-0025 has no **Status:** line"
+    },
+    {
+      "fingerprint": "4f3301902c410d9c335b2cf8dbcc4a671ffcbfce",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0026-filters-facets-categories.md",
+      "element": "ADR-0026",
+      "message": "ADR-0026 has no **Date:** line"
+    },
+    {
+      "fingerprint": "a05f1b9f67f2f51276554e15c2844fd795c9cdbf",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0026-filters-facets-categories.md",
+      "element": "ADR-0026",
+      "message": "ADR-0026 has no **Status:** line"
+    },
+    {
+      "fingerprint": "dba841d9f8f0039d291157a7507913ff72f1fd0c",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0027-live-web-store-first-daily-quota.md",
+      "element": "ADR-0027",
+      "message": "ADR-0027 has no **Date:** line"
+    },
+    {
+      "fingerprint": "dcdfeb2b22606dbe55ad4aa9f520fc4b31218f83",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0027-live-web-store-first-daily-quota.md",
+      "element": "ADR-0027",
+      "message": "ADR-0027 has no **Status:** line"
+    },
+    {
+      "fingerprint": "90b43ac6d80a208218674ae892a8019376afd7a1",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0028-home-examples.md",
+      "element": "ADR-0028",
+      "message": "ADR-0028 has no **Date:** line"
+    },
+    {
+      "fingerprint": "d8754bca5446c515cbc135212a33f01b2c3341e6",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0028-home-examples.md",
+      "element": "ADR-0028",
+      "message": "ADR-0028 has no **Status:** line"
+    },
+    {
+      "fingerprint": "02280d55c608828f5f9ce6dbbbef4af2b8e6170b",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0029-sources-search-content-words.md",
+      "element": "ADR-0029",
+      "message": "ADR-0029 has no **Date:** line"
+    },
+    {
+      "fingerprint": "0f78efc41a3095a4f2359fe333d3f033f5ebae19",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0029-sources-search-content-words.md",
+      "element": "ADR-0029",
+      "message": "ADR-0029 has no **Status:** line"
+    },
+    {
+      "fingerprint": "89e5d75c0a73aeb5364141bafead23d47fa03483",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0030-hacker-news-as-a-live-source.md",
+      "element": "ADR-0030",
+      "message": "ADR-0030 has no **Date:** line"
+    },
+    {
+      "fingerprint": "29358c3339f73abb58ba4199c0ee9cd16919e32e",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0030-hacker-news-as-a-live-source.md",
+      "element": "ADR-0030",
+      "message": "ADR-0030 has no **Status:** line"
+    },
+    {
+      "fingerprint": "e60f45f9b4331f6f780cbb133d4bd445ec65c1a2",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0031-guide-pipeline.md",
+      "element": "ADR-0031",
+      "message": "ADR-0031 has no **Date:** line"
+    },
+    {
+      "fingerprint": "cb3c0a74e80b67cfff05c4a348c5be1e0a54dc97",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0031-guide-pipeline.md",
+      "element": "ADR-0031",
+      "message": "ADR-0031 has no **Status:** line"
+    },
+    {
+      "fingerprint": "71c3195844de93649f63a1302067d6625d90d923",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0032-guide-cost-guard-and-answer-cache.md",
+      "element": "ADR-0032",
+      "message": "ADR-0032 has no **Date:** line"
+    },
+    {
+      "fingerprint": "7d7ff67c0b916f4a959132f650eee485a593185e",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0032-guide-cost-guard-and-answer-cache.md",
+      "element": "ADR-0032",
+      "message": "ADR-0032 has no **Status:** line"
+    },
+    {
+      "fingerprint": "14178c802934499f7906f44f7b962edcd389b246",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0033-marking-ai-written-text-research-trail.md",
+      "element": "ADR-0033",
+      "message": "ADR-0033 has no **Date:** line"
+    },
+    {
+      "fingerprint": "7d929abc876f7c62ac508a2092d289b861ca338f",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0033-marking-ai-written-text-research-trail.md",
+      "element": "ADR-0033",
+      "message": "ADR-0033 has no **Status:** line"
+    },
+    {
+      "fingerprint": "94e0f6431e48e48acd1b6662f5544c7b874759e4",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0034-setup-guide.md",
+      "element": "ADR-0034",
+      "message": "ADR-0034 has no **Date:** line"
+    },
+    {
+      "fingerprint": "a454d53f768283294a94317c44e735eed180941d",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0034-setup-guide.md",
+      "element": "ADR-0034",
+      "message": "ADR-0034 has no **Status:** line"
+    },
+    {
+      "fingerprint": "1f56ed57c267593c207f0e09dd080f694685ed91",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0035-guide-model-stream.md",
+      "element": "ADR-0035",
+      "message": "ADR-0035 has no **Date:** line"
+    },
+    {
+      "fingerprint": "9eb517658d0d8f1b2423a4a377a8eb240d800e79",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0035-guide-model-stream.md",
+      "element": "ADR-0035",
+      "message": "ADR-0035 has no **Status:** line"
+    },
+    {
+      "fingerprint": "cbc33de9b059a4a49a1d2670118270998a042ebe",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0036-identity-and-the-admin-host.md",
+      "element": "ADR-0036",
+      "message": "ADR-0036 has no **Date:** line"
+    },
+    {
+      "fingerprint": "ce769214e17f84fdf8d204900c3f26f53696786e",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0036-identity-and-the-admin-host.md",
+      "element": "ADR-0036",
+      "message": "ADR-0036 has no **Status:** line"
+    },
+    {
+      "fingerprint": "62be5fff141a211e34d217a3e6c3c181c0efa7bd",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0037-http-edge.md",
+      "element": "ADR-0037",
+      "message": "ADR-0037 has no **Date:** line"
+    },
+    {
+      "fingerprint": "1570e0279cb7e1436e596ec9de24340608f28d82",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0037-http-edge.md",
+      "element": "ADR-0037",
+      "message": "ADR-0037 has no **Status:** line"
+    },
+    {
+      "fingerprint": "09e2457bc4504c0e7887df1f526f068c9666fec1",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0038-back-office-and-review.md",
+      "element": "ADR-0038",
+      "message": "ADR-0038 has no **Date:** line"
+    },
+    {
+      "fingerprint": "15146f554b84759da5c62154aa45b700132bd076",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0038-back-office-and-review.md",
+      "element": "ADR-0038",
+      "message": "ADR-0038 has no **Status:** line"
+    },
+    {
+      "fingerprint": "92b25cbb635086079839fe9e8b51dbd56c0ef56e",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0039-frontend-one-box-state-in-the-url.md",
+      "element": "ADR-0039",
+      "message": "ADR-0039 has no **Date:** line"
+    },
+    {
+      "fingerprint": "7612175033181a8ff1aceb72f2eccbdacfb7da15",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0039-frontend-one-box-state-in-the-url.md",
+      "element": "ADR-0039",
+      "message": "ADR-0039 has no **Status:** line"
+    },
+    {
+      "fingerprint": "ac28d5d4c3877c3e5def770a384a703cb4c66ce9",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0040-design-system.md",
+      "element": "ADR-0040",
+      "message": "ADR-0040 has no **Date:** line"
+    },
+    {
+      "fingerprint": "f801d4543260c93bb6535d1c51ff7c312aedcaa1",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0040-design-system.md",
+      "element": "ADR-0040",
+      "message": "ADR-0040 has no **Status:** line"
+    },
+    {
+      "fingerprint": "e89e753452a15ff93e0292c63ad184445dd48907",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0041-site-pages-for-crawlers-policy-endpoint.md",
+      "element": "ADR-0041",
+      "message": "ADR-0041 has no **Date:** line"
+    },
+    {
+      "fingerprint": "62299f392a15529eb375d9feb4d0bf99775458cc",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0041-site-pages-for-crawlers-policy-endpoint.md",
+      "element": "ADR-0041",
+      "message": "ADR-0041 has no **Status:** line"
+    },
+    {
+      "fingerprint": "4678e3d584d013dfa0e8ff734f8dbc9abfcaa92a",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0042-monetisation.md",
+      "element": "ADR-0042",
+      "message": "ADR-0042 has no **Date:** line"
+    },
+    {
+      "fingerprint": "1216a9ff174e934d9316ca1316f613f575f165ba",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0042-monetisation.md",
+      "element": "ADR-0042",
+      "message": "ADR-0042 has no **Status:** line"
+    },
+    {
+      "fingerprint": "5ce06a54631f3e6d63c56f5aedb9ce01343c9880",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0043-runtime-topology-helm-chart-three-deployables.md",
+      "element": "ADR-0043",
+      "message": "ADR-0043 has no **Date:** line"
+    },
+    {
+      "fingerprint": "0d52bbc0343887deb6228a7a754e482bd5c51557",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0043-runtime-topology-helm-chart-three-deployables.md",
+      "element": "ADR-0043",
+      "message": "ADR-0043 has no **Status:** line"
+    },
+    {
+      "fingerprint": "63a8d7af32c5d12284defa256c13def1e62224f5",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0044-ci-cd-and-supply-chain.md",
+      "element": "ADR-0044",
+      "message": "ADR-0044 has no **Date:** line"
+    },
+    {
+      "fingerprint": "7232bbdcd96edbed537cce5f570515792215c1d3",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0044-ci-cd-and-supply-chain.md",
+      "element": "ADR-0044",
+      "message": "ADR-0044 has no **Status:** line"
+    },
+    {
+      "fingerprint": "b4129b74fb1a37c1bea0585f93bf40af97a6b5b8",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0045-releases-and-versions.md",
+      "element": "ADR-0045",
+      "message": "ADR-0045 has no **Date:** line"
+    },
+    {
+      "fingerprint": "da2087f2a7a5f39f4b84c054c28428bbc3383dd1",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0045-releases-and-versions.md",
+      "element": "ADR-0045",
+      "message": "ADR-0045 has no **Status:** line"
+    },
+    {
+      "fingerprint": "41e846353a1e3f498f4bf4b7ed26b94d7939b75b",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0046-evaluation-guide-and-search.md",
+      "element": "ADR-0046",
+      "message": "ADR-0046 has no **Date:** line"
+    },
+    {
+      "fingerprint": "47c272b636721e2c9284b332587ea343ab7c395d",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0046-evaluation-guide-and-search.md",
+      "element": "ADR-0046",
+      "message": "ADR-0046 has no **Status:** line"
+    },
+    {
+      "fingerprint": "2e919aca2834d3471bcfbf49524b4ae8181915c9",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0047-code-format-and-dead-code-audit.md",
+      "element": "ADR-0047",
+      "message": "ADR-0047 has no **Date:** line"
+    },
+    {
+      "fingerprint": "7af7007d223606b1aacc85a508530af9bf12a012",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0047-code-format-and-dead-code-audit.md",
+      "element": "ADR-0047",
+      "message": "ADR-0047 has no **Status:** line"
+    },
+    {
+      "fingerprint": "1a1b8f4bb057e62023828ec93dc998a0f4e911ab",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0048-review-research-assistant.md",
+      "element": "ADR-0048",
+      "message": "ADR-0048 has no **Date:** line"
+    },
+    {
+      "fingerprint": "be3f41fd4e16893c96c428851129aab958cb8868",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0048-review-research-assistant.md",
+      "element": "ADR-0048",
+      "message": "ADR-0048 has no **Status:** line"
+    },
+    {
+      "fingerprint": "d437b339786bdf274dda7c62d29fcfe19ce5f00e",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0049-shadow-libraries.md",
+      "element": "ADR-0049",
+      "message": "ADR-0049 has no **Date:** line"
+    },
+    {
+      "fingerprint": "c8b0551cc7fdfbf41494d8e1969d53be0ffd9763",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0049-shadow-libraries.md",
+      "element": "ADR-0049",
+      "message": "ADR-0049 has no **Status:** line"
+    },
+    {
+      "fingerprint": "d04ae021496a5c310784a0c134dd984fea4887ca",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0050-frontend-feature-boundaries.md",
+      "element": "ADR-0050",
+      "message": "ADR-0050 has no **Date:** line"
+    },
+    {
+      "fingerprint": "e76876c707333460e6a5bf3fc2d755335bd2f5ae",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0050-frontend-feature-boundaries.md",
+      "element": "ADR-0050",
+      "message": "ADR-0050 has no **Status:** line"
+    },
+    {
+      "fingerprint": "4bfdb9cb340d75c7fbfaeb466a204ac192a43372",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0051-use-cases-return-outcomes.md",
+      "element": "ADR-0051",
+      "message": "ADR-0051 has no **Date:** line"
+    },
+    {
+      "fingerprint": "47ebb11997f80e073009b29379b388fe5584d57d",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0051-use-cases-return-outcomes.md",
+      "element": "ADR-0051",
+      "message": "ADR-0051 has no **Status:** line"
+    },
+    {
+      "fingerprint": "ae565d9e02482891131a52c20ae5064efa807352",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0052-hub-pages-per-resource-type.md",
+      "element": "ADR-0052",
+      "message": "ADR-0052 has no **Date:** line"
+    },
+    {
+      "fingerprint": "80a5a2087dd1ffdebe8325dae81d2ba3ef31cda7",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0052-hub-pages-per-resource-type.md",
+      "element": "ADR-0052",
+      "message": "ADR-0052 has no **Status:** line"
+    },
+    {
+      "fingerprint": "3c2b68ca6de69eccf55d545e887725c9ea7d2b97",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0053-indexnow-daily-batch.md",
+      "element": "ADR-0053",
+      "message": "ADR-0053 has no **Date:** line"
+    },
+    {
+      "fingerprint": "bdabd78bb0c0fe066a5b2bf3d159f2e4af010aa1",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0053-indexnow-daily-batch.md",
+      "element": "ADR-0053",
+      "message": "ADR-0053 has no **Status:** line"
+    },
+    {
+      "fingerprint": "7ba753b58048ca2bebf85609574baa9490bb7c4a",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0054-embedding-model-in-the-cluster.md",
+      "element": "ADR-0054",
+      "message": "ADR-0054 has no **Date:** line"
+    },
+    {
+      "fingerprint": "bb8c0296857d26f07f588fb029c0b747624e78eb",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0054-embedding-model-in-the-cluster.md",
+      "element": "ADR-0054",
+      "message": "ADR-0054 has no **Status:** line"
+    },
+    {
+      "fingerprint": "a2d54ef99afa6f4a26be7593e63420f557a7ea06",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0055-directory-lists.md",
+      "element": "ADR-0055",
+      "message": "ADR-0055 has no **Date:** line"
+    },
+    {
+      "fingerprint": "cc36d6b792e00a10b9a170316daba5c9170edbca",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0055-directory-lists.md",
+      "element": "ADR-0055",
+      "message": "ADR-0055 has no **Status:** line"
+    },
+    {
+      "fingerprint": "6733917c780e14df0e08360597b88e033af852fc",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0056-directory-rating.md",
+      "element": "ADR-0056",
+      "message": "ADR-0056 has no **Date:** line"
+    },
+    {
+      "fingerprint": "bd97f67c19bccd632cd49506b6ed9af881b7f085",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0056-directory-rating.md",
+      "element": "ADR-0056",
+      "message": "ADR-0056 has no **Status:** line"
+    },
+    {
+      "fingerprint": "be71217acb8ca251c7efdc3fac1680abbc8e86fe",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0057-follow-list-links.md",
+      "element": "ADR-0057",
+      "message": "ADR-0057 has no **Date:** line"
+    },
+    {
+      "fingerprint": "e23fe2561799e738774c8eaefb64bbe4c28d7283",
+      "code": "ADR_INVALID",
+      "path": "architecture/decisions/ADR-0057-follow-list-links.md",
+      "element": "ADR-0057",
+      "message": "ADR-0057 has no **Status:** line"
+    },
+    {
+      "fingerprint": "44d3e597349cb1850f8906f8a356ce1bd44124cb",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "C-001",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved)"
+    },
+    {
+      "fingerprint": "850e3bde8f6c504e99215fc806fd3113865b25fd",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "C-002",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-021 Approved)"
+    },
+    {
+      "fingerprint": "65c79622a8a55893c67e0ec66a6bca2825bb1ce2",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "C-003",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved)"
+    },
+    {
+      "fingerprint": "8096f45de952ebe22f8c99ade3906e1159c4e52b",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "C-005",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved, UC-006 Approved, UC-007 Approved, UC-021 Approved)"
+    },
+    {
+      "fingerprint": "ebff074588380aa447c600b554c2d9e3612402af",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "C-006",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-029 Approved)"
+    },
+    {
+      "fingerprint": "ad16fc43525bdb94a3efe99279c051bbe6c84adc",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "C-007",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-016 Approved)"
+    },
+    {
+      "fingerprint": "ede9d4b8f138ca8991b2f1dfe11abb9c0314b3be",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "C-008",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-018 Approved, UC-030 Approved)"
+    },
+    {
+      "fingerprint": "fff4470d0fd8cac7739b37a9c8f41a538d89f1cc",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "C-015",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-001 Approved, UC-002 Approved)"
+    },
+    {
+      "fingerprint": "e1148dad88e6312311f64f763943d0295a2daf47",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "C-016",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-015 Approved)"
+    },
+    {
+      "fingerprint": "8776f32c4198c352b6e206eef6a0bf83ca28ab2f",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-001",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-001 Approved)"
+    },
+    {
+      "fingerprint": "cba7581dd13cb2c7aeb9d2c2b4cf8802f64c7159",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-002",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-001 Approved)"
+    },
+    {
+      "fingerprint": "2bd5cdfd5e04b602937fd30f34d2d26d16a12eb7",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-003",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-001 Approved)"
+    },
+    {
+      "fingerprint": "b259103216a748e046a33f8e084178f1b78afdf7",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-004",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-001 Approved)"
+    },
+    {
+      "fingerprint": "341f16fc8b403923f6d926d37261496dd08034e9",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-005",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-002 Approved)"
+    },
+    {
+      "fingerprint": "b4c321a895c1f0bfeedbeafdfb8776fc12662f5a",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-006",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-001 Approved)"
+    },
+    {
+      "fingerprint": "79305e06cc106c88d4590d577c92828d5223db40",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-007",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved)"
+    },
+    {
+      "fingerprint": "1b7111b91f30ff50e71d0492bf87c6944caef8ea",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-008",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved)"
+    },
+    {
+      "fingerprint": "ecee1c6cd1565f13084722fd558b091487b401e2",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-009",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved)"
+    },
+    {
+      "fingerprint": "6d88a0401c7981682725b83ba6c61d0209be07a8",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-010",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-007 Approved)"
+    },
+    {
+      "fingerprint": "0c8e9aa191346cba5f3215091e8035431cc584ac",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-011",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-006 Approved)"
+    },
+    {
+      "fingerprint": "eea4b924927fa6b42e4425a3a2ddc20aea17d920",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-012",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-008 Approved)"
+    },
+    {
+      "fingerprint": "35e8669191edeb6139bc6730b7fb6ca524adbe9a",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-013",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-008 Approved)"
+    },
+    {
+      "fingerprint": "8c76f7c098af5f9d345c52e08ac65af12479e6e5",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-014",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-009 Approved)"
+    },
+    {
+      "fingerprint": "74cb5e8a30fe884aec4f6a308a889efb3c6ac0a0",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-015",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-012 Approved)"
+    },
+    {
+      "fingerprint": "b6a5b36ba5c2605234f9f4b928623f1e5d70f576",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-016",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-011 Approved)"
+    },
+    {
+      "fingerprint": "359f688532b1c3edc635338686792121eb7ffa33",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-017",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-012 Approved)"
+    },
+    {
+      "fingerprint": "0ab96dbd820e6f83205d0110aa527d48b2f208a7",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-018",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-011 Approved)"
+    },
+    {
+      "fingerprint": "eddeb3820a6a0d3b0cfb94c0e466e872fef9fb7f",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-019",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-011 Approved)"
+    },
+    {
+      "fingerprint": "2e4614d6aa47096da02e87c70c4a6c5001240f8e",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-020",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-014 Approved)"
+    },
+    {
+      "fingerprint": "e6ad65c1cc1a5927e475f800908093b4f50b67da",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-021",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-015 Approved)"
+    },
+    {
+      "fingerprint": "53a3b8760dc0f2a896548a77d32c4a7cbec774be",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-022",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-016 Approved)"
+    },
+    {
+      "fingerprint": "1031eac0a532f731cbea8700c0da1005709a3c93",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-023",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-016 Approved)"
+    },
+    {
+      "fingerprint": "9f044bed0647e709154cae86a42f20593358ccec",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-024",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-017 Approved)"
+    },
+    {
+      "fingerprint": "8301d55a52cbfb0f7f261c656f323101df4ad30a",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-025",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-018 Approved)"
+    },
+    {
+      "fingerprint": "14481ada7e5459001331abddd0bf17683d70c7f1",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-026",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-019 Approved)"
+    },
+    {
+      "fingerprint": "f8315b36af6b83d4d064b2428da88da9f1c2963d",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-027",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-020 Approved)"
+    },
+    {
+      "fingerprint": "68051f7d485dc82957765955e60e9c50b9c99f47",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-028",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-021 Approved)"
+    },
+    {
+      "fingerprint": "1664ff591bba51e17edbd2c1cd83a65ee3159f37",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-029",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-022 Approved)"
+    },
+    {
+      "fingerprint": "4f7f95638d1e547c7f16575d3e9eaf87c7b23401",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-030",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-023 Approved)"
+    },
+    {
+      "fingerprint": "c38650ca0fab3ef42dbde7fefd6b00e854441090",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-031",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-024 Approved)"
+    },
+    {
+      "fingerprint": "5bc3377dc7daf1278147c83eae291a0cde9c94fc",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-032",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-024 Approved, UC-025 Approved)"
+    },
+    {
+      "fingerprint": "a598bcb80782714b5fe67c5f2d7cd8fceed856ca",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-033",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-026 Approved)"
+    },
+    {
+      "fingerprint": "48c9264b21612a44ccaffb37ea95cbcdf4c2bb94",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-034",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-027 Approved)"
+    },
+    {
+      "fingerprint": "c58b9b50f14d360d7ecf2802af768ad646228edf",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-035",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-010 Approved)"
+    },
+    {
+      "fingerprint": "7bceee267de3912f96d7fc0f5b8994df8b6cf1d2",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-036",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-004 Approved)"
+    },
+    {
+      "fingerprint": "997c59ce555ee67df456212d61e5f33117a5414c",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-037",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-003 Approved)"
+    },
+    {
+      "fingerprint": "e57c588f1b3e1b9e02ea8154e5470f8779e5696b",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-038",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-028 Approved)"
+    },
+    {
+      "fingerprint": "b00c65a235269bc3b955438adfe59f4ccf4c1652",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-039",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-013 Approved)"
+    },
+    {
+      "fingerprint": "2c37bf8c9bfb043f3d1c048dd3854a4cd5d239d6",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "FR-040",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-029 Approved)"
+    },
+    {
+      "fingerprint": "f9156bf1a6dfc7ae3ffb1a1cf70799ec7faa4bf5",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "NFR-001",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-001 Approved)"
+    },
+    {
+      "fingerprint": "8cbafb3cc4c3d37a2ebbce21a2683e346dcbebf4",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "NFR-002",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved)"
+    },
+    {
+      "fingerprint": "b89914b2e1ab29a01ee32045aa7a50147100d1a7",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "NFR-003",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-001 Approved)"
+    },
+    {
+      "fingerprint": "bf00260a5834b6f03d9a50c6615116bf41dd1b41",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "NFR-004",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved)"
+    },
+    {
+      "fingerprint": "637eb7559c66bf1b708052af1e58ee3acad80acb",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "NFR-005",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-007 Approved, UC-001 Approved)"
+    },
+    {
+      "fingerprint": "fee3b4f0036a13f6403707177acc54305724fdf3",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "NFR-006",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved)"
+    },
+    {
+      "fingerprint": "9a69ca7eac02b4159dbd89888239df1f2dcae5ee",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "NFR-007",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved)"
+    },
+    {
+      "fingerprint": "b2749f760a0448d27c827c30d8564d7cf5e2a5d2",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "NFR-008",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved)"
+    },
+    {
+      "fingerprint": "c58d1a186dfe71bd5803113a13efb8eb8a2d8611",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "NFR-010",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved, UC-006 Approved, UC-007 Approved)"
+    },
+    {
+      "fingerprint": "1854204abb8266ee5debed3694f80ec616ec8eda",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "NFR-012",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-013 Approved, UC-028 Approved, UC-024 Approved)"
+    },
+    {
+      "fingerprint": "47368b53330b7777e6caf4d808647fbcc23178ff",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "NFR-013",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved)"
+    },
+    {
+      "fingerprint": "5d8f08375aed092e7cd6dc529963f16d3992d851",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "NFR-014",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-021 Approved)"
+    },
+    {
+      "fingerprint": "6a693cee2bca43130249c40e4126c4dd50946193",
+      "code": "REQ_STATUS_DRIFT",
+      "path": "requirements.md",
+      "element": "NFR-015",
+      "message": "status 'Implemented' but its use cases make it 'Open' (UC-005 Approved, UC-030 Approved, UC-001 Approved)"
+    }
+  ]
+}

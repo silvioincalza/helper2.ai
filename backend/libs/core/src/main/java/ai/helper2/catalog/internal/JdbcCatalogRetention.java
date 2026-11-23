@@ -63,19 +63,6 @@ class JdbcCatalogRetention implements CatalogRetention {
   }
 
   @Override
-  public int deleteListIndexUpdatedBefore(Instant cutoff) {
-    int entries =
-        jdbc.sql("DELETE FROM awesome_list_entry WHERE updated_at < :cutoff")
-            .param("cutoff", Timestamp.from(cutoff))
-            .update();
-    int lists =
-        jdbc.sql("DELETE FROM awesome_list WHERE updated_at < :cutoff")
-            .param("cutoff", Timestamp.from(cutoff))
-            .update();
-    return entries + lists;
-  }
-
-  @Override
   public int deleteEventsEndedBefore(Instant cutoff) {
     return jdbc.sql(
             """

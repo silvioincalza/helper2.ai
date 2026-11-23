@@ -10,9 +10,12 @@ import { useRetry } from '@/hooks/useRetry';
 import { formatDuration } from '@/lib/duration';
 import { formatDate } from '@/lib/format';
 import { DiscoveryHostsPanel } from './DiscoveryHostsPanel';
+import { ListSeedsPanel } from './ListSeedsPanel';
 import { KnownTargetsPanel } from './KnownTargetsPanel';
 import { RuntimeSettingsPanel } from './RuntimeSettingsPanel';
+import { RuntimeSwitchesPanel } from './RuntimeSwitchesPanel';
 import { ShadowLibrariesPanel } from './ShadowLibrariesPanel';
+import { TableSkeleton } from '@/ui/Skeleton';
 
 function settingText(
   setting: ConfigSetting,
@@ -95,10 +98,16 @@ export default function SettingsPage() {
       <nav aria-label={t('admin.settings.contents')} className="h2-admin__contents">
         <ul>
           <li>
+            <a href="#sw-h">{t('admin.settings.switches.title')}</a>
+          </li>
+          <li>
             <a href="#rt-h">{t('admin.settings.runtime.title')}</a>
           </li>
           <li>
             <a href="#dh-h">{t('admin.settings.hosts.title')}</a>
+          </li>
+          <li>
+            <a href="#ls-h">{t('admin.settings.lists.title')}</a>
           </li>
           <li>
             <a href="#sl-h">{t('admin.settings.shadow.title')}</a>
@@ -113,6 +122,12 @@ export default function SettingsPage() {
           ))}
         </ul>
       </nav>
+      <RuntimeSwitchesPanel
+        switches={runtime.data?.switches ?? []}
+        loading={runtime.loading}
+        error={runtime.error}
+        reload={runtime.reload}
+      />
       <RuntimeSettingsPanel
         settings={runtimeSettings}
         loading={runtime.loading}
@@ -120,12 +135,11 @@ export default function SettingsPage() {
         reload={runtime.reload}
       />
       <DiscoveryHostsPanel />
+      <ListSeedsPanel />
       <ShadowLibrariesPanel />
       <KnownTargetsPanel />
       {config.loading ? (
-        <p role="status" className="muted">
-          {t('common.loading')}
-        </p>
+        <TableSkeleton rows={6} />
       ) : config.error !== undefined ? (
         <StatePanel
           tone="error"

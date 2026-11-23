@@ -2,18 +2,16 @@ import './adminText';
 import { useCallback, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import { ApiError } from '@/api/client';
 import type { KnownTargetEntry, KnownTargetKind } from '@/api/types';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { useApi } from '@/hooks/useApi';
 import { formatDate } from '@/lib/format';
+import { TableSkeleton } from '@/ui/Skeleton';
+import { useAdminAction } from './useAdminAction';
 
 const KINDS: KnownTargetKind[] = ['VENDOR', 'SERVICE', 'TOOL'];
 
-type Notice =
-  | { kind: 'added' | 'changed' | 'removed'; name: string }
-  | { kind: 'refused'; detail: string }
-  | { kind: 'failed' };
+type Done = { kind: 'added' | 'changed' | 'removed'; name: string };
 
 type Draft = { kind: KnownTargetKind; name: string; otherNames: string };
 
@@ -41,29 +39,10 @@ export function KnownTargetsPanel() {
   const [editing, setEditing] = useState<KnownTargetEntry | null>(null);
   const [edit, setEdit] = useState<Draft>(EMPTY);
   const [removing, setRemoving] = useState<KnownTargetEntry | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const { busy, notice, clearNotice, run } = useAdminAction<Done>(targets.reload);
   const focusOnMount = useCallback((el: HTMLElement | null) => el?.focus(), []);
 
   const all = targets.data?.targets ?? [];
-  const refused = (e: unknown): Notice =>
-    e instanceof ApiError && e.problem?.detail
-      ? { kind: 'refused', detail: e.problem.detail }
-      : { kind: 'failed' };
-
-  const run = async (action: () => Promise<Notice>, after: () => void) => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      setNotice(await action());
-      after();
-    } catch (err) {
-      setNotice(refused(err));
-    } finally {
-      setBusy(false);
-      targets.reload();
-    }
-  };
 
   const add = (e: FormEvent) => {
     e.preventDefault();
@@ -72,37 +51,31 @@ export function KnownTargetsPanel() {
       return;
     }
     setEmpty(false);
-    void run(
-      async () => {
-        const saved = await adminApi.addKnownTarget(bodyOf(adding));
-        return { kind: 'added', name: saved.name };
-      },
-      () => setAdding(EMPTY),
-    );
+    void run(async () => {
+      const saved = await adminApi.addKnownTarget(bodyOf(adding));
+      setAdding(EMPTY);
+      return { kind: 'added', name: saved.name };
+    });
   };
 
   const saveEdit = (e: FormEvent) => {
     e.preventDefault();
     if (!editing || edit.name.trim() === '') return;
-    void run(
-      async () => {
-        const saved = await adminApi.changeKnownTarget(editing.id, bodyOf(edit));
-        return { kind: 'changed', name: saved.name };
-      },
-      () => setEditing(null),
-    );
+    void run(async () => {
+      const saved = await adminApi.changeKnownTarget(editing.id, bodyOf(edit));
+      setEditing(null);
+      return { kind: 'changed', name: saved.name };
+    });
   };
 
   const confirmRemove = () => {
     if (!removing) return;
     const gone = removing;
-    void run(
-      async () => {
-        await adminApi.removeKnownTarget(gone.id);
-        return { kind: 'removed', name: gone.name };
-      },
-      () => setRemoving(null),
-    );
+    void run(async () => {
+      await adminApi.removeKnownTarget(gone.id);
+      setRemoving(null);
+      return { kind: 'removed', name: gone.name };
+    });
   };
 
   const ok = notice?.kind === 'added' || notice?.kind === 'changed' || notice?.kind === 'removed';
@@ -250,9 +223,7 @@ export function KnownTargetsPanel() {
         </div>
       )}
       {targets.loading && all.length === 0 ? (
-        <p role="status" className="muted">
-          {t('common.loading')}
-        </p>
+        <TableSkeleton rows={3} quiet />
       ) : targets.error !== undefined && all.length === 0 ? (
         <StatePanel
           tone="error"
@@ -312,7 +283,7 @@ export function KnownTargetsPanel() {
                                     otherNames: x.otherNames.join('\n'),
                                   });
                                   setRemoving(null);
-                                  setNotice(null);
+                                  clearNotice();
                                 }}
                               >
                                 {t('admin.settings.targets.edit')}
@@ -327,7 +298,7 @@ export function KnownTargetsPanel() {
                                 onClick={() => {
                                   setRemoving(x);
                                   setEditing(null);
-                                  setNotice(null);
+                                  clearNotice();
                                 }}
                               >
                                 {t('admin.settings.targets.remove')}

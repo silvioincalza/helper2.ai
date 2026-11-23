@@ -2,12 +2,17 @@ package ai.helper2.identity.usecase;
 
 import ai.helper2.identity.Users;
 import ai.helper2.identity.Users.Preferences;
-import ai.helper2.platform.ApiProblem;
-import ai.helper2.platform.ProblemType;
+import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 public class ChangePreferences {
+
+  public sealed interface Outcome {
+    record Changed(Preferences preferences) implements Outcome {}
+
+    record NoSuchUser() implements Outcome {}
+  }
 
   private final Users users;
 
@@ -15,11 +20,11 @@ public class ChangePreferences {
     this.users = users;
   }
 
-  public Preferences change(UUID userId, @Nullable Boolean radarMotion) {
-    var changed =
+  public Outcome change(UUID userId, @Nullable Boolean radarMotion) {
+    Optional<Preferences> changed =
         radarMotion == null
             ? users.preferences(userId)
             : users.changeRadarMotion(userId, radarMotion);
-    return changed.orElseThrow(() -> new ApiProblem(ProblemType.SIGN_IN_REQUIRED, null));
+    return changed.<Outcome>map(Outcome.Changed::new).orElseGet(Outcome.NoSuchUser::new);
   }
 }

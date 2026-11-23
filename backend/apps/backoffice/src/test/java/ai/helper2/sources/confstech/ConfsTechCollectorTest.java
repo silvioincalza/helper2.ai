@@ -7,10 +7,14 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.search.SourceFailure;
 import ai.helper2.search.SourceHit;
+import ai.helper2.shared.Audience;
+import ai.helper2.shared.CanonicalUrl;
+import ai.helper2.shared.DateFact;
 import ai.helper2.shared.DatePrecision;
 import ai.helper2.shared.EventFormat;
 import ai.helper2.shared.EventKind;
 import ai.helper2.shared.ResourceType;
+import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.SourceFixtures;
 import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
@@ -19,7 +23,9 @@ import ai.helper2.testing.TestHttp;
 import io.micrometer.observation.ObservationRegistry;
 import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +63,7 @@ class ConfsTechCollectorTest {
 
   ConfsTechCollector collector() {
     return new ConfsTechCollector(
-        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO),
+        new SourceSettings(true, server.baseUrl(), "", Duration.ofSeconds(2), Duration.ZERO, null),
         TestHttp.restClientBuilder(Duration.ofSeconds(2), ObservationRegistry.NOOP),
         TestHttp.restClientBuilderWithoutRedirects(Duration.ofSeconds(2), ObservationRegistry.NOOP),
         SourceFixtures.CLOCK,
@@ -94,6 +100,46 @@ class ConfsTechCollectorTest {
             "LLM Online Day 2026",
             "ML Systems Summit 2026");
     SourceHit zurich = batch.getHits().getFirst();
+    assertThat(zurich)
+        .isEqualTo(
+            new SourceHit(
+                "confs-tech",
+                "https://agenticdays.com",
+                URI.create("https://www.agenticdays.com"),
+                CanonicalUrl.of("https://agenticdays.com"),
+                null,
+                "Agentic Engineering Days Zurich 2026",
+                null,
+                ValueOrigin.SOURCE_PROVIDED,
+                ResourceType.EVENT,
+                Audience.BUILD_WITH_AI,
+                null,
+                Set.of(),
+                Set.of("conference"),
+                null,
+                null,
+                Set.of(),
+                null,
+                DateFact.unknown(),
+                DateFact.unknown(),
+                List.of(),
+                SourceFixtures.CLOCK.instant(),
+                0,
+                new DateFact(
+                    Instant.parse("2026-11-20T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "confs-tech",
+                    List.of(),
+                    false),
+                new DateFact(
+                    Instant.parse("2026-11-20T00:00:00Z"),
+                    DatePrecision.DAY,
+                    "confs-tech",
+                    List.of(),
+                    false),
+                "Zurich, Switzerland",
+                EventKind.CONFERENCE,
+                EventFormat.IN_PERSON));
     assertThat(zurich.getSourceId()).isEqualTo(ConfsTechCollector.ID);
     assertThat(zurich.getType()).isEqualTo(ResourceType.EVENT);
     assertThat(zurich.getEventKind()).isEqualTo(EventKind.CONFERENCE);

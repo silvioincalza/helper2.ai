@@ -4,6 +4,7 @@ import ai.helper2.platform.resilience.Resilience;
 import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CollectedBatch;
 import ai.helper2.scout.Collector;
+import ai.helper2.scout.DiscoveredLists;
 import ai.helper2.scout.DiscoveryHostStore;
 import ai.helper2.scout.ScoutCursor;
 import ai.helper2.search.ShadowLibraries;
@@ -55,20 +56,30 @@ public class DiscoveryCollector implements Collector {
       Page page, JsonNode result, int rank, @Nullable String content, Map<String, Object> facts) {
 
     @SuppressWarnings("unchecked")
+    Found toReview() {
+      Map<String, Object> discovery =
+          new LinkedHashMap<>((Map<String, Object>) facts.get("discovery"));
+      discovery.put("shape", Shape.LIST_TO_REVIEW.name());
+      Map<String, Object> waiting = new LinkedHashMap<>(facts);
+      waiting.put("discovery", discovery);
+      return new Found(
+          new Page(Shape.LIST_TO_REVIEW, page.url(), page.title()), result, rank, content, waiting);
+    }
+
+    @SuppressWarnings("unchecked")
     Set<String> tags() {
       return Set.copyOf((List<String>) facts.get("categories"));
     }
   }
 
-  private final RestClient http;
   private final Clock clock;
-  private final Resilience resilience;
   private final RunInterval interval;
   private final Search search;
   private final DiscoveryCategory category;
   private final List<DiscoveryCategory> all;
-  private final ScoutLiveWebCredits credits;
+  private final ScoutLiveWebSearch liveWeb;
   private final DiscoveryHostStore hosts;
+  private final DiscoveredLists discoveredLists;
   private final ShadowLibraries shadowLibraries;
   private final SourceDescriptor descriptor;
 
@@ -82,9 +93,9 @@ public class DiscoveryCollector implements Collector {
       List<DiscoveryCategory> all,
       ScoutLiveWebCredits credits,
       DiscoveryHostStore hosts,
+      DiscoveredLists discoveredLists,
       ShadowLibraries shadowLibraries) {
     this.clock = clock;
-    this.resilience = resilience;
     boolean enabled = settings.enabled() && category.enabled();
     if (enabled) {
       resilience.require(POLICY);
@@ -93,10 +104,17 @@ public class DiscoveryCollector implements Collector {
     this.search = search;
     this.category = category;
     this.all = List.copyOf(all);
-    this.credits = credits;
     this.hosts = hosts;
+    this.discoveredLists = discoveredLists;
     this.shadowLibraries = shadowLibraries;
-    this.http = HttpClients.client(builder, settings);
+    this.liveWeb =
+        new ScoutLiveWebSearch(
+            HttpClients.client(builder, settings),
+            clock,
+            resilience,
+            credits,
+            POLICY,
+            search.searchDepth());
     this.descriptor = CollectorDescriptors.discovery(settings, category);
   }
 
@@ -132,20 +150,18 @@ public class DiscoveryCollector implements Collector {
     if (!open && !interval.isDue(checkpoint, startedAt)) {
       return CollectedBatch.skipped(notDueReason(checkpoint, startedAt));
     }
-    if (credits.capReached()) {
-      return CollectedBatch.deferred(
-          "Daily live web credit cap of the Scout reached ("
-              + credits.dailyCap()
-              + " credits); next try tomorrow");
+    if (liveWeb.capReached()) {
+      return liveWeb.deferred();
     }
     DiscoveryPages pages = new DiscoveryPages(hosts.lists());
     Searched searched =
         searchAll(
             pages,
-            LiveWebNewsCollector.startDate(checkpoint),
+            QueryProgress.startDate(checkpoint),
             startedAt,
             QueryProgress.done(cursor.getResumeCursor()));
-    Collection<Found> found = searched.found().values();
+    Collection<Found> found =
+        searched.found().values().stream().map(this::readAsList).filter(Objects::nonNull).toList();
     return new CollectedBatch(
         found.stream()
             .filter(f -> f.page().shape() == Shape.LIST)
@@ -156,6 +172,18 @@ public class DiscoveryCollector implements Collector {
         searched.complete() ? startedAt.toString() : null,
         false,
         found.stream().filter(f -> f.page().shape() != Shape.LIST).map(this::candidate).toList());
+  }
+
+  // UC-030 BR-003: a list page of a directory host whose lists are read is added as a list to
+  // read; a page the rules of an added web page refuse waits for review.
+  private @Nullable Found readAsList(Found found) {
+    if (found.page().shape() != Shape.LIST_TO_READ) {
+      return found;
+    }
+    return switch (discoveredLists.add(found.page().url(), category.sourceId())) {
+      case ADDED, ALREADY_ADDED -> null;
+      case WAITS_FOR_REVIEW -> found.toReview();
+    };
   }
 
   private String notDueReason(@Nullable String checkpoint, Instant now) {
@@ -174,12 +202,12 @@ public class DiscoveryCollector implements Collector {
       if (done.contains(query)) {
         continue;
       }
-      if (credits.capReached()) {
+      if (liveWeb.capReached()) {
         log.info("{}: credit cap reached, the pass stays open", category.sourceId());
         break;
       }
       try {
-        sort(pages, searchFor(query, since), query, searchedAt)
+        sort(pages, liveWeb.search(requestBody(query, since, pages)), query, searchedAt)
             .forEach(f -> found.putIfAbsent(f.page().url().getValue(), f));
         done.add(query);
       } catch (RuntimeException e) {
@@ -194,20 +222,7 @@ public class DiscoveryCollector implements Collector {
     return new Searched(found, done, done.containsAll(category.queries()));
   }
 
-  private JsonNode searchFor(String query, @Nullable String since) {
-    Map<String, Object> body = requestBody(query, since);
-    return resilience.call(
-        POLICY,
-        () ->
-            credits.countedAttempt(
-                search.searchDepth(),
-                () ->
-                    HttpClients.getJson(
-                        () -> http.post().uri("/search").body(body).retrieve().body(String.class),
-                        clock)));
-  }
-
-  Map<String, Object> requestBody(String query, @Nullable String since) {
+  Map<String, Object> requestBody(String query, @Nullable String since, DiscoveryPages pages) {
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("query", query);
     body.put("topic", "general");
@@ -219,8 +234,11 @@ public class DiscoveryCollector implements Collector {
     body.put("include_published_date", true);
     body.put("include_favicon", true);
     body.put("include_usage", true);
-    if (!category.excludeDomains().isEmpty()) {
-      body.put("exclude_domains", category.excludeDomains());
+    // UC-030 BR-003: the search finds the list pages of a directory host whose switch is on.
+    List<String> excluded =
+        category.excludeDomains().stream().filter(host -> !pages.readsListsOf(host)).toList();
+    if (!excluded.isEmpty()) {
+      body.put("exclude_domains", excluded);
     }
     if (since != null) {
       body.put("start_date", since);
@@ -257,7 +275,7 @@ public class DiscoveryCollector implements Collector {
       return null;
     }
     Page page = pages.classify(url, title);
-    if (page == null || (page.shape() == Shape.LIST && !category.indexLists())) {
+    if (page == null || (page.shape().isList() && !category.indexLists())) {
       return null;
     }
     Map<String, List<String>> matched =
@@ -322,7 +340,7 @@ public class DiscoveryCollector implements Collector {
         f.page().title(),
         evidence(f.content()),
         String.join(", ", tags),
-        f.page().shape() == Shape.ARTICLE ? ResourceType.ARTICLE : category.type(),
+        f.page().shape() == Shape.PRODUCT ? category.type() : ResourceType.ARTICLE,
         tags,
         f.facts());
   }

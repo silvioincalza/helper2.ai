@@ -9,8 +9,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ai.helper2.platform.ProblemType;
 import com.jayway.jsonpath.JsonPath;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -115,9 +117,16 @@ class KnownTargetProposalApiIT extends ApiTestBase {
             .getContentAsString();
 
     ContractValidator.assertMatches("ReviewItemPage", listed);
-    List<String> details = JsonPath.read(listed, "$.items[?(@.id=='" + item + "')].details");
+    List<Map<String, Object>> details =
+        JsonPath.read(listed, "$.items[?(@.id=='" + item + "')].details");
     assertThat(details).hasSize(1);
-    assertThat((String) JsonPath.read(details.getFirst(), "$.name")).isEqualTo(name);
+    assertThat(details.getFirst())
+        .containsEntry("shape", "KNOWN_TARGET_PROPOSAL")
+        .containsEntry("name", name)
+        .containsEntry("kind", "VENDOR")
+        .containsEntry("rule", "OWNER")
+        .containsEntry("edited", false)
+        .doesNotContainKey("key");
   }
 
   @Test
@@ -214,10 +223,9 @@ class KnownTargetProposalApiIT extends ApiTestBase {
             .getResponse()
             .getContentAsString();
     ContractValidator.assertMatches("ReviewItem", changed);
-    String details = JsonPath.read(changed, "$.details");
-    assertThat((String) JsonPath.read(details, "$.name")).isEqualTo(shown);
-    assertThat((String) JsonPath.read(details, "$.key")).isEqualTo(name);
-    assertThat((Boolean) JsonPath.read(details, "$.edited")).isTrue();
+    assertThat((String) JsonPath.read(changed, "$.details.name")).isEqualTo(shown);
+    assertThat((String) JsonPath.read(changed, "$.details.kind")).isEqualTo("SERVICE");
+    assertThat((Boolean) JsonPath.read(changed, "$.details.edited")).isTrue();
 
     decide(item, "ACCEPTED").andExpect(status().isOk());
 
@@ -306,5 +314,80 @@ class KnownTargetProposalApiIT extends ApiTestBase {
         .andExpect(jsonPath("$.items[0].outcome").value("NOT_ALLOWED"));
 
     assertThat(statusOf(item)).isEqualTo("OPEN");
+  }
+
+  private List<String> audit() {
+    return jdbc.sql(
+            "SELECT action || ' ' || outcome FROM admin_audit WHERE admin_id = :a ORDER BY at, id")
+        .param("a", adminId)
+        .query(String.class)
+        .list();
+  }
+
+  @Test
+  void aProposalWhoseNameMeansATargetOfAnotherKindIsTheDuplicateProblemAndItsRefusalIsAudited()
+      throws Exception {
+    UUID item = proposal();
+    mvc.perform(
+            post("/api/v1/admin/known-targets")
+                .with(admin)
+                .with(csrf().asHeader())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"kind\":\"SERVICE\",\"name\":\"Other %s\",\"otherNames\":[\"%s\"]}"
+                        .formatted(tag, name)))
+        .andExpect(status().isCreated());
+
+    decide(item, "ACCEPTED")
+        .andExpect(
+            problem(
+                ProblemType.DUPLICATE,
+                name + " already means Other " + tag + ". Reject the proposal."));
+
+    assertThat(statusOf(item)).isEqualTo("OPEN");
+    assertThat(targets()).isEmpty();
+    assertThat(decisions()).isZero();
+    assertThat(audit()).containsExactly("ADD_KNOWN_TARGET ADDED", "EDIT_KNOWN_TARGET TAKEN");
+  }
+
+  @Test
+  void aProposalWhoseNameCannotBeAKnownTargetIsTheInvalidRequestProblemAndItsRefusalIsAudited()
+      throws Exception {
+    UUID item = proposal();
+    jdbc.sql(
+            "UPDATE review_item SET details = jsonb_set(details, '{name}', '\"x\"') WHERE id = :id")
+        .param("id", item)
+        .update();
+
+    decide(item, "ACCEPTED")
+        .andExpect(
+            problem(ProblemType.INVALID_REQUEST, "The proposed name cannot be a known target."));
+
+    assertThat(statusOf(item)).isEqualTo("OPEN");
+    assertThat(targets()).isEmpty();
+    assertThat(decisions()).isZero();
+    assertThat(audit()).containsExactly("ADD_KNOWN_TARGET INVALID");
+  }
+
+  @Test
+  void aProposalAcceptedIntoAFullListIsTheDuplicateProblemAndItsRefusalIsAudited()
+      throws Exception {
+    UUID item = proposal();
+    jdbc.sql(
+            """
+            INSERT INTO known_target (id, kind, name, added_by)
+            SELECT gen_random_uuid(), 'VENDOR', 'f' || g || ' ' || :tag, 'filler'
+            FROM generate_series(1, 1000) g
+            """)
+        .param("tag", tag)
+        .update();
+
+    decide(item, "ACCEPTED")
+        .andExpect(problem(ProblemType.DUPLICATE, "The list holds at most 1000 known targets."));
+
+    assertThat(statusOf(item)).isEqualTo("OPEN");
+    assertThat(targets()).isEmpty();
+    assertThat(decisions()).isZero();
+    assertThat(audit()).containsExactly("ADD_KNOWN_TARGET FULL");
   }
 }

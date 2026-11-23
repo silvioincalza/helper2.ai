@@ -40,3 +40,12 @@ export function creditsOf(s: SourceInfo): Credits | null {
     ? { kind: 'uncapped', used: c.usedToday }
     : { kind: 'capped', used: c.usedToday, cap: c.dailyCap };
 }
+
+export type DotTone = 'answering' | 'warn' | 'failed' | 'idle';
+
+export function toneOf(s: SourceInfo): DotTone {
+  if (s.lastOutcome === 'FAILED') return 'failed';
+  if (s.lastOutcome === 'TIMED_OUT' || s.lastOutcome === 'RATE_LIMITED') return 'warn';
+  if (s.mode === 'CURATED' || !s.lastOutcome || s.lastOutcome === 'SKIPPED') return 'idle';
+  return 'answering';
+}

@@ -1,5 +1,6 @@
 package ai.helper2.api;
 
+import static ai.helper2.testing.Eventually.eventually;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -49,7 +50,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 @Import({SetupGuidesLeftApiIT.FakeLlm.class, SetupGuidesLeftApiIT.FakeDocs.class})
 class SetupGuidesLeftApiIT extends ApiTestBase {
 
-  static final AtomicInteger MODEL_CALLS = new AtomicInteger();
+  static final AtomicInteger GUIDES_WRITTEN = new AtomicInteger();
   static final String QUOTE = "Install acme-x from npm with this one command:";
   static final String README = "\n\n" + QUOTE + "\n\n```bash\nnpm install acme-x\n```\n";
   static final String GUIDE =
@@ -68,7 +69,9 @@ class SetupGuidesLeftApiIT extends ApiTestBase {
       return new ChatModel() {
         @Override
         public ChatResponse call(Prompt prompt) {
-          MODEL_CALLS.incrementAndGet();
+          if (prompt.getContents().contains(QUOTE)) {
+            GUIDES_WRITTEN.incrementAndGet();
+          }
           return new ChatResponse(List.of(new Generation(new AssistantMessage(GUIDE))));
         }
       };
@@ -96,8 +99,8 @@ class SetupGuidesLeftApiIT extends ApiTestBase {
   @Autowired CircuitBreakerRegistry circuits;
 
   @BeforeEach
-  void noModelCallsYetAndTheCacheCircuitIsClosed() {
-    MODEL_CALLS.set(0);
+  void noGuideWrittenYetAndTheCacheCircuitIsClosed() {
+    GUIDES_WRITTEN.set(0);
     circuits.circuitBreaker("db-cache").reset();
   }
 
@@ -121,7 +124,7 @@ class SetupGuidesLeftApiIT extends ApiTestBase {
     assertThat(JsonPath.<Integer>read(me(ip), "$.limits.setupGuides.remaining")).isEqualTo(1);
 
     assertThat(JsonPath.<String>read(guide(first, ip), "$.status")).isEqualTo("OK");
-    assertThat(MODEL_CALLS).as("the written guide comes from the cache").hasValue(1);
+    assertThat(GUIDES_WRITTEN).as("the written guide comes from the cache").hasValue(1);
     assertThat(JsonPath.<Integer>read(me(ip), "$.limits.setupGuides.remaining")).isEqualTo(1);
 
     assertThat(JsonPath.<String>read(guide(second, ip), "$.status")).isEqualTo("OK");

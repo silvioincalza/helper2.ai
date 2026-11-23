@@ -42,9 +42,12 @@ class AppRolesGrantsIT {
               Map.entry("public_app_setting", R_INSERT_DELETE),
               Map.entry("guide_similar_question", RW),
               Map.entry("ai_cache", RW),
-              Map.entry("shedlock", RW_NO_DELETE),
+              Map.entry("public_app_lock", RW_NO_DELETE),
               Map.entry("awesome_list", R),
+              Map.entry("removed_resource", R),
               Map.entry("awesome_list_entry", R),
+              Map.entry("directory_list_entry", R),
+              Map.entry("directory_rating", R),
               Map.entry("job_marker", R),
               Map.entry("enrichment_run", R),
               Map.entry("evidence", R),
@@ -63,11 +66,15 @@ class AppRolesGrantsIT {
               Map.entry("candidate_decision", NONE),
               Map.entry("discovery_host", NONE),
               Map.entry("known_target", NONE),
+              Map.entry("list_seed", NONE),
+              Map.entry("list_seed_last_read", NONE),
               Map.entry("known_target_name", NONE),
               Map.entry("enrichment_queue_control", NONE),
               Map.entry("review_research", NONE),
               Map.entry("review_research_step", NONE),
+              Map.entry("resource_embedding_refused", NONE),
               Map.entry("scout_run", NONE),
+              Map.entry("shedlock", NONE),
               Map.entry("scout_schedule", NONE),
               Map.entry("source_cursor", NONE)));
 
@@ -150,7 +157,7 @@ class AppRolesGrantsIT {
   }
 
   @Test
-  void aNewTableIsReadByBothAndWrittenByTheBackOfficeOnly() throws SQLException {
+  void aNewTableIsOnlyForTheBackOffice() throws SQLException {
     var postgres = TestcontainersConfiguration.POSTGRES;
     try (Connection connection =
         new DriverManagerDataSource(
@@ -160,7 +167,7 @@ class AppRolesGrantsIT {
       try {
         JdbcClient tx = JdbcClient.create(new SingleConnectionDataSource(connection, true));
         tx.sql("CREATE TABLE grants_probe (id int)").update();
-        assertThat(privileges(tx, "h2_public", "grants_probe")).isEqualTo(R);
+        assertThat(privileges(tx, "h2_public", "grants_probe")).isEqualTo(NONE);
         assertThat(privileges(tx, "h2_backoffice", "grants_probe")).isEqualTo(RW);
       } finally {
         connection.rollback();

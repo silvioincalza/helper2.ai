@@ -114,7 +114,13 @@ class ResiliencePoliciesConfigIT {
 
   @Test
   void modelCallsHaveACircuitOnlyAndGuideQuestionsABulkhead() {
-    for (String policy : List.of("llm-chat", "llm-chat-guide", "llm-embed", "llm-embed-index")) {
+    for (String policy :
+        List.of(
+            "llm-chat",
+            "llm-chat-guide-fast",
+            "llm-chat-guide-reasoning",
+            "llm-embed",
+            "llm-embed-index")) {
       assertThat(circuits.find(policy)).as(policy).isPresent();
       assertThat(bulkheads.find(policy))
           .as(policy + " is limited per question, not per call")
@@ -128,13 +134,21 @@ class ResiliencePoliciesConfigIT {
             chat.getIgnoreExceptionPredicate()
                 .test(new IllegalStateException("not the provider's")))
         .isTrue();
-    var guideCalls = circuits.find("llm-chat-guide").orElseThrow().getCircuitBreakerConfig();
-    assertThat(guideCalls.getSlowCallDurationThreshold()).isEqualTo(Duration.ofSeconds(35));
-    assertThat(
-            guideCalls
-                .getIgnoreExceptionPredicate()
-                .test(new IllegalStateException("not the provider's")))
-        .isTrue();
+    for (String policy : List.of("llm-chat-guide-fast", "llm-chat-guide-reasoning")) {
+      var guideCalls = circuits.find(policy).orElseThrow().getCircuitBreakerConfig();
+      assertThat(guideCalls.getSlowCallDurationThreshold())
+          .as(policy)
+          .isEqualTo(Duration.ofSeconds(35));
+      assertThat(
+              guideCalls
+                  .getIgnoreExceptionPredicate()
+                  .test(new IllegalStateException("not the provider's")))
+          .as(policy)
+          .isTrue();
+    }
+    assertThat(circuits.find("llm-chat-guide"))
+        .as("one circuit per guide model, none shared")
+        .isEmpty();
     assertThat(chat.getSlowCallDurationThreshold())
         .as("translation and the setup guide do not open on slow guide calls")
         .isGreaterThan(Duration.ofSeconds(40));

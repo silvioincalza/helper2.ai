@@ -24,6 +24,14 @@ public record LlmSettings(
     return fastModel.isEmpty() ? reasoningModel : fastModel;
   }
 
+  public String model(ModelTier tier) {
+    return tier == ModelTier.FAST ? fast() : reasoningModel;
+  }
+
+  public boolean has(ModelTier tier) {
+    return !model(tier).isEmpty();
+  }
+
   public String provider() {
     return providerLabel.isEmpty() ? chatProvider : providerLabel;
   }

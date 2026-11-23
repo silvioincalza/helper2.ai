@@ -109,7 +109,7 @@ class ResearchToolsConfiguration {
   }
 
   @Bean
-  CheckUrlTool checkUrlTool(ShadowLibraries shadowLibraries) {
-    return new CheckUrlTool(shadowLibraries);
+  CheckUrlTool checkUrlTool(ShadowLibraries shadowLibraries, ResearchProperties research) {
+    return new CheckUrlTool(shadowLibraries, research.checkUrlDeadline());
   }
 }

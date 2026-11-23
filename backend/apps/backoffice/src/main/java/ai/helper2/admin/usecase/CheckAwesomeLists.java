@@ -36,16 +36,26 @@ public final class CheckAwesomeLists {
         keptCurated++;
         continue;
       }
-      Optional<Boolean> list = reader.isAwesomeList(s.repoFullName());
+      Optional<Boolean> list = reader.isAwesomeList(s.repoFullName(), s.topics());
       if (list.isEmpty()) {
         unavailable++;
       } else if (list.get()) {
-        curate.set(s.resourceId(), "type", ResourceType.AWESOME_LIST.name(), by);
-        set++;
+        set += setAsAwesomeList(s, by) ? 1 : 0;
       } else {
         notAList++;
       }
     }
     return new Result(checked, set, notAList, keptCurated, unavailable);
+  }
+
+  private boolean setAsAwesomeList(Suspect suspect, String by) {
+    CurateField.Outcome outcome =
+        curate.set(suspect.resourceId(), "type", ResourceType.AWESOME_LIST.name(), by);
+    return switch (outcome) {
+      case CurateField.Outcome.Curated curated -> true;
+      case CurateField.Outcome.NoSuchResource gone -> false;
+      case CurateField.Outcome.ValueRefused refused ->
+          throw new IllegalStateException("the catalog refused the type: " + outcome);
+    };
   }
 }

@@ -245,6 +245,9 @@ body {
   width: 14px;
   height: 14px;
 }
+.h2-footer__browse {
+  margin-top: var(--space-3);
+}
 .h2-app .h2-footer__line {
   margin: var(--space-4) auto 0;
   font-size: var(--text-15);
@@ -352,7 +355,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .h2-app *,
+  .h2-app *:not(.h2-skel),
   .h2-app *::before,
   .h2-app *::after {
     animation: none !important;

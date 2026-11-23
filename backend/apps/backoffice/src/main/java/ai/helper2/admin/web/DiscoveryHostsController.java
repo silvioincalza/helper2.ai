@@ -1,6 +1,7 @@
 package ai.helper2.admin.web;
 
 import ai.helper2.api.generated.DiscoveryHostsApi;
+import ai.helper2.api.generated.model.DirectoryListReadingDto;
 import ai.helper2.api.generated.model.DiscoveryHostAddDto;
 import ai.helper2.api.generated.model.DiscoveryHostEntryDto;
 import ai.helper2.api.generated.model.DiscoveryHostKindDto;
@@ -17,7 +18,6 @@ import ai.helper2.shared.UtcTimes;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,7 +42,7 @@ class DiscoveryHostsController implements DiscoveryHostsApi {
   @Override
   public ResponseEntity<DiscoveryHostEntryDto> addDiscoveryHost(DiscoveryHostAddDto body) {
     HostKind kind = HostKind.valueOf(body.getKind().getValue());
-    return switch (hosts.add(adminId(), body.getHost(), kind, body.getReason())) {
+    return switch (hosts.add(Admins.id(), body.getHost(), kind, body.getReason())) {
       case ManageDiscoveryHosts.Added.Done d ->
           ResponseEntity.status(HttpStatus.CREATED).body(dto(d.getHost()));
       case ManageDiscoveryHosts.Added.Invalid i -> throw invalid(i.getProblem());
@@ -60,7 +60,6 @@ class DiscoveryHostsController implements DiscoveryHostsApi {
                   + ManageDiscoveryHosts.MAX_HOSTS
                   + " hosts. Remove one first.");
       case ManageDiscoveryHosts.Added.BadReason r -> throw badReason();
-      default -> throw new IllegalStateException("unknown outcome");
     };
   }
 
@@ -68,12 +67,27 @@ class DiscoveryHostsController implements DiscoveryHostsApi {
   public ResponseEntity<Void> removeDiscoveryHost(
       String host, @Nullable DiscoveryHostRemoveDto body) {
     String reason = body == null ? null : body.getReason();
-    return switch (hosts.remove(adminId(), host, reason)) {
+    return switch (hosts.remove(Admins.id(), host, reason)) {
       case ManageDiscoveryHosts.Removed.Done d -> ResponseEntity.noContent().build();
       case ManageDiscoveryHosts.Removed.NotFound n ->
           throw new NotFoundException(host + " is in no list.");
       case ManageDiscoveryHosts.Removed.BadReason r -> throw badReason();
-      default -> throw new IllegalStateException("unknown outcome");
+    };
+  }
+
+  @Override
+  public ResponseEntity<DiscoveryHostEntryDto> readDirectoryLists(
+      String host, DirectoryListReadingDto body) {
+    return switch (hosts.readLists(Admins.id(), host, body.getRead(), body.getReason())) {
+      case ManageDiscoveryHosts.ListReading.Done d -> ResponseEntity.ok(dto(d.getHost()));
+      case ManageDiscoveryHosts.ListReading.NotADirectory n ->
+          throw new ApiProblem(
+              ProblemType.INVALID_REQUEST,
+              n.getHost().getHost()
+                  + " is a writing host: only a directory host has lists to read.");
+      case ManageDiscoveryHosts.ListReading.NotFound n ->
+          throw new NotFoundException(host + " is in no list.");
+      case ManageDiscoveryHosts.ListReading.BadReason r -> throw badReason();
     };
   }
 
@@ -101,14 +115,11 @@ class DiscoveryHostsController implements DiscoveryHostsApi {
     return kind == HostKind.WRITING ? "writing" : "directory";
   }
 
-  private static String adminId() {
-    return SecurityContextHolder.getContext().getAuthentication().getName();
-  }
-
   private static DiscoveryHostEntryDto dto(DiscoveryHost h) {
     return new DiscoveryHostEntryDto(
             h.getHost(),
             DiscoveryHostKindDto.fromValue(h.getKind().name()),
+            h.getReadsLists(),
             h.getAddedBy(),
             UtcTimes.odt(h.getAddedAt()))
         .reason(h.getReason());

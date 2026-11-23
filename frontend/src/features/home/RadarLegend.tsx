@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { SourceInfo } from '@/api/types';
-import { bounds } from './radarRotation';
+import { bounds } from '@/lib/radarRotation';
 
 export function RadarLegend({ sources }: { sources: SourceInfo[] }) {
   const { t } = useTranslation();

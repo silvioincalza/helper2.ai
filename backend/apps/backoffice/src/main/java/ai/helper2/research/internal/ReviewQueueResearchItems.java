@@ -5,7 +5,9 @@ import ai.helper2.research.ResearchItems;
 import ai.helper2.research.ResearchRuns;
 import ai.helper2.research.ResearchSubject;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -38,14 +40,27 @@ class ReviewQueueResearchItems implements ResearchItems {
   }
 
   @Override
-  public List<UUID> openWithoutActiveRun(int limit) {
+  public List<UUID> openNotResearched(int limit) {
     Set<UUID> active = runs.activeItems();
+    Set<UUID> done = runs.doneItems();
     return Stream.of(ReviewQueue.Kind.RESOURCE_CANDIDATE, ReviewQueue.Kind.COURSE_CANDIDATE)
         .flatMap(k -> queue.openItems(k).stream())
         .map(ReviewQueue.Item::id)
-        .filter(id -> !active.contains(id))
+        .filter(id -> !active.contains(id) && !done.contains(id))
         .limit(limit)
         .toList();
+  }
+
+  @Override
+  public int openResearchedDone() {
+    Set<UUID> active = runs.activeItems();
+    Set<UUID> done = runs.doneItems();
+    return (int)
+        RESEARCHABLE.stream()
+            .flatMap(k -> queue.openItems(k).stream())
+            .map(ReviewQueue.Item::id)
+            .filter(id -> done.contains(id) && !active.contains(id))
+            .count();
   }
 
   ResearchSubject subject(ReviewQueue.Item item) {
@@ -73,7 +88,22 @@ class ReviewQueueResearchItems implements ResearchItems {
         text(d, "title", title),
         text(d, "type", "OTHER"),
         List.copyOf(tags),
-        d == null || !d.path("snippet").isString() ? null : d.path("snippet").asString());
+        d == null || !d.path("snippet").isString() ? null : d.path("snippet").asString(),
+        confirmed(d));
+  }
+
+  private static Map<String, String> confirmed(@Nullable JsonNode d) {
+    Map<String, String> values = new LinkedHashMap<>();
+    if (d != null && d.path("confirmed").isObject()) {
+      d.path("confirmed")
+          .properties()
+          .forEach(e -> {
+            if (e.getValue().isValueNode() && !e.getValue().isNull()) {
+              values.put(e.getKey(), e.getValue().asString(""));
+            }
+          });
+    }
+    return values;
   }
 
   private static String text(@Nullable JsonNode d, String field, String fallback) {

@@ -114,6 +114,69 @@ class AwesomeCrawlTest {
     return AwesomeCrawl.crawl(lists, github, limits, clock, new AwesomeMetrics(meters));
   }
 
+  List<AwesomeCrawl.Read> crawlAdded(List<String> added, String... seeds) {
+    List<ListRepo> lists = new ArrayList<>();
+    for (String seed : seeds) {
+      lists.add(new ListRepo(seed, github.facts.get(seed)));
+    }
+    AwesomeCrawl.Limits limits = limits(2, 30);
+    Clock clock = Clock.fixed(Instant.parse("2026-11-06T10:00:00Z"), ZoneOffset.UTC);
+    return AwesomeCrawl.crawl(
+        added,
+        lists,
+        github,
+        limits,
+        AwesomeCrawl.budget(limits, clock),
+        new AwesomeMetrics(meters));
+  }
+
+  @Test
+  void anAddedListIsReadBeforeTheSeedsWhateverItsStarsAndItsWords() {
+    github.list("seed/awesome-llm").list("small/links", "a/tool");
+    github.facts.put("small/links", facts("small/links", "My bookmarks", false, false, 2));
+
+    List<AwesomeCrawl.Read> read = crawlAdded(List.of("small/links"), "seed/awesome-llm");
+
+    assertThat(read)
+        .extracting(r -> r.list().fullName(), AwesomeCrawl.Read::depth)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple("small/links", 0),
+            org.assertj.core.groups.Tuple.tuple("seed/awesome-llm", 0));
+  }
+
+  @Test
+  void anAddedListThatIsAlsoASeedIsReadOnce() {
+    github.list("seed/awesome-llm");
+
+    List<AwesomeCrawl.Read> read = crawlAdded(List.of("Seed/Awesome-LLM"), "seed/awesome-llm");
+
+    assertThat(read).hasSize(1);
+    assertThat(github.calls).containsExactly("readme seed/awesome-llm");
+  }
+
+  @Test
+  void anAddedListThatIsArchivedOrGoneIsSkippedAndTheOthersAreRead() {
+    github.list("seed/awesome-llm").list("old/links");
+    github.facts.put("old/links", facts("old/links", "Links", true, false, 900));
+
+    List<AwesomeCrawl.Read> read =
+        crawlAdded(List.of("old/links", "gone/links"), "seed/awesome-llm");
+
+    assertThat(read).extracting(r -> r.list().fullName()).containsExactly("seed/awesome-llm");
+    assertThat(skips("added-archived")).isEqualTo(1);
+    assertThat(skips("added-unavailable")).isEqualTo(1);
+  }
+
+  @Test
+  void anAddedListThatWasRenamedIsReadUnderItsNewName() {
+    github.list("new/links", "a/tool");
+    github.facts.put("old/links", github.facts.get("new/links"));
+
+    List<AwesomeCrawl.Read> read = crawlAdded(List.of("old/links"));
+
+    assertThat(read).extracting(r -> r.list().fullName()).containsExactly("new/links");
+  }
+
   List<AwesomeCrawl.Read> crawl(AwesomeCrawl.Limits limits, String... seeds) {
     return crawl(limits, Clock.fixed(Instant.parse("2026-11-06T10:00:00Z"), ZoneOffset.UTC), seeds);
   }

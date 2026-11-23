@@ -190,8 +190,8 @@ describe('CopyButton', () => {
   it('copies its text and says so on the button', async () => {
     const user = userEvent.setup();
     const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
-    render(<CopyButton text="npx server" label="Copy prompt" />);
-    await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
+    render(<CopyButton text="npx server" />);
+    await user.click(screen.getByRole('button', { name: 'Copy' }));
     expect(writeText).toHaveBeenCalledWith('npx server');
     expect(screen.getByRole('button', { name: 'Copied' })).toBeInTheDocument();
   });

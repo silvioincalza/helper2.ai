@@ -31,7 +31,7 @@ src/api        schema.ts and admin-schema.ts (generated), types.ts (aliases), cl
 src/lib        searchState.ts (URL <-> state, guide refinement, RESULTS_PATH, resourcePath: every resource link encodes the id), selection.ts (selected result, picks), breakpoints.ts, countdown.ts, locateQuote.ts, format.ts, bookmarks.ts (localStorage, try/catch)
 src/context    MeContext (GET /me), BookmarksContext (local, merged once to server on sign-in), MonetisationContext (GET /site)
 src/hooks      useApi (keyed fetch with AbortController, recent-answers cache, ADR 0039), useGuideStream (guide SSE for the URL's question), useRetry (Try again keeps focus on a heading), useTitle
-src/styles     tokens.css (from docs/design/system/tokens.json, checked by tokens.test.ts), app.css (the shared controls), shell.css (header, footer, page column)
+src/styles     tokens.css (from design/tokens.json, checked by tokens.test.ts), app.css (the shared controls), shell.css (header, footer, page column)
 src/i18n       index.ts + locales/en.json, en.legal.json (Privacy and Terms, loaded by their pages),
                en.admin.json (the back office's copy, never in the public bundle)
 src/test       fixtures, fetch mock, render helper, axe helper, queries

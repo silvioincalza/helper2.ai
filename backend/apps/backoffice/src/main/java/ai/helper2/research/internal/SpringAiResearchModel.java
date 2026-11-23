@@ -23,6 +23,8 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -30,42 +32,52 @@ import tools.jackson.databind.json.JsonMapper;
 
 class SpringAiResearchModel implements ResearchModel {
 
-  static final String PROMPT_VERSION = "research-v3";
+  private static final String STEP = "research";
+
+  static final String ANSWER_SCHEMA =
+      new BeanOutputConverter<>(ResearchAnswer.class).getJsonSchema();
 
   private final ChatModel chat;
-  private final String model;
+  private final BudgetedChat.Call call;
   private final int maxTokens;
   private final BudgetedChat calls;
   private final JsonMapper json;
+  private final DailyBudget budget;
+  private final boolean nativeSchema;
 
   SpringAiResearchModel(
       ChatModel chat,
       String model,
+      String instructions,
       int maxTokens,
       DailyBudget budget,
       ModelCallMetrics metrics,
       Resilience resilience,
-      JsonMapper json) {
+      JsonMapper json,
+      boolean nativeSchema) {
     this.chat = chat;
-    this.model = model;
+    this.call = new BudgetedChat.Call(STEP, model, ModelCallMetrics.promptVersion(instructions));
     this.maxTokens = maxTokens;
     this.calls = new BudgetedChat(LlmPolicies.CHAT, budget, metrics, resilience);
     this.json = json;
+    this.budget = budget;
+    this.nativeSchema = nativeSchema;
+  }
+
+  @Override
+  public int callsLeftToday() {
+    return budget.remaining();
   }
 
   @Override
   public String model() {
-    return model;
+    return call.model();
   }
 
   @Override
   public Turn next(List<ResearchModel.Message> conversation, List<ResearchTool> tools) {
     Prompt prompt =
-        new Prompt(
-            messages(conversation),
-            CallOptions.of(model, maxTokens)
-                .toolCallbacks(tools.stream().map(SpringAiResearchModel::callback).toList())
-                .build());
+        new Prompt(messages(conversation), options(call.model(), maxTokens, tools, nativeSchema));
     ChatResponse response = call(prompt);
     if (response == null || response.getResult() == null) {
       return new Turn("", List.of(), null, "empty answer", 0, 0);
@@ -106,12 +118,20 @@ class SpringAiResearchModel implements ResearchModel {
     }
   }
 
+  static OpenAiChatOptions options(
+      String model, int maxTokens, List<ResearchTool> tools, boolean nativeSchema) {
+    OpenAiChatOptions.Builder options =
+        CallOptions.of(model, maxTokens)
+            .toolCallbacks(tools.stream().map(SpringAiResearchModel::callback).toList());
+    if (tools.isEmpty() && nativeSchema) {
+      options.outputSchema(ANSWER_SCHEMA);
+    }
+    return options.build();
+  }
+
   private @Nullable ChatResponse call(Prompt prompt) {
     try {
-      return calls.response(
-          new BudgetedChat.Call("research", model, PROMPT_VERSION),
-          () -> new Unavailable("today's research model calls are used up"),
-          () -> chat.call(prompt));
+      return calls.response(call, BudgetSpent::new, () -> chat.call(prompt));
     } catch (Unavailable e) {
       throw e;
     } catch (CallRefused e) {

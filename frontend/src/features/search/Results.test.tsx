@@ -400,6 +400,35 @@ describe('results: one column, a row opens the resource page', () => {
     expect(list).not.toHaveAttribute('data-ai-models');
   });
 
+  it('the result list never names the model of the query translation as the writer of its descriptions', async () => {
+    const ai = makeCard({
+      id: 'dddddddd-dddd-5ddd-8ddd-dddddddddddd',
+      title: 'Listed',
+      description: 'An AI-written summary.',
+      descriptionOrigin: 'AI_SUMMARY',
+    });
+    mockApi({
+      'GET /search': () =>
+        makeSearch({
+          results: [ai],
+          total: 1,
+          sources: [makeStatus()],
+          aiContent: {
+            aiGenerated: true,
+            provider: 'nebius',
+            models: ['nvidia/nemotron-nano', 'nvidia/nemotron-3-super'],
+            fields: ['results[0].description'],
+            policy: '/mission',
+          },
+        }),
+    });
+    renderApp('/search?q=server+postgres');
+    await screen.findByText('Listed');
+    const list = rowOf('Listed').closest('[data-ai-provider]');
+    expect(list).toHaveAttribute('data-ai-provider', 'nebius');
+    expect(document.querySelector('[data-ai-models]')).toBeNull();
+  });
+
   it('a response with no marker puts no provider on the page', async () => {
     mockApi({
       'GET /search': () => makeSearch({ results: [A], total: 1, sources: [makeStatus()] }),

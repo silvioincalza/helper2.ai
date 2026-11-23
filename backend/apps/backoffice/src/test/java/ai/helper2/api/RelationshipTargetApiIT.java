@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import ai.helper2.catalog.enrichment.EnrichmentResults;
 import ai.helper2.catalog.internal.ReviewEvidenceFixture;
+import ai.helper2.platform.ProblemType;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -212,6 +213,65 @@ class RelationshipTargetApiIT extends ApiTestBase {
     assertThat(audit()).isEmpty();
   }
 
+  @Test
+  void aRefusedChangeAnswersTheSameProblemForEveryReason() throws Exception {
+    String invalid = "Invalid request parameters.";
+    String add = "{\"newResource\":{\"title\":\"%s\",\"url\":\"%s\",\"type\":\"%s\"}}";
+
+    change(fixture.relationshipItem, "{}").andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    change(fixture.relationshipItem, "{\"title\":\" \"}")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    change(fixture.relationshipItem, "{\"title\":\"Lang\\u0007Chain\"}")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    change(fixture.relationshipItem, add.formatted(" ", NEW_URL, "LIBRARY"))
+        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    change(fixture.relationshipItem, add.formatted("LangChain", "http://x.example", "LIBRARY"))
+        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    change(fixture.relationshipItem, add.formatted("LangChain", NEW_URL, "NEWS"))
+        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    change(fixture.relationshipItem, "{\"resourceId\":\"" + UUID.randomUUID() + "\"}")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    change(fixture.relationshipItem, "{\"resourceId\":\"" + fixture.resource + "\"}")
+        .andExpect(problem(ProblemType.INVALID_REQUEST, invalid));
+    change(UUID.randomUUID(), "{\"title\":\"LangChain\"}")
+        .andExpect(problem(ProblemType.NOT_FOUND, "Review item not found."));
+    change(fixture.validationItem, add.formatted("LangChain", NEW_URL, "LIBRARY"))
+        .andExpect(
+            problem(ProblemType.NOT_APPLICABLE, "The item is not a relationship candidate."));
+
+    assertThat(audit()).isEmpty();
+  }
+
+  @Test
+  void aTargetAnotherRelationshipOfTheResourceHasIsADuplicateAndTheAddedResourceIsUndone()
+      throws Exception {
+    jdbc.sql(
+            """
+            INSERT INTO relationship (id, from_resource_id, to_title, kind, verification, origin)
+            VALUES (gen_random_uuid(), :from, 'LangChain twin', 'INTEGRATES_WITH', 'UNVERIFIED', 'SELF_DECLARED')
+            """)
+        .param("from", fixture.resource)
+        .update();
+
+    change(
+            fixture.relationshipItem,
+            "{\"newResource\":{\"title\":\"LangChain twin\",\"url\":\""
+                + NEW_URL
+                + "\",\"type\":\"LIBRARY\"}}")
+        .andExpect(
+            problem(
+                ProblemType.DUPLICATE,
+                "The resource already has a relationship with this target."));
+
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM resource WHERE canonical_url = :url")
+                .param("url", NEW_CANONICAL)
+                .query(Long.class)
+                .single())
+        .isZero();
+    assertThat(audit()).isEmpty();
+  }
+
   void reEnrich() {
     enrichment.record(
         new EnrichmentResults.Run(
@@ -223,7 +283,8 @@ class RelationshipTargetApiIT extends ApiTestBase {
             Instant.now(),
             "VALIDATED",
             List.of(),
-            null),
+            null,
+            false),
         new EnrichmentResults.Checked(List.of(), List.of(), List.of()));
   }
 
@@ -267,8 +328,7 @@ class RelationshipTargetApiIT extends ApiTestBase {
         .param("id", fixture.relationshipItem)
         .update();
     change(fixture.relationshipItem, "{\"resourceId\":\"" + other + "\"}")
-        .andExpect(status().isConflict())
-        .andExpect(jsonPath("$.code").value("already-decided"));
+        .andExpect(problem(ProblemType.ALREADY_DECIDED, "The item is no longer open."));
     assertThat(relationship("to_resource_id")).isNull();
   }
 

@@ -1,86 +1,48 @@
 import './adminText';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { DraftedExample as Draft, ReviewItem } from '@/api/types';
+import type {
+  DraftedExample as Draft,
+  ReviewCandidateDetails,
+  ReviewItem,
+  ReviewKnownTargetProposalDetails,
+} from '@/api/types';
+import { aiMark } from '@/lib/aiMark';
 import { safeHref } from '@/lib/format';
-import { CATEGORY_NOTICES, CategoryNotice } from '@/features/sources/DiscoveryCategories';
+import { CATEGORY_NOTICES, CategoryNotice } from '@/ui/DiscoveryCategories';
 import { CandidateEditForm } from './CandidateEditForm';
+import { Excerpt } from './Excerpt';
 import { KnownTargetProposalForm } from './KnownTargetProposalForm';
 
 export function ItemDetails({ item, onChanged }: { item: ReviewItem; onChanged?: () => void }) {
-  if (item.kind === 'EXAMPLE_CANDIDATE')
-    return <DraftedExample draft={item.draft} details={item.details} />;
-  if (item.kind === 'RESOURCE_CANDIDATE' || item.kind === 'COURSE_CANDIDATE')
-    return (
-      <ResourceCandidate
-        details={item.details}
-        categories={item.categories ?? []}
-        edit={
-          item.status === 'OPEN' && onChanged ? { itemId: item.id, onSaved: onChanged } : undefined
-        }
-      />
-    );
-  if (item.kind === 'KNOWN_TARGET_CANDIDATE')
-    return (
-      <KnownTargetProposal
-        details={item.details}
-        edit={
-          item.status === 'OPEN' && onChanged ? { itemId: item.id, onSaved: onChanged } : undefined
-        }
-      />
-    );
-  return item.details ? <p className="h2-admin__details">{item.details}</p> : null;
-}
-
-interface Proposal {
-  name: string;
-  kind: 'VENDOR' | 'SERVICE' | 'TOOL';
-  rule: 'OWNER';
-  count: number;
-  examples: string[];
-  otherNames: string[];
-  edited: boolean;
-}
-
-function parseProposal(details: string | null | undefined): Proposal | null {
+  const details = item.details;
+  const edit =
+    item.status === 'OPEN' && onChanged ? { itemId: item.id, onSaved: onChanged } : undefined;
+  if (item.draft) return <DraftedExample draft={item.draft} />;
   if (!details) return null;
-  try {
-    const d = JSON.parse(details) as Record<string, unknown>;
-    return typeof d.name === 'string' &&
-      (d.kind === 'VENDOR' || d.kind === 'SERVICE' || d.kind === 'TOOL') &&
-      d.rule === 'OWNER' &&
-      typeof d.count === 'number'
-      ? {
-          name: d.name,
-          kind: d.kind,
-          rule: d.rule,
-          count: d.count,
-          examples: Array.isArray(d.examples)
-            ? d.examples
-                .map((e: unknown) =>
-                  e && typeof e === 'object' ? (e as { title?: unknown }).title : undefined,
-                )
-                .filter((x): x is string => typeof x === 'string')
-            : [],
-          otherNames: textsOf(d.otherNames),
-          edited: d.edited === true,
-        }
-      : null;
-  } catch {
-    return null;
-  }
+  if (details.shape === 'CANDIDATE')
+    return <ResourceCandidate candidate={details} categories={item.categories ?? []} edit={edit} />;
+  if (details.shape === 'KNOWN_TARGET_PROPOSAL')
+    return <KnownTargetProposal proposal={details} edit={edit} />;
+  return <p className="h2-admin__details">{details.text}</p>;
+}
+
+export function candidateOf(item: ReviewItem): ReviewCandidateDetails | null {
+  return item.details?.shape === 'CANDIDATE' ? item.details : null;
+}
+
+interface Edit {
+  itemId: string;
+  onSaved: () => void;
 }
 
 function KnownTargetProposal({
-  details,
+  proposal,
   edit,
 }: {
-  details: string | null | undefined;
-  edit?: { itemId: string; onSaved: () => void } | undefined;
+  proposal: ReviewKnownTargetProposalDetails;
+  edit?: Edit | undefined;
 }) {
   const { t } = useTranslation();
-  const proposal = parseProposal(details);
-  if (!proposal) return details ? <p className="h2-admin__details">{details}</p> : null;
   return (
     <dl className="h2-admin__details h2-admin__draft">
       <dt>{t('admin.review.proposal.name')}</dt>
@@ -108,7 +70,7 @@ function KnownTargetProposal({
       {edit && (
         <dd>
           <KnownTargetProposalForm
-            key={details ?? ''}
+            key={[proposal.kind, proposal.name, ...proposal.otherNames].join('\n')}
             itemId={edit.itemId}
             kind={proposal.kind}
             name={proposal.name}
@@ -121,21 +83,10 @@ function KnownTargetProposal({
   );
 }
 
-function DraftedExample({
-  draft,
-  details,
-}: {
-  draft: Draft | null | undefined;
-  details: string | null | undefined;
-}) {
+function DraftedExample({ draft }: { draft: Draft }) {
   const { t } = useTranslation();
-  if (!draft) return details ? <p className="h2-admin__details">{details}</p> : null;
   return (
-    <dl
-      className="h2-admin__details h2-admin__draft"
-      data-ai-generated="true"
-      data-ai-model={draft.model}
-    >
+    <dl className="h2-admin__details h2-admin__draft" {...aiMark(draft.model)}>
       <dt>{t('admin.review.drafted.label')}</dt>
       <dd>{draft.label}</dd>
       <dt>{t('admin.review.drafted.query')}</dt>
@@ -150,17 +101,15 @@ function DraftedExample({
 }
 
 function ResourceCandidate({
-  details,
+  candidate,
   categories,
   edit,
 }: {
-  details: string | null | undefined;
+  candidate: ReviewCandidateDetails;
   categories: string[];
-  edit?: { itemId: string; onSaved: () => void } | undefined;
+  edit?: Edit | undefined;
 }) {
   const { t } = useTranslation();
-  const candidate = parseCandidate(details);
-  if (!candidate) return details ? <p className="h2-admin__details">{details}</p> : null;
   const notices = categories.filter((c) => c in CATEGORY_NOTICES);
   return (
     <dl className="h2-admin__details h2-admin__draft">
@@ -209,9 +158,9 @@ function ResourceCandidate({
       {edit && (
         <dd>
           <CandidateEditForm
-            key={details ?? ''}
+            key={candidate.revision}
             itemId={edit.itemId}
-            details={details ?? null}
+            revision={candidate.revision}
             title={candidate.title}
             type={candidate.type}
             tags={candidate.tags}
@@ -223,54 +172,6 @@ function ResourceCandidate({
   );
 }
 
-export interface Candidate {
-  url: string;
-  title: string;
-  type: string;
-  tags: string[];
-  snippet: string | undefined;
-  foundBy: string[];
-  edited: string[];
-}
-
-const textsOf = (v: unknown): string[] =>
-  Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
-
-function findersOf(d: { foundBy?: unknown; sourceId?: unknown }): string[] {
-  const ids = Array.isArray(d.foundBy)
-    ? d.foundBy
-        .map((f: unknown) =>
-          f && typeof f === 'object' ? (f as { sourceId?: unknown }).sourceId : undefined,
-        )
-        .filter((x): x is string => typeof x === 'string')
-    : [];
-  if (ids.length > 0) return ids;
-  return typeof d.sourceId === 'string' ? [d.sourceId] : [];
-}
-
-export function parseCandidate(details: string | null | undefined): Candidate | null {
-  if (!details) return null;
-  try {
-    const d = JSON.parse(details) as Partial<Record<keyof Candidate | 'sourceId', unknown>>;
-    return typeof d.url === 'string' &&
-      d.url.startsWith('https://') &&
-      typeof d.title === 'string' &&
-      typeof d.type === 'string'
-      ? {
-          url: d.url,
-          title: d.title,
-          type: d.type,
-          tags: textsOf(d.tags),
-          snippet: typeof d.snippet === 'string' ? d.snippet : undefined,
-          foundBy: findersOf(d),
-          edited: textsOf((d as { edited?: unknown }).edited),
-        }
-      : null;
-  } catch {
-    return null;
-  }
-}
-
 function plainText(markdown: string): string {
   return markdown
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
@@ -278,25 +179,4 @@ function plainText(markdown: string): string {
     .replace(/(\*\*|__|`)/g, '')
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-const EXCERPT_SHORT = 280;
-
-function Excerpt({ text }: { text: string }) {
-  const { t } = useTranslation();
-  const [all, setAll] = useState(false);
-  if (text.length <= EXCERPT_SHORT) return <span className="h2-admin__excerpt">{text}</span>;
-  return (
-    <span className="h2-admin__excerpt">
-      {all ? text : `${text.slice(0, EXCERPT_SHORT).trimEnd()}…`}{' '}
-      <button
-        type="button"
-        className="btn-text"
-        aria-expanded={all}
-        onClick={() => setAll((v) => !v)}
-      >
-        {t(all ? 'admin.review.candidate.less' : 'admin.review.candidate.more')}
-      </button>
-    </span>
-  );
 }

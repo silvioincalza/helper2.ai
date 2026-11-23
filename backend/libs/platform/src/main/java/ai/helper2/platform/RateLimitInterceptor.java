@@ -35,6 +35,7 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
           Map.entry("getResourceSetup", "setup"),
           Map.entry("listRecent", "recent"),
           Map.entry("listHomeExamples", "recent"),
+          Map.entry("listHub", "recent"),
           Map.entry("getPolicy", "policy"),
           Map.entry("getSite", "site"),
           Map.entry("listCategories", "categories"));

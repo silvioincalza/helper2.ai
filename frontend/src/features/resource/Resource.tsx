@@ -1,28 +1,57 @@
-import type { MouseEvent, ReactNode } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import type { ReactNode } from 'react';
+import { useLocation } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import type { ResourceDetail } from '@/api/types';
 import { OriginLabel } from '@/ui/Badges';
-import { BookmarkButton } from '@/features/saved/BookmarkButton';
-import { canGuide } from '@/features/guide/GuideMe';
+import { BookmarkButton } from '@/ui/BookmarkButton';
+import { canGuide } from '@/features/setup/GuideMe';
 import { Icon } from '@/ui/Icon';
 import { SetupGuidePanel } from '@/features/setup/SetupGuide';
-import { DateTimeline } from '@/features/resource/DateTimeline';
+import { DateTimeline } from './DateTimeline';
 import { ProofQuote } from '@/ui/ProofQuote';
 import { QuotedFromLink } from '@/ui/QuotedFromLink';
 import { aiMark, aiSource, isAiOrigin } from '@/lib/aiMark';
 import { displayHost } from '@/lib/format';
+import { pickReasonState } from '@/lib/selection';
 import { CategoryLinks } from './CategoryLinks';
-import { fromResults, type CardHead, type PickForPage } from '../search/fromResults';
-import { ResultDate } from '../search/ResultDate';
+import { fromResults, type CardHead, type PickForPage } from '@/lib/fromResults';
+import { ResultDate } from '@/ui/ResultDate';
 import { AtAGlance } from './AtAGlance';
 import './resource.css';
 import { OpenButton } from './OpenButton';
 import { AiLabel } from '@/ui/AiLabel';
+import { BackLink } from '@/ui/BackLink';
+import { Loading, Skeleton, SkeletonBar, SkeletonRows } from '@/ui/Skeleton';
 
 export function cardHeadFor(id: string, state: unknown): CardHead | undefined {
   const { card } = fromResults(state);
   return card?.id === id ? card : undefined;
+}
+
+export function ResourceSkeleton({ withHead = false }: { withHead?: boolean }) {
+  return (
+    <Loading className="h2-res__loading">
+      <Skeleton>
+        {withHead && (
+          <>
+            <SkeletonBar size="meta" width="short" />
+            <SkeletonBar size="heading" width="wide" />
+            <SkeletonBar size="body" width="half" />
+          </>
+        )}
+        <SkeletonRows
+          rows={3}
+          bars={[
+            { size: 'title', width: 'short' },
+            { size: 'body', width: 'full' },
+            { size: 'body', width: 'full' },
+            { size: 'body', width: 'half' },
+          ]}
+          roomy
+        />
+      </Skeleton>
+    </Loading>
+  );
 }
 
 export function Resource({
@@ -34,12 +63,11 @@ export function Resource({
   detail: ResourceDetail | undefined;
   children?: ReactNode;
 }) {
-  const { t } = useTranslation();
   const { from, pick } = fromResults(useLocation().state);
   const card = detail?.card;
   return (
     <div className="h2-app h2-res">
-      <BackLink from={from} />
+      <BackToList from={from} />
       <ResourceHead card={card ?? head} date={card && <ResultDate card={card} separator />}>
         {card && canGuide(card) && <SetupGuidePanel id={card.id} title={card.title} />}
       </ResourceHead>
@@ -48,9 +76,7 @@ export function Resource({
           {children}
         </ResourceBody>
       ) : (
-        <p role="status" aria-busy="true" className="page-loading">
-          {t('common.loading')}
-        </p>
+        <ResourceSkeleton />
       )}
     </div>
   );
@@ -163,38 +189,29 @@ function backLabel(from: string | undefined): string {
   return BACK_LABEL.find(([page]) => page.test(path))?.[1] ?? 'resource.backToResults';
 }
 
-function BackLink({ from }: { from: string | undefined }) {
+function BackToList({ from }: { from: string | undefined }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { key } = useLocation();
-  const onClick = (e: MouseEvent<HTMLAnchorElement>) => {
-    const plain = e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
-    if (!from || key === 'default' || !plain) return;
-    e.preventDefault();
-    void navigate(-1);
-  };
   return (
     <p className="h2-res__back">
-      <Link to={from ?? '/'} onClick={onClick}>
-        <span aria-hidden="true">← </span>
+      <BackLink from={from} fallback="/">
         {t(backLabel(from))}
-      </Link>
+      </BackLink>
     </p>
   );
 }
 
 function WhyPicked({ pick }: { pick: PickForPage }) {
   const { t } = useTranslation();
-  const removed = pick.reasonCheck === 'REMOVED' || !pick.reason;
+  const reason = pickReasonState(pick);
   return (
     <section className="h2-res__sec h2-res__pick" aria-labelledby="h2-res-why">
       <h2 id="h2-res-why" className="h2-res__h">
         {t('results.whyPicked')}{' '}
         <span className="h2-res__rank">{t('results.pick', { rank: pick.rank })}</span>
       </h2>
-      {removed ? (
+      {reason !== 'shown' ? (
         <p className="h2-res__note">
-          {t(pick.reasonCheck === 'REMOVED' ? 'guide.reasonRemoved' : 'results.noReason')}
+          {t(reason === 'removed' ? 'guide.reasonRemoved' : 'results.noReason')}
         </p>
       ) : (
         <>

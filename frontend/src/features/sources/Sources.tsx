@@ -4,19 +4,19 @@ import { useTranslation } from 'react-i18next';
 import { sourceFamilyValues, sourceModeValues } from '@/api/schema';
 import type { SourceInfo, SourceMode } from '@/api/types';
 import { ExternalLink } from '@/ui/ExternalLink';
-import { TermCommand } from '@/features/home/TermList';
-import { toneOf, type DotTone } from '@/features/home/radarLayout';
-import { bounds } from '@/features/home/radarRotation';
+import { TermCommand } from '@/ui/TermCommand';
+import { bounds } from '@/lib/radarRotation';
 import { ScrollBox } from '@/ui/ScrollBox';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
+import { TableSkeleton } from '@/ui/Skeleton';
 import { api } from '@/api/client';
 import { useApi } from '@/hooks/useApi';
 import { useRefreshOnReturn } from '@/hooks/useRefreshOnReturn';
 import { useRetry } from '@/hooks/useRetry';
 import { clockTime, formatDate } from '@/lib/format';
-import { creditsOf, responseTimeShown } from '@/lib/sourceHealth';
+import { creditsOf, responseTimeShown, toneOf, type DotTone } from '@/lib/sourceHealth';
 import { newThisWeek, radarSources } from '@/lib/sourceCounts';
-import { CategoryNotice, categoryOf } from './DiscoveryCategories';
+import { CategoryNotice, categoryOf } from '@/ui/DiscoveryCategories';
 import { ResponseTimeValue, SourceNotes, WebCreditsValue } from './SourceHealth';
 import '@/ui/term.css';
 import './sources.css';
@@ -82,12 +82,7 @@ export function Sources() {
           </h2>
           <TermCommand command="helper2 sources --all" total={list ? all.length : null} />
         </div>
-        {q.loading && !list && (
-          <p role="status" className="h2-term__state">
-            <span aria-hidden="true">$ helper2 sources --all · </span>
-            {t('common.loading')}
-          </p>
-        )}
+        {q.loading && !list && <TableSkeleton rows={8} />}
         {!q.loading && q.error !== undefined && !list && (
           <StatePanel
             tone="error"

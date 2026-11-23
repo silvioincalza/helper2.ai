@@ -4,6 +4,7 @@ import ai.helper2.platform.resilience.Resilience
 import ai.helper2.platform.resilience.Resilience4jPolicies
 import ai.helper2.search.CachedHits
 import ai.helper2.search.Freshness
+import ai.helper2.search.ListedNames
 import ai.helper2.search.MergedResult
 import ai.helper2.search.NOW
 import ai.helper2.search.NoticeCode
@@ -13,6 +14,7 @@ import ai.helper2.search.SearchFilters
 import ai.helper2.search.SearchRequest
 import ai.helper2.search.SearchSource
 import ai.helper2.search.ServedFrom
+import ai.helper2.search.ShadowLibraries
 import ai.helper2.search.SkipReason
 import ai.helper2.search.SourceDescriptor
 import ai.helper2.search.SourceFailure
@@ -25,6 +27,10 @@ import ai.helper2.search.hit
 import ai.helper2.shared.ResourceId
 import ai.helper2.shared.SourceMode
 import ai.helper2.testing.MovableClock
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import io.github.resilience4j.bulkhead.BulkheadConfig
 import io.github.resilience4j.bulkhead.BulkheadRegistry
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
@@ -42,6 +48,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import org.slf4j.LoggerFactory
 
 class SearchResourcesTest {
 
@@ -83,6 +90,7 @@ class SearchResourcesTest {
     cache: SearchCache = MapCache(),
     observer: ResultObserver = ResultObserver { emptyMap() },
     resilience: Resilience = Resilience.NONE,
+    shadowLibraries: ShadowLibraries = ShadowLibraries.of(),
   ) =
     SearchResources(
       sources,
@@ -92,6 +100,7 @@ class SearchResourcesTest {
       clock,
       staleFor = Duration.ofHours(24),
       resilience = resilience,
+      shadowLibraries = shadowLibraries,
     )
 
   private fun policies(vararg ids: String, concurrent: Int = 10): Resilience {
@@ -306,6 +315,29 @@ class SearchResourcesTest {
   }
 
   @Test
+  fun `an unavailable source is logged with its id and its reason`() {
+    val logger = LoggerFactory.getLogger(SourceFanOut::class.java) as Logger
+    val appender = ListAppender<ILoggingEvent>().also { it.start() }
+    logger.addAppender(appender)
+    try {
+      val semantic =
+        FakeSource(descriptor("helper2-semantic")) {
+          throw SourceFailure.Unavailable("embedding call failed: HTTP 503")
+        }
+      service(listOf(semantic)).search(req("private notes about my client"))
+    } finally {
+      logger.detachAppender(appender)
+    }
+    val logged = appender.list.map { it.formattedMessage }
+    val warned = appender.list.filter { it.level == Level.WARN }.map { it.formattedMessage }
+    assertEquals(
+      listOf("source helper2-semantic unavailable: embedding call failed: HTTP 503"),
+      warned,
+    )
+    assertTrue(logged.none { it.contains("private notes") })
+  }
+
+  @Test
   fun `stale entries beyond the stale window are not served`() {
     var fail = false
     val gh =
@@ -394,6 +426,34 @@ class SearchResourcesTest {
 
     assertEquals(listOf("https://github.com/a/kept"), out.results.map { it.canonicalUrl.value })
     assertEquals(1, out.statuses.single().resultCount)
+  }
+
+  @Test
+  fun `a hit on a shadow library is no result, whichever source returns it`() {
+    val web = ok("web", "https://de.z-lib.fm/book/1", "https://example.com/rag")
+    val index = catalog("index", SourceMode.CURATED, "https://libgen.rs/book/2")
+
+    val out =
+      service(listOf(web, index), shadowLibraries = ShadowLibraries.of("z-lib", "libgen"))
+        .search(req())
+
+    assertEquals(listOf("https://example.com/rag"), out.results.map { it.canonicalUrl.value })
+  }
+
+  @Test
+  fun `a stored hit on a name listed after it was stored is no result`() {
+    val libraries = ListedNames()
+    val web = ok("web", "https://de.z-lib.fm/book/1", "https://example.com/rag")
+    val svc = service(listOf(web), shadowLibraries = libraries.libraries)
+    svc.search(req())
+    libraries.add("z-lib")
+    clock.now = clock.now.plusSeconds(30)
+
+    val out = svc.search(req())
+
+    assertEquals(1, web.calls.get())
+    assertEquals(ServedFrom.CACHE, out.statuses.single().servedFrom)
+    assertEquals(listOf("https://example.com/rag"), out.results.map { it.canonicalUrl.value })
   }
 
   @Test

@@ -43,8 +43,9 @@ function open(handlers: Parameters<typeof mockApi>[0]) {
   const api = mockApi({
     'GET /me': () => ADMIN,
     'GET /admin/config': () => ({ groups: [] }),
-    'GET /admin/runtime-settings': () => ({ overridesActive: 0, settings: [] }),
+    'GET /admin/runtime-settings': () => ({ overridesActive: 0, settings: [], switches: [] }),
     'GET /admin/discovery-hosts': () => ({ max: 500, hosts: [] }),
+    'GET /admin/list-seeds': () => ({ max: 50, lists: [] }),
     'GET /admin/shadow-libraries': () => ({ max: 200, libraries: [] }),
     ...handlers,
   });

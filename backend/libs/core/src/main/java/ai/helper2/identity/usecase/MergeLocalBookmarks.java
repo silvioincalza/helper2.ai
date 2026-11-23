@@ -2,22 +2,42 @@ package ai.helper2.identity.usecase;
 
 import ai.helper2.identity.Bookmarks;
 import ai.helper2.identity.Bookmarks.Bookmark;
+import ai.helper2.shared.Refused;
+import ai.helper2.shared.UnitOfWork;
 import java.util.List;
 import java.util.UUID;
 
 public class MergeLocalBookmarks {
 
-  private final Bookmarks bookmarks;
+  public sealed interface Outcome {
+    record Merged(List<Bookmark> bookmarks) implements Outcome {}
 
-  public MergeLocalBookmarks(Bookmarks bookmarks) {
-    this.bookmarks = bookmarks;
+    record InvalidUrl() implements Outcome {}
+
+    record OverLimit(int limit) implements Outcome, Refused {}
   }
 
-  public List<Bookmark> merge(UUID userId, List<Bookmark> local) {
-    local.forEach(b -> BookmarkRules.requireWebUrl(b.url()));
+  private final Bookmarks bookmarks;
+  private final UnitOfWork unitOfWork;
+
+  public MergeLocalBookmarks(Bookmarks bookmarks, UnitOfWork unitOfWork) {
+    this.bookmarks = bookmarks;
+    this.unitOfWork = unitOfWork;
+  }
+
+  public Outcome merge(UUID userId, List<Bookmark> local) {
+    if (!local.stream().map(Bookmark::url).allMatch(BookmarkRules::isWebUrl)) {
+      return new Outcome.InvalidUrl();
+    }
+    return unitOfWork.run(() -> mergeWithinTheCap(userId, local));
+  }
+
+  private Outcome mergeWithinTheCap(UUID userId, List<Bookmark> local) {
     bookmarks.lockForChange(userId);
     bookmarks.addMissing(userId, local);
-    BookmarkRules.requireWithinCap(bookmarks.count(userId));
-    return bookmarks.list(userId);
+    if (BookmarkRules.isOverTheCap(bookmarks.count(userId))) {
+      return new Outcome.OverLimit(BookmarkRules.MAX_PER_USER);
+    }
+    return new Outcome.Merged(bookmarks.list(userId));
   }
 }

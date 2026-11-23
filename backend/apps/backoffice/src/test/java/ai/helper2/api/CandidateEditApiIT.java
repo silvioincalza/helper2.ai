@@ -8,6 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import ai.helper2.catalog.ReviewQueue;
+import ai.helper2.platform.ProblemType;
+import ai.helper2.scout.usecase.CandidateRevision;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceId;
 import java.util.List;
@@ -76,8 +78,7 @@ class CandidateEditApiIT extends ApiTestBase {
   }
 
   ResultActions edit(UUID id, String seen, String fields) throws Exception {
-    String expected =
-        "{\"expectedDetails\":\"" + seen.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+    String expected = "{\"expectedRevision\":\"" + CandidateRevision.of(seen) + "\"";
     String body = fields.equals("{}") ? expected + "}" : expected + "," + fields.substring(1);
     return mvc.perform(
         put("/api/v1/admin/review-items/" + id + "/candidate")
@@ -273,6 +274,44 @@ class CandidateEditApiIT extends ApiTestBase {
   }
 
   @Test
+  void anAcceptWhoseConfirmedValueTheCatalogRefusesAddsNothingAndLeavesTheItemOpen()
+      throws Exception {
+    jdbc.sql(
+            """
+            UPDATE review_item SET details = jsonb_set(details, '{confirmed}', '{"pricing":"CHEAP"}')
+            WHERE id = :id
+            """)
+        .param("id", item)
+        .update();
+
+    mvc.perform(
+            put("/api/v1/admin/review-items/" + item + "/resolution")
+                .with(admin)
+                .with(csrf().asHeader())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"ACCEPTED\"}"))
+        .andExpect(
+            problem(
+                ProblemType.INVALID_REQUEST,
+                "The catalog refuses the confirmed pricing. This value is not allowed for pricing."
+                    + " Edit the candidate, then accept again."));
+
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM resource WHERE canonical_url = :u")
+                .param("u", url)
+                .query(Long.class)
+                .single())
+        .isZero();
+    assertThat(
+            jdbc.sql("SELECT status FROM review_item WHERE id = :id")
+                .param("id", item)
+                .query(String.class)
+                .single())
+        .isEqualTo("OPEN");
+    assertThat(audit()).isEmpty();
+  }
+
+  @Test
   void aDescriptionTheAdminWroteIsCurated() throws Exception {
     edit(item, "{\"description\":\"Written by the admin.\",\"descriptionWrittenByAi\":false}")
         .andExpect(status().isOk());
@@ -313,12 +352,72 @@ class CandidateEditApiIT extends ApiTestBase {
   }
 
   @Test
+  void aRevisionThatIsNot64HexCharactersIsRefusedAndNothingChanges() throws Exception {
+    String seen = CandidateRevision.of(details);
+    for (String revision :
+        List.of(
+            "",
+            "abc",
+            seen.toUpperCase(java.util.Locale.ROOT),
+            seen + "0",
+            seen.substring(1),
+            "g" + seen.substring(1),
+            seen + "\\n")) {
+      mvc.perform(
+              put("/api/v1/admin/review-items/" + item + "/candidate")
+                  .with(admin)
+                  .with(csrf().asHeader())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"expectedRevision\":\"" + revision + "\",\"title\":\"x\"}"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.code").value("invalid-request"));
+    }
+    assertThat(
+            jdbc.sql("SELECT details FROM review_item WHERE id = :id")
+                .param("id", item)
+                .query(String.class)
+                .single())
+        .isEqualTo(details);
+    assertThat(audit()).isEmpty();
+  }
+
+  @Test
   void aValueTheCatalogDoesNotTakeIsRefused() throws Exception {
     edit(item, "{\"pricing\":\"CHEAP\"}").andExpect(status().isBadRequest());
     edit(item, "{\"license\":\"MIT license\"}").andExpect(status().isBadRequest());
     edit(item, "{\"canonicalUrl\":\"http://plain.example/\"}").andExpect(status().isBadRequest());
     edit(item, "{\"language\":\"xx\"}").andExpect(status().isBadRequest());
     edit(item, "{\"publishedAt\":\"2999-01-01\"}").andExpect(status().isBadRequest());
+    assertThat(audit()).isEmpty();
+  }
+
+  @Test
+  void anAcceptOfACandidateThatCannotBeReadIsTheInvalidRequestProblemAndTheItemStaysOpen()
+      throws Exception {
+    jdbc.sql("UPDATE review_item SET details = '{\"version\":2}' WHERE id = :id")
+        .param("id", item)
+        .update();
+
+    mvc.perform(
+            put("/api/v1/admin/review-items/" + item + "/resolution")
+                .with(admin)
+                .with(csrf().asHeader())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"ACCEPTED\"}"))
+        .andExpect(problem(ProblemType.INVALID_REQUEST, "The candidate cannot be read."));
+
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM resource WHERE canonical_url = :u")
+                .param("u", url)
+                .query(Long.class)
+                .single())
+        .isZero();
+    assertThat(
+            jdbc.sql("SELECT status FROM review_item WHERE id = :id")
+                .param("id", item)
+                .query(String.class)
+                .single())
+        .isEqualTo("OPEN");
     assertThat(audit()).isEmpty();
   }
 }

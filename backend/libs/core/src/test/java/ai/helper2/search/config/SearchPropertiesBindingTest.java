@@ -28,10 +28,11 @@ class SearchPropertiesBindingTest {
                   30,
                   Duration.ofMillis(2500),
                   new SearchProperties.Translation(300, Duration.ofHours(24)),
+                  new SearchProperties.RankingSignals(0),
                   new SearchProperties.Web(
                       Duration.ofHours(24),
                       Duration.ofHours(48),
-                      new SearchProperties.Quota(new SearchProperties.Limits(3, 3), null))));
+                      new SearchProperties.Quota(new SearchProperties.Limits(10, 10), null))));
       assertThat(c.getBean(SearchRetentionProperties.class))
           .isEqualTo(new SearchRetentionProperties(Duration.ofDays(7)));
     });

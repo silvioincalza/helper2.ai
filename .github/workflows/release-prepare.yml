@@ -175,6 +175,6 @@ jobs:
           body=$(printf '%s\n' \
             "The version $VERSION on \`$BRANCH\` (\`${SHA::12}\`, ADR 0045)." \
             "" \
-            "Merge it (squash). The push builds and signs the images of \`$BRANCH\`. When its CD run is green, run the workflow **release** from \`main\` with version \`$VERSION\`: canary, smoke test, prod, then the tag \`v$VERSION\`, the GitHub release and the pull request back into \`main\`.")
+            "Merge it with a merge commit (\`gh pr merge <n> --merge\`), never squashed. The push builds and signs the images of \`$BRANCH\`. When its CD run is green, run the workflow **release** from \`main\` with version \`$VERSION\`: canary, smoke test, prod, then the tag \`v$VERSION\`, the GitHub release and the pull request back into \`main\`.")
           gh pr create --base "$BRANCH" --head "$head" \
             --title "chore(release): version $VERSION" --body "$body"

@@ -159,6 +159,7 @@ resilience4j:
       collector-github-awesome: {base-config: collector}
       collector-github-topic-leaders: {base-config: collector}
       collector-github-sdks: {base-config: collector}
+      collector-repository-sweep: {base-config: collector}
       collector-deps-dev: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -168,6 +169,7 @@ resilience4j:
       collector-pypi: {base-config: collector}
       collector-gap-evidence: {base-config: collector}
       collector-gap-web: {base-config: collector}
+      page-status: {base-config: collector}
       redis: {base-config: store}
       llm-chat:
         base-config: model
@@ -230,6 +232,7 @@ resilience4j:
       collector-github-awesome: {base-config: collector}
       collector-github-topic-leaders: {base-config: collector}
       collector-github-sdks: {base-config: collector}
+      collector-repository-sweep: {base-config: collector}
       collector-deps-dev: {base-config: collector}
       collector-hf-provider-orgs: {base-config: collector}
       collector-ai-deadlines: {base-config: collector}
@@ -287,6 +290,8 @@ helper2:
     translation:
       daily-calls: ${H2_SEARCH_DAILY_TRANSLATIONS:300}
       ttl: ${H2_SEARCH_TRANSLATION_TTL:24h}
+    ranking:
+      rating-weight: ${H2_SEARCH_RANKING_RATING_WEIGHT:0}
   rate-limit:
     search-per-minute: ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:120}
     report-per-hour: ${H2_RATE_LIMIT_REPORT_PER_HOUR:20}
@@ -306,7 +311,7 @@ helper2:
     evidence:
       page-read-ttl: ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}
       page-text-ttl: ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}
-    daily-credits: ${H2_SCOUT_DAILY_CREDITS:40}
+    daily-credits: ${H2_SCOUT_DAILY_CREDITS:1000}
     admission:
       github-topic-leaders:
         index-min-stars: ${H2_SCOUT_TOPIC_LEADERS_INDEX_MIN_STARS:1000}
@@ -362,11 +367,31 @@ helper2:
       links:
         per-day: ${H2_SCOUT_AWESOME_LINKS_PER_DAY:50}
         max-per-pass: 500
+        max-models-per-pass: 100
+        model-index-min-likes: 10
+        max-papers-per-pass: 200
+        max-packages-per-pass: 100
         exclude-domains: >-
           arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org,
           discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com,
           kaggle.com, npmjs.com, pypi.org, gitlab.com, bitbucket.org, apps.apple.com, play.google.com,
           chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
+      web-pages:
+        read-every: ${H2_SCOUT_AWESOME_WEB_PAGES_EVERY:P7D}
+        retry-after: ${H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER:PT1H}
+        never-read: >-
+          ${H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ:coursera.org=its terms forbid automated reading without written
+          consent}
+        max-discovered: ${H2_SCOUT_AWESOME_WEB_PAGES_MAX_DISCOVERED:100}
+        discovered-reads-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_DISCOVERED_READS_PER_DAY:10}
+        item-page-reads-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_ITEM_PAGE_READS_PER_DAY:100}
+        gone-checks: ${H2_SCOUT_AWESOME_WEB_PAGES_GONE_CHECKS:3}
+        follow:
+          steps-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STEPS_PER_DAY:100}
+          check-calls-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_CHECK_CALLS_PER_DAY:50}
+          check-max-tokens: 8192
+          status-requests-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_DAY:200}
+          status-requests-per-host-per-day: ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_HOST_PER_DAY:30}
     ai-deadlines:
       interval: ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}
     confs-tech:
@@ -431,6 +456,7 @@ helper2:
       max-pages: ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}
       reader-daily-calls: ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}
       read-max-tokens: 800
+      read-model: ${H2_SCOUT_EVENT_READER_MODEL:FAST}
       queries: >-
         upcoming AI hackathons,
         upcoming AI meetups and talks,
@@ -679,6 +705,8 @@ resilience4j:
       source-demo-down: {base-config: source}
 ---
 helper2:
+  cluster-lock:
+    table: shedlock
   examples:
     pending-delay: ${H2_EXAMPLES_PENDING_DELAY:PT1M}
     pending-every: ${H2_EXAMPLES_PENDING_EVERY:PT5M}
@@ -688,7 +716,6 @@ helper2:
   retention:
     cron: ${H2_RETENTION_CRON:0 17 3 * * *}
     observed-unseen: ${H2_RETENTION_OBSERVED_UNSEEN:P180D}
-    list-index: ${H2_RETENTION_LIST_INDEX:P30D}
     enrichment-runs: ${H2_RETENTION_ENRICHMENT_RUNS:P90D}
     resolved-review-items: ${H2_RETENTION_RESOLVED_REVIEW_ITEMS:P180D}
     resolved-issue-reports: ${H2_RETENTION_RESOLVED_ISSUE_REPORTS:P365D}
@@ -709,8 +736,8 @@ helper2:
       fresh-general: ${H2_LIVE_WEB_FRESH_GENERAL:PT48H}
       quota:
         guest:
-          search: ${H2_LIVE_WEB_GUEST_SEARCH:3}
-          guide: ${H2_LIVE_WEB_GUEST_GUIDE:3}
+          search: ${H2_LIVE_WEB_GUEST_SEARCH:10}
+          guide: ${H2_LIVE_WEB_GUEST_GUIDE:10}
         global-daily-credits: ${H2_LIVE_WEB_DAILY_CREDITS:}
   retention:
     live-web-results: ${H2_RETENTION_LIVE_WEB_RESULTS:P7D}

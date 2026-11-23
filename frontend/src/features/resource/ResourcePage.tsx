@@ -1,20 +1,22 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { api, ApiError } from '@/api/client';
 import type { Relationship, ResourceDetail } from '@/api/types';
 import { OriginLabel, VerificationBadge } from '@/ui/Badges';
-import { EvidenceList } from '@/features/resource/EvidenceList';
+import { EvidenceList } from './EvidenceList';
 import { Icon } from '@/ui/Icon';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
-import { ReportForm } from '@/features/resource/ReportForm';
-import { Robots } from '@/shell/Robots';
+import { ReportForm } from './ReportForm';
+import { Robots } from '@/ui/Robots';
 import { useApi } from '@/hooks/useApi';
 import { useTitle } from '@/hooks/useTitle';
 import { formatDate } from '@/lib/format';
-import { aiMark, isAiOrigin } from '@/lib/aiMark';
-import { WhereFrom } from '@/features/resource/WhereFrom';
-import { cardHeadFor, Resource } from '@/features/resource/Resource';
+import { aiMark, aiMarkWhen, isAiOrigin } from '@/lib/aiMark';
+import { WhereFrom } from './WhereFrom';
+import { FoundInLists } from './FoundInLists';
+import { DirectoryRating, RATING_FIELD } from './DirectoryRating';
+import { cardHeadFor, Resource, ResourceSkeleton } from './Resource';
 import { AdSenseSlot } from '@/features/monetisation/AdSenseSlot';
 import { resourcePath } from '@/lib/searchState';
 
@@ -26,7 +28,7 @@ function RelList({ items }: { items: Relationship[] }) {
         const ai = r.origin !== undefined && isAiOrigin(r.origin);
         return (
           <li key={`${r.kind}-${r.targetTitle}-${i}`}>
-            <span {...(ai ? aiMark() : {})}>
+            <span {...aiMarkWhen(ai)}>
               <strong>{t(`relationship.${r.kind}`)}</strong>{' '}
               {r.targetId ? (
                 <Link to={resourcePath(r.targetId, r.targetTitle)}>{r.targetTitle}</Link>
@@ -99,9 +101,9 @@ function ResourceView({ id }: { id: string }) {
 
   if (!head)
     return (
-      <p role="status" aria-busy="true" className="page-loading">
-        {t('common.loading')}
-      </p>
+      <div className="h2-app h2-res">
+        <ResourceSkeleton withHead />
+      </div>
     );
   return (
     <Resource head={head} detail={d}>
@@ -112,6 +114,7 @@ function ResourceView({ id }: { id: string }) {
 
 function DetailSections({ detail: d }: { detail: ResourceDetail }) {
   const { t } = useTranslation();
+  const [reportField, setReportField] = useState('');
   const confirmed = d.relationships.filter((r) => r.verification === 'VERIFIED');
   const candidates = d.relationships.filter(
     (r) => r.verification === 'UNVERIFIED' || r.verification === 'CONFLICTING',
@@ -161,13 +164,17 @@ function DetailSections({ detail: d }: { detail: ResourceDetail }) {
         </section>
       )}
 
-      <AdSenseSlot />
+      <AdSenseSlot placement="resource" />
+
+      <DirectoryRating rating={d.rating} onReport={() => setReportField(RATING_FIELD)} />
+
+      <FoundInLists foundIn={d.foundIn} />
 
       <WhereFrom detail={d} />
 
       <section aria-labelledby="report-h" className="panel">
         <h2 id="report-h">{t('report.title')}</h2>
-        <ReportForm resourceId={d.card.id} />
+        <ReportForm key={reportField} resourceId={d.card.id} field={reportField} />
       </section>
     </>
   );

@@ -108,11 +108,11 @@ tests:
   - interval: 1h
     input_series:
       - series: 'helper2_live_web_credits_total{application="helper2", environment="prod", instance="a", feature="search"}'
-        values: '0+5x30'
+        values: '0+50x30'
       - series: 'helper2_live_web_credits_total{application="helper2", environment="prod", instance="b", feature="guide"}'
-        values: '0+4x30'
+        values: '0+40x30'
       - series: 'helper2_live_web_credits_total{application="helper2-backoffice", environment="prod", instance="c", feature="scout-discovery"}'
-        values: '0+1x30'
+        values: '0+20x30'
       - series: 'helper2_live_web_credits_total{application="helper2", environment="staging", instance="a", feature="search"}'
         values: '0+5x30'
     alert_rule_test:
@@ -126,9 +126,9 @@ tests:
               severity: warning
               environment: prod
             exp_annotations:
-              summary: "Tavily used more than 200 credits in the last 24 hours (prod)."
-              description: "240 Tavily credits (live calls and the Scout's discovery, news, courses, LinkedIn, events and evidence reads) in the last 24 hours. At this pace the monthly credits run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
-              runbook: "Dashboard: helper2_live_web_credits_total by feature (every scout-* feature is the Scout, on the helper2-backoffice dashboard). Many addresses at the limit = rotating IPs: set H2_LIVE_WEB_DAILY_CREDITS to cap all live calls a day (no release). Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
+              summary: "Tavily used more than 2,500 credits in the last 24 hours (prod)."
+              description: "2.64k Tavily credits (live calls and the Scout's discovery, news, courses, LinkedIn, events and evidence reads) in the last 24 hours. Prod's cap for all live calls is 3,000 a day: at the cap the live web stops for visitors until 00:00 UTC. At this pace the monthly credits also run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
+              runbook: "Dashboard: helper2_live_web_credits_total by feature (every scout-* feature is the Scout, on the helper2-backoffice dashboard). Many addresses at the limit = rotating IPs: lower the live web credits a day on the back office Settings page, or set H2_LIVE_WEB_DAILY_CREDITS (no release). A Scout that reads much: lower its search and page-read credits on the same page. Few stored-set hits (helper2_cache_events_total, event=store_hit): check the freshness settings."
 
   - interval: 1h
     input_series:
@@ -369,7 +369,7 @@ tests:
             exp_annotations:
               summary: "The embedding indexer has not finished a batch for 30 minutes (prod)."
               description: "The last successful batch was 39m 0s ago (one runs every 5 s). New resources are found by keyword search only until it recovers."
-              runbook: "Dashboard helper2-backoffice, row 'Embedding indexer', 'Embedding failures by reason': rate_limited = NVIDIA API catalog limit (the indexer pauses 2 min); embedding = the API; database = Postgres. Logs: 'Embedding batch failed'."
+              runbook: "Dashboard helper2-backoffice, row 'Embedding indexer', 'Embedding failures by reason': rate_limited = NVIDIA API catalog limit (the indexer pauses 2 min); embedding = the API; refused = the circuit is open after repeated failures and no call was sent; database = Postgres. Logs: 'Embedding batch failed'."
 
   - interval: 1m
     input_series:
@@ -858,7 +858,7 @@ tests:
               name: source-npm
             exp_annotations:
               summary: "Circuit source-npm has not closed for 5 minutes (prod)."
-              description: "The resilience policy source-npm keeps refusing calls (ADR 0006): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means queries run untranslated and the setup guide is unavailable, llm-chat-guide means guide answers are top search results (also when the model answers but too slowly), llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
+              description: "The resilience policy source-npm keeps refusing calls (ADR 0006): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means queries run untranslated and the setup guide is unavailable, llm-chat-guide-fast means guide questions get no plan and answer with top search results, llm-chat-guide-reasoning means guide answers are top search results (both also when the model answers but too slowly), llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
               runbook: "Dashboard row 'Search and sources' (source outcomes) or the Redis pod for name=redis. A source-* circuit: check the provider's status and its outbound HTTP errors; it closes by itself once a trial call succeeds (every 30 s)."
 
   - interval: 1m
@@ -897,7 +897,7 @@ tests:
               name: collector-hf-trending
             exp_annotations:
               summary: "Circuit collector-hf-trending has not closed for 5 minutes (prod)."
-              description: "The resilience policy collector-hf-trending keeps refusing calls (ADR 0006): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means queries run untranslated and the setup guide is unavailable, llm-chat-guide means guide answers are top search results (also when the model answers but too slowly), llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
+              description: "The resilience policy collector-hf-trending keeps refusing calls (ADR 0006): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means queries run untranslated and the setup guide is unavailable, llm-chat-guide-fast means guide questions get no plan and answer with top search results, llm-chat-guide-reasoning means guide answers are top search results (both also when the model answers but too slowly), llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
               runbook: "Dashboard row 'Search and sources' (source outcomes) or the Redis pod for name=redis. A source-* circuit: check the provider's status and its outbound HTTP errors; it closes by itself once a trial call succeeds (every 30 s)."
 
   - interval: 1h

@@ -7,10 +7,11 @@ import { ExternalLink } from '@/ui/ExternalLink';
 import { Icon } from '@/ui/Icon';
 import { CopyButton } from '@/ui/CopyButton';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
+import { Skeleton, SkeletonRows } from '@/ui/Skeleton';
 import { useApi } from '@/hooks/useApi';
 import { useRetry } from '@/hooks/useRetry';
 import { useMe } from '@/context/MeContext';
-import { backAgain, localDay, type VisitorClock } from '@/lib/format';
+import { backAgain, localDay, type BackAgainKeys, type VisitorClock } from '@/lib/format';
 import { SetupGuidesLeft, useSetupGuidesLeft } from './SetupGuidesLeft';
 
 const CLIENT_KEY = 'h2.setup.client';
@@ -123,14 +124,8 @@ export function SetupGuidePanel({ id, title }: { id: string; title: string }) {
 }
 
 function ConnectPart({ id, level }: { id: string; level: number }) {
-  const { t } = useTranslation();
   const q = useApi(`setup/${id}`, (signal) => api.getResourceSetup(id, signal));
-  if (q.loading)
-    return (
-      <p className="muted small" role="status">
-        {t('setup.loading')}
-      </p>
-    );
+  if (q.loading) return null;
   if (q.error !== undefined || !q.data || q.data.options.length === 0) return null;
   return <SetupAnswer guide={q.data} level={level} />;
 }
@@ -227,11 +222,21 @@ function StepsPart({ id, title, level }: { id: string; title: string; level: num
       <H level={level} id={`${uid}-h`} ref={focusRef} tabIndex={-1} className="setup-part-h">
         {t('setup.stepsTitle')}
       </H>
-      <div aria-live="polite" aria-busy={q.loading}>
+      <div aria-live="polite">
         {q.loading ? (
-          <p className="muted" role="status">
-            {t('setup.reading')}
-          </p>
+          <>
+            <p className="muted">{t('setup.reading')}</p>
+            <Skeleton>
+              <SkeletonRows
+                rows={3}
+                bars={[
+                  { size: 'body', width: 'half' },
+                  { size: 'small', width: 'full' },
+                  { size: 'small', width: 'wide' },
+                ]}
+              />
+            </Skeleton>
+          </>
         ) : q.error !== undefined || !q.data ? (
           <StatePanel
             tone="error"
@@ -253,9 +258,9 @@ const UNAVAILABLE: Partial<Record<string, string>> = {
   busy: 'setup.status.BUSY',
 };
 
-const BACK_AT: Partial<Record<string, string>> = {
-  budget: 'setup.status.budget',
-  quota: 'setup.status.quota',
+const BACK_AT: Partial<Record<string, BackAgainKeys>> = {
+  budget: { today: 'setup.status.budgetBackAt', tomorrow: 'setup.status.budgetBackTomorrowAt' },
+  quota: { today: 'setup.status.quotaBackAt', tomorrow: 'setup.status.quotaBackTomorrowAt' },
 };
 
 export function toolGuideNotice(
@@ -264,8 +269,8 @@ export function toolGuideNotice(
 ): { key: string; time?: string } {
   if (guide.status !== 'LLM_UNAVAILABLE' || !guide.unavailable)
     return { key: `setup.status.${guide.status}` };
-  const prefix = BACK_AT[guide.unavailable];
-  const back = prefix ? backAgain(prefix, guide.retryAt, clock) : undefined;
+  const keys = BACK_AT[guide.unavailable];
+  const back = keys ? backAgain(keys, guide.retryAt, clock) : undefined;
   return back ?? { key: UNAVAILABLE[guide.unavailable] ?? 'setup.status.LLM_UNAVAILABLE' };
 }
 

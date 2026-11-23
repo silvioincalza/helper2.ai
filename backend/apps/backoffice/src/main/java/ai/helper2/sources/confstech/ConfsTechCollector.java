@@ -13,7 +13,6 @@ import ai.helper2.shared.DateFact;
 import ai.helper2.shared.EventFormat;
 import ai.helper2.shared.EventKind;
 import ai.helper2.shared.ResourceType;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.config.CollectorDescriptors;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
@@ -228,33 +227,20 @@ public class ConfsTechCollector implements Collector {
     String year = String.valueOf(start.getYear());
     return Optional.of(
         new SourceHit(
-            ID,
-            canonical.getValue(),
-            HttpClients.link(link, canonical),
-            canonical,
-            null,
-            name.contains(year) ? name : name + " " + year,
-            null,
-            ValueOrigin.SOURCE_PROVIDED,
-            ResourceType.EVENT,
-            Audience.BUILD_WITH_AI,
-            null,
-            Set.of(),
-            Set.of("conference"),
-            null,
-            null,
-            Set.of(),
-            null,
-            DateFact.unknown(),
-            DateFact.unknown(),
-            List.of(),
-            now,
-            position,
-            DateFact.scheduledDay(start, ID),
-            DateFact.scheduledDay(end, ID),
-            location.isEmpty() ? null : location,
-            EventKind.CONFERENCE,
-            format(c.path("online").asBoolean(false), city != null)));
+                ID,
+                canonical.getValue(),
+                HttpClients.link(link, canonical),
+                canonical,
+                name.contains(year) ? name : name + " " + year,
+                ResourceType.EVENT,
+                now)
+            .withAudience(Audience.BUILD_WITH_AI)
+            .withTags(Set.of("conference"))
+            .withRank(position)
+            .withEventDays(DateFact.scheduledDay(start, ID), DateFact.scheduledDay(end, ID))
+            .withLocation(location.isEmpty() ? null : location)
+            .withEventKind(EventKind.CONFERENCE)
+            .withEventFormat(format(c.path("online").asBoolean(false), city != null)));
   }
 
   static @Nullable EventFormat format(boolean online, boolean hasCity) {

@@ -3,6 +3,7 @@ package ai.helper2.research.internal;
 import ai.helper2.catalog.KnownTargets;
 import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.platform.DailyJob;
+import ai.helper2.platform.config.LlmProperties;
 import ai.helper2.platform.llm.CallCounter;
 import ai.helper2.platform.llm.DailyBudget;
 import ai.helper2.platform.llm.LlmSettings;
@@ -20,7 +21,10 @@ import ai.helper2.research.ResearchSubject;
 import ai.helper2.research.ResearchTool;
 import ai.helper2.research.config.ResearchProperties;
 import ai.helper2.research.usecase.CancelResearch;
+import ai.helper2.research.usecase.FailStaleResearch;
+import ai.helper2.research.usecase.FindLatestResearch;
 import ai.helper2.research.usecase.FindResearchedItems;
+import ai.helper2.research.usecase.FollowResearchRun;
 import ai.helper2.research.usecase.PurgeResearch;
 import ai.helper2.research.usecase.RunResearch;
 import ai.helper2.research.usecase.StartResearch;
@@ -68,23 +72,24 @@ class ResearchConfiguration {
       Clock clock,
       CallCounter counter,
       ModelCallMetrics metrics,
-      Resilience resilience) {
+      Resilience resilience,
+      LlmProperties llmProperties) {
     IntSupplier limit =
         runtime.declare(RuntimeSetting.REVIEW_RESEARCH_DAILY_MODEL_CALLS, p.dailyModelCalls());
     ChatModel model = chatModel.getIfAvailable();
-    String name =
-        p.model() == ResearchProperties.Model.FAST ? llm.fastModel() : llm.reasoningModel();
-    if (!p.enabled() || model == null || !llm.usable(model) || name == null || name.isBlank()) {
+    if (!p.enabled() || !llm.usable(model) || !llm.has(p.model())) {
       return new UnavailableResearchModel();
     }
     return new SpringAiResearchModel(
         model,
-        name,
+        llm.model(p.model()),
+        prompt(),
         p.maxTokens(),
         new DailyBudget(limit, clock, "review-research", counter),
         metrics,
         resilience,
-        JsonMapper.builder().build());
+        JsonMapper.builder().build(),
+        llmProperties.nativeSchema());
   }
 
   @Bean
@@ -106,13 +111,24 @@ class ResearchConfiguration {
   }
 
   @Bean
-  StartResearch startResearch(ResearchRuns runs, ResearchItems items, ResearchModel model) {
-    return new StartResearch(runs, items, model.model());
+  StartResearch startResearch(
+      ResearchRuns runs, ResearchItems items, ResearchModel model, ResearchProperties p) {
+    return new StartResearch(runs, items, model.model(), p.enabled());
   }
 
   @Bean
   FindResearchedItems findResearchedItems(ResearchRuns runs) {
     return new FindResearchedItems(runs);
+  }
+
+  @Bean
+  FindLatestResearch findLatestResearch(ResearchRuns runs) {
+    return new FindLatestResearch(runs);
+  }
+
+  @Bean
+  FollowResearchRun followResearchRun(ResearchRuns runs) {
+    return new FollowResearchRun(runs);
   }
 
   @Bean
@@ -126,13 +142,19 @@ class ResearchConfiguration {
   }
 
   @Bean
+  FailStaleResearch failStaleResearch(ResearchRuns runs, Clock clock) {
+    return new FailStaleResearch(runs, clock);
+  }
+
+  @Bean
   DailyJob researchRetention(PurgeResearch purge) {
     return new DailyJob("review-research", purge::purge);
   }
 
   @Bean
-  ResearchWorkers researchWorkers(RunResearch research, PurgeResearch purge, ResearchProperties p) {
-    return new ResearchWorkers(research, purge, () -> p.enabled() ? p.concurrency() : 0, p.tick());
+  ResearchWorkers researchWorkers(
+      RunResearch research, FailStaleResearch stale, ResearchProperties p) {
+    return new ResearchWorkers(research, stale, () -> p.enabled() ? p.concurrency() : 0, p.tick());
   }
 
   static String prompt() {

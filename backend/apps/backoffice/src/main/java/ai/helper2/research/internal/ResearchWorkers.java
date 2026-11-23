@@ -1,6 +1,6 @@
 package ai.helper2.research.internal;
 
-import ai.helper2.research.usecase.PurgeResearch;
+import ai.helper2.research.usecase.FailStaleResearch;
 import ai.helper2.research.usecase.RunResearch;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
@@ -19,7 +19,7 @@ class ResearchWorkers implements SmartLifecycle {
   private static final int STALE_CHECK_EVERY = 30;
 
   private final RunResearch research;
-  private final PurgeResearch purge;
+  private final FailStaleResearch stale;
   private final IntSupplier concurrency;
   private final Duration tick;
   private final AtomicInteger running = new AtomicInteger();
@@ -29,9 +29,9 @@ class ResearchWorkers implements SmartLifecycle {
   private volatile boolean started;
 
   ResearchWorkers(
-      RunResearch research, PurgeResearch purge, IntSupplier concurrency, Duration tick) {
+      RunResearch research, FailStaleResearch stale, IntSupplier concurrency, Duration tick) {
     this.research = research;
-    this.purge = purge;
+    this.stale = stale;
     this.concurrency = concurrency;
     this.tick = tick;
   }
@@ -50,9 +50,9 @@ class ResearchWorkers implements SmartLifecycle {
   void tick() {
     try {
       if (++ticks % STALE_CHECK_EVERY == 0) {
-        int stale = purge.failStale();
-        if (stale > 0) {
-          log.warn("research: {} running runs lost their worker and failed", stale);
+        int failed = stale.failStale();
+        if (failed > 0) {
+          log.warn("research: {} running runs lost their worker and failed", failed);
         }
       }
       int limit = Math.max(0, concurrency.getAsInt());

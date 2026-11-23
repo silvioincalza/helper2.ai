@@ -153,6 +153,7 @@ export function makeDetail(over: Partial<ResourceDetail> = {}): ResourceDetail {
       },
     ],
     enrichmentStatus: 'NOT_RUN',
+    foundIn: { lists: [], more: 0, directoryLists: 0 },
     ...over,
   };
 }
@@ -271,6 +272,8 @@ export const SITE_OFF: Site = {
     ga4MeasurementId: null,
     adsenseClient: null,
     adsenseSlot: null,
+    adsenseSlotSearch: null,
+    adsenseSlotGuide: null,
   },
 };
 
@@ -325,7 +328,6 @@ export const POLICY: Policy = {
     guideQuestionCountersSeconds: 2 * 86_400,
     webNewsSeconds: 180 * 86_400,
     pendingReviewPagesSeconds: 180 * 86_400,
-    listIndexSeconds: 30 * 86_400,
     pageTextSeconds: 86_400,
     pageReadSeconds: 30 * 86_400,
     backupsSeconds: 7 * 86_400,
@@ -368,6 +370,8 @@ export function makeReviewEvidence(
       extraEvidence: 'github-readme:acme/tool',
     },
     validationErrors: ['pricing: the quotes disagree'],
+    directoryLists: [],
+    directoryRatings: [],
     fields: [
       {
         field: 'pricing',

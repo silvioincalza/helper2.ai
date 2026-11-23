@@ -4,16 +4,16 @@ import ai.helper2.search.SourceFailure;
 import ai.helper2.sources.github.scout.GitHubAwesomeCollector.ListRepo;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -35,42 +35,87 @@ final class AwesomeCrawl {
 
   record Read(ListRepo list, AwesomeListParser.Parsed parsed, int depth) {}
 
-  private record Pending(String fullName, @Nullable JsonNode facts, int depth) {}
+  private record Pending(String fullName, @Nullable JsonNode facts, int depth, boolean added) {}
 
   private final Lists lists;
   private final Limits limits;
-  private final Clock clock;
   private final AwesomeMetrics metrics;
 
   private final Deque<Pending> queue = new ArrayDeque<>();
   private final Set<String> known = new HashSet<>();
   private final List<Read> read = new ArrayList<>();
+  private final ReadmeBudget budget;
   private int nestedTried;
-  private long bytes;
 
-  private AwesomeCrawl(Lists lists, Limits limits, Clock clock, AwesomeMetrics metrics) {
+  private AwesomeCrawl(Lists lists, Limits limits, ReadmeBudget budget, AwesomeMetrics metrics) {
     this.lists = lists;
     this.limits = limits;
-    this.clock = clock;
+    this.budget = budget;
     this.metrics = metrics;
   }
 
   static List<Read> crawl(
       List<ListRepo> seeds, Lists lists, Limits limits, Clock clock, AwesomeMetrics metrics) {
-    AwesomeCrawl crawl = new AwesomeCrawl(lists, limits, clock, metrics);
-    crawl.run(seeds);
-    return List.copyOf(crawl.read);
+    return crawl(List.of(), seeds, lists, limits, budget(limits, clock), metrics);
   }
 
-  private void run(List<ListRepo> seeds) {
-    for (ListRepo seed : seeds) {
-      if (known.add(key(seed.fullName()))) {
-        queue.add(new Pending(seed.fullName(), seed.facts(), 0));
+  static List<Read> crawl(
+      List<String> added,
+      List<ListRepo> seeds,
+      Lists lists,
+      Limits limits,
+      ReadmeBudget budget,
+      AwesomeMetrics metrics) {
+    return crawl(added, List.of(), seeds, lists, limits, budget, metrics);
+  }
+
+  static List<Read> crawl(
+      List<String> added,
+      List<Read> webPages,
+      List<ListRepo> seeds,
+      Lists lists,
+      Limits limits,
+      ReadmeBudget budget,
+      AwesomeMetrics metrics) {
+    AwesomeCrawl crawl = new AwesomeCrawl(lists, limits, budget, metrics);
+    crawl.run(added, webPages, seeds);
+    return List.copyOf(crawl.withAfterTheSeeds(webPages));
+  }
+
+  static ReadmeBudget budget(Limits limits, Clock clock) {
+    return ReadmeBudget.startingNow(clock, limits.maxRunTime(), limits.maxReadmeBytes());
+  }
+
+  private List<Read> withAfterTheSeeds(List<Read> webPages) {
+    int firstNested = 0;
+    while (firstNested < read.size() && read.get(firstNested).depth() == 0) {
+      firstNested++;
+    }
+    List<Read> all = new ArrayList<>(read);
+    all.addAll(firstNested, webPages);
+    return all;
+  }
+
+  private void run(List<String> added, List<Read> webPages, List<ListRepo> seeds) {
+    Map<String, ListRepo> found = new HashMap<>();
+    seeds.forEach(seed -> found.putIfAbsent(key(seed.fullName()), seed));
+    for (String fullName : added) {
+      ListRepo seed = found.get(key(fullName));
+      if (known.add(key(fullName))) {
+        queue.add(
+            seed == null
+                ? new Pending(fullName, null, 0, true)
+                : new Pending(seed.fullName(), seed.facts(), 0, false));
       }
     }
-    Instant deadline = clock.instant().plus(limits.maxRunTime());
+    for (ListRepo seed : seeds) {
+      if (known.add(key(seed.fullName()))) {
+        queue.add(new Pending(seed.fullName(), seed.facts(), 0, false));
+      }
+    }
+    webPages.forEach(this::queueNested);
     while (!queue.isEmpty()) {
-      String over = overBudget(deadline);
+      String over = budget.spent();
       if (over != null) {
         log.info("awesome lists: {} lists left unread ({})", queue.size(), over);
         metrics.skipped(over, queue.size());
@@ -96,15 +141,8 @@ final class AwesomeCrawl {
     }
   }
 
-  private @Nullable String overBudget(Instant deadline) {
-    if (bytes >= limits.maxReadmeBytes()) {
-      return "size-budget";
-    }
-    return clock.instant().isBefore(deadline) ? null : "time-budget";
-  }
-
   private @Nullable Read read(Pending next) {
-    ListRepo list = next.depth() == 0 ? new ListRepo(next.fullName(), next.facts()) : nested(next);
+    ListRepo list = listOf(next);
     if (list == null) {
       return null;
     }
@@ -116,8 +154,40 @@ final class AwesomeCrawl {
       metrics.skipped("readme-unavailable");
       return null;
     }
-    bytes += readme.getBytes(StandardCharsets.UTF_8).length;
+    budget.read(readme);
     return new Read(list, AwesomeListParser.parse(readme, list.fullName()), next.depth());
+  }
+
+  private @Nullable ListRepo listOf(Pending next) {
+    if (next.depth() > 0) {
+      return nested(next);
+    }
+    return next.added() ? added(next) : new ListRepo(next.fullName(), next.facts());
+  }
+
+  private @Nullable ListRepo added(Pending next) {
+    JsonNode repo;
+    try {
+      repo = lists.repo(next.fullName());
+    } catch (SourceFailure.Unavailable e) {
+      log.warn("added awesome list {} unavailable: {}", next.fullName(), e.getMessage());
+      metrics.skipped("added-unavailable");
+      return null;
+    }
+    if (repo.path("archived").asBoolean(false)) {
+      metrics.skipped("added-archived");
+      return null;
+    }
+    String name = HttpClients.text(repo, "full_name");
+    if (name == null || !name.contains("/")) {
+      metrics.skipped("added-unavailable");
+      return null;
+    }
+    if (!key(name).equals(key(next.fullName())) && !known.add(key(name))) {
+      metrics.skipped("nested-seen");
+      return null;
+    }
+    return new ListRepo(name, repo);
   }
 
   private @Nullable ListRepo nested(Pending next) {
@@ -177,7 +247,7 @@ final class AwesomeCrawl {
         metrics.skipped("nested-cap");
       } else {
         nestedTried++;
-        queue.add(new Pending(e.fullName(), null, list.depth() + 1));
+        queue.add(new Pending(e.fullName(), null, list.depth() + 1, false));
       }
     }
   }

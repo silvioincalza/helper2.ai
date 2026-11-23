@@ -1,7 +1,8 @@
 import { useId, type ReactNode, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import './ui.css';
-import { AiLabel } from '@/ui/AiLabel';
+import { AiLabel } from './AiLabel';
+import { Skeleton, SkeletonRows } from './Skeleton';
 
 export interface ModelActivity {
   phase: 'reasoning' | 'writing';
@@ -71,6 +72,11 @@ export function PicksBar({
           </span>
         )}
       </p>
+      {state.kind === 'reading' && (
+        <Skeleton onTerm className="h2-picks__list">
+          <SkeletonRows rows={3} bars={[{ size: 'body', width: 'wide' }]} />
+        </Skeleton>
+      )}
       {state.kind === 'picks' && (
         <>
           <div className="h2-picks__list">{children}</div>

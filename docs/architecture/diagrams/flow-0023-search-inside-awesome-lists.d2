@@ -1,0 +1,138 @@
+# Flowchart: how a title's and an awesome list's words reach the index, and how a search uses them (ADR 0023).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/AwesomeListParser.java, MarkdownText.java,
+#   GitHubAwesomeCollector.java (read, searchText, listHits), backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt
+#   (indexListsQuietly), backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcAwesomeListIndex.java,
+#   catalog/usecase/ForgetGoneLists.java, catalog/internal/JdbcGoneLists.java,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/SweepRepositories.kt (sweepOneBatch),
+#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GoneWebPages.java (readFailed),
+#   catalog/usecase/ForgetGoneWebList.java, catalog/internal/JdbcGoneWebLists.java,
+#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/ForgetGoneListSeed.kt,
+#   JdbcCatalogSearch.java (searchSql, searchFound), CatalogSearchSource.java, search/web/CardMapper.java,
+#   frontend/src/features/search/ResultRow.tsx, catalog/internal/JdbcResourceDetailReads.java (naming),
+#   frontend/src/features/resource/FoundInLists.tsx, backend/libs/schema/src/main/resources/db/migration/V1__schema.sql
+#   (h2_name_words, search_vector).
+# Render: cd docs/architecture/diagrams && d2 fmt flow-0023-search-inside-awesome-lists.d2 && d2 flow-0023-search-inside-awesome-lists.d2 flow-0023-search-inside-awesome-lists.svg
+
+...@style
+
+direction: down
+
+names: "A resource's title (generated search_vector):\nwith / as a space, and as name words\n(h2_name_words: split at / . _ @ :), both A, simple" {class: data}
+words: "Query words (plainWords):\n/ as a space, search syntax removed" {class: app}
+
+readme: "README of a list read in this pass\n(top 10 lists, up to 5 MB)" {class: end}
+
+parse: "AwesomeListParser" {
+  class: group
+  direction: down
+  fence: "Inside a code fence?" {class: decision}
+  skip: "Skipped" {class: end}
+  kind: "Heading or list item?" {class: decision}
+  heading: "Heading: plain words, at most 200 chars;\nopens its level, closes deeper ones" {class: app}
+  entry: "Entry: GitHub link, not the list itself,\nnot a GitHub page; line as plain words\n(no links, badges, HTML, URLs, control\nor bidi chars), at most 500 chars;\nheading path from level 2 down, at most 200" {class: app}
+  fence -> skip: yes
+  fence -> kind: no
+  kind -> heading: heading
+  kind -> entry: item
+}
+
+caps: "Caps per list: at most max-entries-per-pass entries,\n256 KiB of entry text and heading path,\n16 KiB of headings" {class: decision}
+
+hits: "Hits: this run's slice of entries (AI only)\n+ each list read, as an ARTICLE tagged awesome-list" {class: app}
+index: "RunScout: hits indexed first,\nthen the list text to the list index" {class: app}
+
+replace: "JdbcAwesomeListIndex.replace (one transaction per list)" {
+  class: group
+  direction: down
+  listed: "List in the catalog?" {class: decision}
+  nothing: "Nothing written" {class: end}
+  rows: "Delete the list's entry rows;\ninsert one row per entry in the catalog:\ntsvector (line with / as a space\nand its name words A, heading path B)\n+ heading path as text" {class: data}
+  topics: "Upsert the list's row:\ntsvector of its headings" {class: data}
+  listed -> nothing: no
+  listed -> rows: yes
+  rows -> topics
+}
+
+fail: "A failed list index: logged,\nthe pass goes on; the next one rebuilds it" {class: fail}
+
+forget: "ForgetGoneLists (after a batch of the repository sweep)" {
+  class: group
+  direction: down
+  visit: "GitHub did not find the repository\nof a record at this visit" {class: end}
+  gone: "The record is the repository of a list,\nis marked gone, and was not found on\n3 visits in a row?" {class: decision}
+  kept: "The list keeps\nwhat it named" {class: end}
+  removed: "Delete the list's entry rows and its row;\nrefresh the categories of what it named" {class: data}
+  visit -> gone
+  gone -> kept: no
+  gone -> removed: yes
+}
+
+forgetPage: "GoneWebPages (after a failed read of a web page list)" {
+  class: group
+  direction: down
+  failed: "The page reader could not\nread a page that is due" {class: end}
+  status: "Status request of our own for the page\n(HEAD, robots.txt, caps: ADR 0057)" {class: app}
+  answer: "What does the site answer?" {class: decision}
+  nothing: "Says nothing: the count\nstays, nothing is removed" {class: end}
+  reset: "The count of gone\nchecks starts again" {class: data}
+  count: "One more gone check\n(list_seed.gone_checks, gone_since)" {class: data}
+  enough: "3 gone checks in a row, the first\nat least a day before the last?" {class: decision}
+  kept: "The page keeps\nwhat it named" {class: end}
+  removed: "Delete its entry rows of both kinds, its ratings\nand its row; mark the record of a curated page gone;\nrefresh the categories; drop its last read;\na list discovery added is no longer read, and\none audit row says so in the name of the system" {class: data}
+  failed -> status
+  status -> answer
+  answer -> nothing: "another status, a refusal,\nno answer"
+  answer -> reset: "2xx, or a redirect\n(not followed)"
+  answer -> count: "404 or 410"
+  count -> enough
+  enough -> kept: no
+  enough -> removed: yes
+}
+
+search: "Index query (helper2-index)" {
+  class: group
+  direction: down
+  own: "Own text matches?" {class: decision}
+  direct: "Direct row: every word +2,\npopularity, half the text score" {class: hot}
+  inlist: "An entry line or a list's\nheadings match? (GIN)" {class: decision}
+  half: "List-only row: counts half\n(every word +1, half popularity)" {class: app}
+  none: "Not found" {class: end}
+  own -> direct: yes
+  own -> inlist: no
+  inlist -> half: yes
+  inlist -> none: no
+}
+
+card: "Card: \"Found in <list> under <heading>\"\nwhen every source found it only in a list" {class: end}
+
+names -> search.own: "a search"
+words -> search.own
+readme -> parse.fence
+parse.heading -> caps
+parse.entry -> caps
+caps -> hits
+hits -> index
+index -> replace.listed
+index -> fail: "throws"
+replace.topics -> search.own: "later, a search"
+search.half -> card
+
+page: "Resource page (GET /api/v1/resources/{id})" {
+  class: group
+  direction: down
+  named: "A list names the resource?" {class: decision}
+  hidden: "No section" {class: end}
+  shown: "\"Found in these lists\": at most 10,\nmost popular list first, then title;\neach a link to the list's page,\nwith its heading path" {class: app}
+  rest: "More than 10?" {class: decision}
+  more: "\"and N more lists\"" {class: end}
+  named -> hidden: no
+  named -> shown: yes
+  shown -> rest
+  rest -> more: yes
+}
+
+replace.rows -> page.named: "later, a resource page"
+replace.topics -> forget.gone: "later, the list's\nrepository is deleted"
+forget.removed -> page.named: "the list no longer\nnames the resource"
+replace.topics -> forgetPage.failed: "later, the web page\nof the list is deleted"
+forgetPage.removed -> page.named: "the page no longer\nnames the resource"

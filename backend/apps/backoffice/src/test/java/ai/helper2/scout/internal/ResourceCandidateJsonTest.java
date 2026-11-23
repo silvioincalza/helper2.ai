@@ -7,7 +7,9 @@ import ai.helper2.scout.Candidate;
 import ai.helper2.scout.CandidateSignals;
 import ai.helper2.scout.usecase.AcceptedCandidate;
 import ai.helper2.scout.usecase.CandidateEdit;
+import ai.helper2.scout.usecase.CandidateRevision;
 import ai.helper2.scout.usecase.InvalidCandidate;
+import ai.helper2.scout.usecase.ShownCandidate;
 import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.ResourceType;
 import java.time.Instant;
@@ -311,6 +313,53 @@ class ResourceCandidateJsonTest {
             json.read(
                 "{\"sourceId\":\"s\",\"url\":\"https://x.ai\",\"title\":\"X\",\"type\":\"PRODUCT\",\"tags\":\"a\"}"))
         .isInstanceOf(InvalidCandidate.class);
+  }
+
+  @Test
+  void aStoredCandidateIsShownWithItsFindersItsEditsAndItsRevision() {
+    String found = json.write("discovery-self-hosted", candidate("Pricing | Open WebUI"));
+    String edited = json.edit(found, new CandidateEdit("Open WebUI", null, Set.of("local-ai")));
+    String merged = json.merge(edited, "discovery-agent-platforms", agent("agent-platforms"));
+
+    ShownCandidate shown = json.shown(merged);
+
+    assertThat(shown).isNotNull();
+    assertThat(shown.getTitle()).isEqualTo("Open WebUI");
+    assertThat(shown.getUrl()).startsWith("https://");
+    assertThat(shown.getType()).isEqualTo(json.read(merged).getType().name());
+    assertThat(shown.getTags()).containsExactly("local-ai");
+    assertThat(shown.getFoundBy())
+        .containsExactly("discovery-self-hosted", "discovery-agent-platforms");
+    assertThat(shown.getEdited()).containsExactly("tags", "title");
+    assertThat(shown.getRevision()).isEqualTo(CandidateRevision.of(merged));
+    assertThat(json.shown(found).getRevision()).isNotEqualTo(shown.getRevision());
+  }
+
+  @Test
+  void anOldCandidateIsShownWithItsOneFinderAndATypeTheCatalogNoLongerHas() {
+    ShownCandidate shown =
+        json.shown(
+            "{\"sourceId\":\"discovery-coding\",\"url\":\"https://x.ai\",\"title\":\"X\","
+                + "\"type\":\"WIDGET\",\"tags\":[\"coding\",7],\"snippet\":3}");
+
+    assertThat(shown).isNotNull();
+    assertThat(shown.getFoundBy()).containsExactly("discovery-coding");
+    assertThat(shown.getType()).isEqualTo("WIDGET");
+    assertThat(shown.getTags()).containsExactly("coding");
+    assertThat(shown.getSnippet()).isNull();
+    assertThat(shown.getEdited()).isEmpty();
+  }
+
+  @Test
+  void detailsThatDoNotReadAsACandidateAreNotShownAsOne() {
+    assertThat(json.shown(null)).isNull();
+    assertThat(json.shown("")).isNull();
+    assertThat(json.shown("URL: https://x.ai")).isNull();
+    assertThat(json.shown("[1]")).isNull();
+    assertThat(json.shown("{\"url\":\"https://x.ai\",\"title\":\"X\"}")).isNull();
+    assertThat(json.shown("{\"url\":\"http://x.ai\",\"title\":\"X\",\"type\":\"PRODUCT\"}"))
+        .isNull();
+    assertThat(json.shown("{\"url\":\"https://x.ai\",\"title\":7,\"type\":\"PRODUCT\"}")).isNull();
   }
 
   @Test

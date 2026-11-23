@@ -11,4 +11,5 @@ import org.springframework.validation.annotation.Validated;
 public record AdminProperties(
     @NotNull String grafanaUrl,
     @NotBlank String publicBaseUrl,
-    @PositiveOrZero int guideDailyModelCalls) {}
+    @PositiveOrZero int guideDailyModelCalls,
+    boolean adsEnabled) {}

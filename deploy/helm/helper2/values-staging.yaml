@@ -6,6 +6,12 @@ postgres:
   storageClassName: local-path
 redis:
   storageClassName: local-path
+embedder:
+  url: http://helper2-embedder.helper2-prod.svc:8080/v1
+  namespace: helper2-prod
+  indexEvery: PT1M
+  image:
+    repository: harbor-i.infra.incalza.me/helper2/apps/embedder
 networkPolicy:
   ingressController:
     namespace: ingress-nginx

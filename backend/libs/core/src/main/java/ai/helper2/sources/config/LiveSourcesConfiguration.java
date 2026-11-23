@@ -86,10 +86,11 @@ class LiveSourcesConfiguration {
       SourcesProperties p,
       Clock clock,
       ObservationRegistry observations,
-      HttpClientProperties http) {
+      HttpClientProperties http,
+      ShadowLibraries shadowLibraries) {
     SourceSettings s = p.get("hacker-news");
     return new HackerNewsSource(
-        s, ObservedHttp.restClientBuilder(s.timeout(), observations, http), clock);
+        s, ObservedHttp.restClientBuilder(s.timeout(), observations, http), clock, shadowLibraries);
   }
 
   @Bean

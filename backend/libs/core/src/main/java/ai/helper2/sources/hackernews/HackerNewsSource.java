@@ -1,6 +1,7 @@
 package ai.helper2.sources.hackernews;
 
 import ai.helper2.search.SearchSource;
+import ai.helper2.search.ShadowLibraries;
 import ai.helper2.search.SourceDescriptor;
 import ai.helper2.search.SourceHit;
 import ai.helper2.search.SourceQuery;
@@ -9,7 +10,6 @@ import ai.helper2.shared.CanonicalUrl;
 import ai.helper2.shared.DateFact;
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.SourceMode;
-import ai.helper2.shared.ValueOrigin;
 import ai.helper2.sources.support.Classification;
 import ai.helper2.sources.support.HttpClients;
 import ai.helper2.sources.support.SourceSettings;
@@ -31,28 +31,31 @@ public class HackerNewsSource implements SearchSource {
   private final RestClient http;
   private final Clock clock;
   private final SourceDescriptor descriptor;
+  private final ShadowLibraries shadowLibraries;
 
-  public HackerNewsSource(SourceSettings settings, RestClient.Builder builder, Clock clock) {
+  public HackerNewsSource(
+      SourceSettings settings,
+      RestClient.Builder builder,
+      Clock clock,
+      ShadowLibraries shadowLibraries) {
     this.clock = clock;
+    this.shadowLibraries = shadowLibraries;
     this.http = HttpClients.client(builder, settings);
     this.descriptor =
-        new SourceDescriptor(
-            "hacker-news",
-            "Hacker News",
-            "HN",
-            true,
-            SourceMode.LIVE,
-            URI.create("https://news.ycombinator.com"),
-            URI.create("https://www.ycombinator.com/legal/"),
-            "Story titles and links from the Hacker News search API by Algolia",
-            EnumSet.of(ResourceType.NEWS),
-            settings.timeout(),
-            settings.cacheTtl(),
-            settings.enabled(),
-            47,
-            false,
-            true,
-            true);
+        SourceDescriptor.external(
+                "hacker-news",
+                "Hacker News",
+                "HN",
+                SourceMode.LIVE,
+                URI.create("https://news.ycombinator.com"),
+                EnumSet.of(ResourceType.NEWS),
+                settings.timeout(),
+                settings.cacheTtl())
+            .withTerms(URI.create("https://www.ycombinator.com/legal/"))
+            .withAttribution("Story titles and links from the Hacker News search API by Algolia")
+            .enabledWhen(settings.enabled())
+            .withPriority(47)
+            .filteringByDate();
   }
 
   @Override
@@ -70,17 +73,25 @@ public class HackerNewsSource implements SearchSource {
         HttpClients.getJson(
             () -> http.get().uri(u -> storySearch(u, query, text)).retrieve().body(String.class),
             clock);
-    return HttpClients.firstHits(
+    return firstHits(
         HttpClients.hits(
             "hacker-news", aiStories(root.path("hits")), clock.instant(), HackerNewsSource::toHit),
         query);
+  }
+
+  private static List<SourceHit> firstHits(List<SourceHit> hits, SourceQuery query) {
+    return hits.size() <= query.getLimit() ? hits : List.copyOf(hits.subList(0, query.getLimit()));
+  }
+
+  private static int fetchSize(SourceQuery query) {
+    return Math.min(query.getLimit() * 3, 50);
   }
 
   private static URI storySearch(UriBuilder u, SourceQuery query, String text) {
     u.path("/api/v1/search")
         .queryParam("query", text)
         .queryParam("tags", "story")
-        .queryParam("hitsPerPage", HttpClients.fetchSize(query));
+        .queryParam("hitsPerPage", fetchSize(query));
     if (query.getPublishedAfter() != null) {
       u.queryParam("numericFilters", "created_at_i>=" + epochSecond(query.getPublishedAfter()));
     }
@@ -91,11 +102,14 @@ public class HackerNewsSource implements SearchSource {
     return day.atStartOfDay(ZoneOffset.UTC).toEpochSecond();
   }
 
-  static List<JsonNode> aiStories(JsonNode hits) {
+  private List<JsonNode> aiStories(JsonNode hits) {
     List<JsonNode> kept = new ArrayList<>();
     for (JsonNode h : hits) {
-      if (CanonicalUrl.of(HttpClients.text(h, "url")) == null) {
+      CanonicalUrl link = CanonicalUrl.of(HttpClients.text(h, "url"));
+      if (link == null) {
         HttpClients.dropped("hacker-news", "no-link");
+      } else if (shadowLibraries.isShadowLibrary(link.getHost())) {
+        HttpClients.dropped("hacker-news", "shadow-library");
       } else if (!Classification.isAiRelated(HttpClients.text(h, "title"), null, Set.of())) {
         HttpClients.dropped("hacker-news", "not-ai");
       } else {
@@ -114,27 +128,16 @@ public class HackerNewsSource implements SearchSource {
     }
     String id = HttpClients.text(h, "objectID");
     return new SourceHit(
-        "hacker-news",
-        id == null ? url : id,
-        HttpClients.link(url, canonical),
-        canonical,
-        null,
-        title,
-        null,
-        ValueOrigin.SOURCE_PROVIDED,
-        ResourceType.NEWS,
-        Audience.BOTH,
-        null,
-        Set.of(),
-        Set.of(),
-        null,
-        null,
-        Set.of(),
-        null,
-        DateFact.fromSource(HttpClients.instant(h, "created_at"), "hacker-news", now),
-        DateFact.unknown(),
-        List.of(),
-        now,
-        position);
+            "hacker-news",
+            id == null ? url : id,
+            HttpClients.link(url, canonical),
+            canonical,
+            title,
+            ResourceType.NEWS,
+            now)
+        .withAudience(Audience.BOTH)
+        .withPublished(
+            DateFact.fromSource(HttpClients.instant(h, "created_at"), "hacker-news", now))
+        .withRank(position);
   }
 }

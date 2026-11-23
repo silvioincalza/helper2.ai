@@ -1,5 +1,7 @@
 package ai.helper2.site.pages
 
+import ai.helper2.catalog.DirectoryRating
+import ai.helper2.catalog.resourcePath
 import ai.helper2.shared.Pricing
 import ai.helper2.shared.ResourceType
 import java.time.ZoneOffset
@@ -9,7 +11,7 @@ class Pages(private val base: String) {
 
   fun home(): PageHead =
     PageHead(
-      title = "$BRAND: the metasearch for the AI universe",
+      title = "$BRAND: the metasearch for the AI ecosystem",
       description =
         "One search across the world of AI for models, apps, MCP servers and papers. " +
           "Ask the guide for a pick with proof.",
@@ -18,9 +20,16 @@ class Pages(private val base: String) {
       jsonLd = listOf(website(), organization()),
     )
 
-  fun of(kind: PageKind): PageHead =
+  fun home(newInCatalog: List<Related>): PageHead {
+    val head = home()
+    val listing = newInCatalog.takeIf { it.isNotEmpty() }?.let { Listing("New in the catalog", it) }
+    return head.copy(body = siteBody(BRAND, head.description.orEmpty(), "/", listing))
+  }
+
+  @JvmOverloads
+  fun of(kind: PageKind, lists: SiteLists = SiteLists.NONE): PageHead =
     when (kind) {
-      PageKind.HOME -> home()
+      PageKind.HOME -> home(lists.newInCatalog())
       PageKind.SOURCES ->
         listed(
           "Sources: where $BRAND searches",
@@ -33,6 +42,7 @@ class Pages(private val base: String) {
           "Conferences, hackathons, meetups, talks and workshops on AI in the next year, with the " +
             "dates their sources state.",
           "/events",
+          lists.upcomingEvents().takeIf { it.isNotEmpty() }?.let { Listing("Coming up", it) },
         )
       PageKind.NEWS -> unlisted("AI news")
       PageKind.MISSION ->
@@ -65,6 +75,16 @@ class Pages(private val base: String) {
       PageKind.SAVED -> unlisted("Saved")
       PageKind.ACCOUNT -> unlisted("Account")
       PageKind.SIGNIN -> unlisted("Sign in")
+      PageKind.HUB_AI_APPS,
+      PageKind.HUB_AI_MODELS,
+      PageKind.HUB_AI_AGENTS,
+      PageKind.HUB_MCP_SERVERS,
+      PageKind.HUB_LIBRARIES,
+      PageKind.HUB_AGENT_SKILLS,
+      PageKind.HUB_DATASETS,
+      PageKind.HUB_PAPERS,
+      PageKind.HUB_PROMPTS,
+      PageKind.HUB_COURSES -> hub(Hub.of(kind)!!, lists.hub(Hub.of(kind)!!.type))
       PageKind.ADMIN,
       PageKind.ADMIN_PAGE -> PageHead(brand("Back office"), null, null, Robots.NOINDEX)
       PageKind.RESOURCE -> error("a resource page needs its resource")
@@ -91,12 +111,56 @@ class Pages(private val base: String) {
           facts = facts(r),
           sources = r.sources.take(MAX_SOURCES),
           related = r.related.take(MAX_RELATED),
+          foundIn = r.foundIn,
         ),
     )
   }
 
-  private fun listed(name: String, description: String, path: String) =
-    PageHead(brand(name), description, path, Robots.INDEX)
+  fun hub(hub: Hub, items: List<Related>): PageHead {
+    val newest = items.take(Hub.SIZE)
+    val head =
+      listed(
+        "${hub.label}: newest in the catalog",
+        hub.description,
+        hub.path,
+        newest.takeIf { it.isNotEmpty() }?.let { Listing("Newest change first", it) },
+        Hub.SIZE,
+      )
+    return if (newest.isEmpty()) head.copy(robots = Robots.NOINDEX_FOLLOW)
+    else head.copy(jsonLd = listOf(collection(hub, newest)))
+  }
+
+  private fun listed(
+    name: String,
+    description: String,
+    path: String,
+    listing: Listing? = null,
+    max: Int = MAX_LISTED,
+  ) =
+    PageHead(
+      brand(name),
+      description,
+      path,
+      Robots.INDEX,
+      body = siteBody(name, description, path, listing, max),
+    )
+
+  private fun siteBody(
+    heading: String,
+    description: String,
+    path: String,
+    listing: Listing?,
+    max: Int = MAX_LISTED,
+  ) =
+    PageBody(
+      heading = heading,
+      description = description,
+      facts = emptyList(),
+      sources = emptyList(),
+      related = emptyList(),
+      listing = listing?.let { it.copy(items = it.items.take(max)) },
+      pages = NAV.filter { it.path != path },
+    )
 
   private fun unlisted(name: String) = PageHead(brand(name), null, null, Robots.NOINDEX_FOLLOW)
 
@@ -127,6 +191,21 @@ class Pages(private val base: String) {
         ),
     )
 
+  private fun collection(hub: Hub, items: List<Related>): Map<String, Any?> =
+    mapOf(
+      "@context" to "https://schema.org",
+      "@type" to "CollectionPage",
+      "name" to hub.label,
+      "url" to base + hub.path,
+      "mainEntity" to
+        mapOf(
+          "@type" to "ItemList",
+          "numberOfItems" to items.size,
+          "itemListElement" to
+            items.mapIndexed { i, r -> crumb(i + 1, r.title, base + resourcePath(r.id, r.title)) },
+        ),
+    )
+
   private fun crumb(position: Int, name: String, url: String) =
     mapOf("@type" to "ListItem", "position" to position, "name" to name, "item" to url)
 
@@ -134,9 +213,27 @@ class Pages(private val base: String) {
     const val BRAND = "helper2.ai"
     const val TITLE_MAX = 60
     const val DESCRIPTION_MAX = 155
-    const val MAX_FACTS = 6
+    const val MAX_FACTS = 7
     const val MAX_SOURCES = 5
     const val MAX_RELATED = 8
+    const val MAX_LISTED = 20
+    const val SOCIAL_IMAGE = "/assets/og-1.png"
+    const val SOCIAL_IMAGE_WIDTH = 1200
+    const val SOCIAL_IMAGE_HEIGHT = 630
+    const val SOCIAL_IMAGE_ALT =
+      "$BRAND: the metasearch for the AI ecosystem. One search across models, apps, MCP servers, " +
+        "agents and papers."
+    val SITE_PAGES =
+      listOf(
+        PageLink("/", "Search"),
+        PageLink("/sources", "Sources"),
+        PageLink("/events", "AI events"),
+        PageLink("/mission", "Mission"),
+        PageLink("/privacy", "Privacy"),
+        PageLink("/terms", "Terms"),
+        PageLink("/support", "Support $BRAND"),
+      )
+    val NAV = SITE_PAGES + Hub.entries.map { PageLink(it.path, it.label) }
     private val DAY = DateTimeFormatter.ofPattern("d MMM yyyy").withZone(ZoneOffset.UTC)
 
     fun brand(name: String) = "$name · $BRAND"
@@ -194,9 +291,18 @@ class Pages(private val base: String) {
       return cut("${r.title}: ${parts.joinToString(", ")}$found.", DESCRIPTION_MAX)
     }
 
+    // UC-007 BR-011: the page a crawler gets says what the page of a visitor says.
+    private fun ratingInWords(rating: DirectoryRating?): String =
+      when {
+        rating == null -> "Not rated yet"
+        rating.directories == 1 -> "${rating.shownScore()} out of 5, from 1 directory"
+        else -> "${rating.shownScore()} out of 5, from ${rating.directories} directories"
+      }
+
     fun facts(r: ResourceView): List<Fact> =
       listOfNotNull(
           Fact("Type", typeInWords(r.type)),
+          Fact("Rating", ratingInWords(r.rating)),
           r.license?.let { Fact("License", it) },
           r.pricing?.let { Fact("Pricing", pricingInWords(it)) },
           r.platforms

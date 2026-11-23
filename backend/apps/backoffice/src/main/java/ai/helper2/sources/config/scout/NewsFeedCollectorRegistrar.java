@@ -10,11 +10,8 @@ import ai.helper2.sources.support.RunInterval;
 import ai.helper2.sources.support.SourceSettings;
 import io.micrometer.observation.ObservationRegistry;
 import java.time.Clock;
-import java.util.List;
 import org.springframework.beans.factory.BeanRegistrar;
 import org.springframework.beans.factory.BeanRegistry;
-import org.springframework.boot.context.properties.bind.Bindable;
-import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
 
 class NewsFeedCollectorRegistrar implements BeanRegistrar {
@@ -22,7 +19,7 @@ class NewsFeedCollectorRegistrar implements BeanRegistrar {
 
   @Override
   public void register(BeanRegistry registry, Environment env) {
-    FeedProperties feeds = feeds(env);
+    FeedProperties feeds = FeedProperties.bind(env);
     for (String id : feeds.ids()) {
       FeedProperties.Feed feed = feeds.get(id);
       registry.registerBean(
@@ -30,12 +27,6 @@ class NewsFeedCollectorRegistrar implements BeanRegistrar {
           NewsFeedCollector.class,
           spec -> spec.supplier(ctx -> collector(ctx, feed)));
     }
-  }
-
-  static FeedProperties feeds(Environment env) {
-    return Binder.get(env)
-        .bind("helper2", Bindable.of(FeedProperties.class))
-        .orElseGet(() -> new FeedProperties(List.of()));
   }
 
   private static NewsFeedCollector collector(

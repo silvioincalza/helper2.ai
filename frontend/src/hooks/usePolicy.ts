@@ -4,6 +4,7 @@ import type { TFunction } from 'i18next';
 import { request } from '@/api/client';
 import type { Policy, WebSearchLimits } from '@/api/types';
 import { formatDuration } from '@/lib/duration';
+import { formatCount } from '@/lib/format';
 
 type PolicyState =
   { status: 'loading' } | { status: 'ready'; policy: Policy } | { status: 'failed' };
@@ -62,7 +63,6 @@ export type PolicyValues = Record<
   | 'guideQuestionCounters'
   | 'webNews'
   | 'pendingReviewPages'
-  | 'listIndex'
   | 'pageText'
   | 'pageRead'
   | 'backups'
@@ -93,8 +93,7 @@ function webSearches(limits: WebSearchLimits, t: TFunction, n: Num): string {
 type Num = (n: number) => string;
 
 export function policyValues(p: Policy, t: TFunction, lang: string): PolicyValues {
-  const fmt = new Intl.NumberFormat(lang);
-  const n: Num = (v) => fmt.format(v);
+  const n: Num = (v) => formatCount(v, lang);
   const d = (s: number) => formatDuration(s, t);
   const r = p.retention;
   const s = p.sources;
@@ -113,7 +112,6 @@ export function policyValues(p: Policy, t: TFunction, lang: string): PolicyValue
     guideQuestionCounters: d(r.guideQuestionCountersSeconds),
     webNews: d(r.webNewsSeconds),
     pendingReviewPages: d(r.pendingReviewPagesSeconds),
-    listIndex: d(r.listIndexSeconds),
     pageText: d(r.pageTextSeconds),
     pageRead: d(r.pageReadSeconds),
     backups: d(r.backupsSeconds),

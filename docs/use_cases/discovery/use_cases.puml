@@ -1,0 +1,24 @@
+@startuml Discovery
+left to right direction
+
+actor "Administrator" as admin
+actor "Scheduler" as scheduler
+actor "Source Provider" as source_provider
+actor "Scout" as scout
+
+rectangle "Discovery" {
+    usecase "UC-018\nCollect New Resources" as UC018
+    usecase "UC-019\nManage Discovery Hosts" as UC019
+    usecase "UC-020\nManage List Seeds" as UC020
+    usecase "UC-030\nRead Lists" as UC030
+}
+
+scheduler --> UC018
+admin --> UC018
+admin --> UC019
+admin --> UC020
+scout --> UC030
+UC018 --> source_provider
+UC030 --> source_provider
+
+@enduml

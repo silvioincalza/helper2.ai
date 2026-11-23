@@ -2,7 +2,7 @@ import './adminText';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '@/api/admin';
-import { ApiError } from '@/api/client';
+import { problemDetail } from '@/api/client';
 import type {
   RelationshipTargetGroup as Group,
   RelationshipTargetGroupDecision as Decision,
@@ -11,7 +11,8 @@ import { Icon } from '@/ui/Icon';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { ScrollBox } from '@/ui/ScrollBox';
 import { useApi } from '@/hooks/useApi';
-import { AdminEmpty, AdminLoading } from './AdminHead';
+import { AdminEmpty } from './AdminHead';
+import { TableSkeleton } from '@/ui/Skeleton';
 import { Pagination } from './Pagination';
 import { ExistingPicker } from './RelationshipTarget';
 
@@ -20,11 +21,7 @@ const DETAIL_ID = 'rg-detail';
 const COMMAND = 'helper2 review --open --by-target';
 
 function errorOf(e: unknown, t: (k: string) => string): string {
-  if (e instanceof ApiError) {
-    const detail = e.problem?.detail;
-    if (detail && (e.status === 400 || e.status === 404 || e.status === 409)) return detail;
-  }
-  return t('admin.groups.failed');
+  return problemDetail(e, { status: [400, 404, 409] }) ?? t('admin.groups.failed');
 }
 
 export function RelationshipGroups({
@@ -47,6 +44,8 @@ export function RelationshipGroups({
   const [linking, setLinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState('');
+  const doneLine = useRef<HTMLParagraphElement>(null);
+  const focusDone = useRef(false);
   const list = groups.data?.items ?? [];
   const selected = list.find((g) => g.key === selectedKey) ?? list[0];
   const total = groups.data?.total ?? 0;
@@ -59,6 +58,12 @@ export function RelationshipGroups({
     movedFrom.current = page;
     onPage(lastPage);
   }, [pastTheEnd, page, lastPage, onPage]);
+
+  useEffect(() => {
+    if (groups.loading || !focusDone.current) return;
+    focusDone.current = false;
+    doneLine.current?.focus();
+  }, [groups.loading]);
 
   const decide = async (group: Group, decision: Omit<Decision, 'key'>) => {
     if (busy) return;
@@ -75,6 +80,7 @@ export function RelationshipGroups({
         }),
       );
       setLinking(false);
+      focusDone.current = true;
       const at = list.indexOf(group);
       setSelectedKey((list[at + 1] ?? list[at - 1])?.key);
       groups.reload();
@@ -86,23 +92,41 @@ export function RelationshipGroups({
     }
   };
 
-  if (groups.loading || pastTheEnd) return <AdminLoading command={COMMAND} />;
+  const doneStatus = (
+    <p ref={doneLine} tabIndex={-1} className="h2-admin__bulk-result">
+      {done}
+    </p>
+  );
+  if (groups.loading || pastTheEnd)
+    return (
+      <>
+        {doneStatus}
+        <TableSkeleton />
+      </>
+    );
   if (groups.error !== undefined)
     return (
-      <StatePanel
-        tone="error"
-        level={3}
-        title={t('admin.loadError')}
-        next={<RetryButton onClick={groups.reload} />}
-      />
+      <>
+        {doneStatus}
+        <StatePanel
+          tone="error"
+          level={3}
+          title={t('admin.loadError')}
+          next={<RetryButton onClick={groups.reload} />}
+        />
+      </>
     );
-  if (!selected) return <AdminEmpty command={COMMAND} text={t('admin.queueEmpty')} />;
+  if (!selected)
+    return (
+      <>
+        {doneStatus}
+        <AdminEmpty command={COMMAND} text={t('admin.queueEmpty')} />
+      </>
+    );
 
   return (
     <>
-      <p role="status" className="h2-admin__bulk-result">
-        {done}
-      </p>
+      {doneStatus}
       <div className="h2-admin__review">
         <ScrollBox label={t('admin.groups.title')}>
           <table className="h2-table h2-admin__table h2-admin__list">

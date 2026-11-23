@@ -29,12 +29,17 @@ class AwesomeListsApiIT extends ApiTestBase {
 
   static final Map<String, Optional<Boolean>> README = new ConcurrentHashMap<>();
 
+  static final Map<String, List<String>> READ = new ConcurrentHashMap<>();
+
   @TestConfiguration(proxyBeanMethods = false)
   static class FakeReader {
     @Bean
     @Primary
     AwesomeListReader fakeAwesomeListReader() {
-      return repo -> README.getOrDefault(repo, Optional.of(false));
+      return (repo, topics) -> {
+        READ.put(repo, List.copyOf(topics));
+        return README.getOrDefault(repo, Optional.of(false));
+      };
     }
   }
 
@@ -46,6 +51,7 @@ class AwesomeListsApiIT extends ApiTestBase {
   void clean() {
     created.forEach(id -> jdbc.sql("DELETE FROM resource WHERE id = :id").param("id", id).update());
     README.clear();
+    READ.clear();
   }
 
   private UUID repo(String fullName, String type, boolean typeCurated) {
@@ -66,6 +72,22 @@ class AwesomeListsApiIT extends ApiTestBase {
         .update();
     created.add(id);
     return id;
+  }
+
+  private void tagged(UUID resource, String fullName, String tags) {
+    jdbc.sql(
+            """
+            INSERT INTO source_record (id, source_id, external_id, resource_id, source_url, canonical_url, title,
+                                       type, retrieved_at, fingerprint, extra)
+            VALUES (:id, 'github-awesome', :name, :rid, :url, :url, :name, 'LIBRARY', now(), 'fp',
+                    jsonb_build_object('tags', CAST(:tags AS jsonb)))
+            """)
+        .param("id", UUID.randomUUID())
+        .param("name", fullName)
+        .param("rid", resource)
+        .param("url", "https://github.com/" + fullName)
+        .param("tags", tags)
+        .update();
   }
 
   private String type(UUID id) {
@@ -127,6 +149,34 @@ class AwesomeListsApiIT extends ApiTestBase {
                 .single())
         .as("run again: the list is not read or audited twice")
         .isEqualTo(1);
+  }
+
+  @Test
+  void aBestOfNameOrTheAwesomeListTopicMakesASuspectLikeAnAwesomeName() throws Exception {
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    String bestOf = "someone/best-of-ml-" + suffix;
+    String topical = "someone/llm-links-" + suffix;
+    String plain = "someone/llm-tool-" + suffix;
+    UUID bestOfId = repo(bestOf, "LIBRARY", false);
+    UUID topicalId = repo(topical, "LIBRARY", false);
+    UUID plainId = repo(plain, "LIBRARY", false);
+    tagged(topicalId, topical, "[\"llm\", \"Awesome-List\"]");
+    tagged(plainId, plain, "[\"llm\"]");
+    README.put(bestOf, Optional.of(true));
+    README.put(topical, Optional.of(true));
+    README.put(plain, Optional.of(true));
+    var admin = oauth2Login().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+    mvc.perform(post("/api/v1/admin/ai-check/awesome-lists").with(admin).with(csrf().asHeader()))
+        .andExpect(status().isOk());
+
+    assertThat(type(bestOfId)).isEqualTo("AWESOME_LIST");
+    assertThat(type(topicalId)).isEqualTo("AWESOME_LIST");
+    assertThat(type(plainId)).isEqualTo("LIBRARY");
+    assertThat(READ.get(topical)).containsExactly("awesome-list", "llm");
+    assertThat(READ)
+        .as("a repository with neither name nor topic is not read")
+        .doesNotContainKey(plain);
   }
 
   @Test

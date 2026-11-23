@@ -159,11 +159,29 @@ fun interface CatalogLookup {
   fun listedAs(url: CanonicalUrl): ListedResource?
 }
 
+/**
+ * A list that proposed a candidate; [directoryListTitle] is set for a list page of a directory
+ * host.
+ */
+data class NamingList(
+  val url: CanonicalUrl,
+  val headingPath: String,
+  val directoryListTitle: String?,
+)
+
+/**
+ * Records that a list names a resource, under the resource's [title] for the list's search words.
+ */
+fun interface NamingLists {
+  fun name(resource: UUID, title: String, list: NamingList)
+}
+
 class IndexAcceptedCandidate(
   collectors: List<Collector>,
   private val catalog: CatalogIndex,
   private val lookup: CatalogLookup,
   private val details: CandidateDetails,
+  private val namingLists: NamingLists,
   private val clock: Clock,
 ) {
   private val sources = collectors.associateBy { it.descriptor.id }
@@ -171,19 +189,39 @@ class IndexAcceptedCandidate(
 
   private companion object {
     const val MAX_SNIPPET = ScoutPolicy.PRODUCT_PAGE_EXCERPT_CHARS
+    const val FOUND_BY = "foundBy"
+    const val LIST_FACT = "awesome"
+    const val MAX_HEADING_PATH = 200
+    const val MAX_LIST_TITLE = 300
   }
 
   fun accept(details: String?): AcceptOutcome {
     val candidate = this.details.read(details)
     val url = hitOf(candidate, collectorOf(candidate)).canonicalUrl
-    val listed =
-      lookup.listedAs(url)
-        ?: return AcceptOutcome.Indexed(
-          index(candidate),
-          candidate.confirmed,
-          candidate.descriptionByAi,
-        )
-    return AcceptOutcome.AlreadyListed(listed)
+    val listed = lookup.listedAs(url)
+    val resource = listed?.id ?: index(candidate)
+    nameByItsLists(resource, candidate)
+    return if (listed != null) AcceptOutcome.AlreadyListed(listed)
+    else AcceptOutcome.Indexed(resource, candidate.confirmed, candidate.descriptionByAi)
+  }
+
+  // UC-030 BR-008: an accepted candidate is named by the lists that proposed it.
+  private fun nameByItsLists(resource: UUID, candidate: AcceptedCandidate) {
+    val finders = candidate.facts[FOUND_BY] as? List<*> ?: return
+    finders
+      .mapNotNull { (it as? Map<*, *>)?.get(LIST_FACT) as? Map<*, *> }
+      .mapNotNull(::namingList)
+      .distinctBy { it.url }
+      .forEach { namingLists.name(resource, candidate.title.trim(), it) }
+  }
+
+  private fun namingList(fact: Map<*, *>): NamingList? {
+    val url = (fact["list"] as? String)?.let(CanonicalUrl::of) ?: return null
+    return NamingList(
+      url,
+      (fact["section"] as? String).orEmpty().take(MAX_HEADING_PATH),
+      (fact["directoryList"] as? String)?.trim()?.take(MAX_LIST_TITLE)?.ifEmpty { null },
+    )
   }
 
   fun index(candidate: AcceptedCandidate): UUID {

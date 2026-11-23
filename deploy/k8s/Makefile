@@ -7,6 +7,8 @@ WEB_IMAGE := $(REGISTRY)/helper2/apps/helper2-web
 CHART    := ../helm/helper2
 PG_REPO  := $(REGISTRY)/helper2/apps/postgres
 PG_TAG   := $(shell awk '/^postgres:/ {p=1; next} p && /^[^ \#]/ {exit} p && $$1 == "tag:" {print $$2; exit}' $(CHART)/values.yaml)
+EMB_REPO := $(REGISTRY)/helper2/apps/embedder
+EMB_TAG  := $(shell awk '/^embedder:/ {p=1; next} p && /^[^ \#]/ {exit} p && $$1 == "tag:" {print $$2; exit}' $(CHART)/values.yaml)
 TAG      ?= $(shell git -C $(ROOT) rev-parse --short=12 HEAD)
 ENGINE   ?= podman
 ENV      ?= staging
@@ -17,14 +19,14 @@ ifeq ($(filter $(ENV),staging prod),)
 $(error ENV must be staging or prod)
 endif
 
-.PHONY: help credentials backup-credentials image retag sbom backoffice-sbom web-sbom postgres-sbom postgres-image chart-check check-env release-ready deploy diff rollback status canary canary-smoke uncanary
+.PHONY: help credentials backup-credentials image retag sbom backoffice-sbom web-sbom postgres-sbom postgres-image embedder-sbom embedder-image chart-check check-env release-ready deploy diff rollback status canary canary-smoke uncanary
 
 help: ## this list
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
 
 API_SERVER ?= $(shell kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}' 2>/dev/null)
 credentials: check-env ## write ENV's deployer kubeconfig + app.env to OpenBao for CI
-	@set -euo pipefail; \
+	@set -euo pipefail; $(NEED_BAO); \
 	test -n "$(API_SERVER)" || { echo "API_SERVER is not set (the platform .env sets it)"; exit 1; }; \
 	if [ -z "$${BAO_TOKEN:-}" ]; then \
 		BAO_TOKEN=$$(bao login -method=oidc -path=oidc -token-only role=helper2-operator); export BAO_TOKEN; \
@@ -45,7 +47,7 @@ credentials: check-env ## write ENV's deployer kubeconfig + app.env to OpenBao f
 	echo "wrote helper2/kv ci/$(ENV) (kubeconfig of $(NS)/deployer, $(ENV)/app.env)"
 
 backup-credentials: ## write ENV's off-site backup Secret (pg-backup-offsite) from OpenBao
-	@set -euo pipefail; \
+	@set -euo pipefail; $(NEED_BAO); \
 	r2=$$(bao kv get -mount=helper2/kv -format=json backup/r2); \
 	fields=$$(jq -er '.data.data as $$d | ("access_key_id", "secret_access_key", "endpoint", "bucket", "crypt_password") | "\(.)=\($$d[.] // error("helper2/kv backup/r2 has no \(.)"))"' <<<"$$r2"); \
 	kubectl -n $(NS) create secret generic pg-backup-offsite --dry-run=client -o yaml \
@@ -53,8 +55,11 @@ backup-credentials: ## write ENV's off-site backup Secret (pg-backup-offsite) fr
 		| kubectl apply -f - >/dev/null; \
 	echo "wrote $(NS)/pg-backup-offsite from helper2/kv backup/r2"
 
+NEED_BAO = test -n "$${BAO_ADDR:-}" || { echo "BAO_ADDR is not set: export BAO_ADDR=https://<your OpenBao> (bao would try 127.0.0.1:8200)"; exit 1; }
+
 HARBOR_KV ?= ci/harbor
 define HARBOR
+$(NEED_BAO); \
 work=$$(mktemp -d); trap 'rm -rf "$$work"' EXIT; \
 creds=$$(bao kv get -mount=helper2/kv -format=json $(HARBOR_KV)); \
 user=$$(jq -r .data.data.harbor_user <<<"$$creds"); pass=$$(jq -r .data.data.harbor_password <<<"$$creds"); \
@@ -135,6 +140,24 @@ postgres-image: ## build Postgres + pgvector (deploy/postgres) and push it to Ha
 		*) echo "Harbor answered HTTP $$code for $(PG_REPO):$(PG_TAG)"; exit 1;; \
 	esac; \
 	echo "$(PG_REPO):$(PG_TAG) digest: $$(harbor_api apps/postgres $(PG_TAG) -f | jq -r .digest)"
+
+embedder-sbom: ## CycloneDX SBOM of the embedder image embedder.image.tag, read from Harbor, into SBOM
+	@test -n "$(EMB_TAG)" || { echo "embedder.image.tag not found in $(CHART)/values.yaml"; exit 1; }
+	@$(MAKE) --no-print-directory sbom IMAGE=$(EMB_REPO) TAG=$(EMB_TAG)
+
+embedder-image: ## build the embedding model image (deploy/embedder) and push it to Harbor, unless its tag is there
+	@set -euo pipefail; \
+	test -n "$(EMB_TAG)" || { echo "embedder.image.tag not found in $(CHART)/values.yaml"; exit 1; }; \
+	$(HARBOR); \
+	code=$$(harbor_api apps/embedder $(EMB_TAG) -o /dev/null -w "%{http_code}"); case $$code in \
+		200) echo "$(EMB_REPO):$(EMB_TAG) is in Harbor already, not rebuilt (a new image needs a new embedder.image.tag)";; \
+		404) harbor_login; \
+			$(ENGINE) build --platform linux/amd64 -t $(EMB_REPO):$(EMB_TAG) $(ROOT)/deploy/embedder; \
+			$(ENGINE) push $(PUSH_DIGEST) $(EMB_REPO):$(EMB_TAG); $(call record_push,apps/embedder,$(EMB_TAG)) \
+			echo "pushed $(EMB_REPO):$(EMB_TAG)";; \
+		*) echo "Harbor answered HTTP $$code for $(EMB_REPO):$(EMB_TAG)"; exit 1;; \
+	esac; \
+	echo "$(EMB_REPO):$(EMB_TAG) digest: $$(harbor_api apps/embedder $(EMB_TAG) -f | jq -r .digest)"
 
 ENV_SECRET   := helper2-app-env
 CREDS_SECRET := helper2-credentials
@@ -229,11 +252,17 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 		out=$$("$${c[@]}" --set canary.token=$$tok); \
 		kubeconform -strict -summary -schema-location default -schema-location '$(CRD_SCHEMAS)' <<< "$$out"; \
 		names=$$(awk '/^kind:/ {k=$$2} /^  name:/ {print k "/" $$2}' <<< "$$out" | sort | xargs); \
+		if grep -qF 'name: H2_NVIDIA_EMBEDDING_BASE_URL, value: "http://helper2-embedder:8080/v1"' <<< "$$out"; then \
+			grep -q 'NetworkPolicy/canary-ingress-embedder ' <<< "$$names" || { echo "$$e canary: it calls the embedder, so the embedder must let it in"; exit 1; }; \
+			names=$${names/NetworkPolicy\/canary-ingress-embedder /}; \
+		fi; \
 		[ "$$names" = "Deployment/helper2-canary Deployment/helper2-web-canary Ingress/helper2-canary Job/helper2-canary-migrate-1 NetworkPolicy/canary-egress-app NetworkPolicy/canary-egress-migrate NetworkPolicy/canary-ingress-app NetworkPolicy/canary-ingress-postgres NetworkPolicy/canary-ingress-postgres-migrate NetworkPolicy/canary-ingress-redis NetworkPolicy/canary-ingress-web Service/helper2-canary Service/helper2-web-canary" ] \
 			|| { echo "$$e canary renders: $$names"; exit 1; }; \
 		[ "$$(grep -c '^  replicas: 1$$' <<< "$$out")" -eq 2 ] || { echo "$$e canary: the app and web Deployments must run one pod each"; exit 1; }; \
 		grep -qF "nginx.ingress.kubernetes.io/canary-by-header-value: \"$$tok\"" <<< "$$out" || { echo "$$e canary: the Ingress must route on the header and its token"; exit 1; }; \
 		if grep -q 'canary-weight' <<< "$$out"; then echo "$$e canary: no user traffic goes to a canary"; exit 1; fi; \
+		paths=$$(grep -o 'path: [^,]*, pathType: [A-Za-z]*' <<< "$$out" | xargs); \
+		[ "$$paths" = "path: /assets/, pathType: Prefix path: /api/, pathType: Prefix" ] || { echo "$$e canary: the Ingress must name /assets/ and /api/ as plain Prefix paths, the ones the public Ingress has: $$paths"; exit 1; }; \
 		if "$${c[@]}" >/dev/null 2>&1; then echo "$$e canary renders without a token"; exit 1; fi; \
 		if "$${c[@]}" --set canary.token=short >/dev/null 2>&1; then echo "$$e canary renders with a short token"; exit 1; fi; \
 	done; \
@@ -269,11 +298,41 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	grace=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
 		--set app.shutdown.preStopSeconds=3 --set app.shutdown.drainSeconds=20 --show-only templates/app.yaml); \
 	grep -qE '^      terminationGracePeriodSeconds: 28$$' <<< "$$grace" || { echo "grace period must be preStopSeconds + drainSeconds + 5"; exit 1; }; \
-	echo "== every image but the apps' is pinned by digest (ADR 0044); postgres once postgres.image.digest is set"; \
+	echo "== every image but the apps' is pinned by digest (ADR 0044); postgres and the embedder once their digest is set"; \
 	imgs=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 \
-		$${offsite[*]} --set postgres.image.digest=sha256:$$(printf '0%.0s' $$(seq 64)) | grep -E '^ *image: ' | grep -vE '/apps/helper2(-backoffice|-web)?:' | sort -u); \
+		$${offsite[*]} --set postgres.image.digest=sha256:$$(printf '0%.0s' $$(seq 64)) \
+		--set embedder.enabled=true --set embedder.image.digest=sha256:$$(printf '0%.0s' $$(seq 64)) | grep -E '^ *image: ' | grep -vE '/apps/helper2(-backoffice|-web)?:' | sort -u); \
 	test -n "$$imgs" || { echo "no images rendered"; exit 1; }; \
 	if grep -v '@sha256:[0-9a-f]\{64\}' <<< "$$imgs"; then echo "these images are not pinned by digest"; exit 1; fi; \
+	echo "== the embedder (ADR 0054): one pod, in prod's namespace, a ClusterIP Service, no Ingress; in come prod's two apps and staging's two apps, nothing else; staging runs none and calls prod's"; \
+	t=(helm template helper2 $(CHART) --set image.tag=000000000000); \
+	on=$$("$${t[@]}" -n helper2-prod -f $(CHART)/values-prod.yaml); \
+	emb=$$("$${t[@]}" -n helper2-prod -f $(CHART)/values-prod.yaml --show-only templates/embedder.yaml); \
+	if grep -qE '^  type: |nodePort|hostPort|hostNetwork|externalIPs' <<< "$$emb"; then echo "the embedder Service must be a plain ClusterIP"; exit 1; fi; \
+	if awk '/^kind: Ingress$$/ {p=1} /^---$$/ {p=0} p' <<< "$$on" | grep -q embedder; then echo "an Ingress names the embedder"; exit 1; fi; \
+	pol=$$(awk '/^  name: ingress-embedder$$/ {p=1} p' <<< "$$emb"); \
+	[ "$$(grep -c 'podSelector: { matchLabels: { app: helper2\(-backoffice\)\? } }' <<< "$$pol")" -eq 2 ] \
+		&& [ "$$(grep -c 'namespaceSelector' <<< "$$pol")" -eq 1 ] \
+		&& grep -qF 'namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: helper2-staging } }' <<< "$$pol" \
+		&& grep -qF 'podSelector: { matchExpressions: [{ key: app, operator: In, values: [helper2, helper2-backoffice, helper2-canary] }] }' <<< "$$pol" \
+		&& ! grep -q 'ipBlock' <<< "$$pol" \
+		|| { echo "ingress-embedder must let in prod's two apps, and staging's two apps and its canary, nothing else"; exit 1; }; \
+	grep -q 'readOnlyRootFilesystem: true' <<< "$$emb" || { echo "the embedder must run on a read-only root filesystem"; exit 1; }; \
+	[ "$$(grep -c 'name: H2_NVIDIA_EMBEDDING_BASE_URL, value: "http://helper2-embedder:8080/v1"' <<< "$$on")" -eq 2 ] \
+		&& [ "$$(grep -c 'name: H2_EMBEDDING_EVERY, value: "PT3S"' <<< "$$on")" -eq 2 ] \
+		|| { echo "prod's public app and back office must both call the embedder, the indexer every 3 s"; exit 1; }; \
+	stg=$$("$${t[@]}" -n helper2-staging -f $(CHART)/values-staging.yaml); \
+	if grep -qE '^  name: (helper2-embedder|ingress-embedder)$$' <<< "$$stg"; then echo "staging must not run an embedder of its own"; exit 1; fi; \
+	[ "$$(grep -c 'name: H2_NVIDIA_EMBEDDING_BASE_URL, value: "http://helper2-embedder.helper2-prod.svc:8080/v1"' <<< "$$stg")" -eq 2 ] \
+		&& [ "$$(grep -c 'name: H2_EMBEDDING_EVERY, value: "PT1M"' <<< "$$stg")" -eq 2 ] \
+		|| { echo "staging's public app and back office must both call prod's embedder, the indexer once a minute"; exit 1; }; \
+	awk '/^  name: egress-app$$/ {p=1} /^---$$/ {p=0} p' <<< "$$stg" | grep -A1 -F 'namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: helper2-prod } }' \
+		| grep -qF 'podSelector: { matchLabels: { app: helper2-embedder } }' \
+		|| { echo "staging's apps must be let out to the embedder pods of helper2-prod, and to nothing else there"; exit 1; }; \
+	if "$${t[@]}" -f $(CHART)/values-prod.yaml --set embedder.url=http://helper2-embedder.x.svc:8080/v1 --set embedder.namespace=x >/dev/null 2>&1; then echo "embedder.enabled with embedder.url must fail the render"; exit 1; fi; \
+	if "$${t[@]}" -f $(CHART)/values-staging.yaml --set embedder.url=http://example.org/v1 >/dev/null 2>&1; then echo "an embedder.url outside the cluster must fail the render"; exit 1; fi; \
+	off=$$("$${t[@]}" -f $(CHART)/values-prod.yaml --set embedder.enabled=false); \
+	if grep -qE 'helper2-embedder|H2_NVIDIA_|H2_EMBEDDING_EVERY' <<< "$$off"; then echo "with no embedder, nothing of it may be rendered"; exit 1; fi; \
 	echo "== Redis' memory limit is at least 3.5 times maxmemory (ADR 0005: an AOF rewrite forks and fills the page cache)"; \
 	for e in staging prod; do \
 		rd=$$(helm template helper2 $(CHART) -f $(CHART)/values-$$e.yaml --set image.tag=000000000000 --show-only templates/redis.yaml); \
@@ -339,8 +398,9 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	bk=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --show-only templates/backup.yaml); \
 	grep -q 'set -o pipefail' <<< "$$bk" || { echo "backup: no pipefail"; exit 1; }; \
 	grep -q 'startingDeadlineSeconds: 3600' <<< "$$bk" || { echo "backup: no startingDeadlineSeconds"; exit 1; }; \
-	awk '/gzip -t "\$$f.tmp"/ {t=NR} /mv "\$$f.tmp" "\$$f"/ {m=NR} /sort -r \| tail -n \+8 \| xargs -r rm -f/ {d=NR} /find \/backup .* -mtime \+6 -delete/ {a=NR} END { exit !(t && m && d && a && t < m && m < d && m < a) }' <<< "$$bk" \
-		|| { echo "backup: gzip -t must come before mv, and the prune to retentionDays (7) dumps, by count and by age, after both"; exit 1; }; \
+	grep -qF 'f=/backup/helper2-$$(date -u +%Y-%m-%dT%H%M%SZ).sql.gz' <<< "$$bk" || { echo "backup: each run needs its own dump name (UTC date and time)"; exit 1; }; \
+	awk '/gzip -t "\$$f.tmp"/ {t=NR} /mv "\$$f.tmp" "\$$f"/ {m=NR} /cut -c17-26 \| sort -ru \| tail -n \+8 \| while read -r d/ {d=NR} /find \/backup .* -mtime \+6 -delete/ {a=NR} END { exit !(t && m && d && a && t < m && m < d && m < a) }' <<< "$$bk" \
+		|| { echo "backup: gzip -t must come before mv, and the prune to the dumps of the newest retentionDays (7) dates, and by age, after both"; exit 1; }; \
 	echo "== restore check (ADR 0043): the latest dump, off-site or from the volume, restored with ON_ERROR_STOP into a throwaway Postgres"; \
 	for o in true false; do \
 		rc=$$(helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set backup.offsite.enabled=$$o \
@@ -521,18 +581,19 @@ if [ -n "$${BAO_CACERT:-}" ]; then export VAULT_CACERT="$$BAO_CACERT"; fi
 endef
 cosign_sign = cosign sign --yes --signing-config $(SIGNING_CONFIG) --key $(COSIGN_KEY) $(1) </dev/null >/dev/null
 
-SIGNED_REFS = apps/helper2-web:$(TAG) apps/helper2:$(TAG) apps/helper2-backoffice:$(TAG) apps/postgres:$(PG_TAG)
-sign: sign-pushed ## CD: sign exactly the digests in PUSHED (pushed by this run), then check every image of TAG and the Postgres image
+SIGNED_REFS = apps/helper2-web:$(TAG) apps/helper2:$(TAG) apps/helper2-backoffice:$(TAG) apps/postgres:$(PG_TAG) apps/embedder:$(EMB_TAG)
+sign: sign-pushed ## CD: sign exactly the digests in PUSHED (pushed by this run), then check every image of TAG, the Postgres image and the embedder image
 	@test -n "$(PG_TAG)" || { echo "postgres.image.tag not found in $(CHART)/values.yaml"; exit 1; }; \
+	test -n "$(EMB_TAG)" || { echo "embedder.image.tag not found in $(CHART)/values.yaml"; exit 1; }; \
 	$(MAKE) --no-print-directory verify-images TAG=$(TAG) DIGESTS=/dev/null
 
 sign-pushed: ## CD: sign exactly the digests in PUSHED (pushed by this run), nothing else
 	@set -euo pipefail; \
-	[[ "$(PUSHED)" == /* ]] || { echo "PUSHED must be the absolute path that ci-images and postgres-image wrote"; exit 1; }; \
+	[[ "$(PUSHED)" == /* ]] || { echo "PUSHED must be the absolute path that ci-images, postgres-image and embedder-image wrote"; exit 1; }; \
 	[ -s "$(PUSHED)" ] || { echo "nothing pushed by this run, nothing to sign"; exit 0; }; \
 	$(HARBOR); $(COSIGN); $(TRANSIT); \
 	while IFS= read -r line <&3; do \
-		[[ $$line =~ ^apps/(helper2|helper2-web|helper2-backoffice|postgres)@sha256:[0-9a-f]{64}$$ ]] \
+		[[ $$line =~ ^apps/(helper2|helper2-web|helper2-backoffice|postgres|embedder)@sha256:[0-9a-f]{64}$$ ]] \
 			|| { echo "PUSHED holds '$$line', not repository@digest of one of our images"; exit 1; }; \
 		image=$(REGISTRY)/helper2/$$line; \
 		rc=0; verify $$image || rc=$$?; case $$rc in \
@@ -545,11 +606,12 @@ sign-pushed: ## CD: sign exactly the digests in PUSHED (pushed by this run), not
 	done 3< "$(PUSHED)"
 
 CONFIRM ?=
-sign-existing: ## workstation only: sign the unsigned images of TAG and of PG_TAG, after a confirmation (or CONFIRM=yes)
+sign-existing: ## workstation only: sign the unsigned images of TAG, of PG_TAG and of EMB_TAG, after a confirmation (or CONFIRM=yes)
 	@set -euo pipefail; \
 	[ -z "$${GITHUB_ACTIONS:-}" ] && [ -z "$${CI:-}" ] || { echo "sign-existing is for the operator's workstation, never for CI"; exit 1; }; \
 	[[ "$(TAG)" =~ ^[0-9a-f]{12}$$ || "$(TAG)" =~ ^[0-9]+\.[0-9]+\.[0-9]+$$ ]] || { echo "TAG must be a 12-char commit or YYYY.N.P, got '$(TAG)'"; exit 1; }; \
 	test -n "$(PG_TAG)" || { echo "postgres.image.tag not found in $(CHART)/values.yaml"; exit 1; }; \
+	test -n "$(EMB_TAG)" || { echo "embedder.image.tag not found in $(CHART)/values.yaml"; exit 1; }; \
 	$(TRANSIT); $(HARBOR); $(COSIGN); \
 	todo=""; \
 	for ref in $(SIGNED_REFS); do \
@@ -576,13 +638,13 @@ sign-existing: ## workstation only: sign the unsigned images of TAG and of PG_TA
 	done
 
 DIGESTS ?= /dev/stdout
-verify-images: ## digest of each image of TAG and of the Postgres image, signature checked against cosign.pub, into DIGESTS
+verify-images: ## digest of each image of TAG, of the Postgres image and of the embedder image (none when EMB_TAG is empty: a release from before it), signature checked against cosign.pub, into DIGESTS
 	@set -euo pipefail; \
 	test -n "$(PG_TAG)" || { echo "postgres.image.tag not found in $(CHART)/values.yaml"; exit 1; }; \
 	$(HARBOR); $(COSIGN); \
 	out=""; \
 	for entry in WEB_DIGEST=apps/helper2-web:$(TAG) APP_DIGEST=apps/helper2:$(TAG) BO_DIGEST=apps/helper2-backoffice:$(TAG) \
-		PG_DIGEST=apps/postgres:$(PG_TAG); do \
+		PG_DIGEST=apps/postgres:$(PG_TAG) $(if $(EMB_TAG),EMB_DIGEST=apps/embedder:$(EMB_TAG)); do \
 		key=$${entry%%=*}; ref=$${entry#*=}; repo=$${ref%%:*}; tag=$${ref#*:}; \
 		digest=$$(digest_of $$repo $$tag) || { echo "$(REGISTRY)/helper2/$$ref is not in Harbor" >&2; exit 1; }; \
 		verify $(REGISTRY)/helper2/$$repo@$$digest || { cat "$$work/verify.log" >&2; \
@@ -601,7 +663,8 @@ diff env-secret: verified
 verified_digest = $(shell sed -n 's/^$(1)=//p' $(VERIFIED) 2>/dev/null)
 need_digest = $(if $(and $(filter TAG=$(TAG),$(shell cat $(VERIFIED) 2>/dev/null)),$(filter sha256:%,$(call verified_digest,$(1)))),--set $(2)=$(call verified_digest,$(1)),$(error $(1): no signature check for TAG $(TAG) in $(VERIFIED). Run make verified (ADR 0044)))
 HELM_ARGS += $(call need_digest,APP_DIGEST,image.digest) $(call need_digest,BO_DIGEST,backoffice.image.digest) \
-	$(call need_digest,WEB_DIGEST,web.image.digest) $(call need_digest,PG_DIGEST,postgres.image.digest)
+	$(call need_digest,WEB_DIGEST,web.image.digest) $(call need_digest,PG_DIGEST,postgres.image.digest) \
+	$(call need_digest,EMB_DIGEST,embedder.image.digest)
 
 cosign-pub: ## write cosign.pub from the OpenBao Transit key (needs read on its keys/ path)
 	@set -euo pipefail; $(TRANSIT); \
@@ -644,12 +707,13 @@ chart-check-status:
 		|| { echo "deploy.yml must say in the log and in the run summary that the rollback is off"; exit 1; }
 chart-check-digests:
 	@set -euo pipefail; \
-	echo "== digests (ADR 0044): with the four digests set, every image is repository:tag@digest; the web pods and the init container run the same one"; \
+	echo "== digests (ADR 0044): with the five digests set, every image is repository:tag@digest; the web pods and the init container run the same one"; \
 	d() { printf 'sha256:%064d' "$$1"; }; \
 	r=(helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set image.digest=$$(d 1) \
-		--set web.image.digest=$$(d 2) --set backoffice.image.digest=$$(d 3) --set postgres.image.digest=$$(d 4)); \
+		--set web.image.digest=$$(d 2) --set backoffice.image.digest=$$(d 3) --set postgres.image.digest=$$(d 4) \
+		--set embedder.enabled=true --set embedder.image.digest=$$(d 5)); \
 	imgs=$$(helm template "$${r[@]}" | grep -E '^ *image: ' | sed 's/^ *image: //' | sort -u); \
-	for want in "$(IMAGE):000000000000@$$(d 1)" "$(WEB_IMAGE):000000000000@$$(d 2)" "$(BO_IMAGE):000000000000@$$(d 3)" "$(PG_REPO):$(PG_TAG)@$$(d 4)"; do \
+	for want in "$(IMAGE):000000000000@$$(d 1)" "$(WEB_IMAGE):000000000000@$$(d 2)" "$(BO_IMAGE):000000000000@$$(d 3)" "$(PG_REPO):$(PG_TAG)@$$(d 4)" "$(EMB_REPO):$(EMB_TAG)@$$(d 5)"; do \
 		grep -qxF "$$want" <<< "$$imgs" || { echo "not rendered: $$want"; echo "$$imgs"; exit 1; }; \
 	done; \
 	if grep -v '@sha256:[0-9a-f]\{64\}$$' <<< "$$imgs"; then echo "these images are not pinned by digest"; exit 1; fi; \
@@ -657,15 +721,15 @@ chart-check-digests:
 	init=$$(helm template "$${r[@]}" --show-only templates/app.yaml | awk '/initContainers:/ {p=1} /^      containers:/ {p=0} p' | grep -E '^ *image: ' | sed 's/^ *//' | sort -u); \
 	[ "$$web" = "image: $(WEB_IMAGE):000000000000@$$(d 2)" ] && [ "$$web" = "$$init" ] \
 		|| { echo "the web pods ($$web) and the init container ($$init) must both run the web image tag@digest"; exit 1; }; \
-	for v in image.digest web.image.digest backoffice.image.digest postgres.image.digest; do \
-		if helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set $$v=sha256:abc >/dev/null 2>&1; then \
+	for v in image.digest web.image.digest backoffice.image.digest postgres.image.digest embedder.image.digest; do \
+		if helm template helper2 $(CHART) -f $(CHART)/values-prod.yaml --set image.tag=000000000000 --set embedder.enabled=true --set $$v=sha256:abc >/dev/null 2>&1; then \
 			echo "$$v=sha256:abc must fail the render"; exit 1; fi; \
 	done; \
 	echo "== diff, env-secret and deploy take the digests only from their own signature check (verified), bound to TAG"; \
 	v=$$(mktemp); trap 'rm -f "$$v"' EXIT; \
 	dry() { $(MAKE) --no-print-directory -s -n diff ENV=staging TAG=000000000000 VERIFIED="$$v" APP_DIGEST=$$(d 9) 2>&1 || true; }; \
 	grep -q 'APP_DIGEST: no signature check for TAG 000000000000' <<< "$$(dry)" || { echo "make diff ran without a signature check: $$(dry)"; exit 1; }; \
-	printf 'WEB_DIGEST=%s\nAPP_DIGEST=%s\nBO_DIGEST=%s\nPG_DIGEST=%s\nTAG=111111111111\n' $$(d 2) $$(d 1) $$(d 3) $$(d 4) > "$$v"; \
+	printf 'WEB_DIGEST=%s\nAPP_DIGEST=%s\nBO_DIGEST=%s\nPG_DIGEST=%s\nEMB_DIGEST=%s\nTAG=111111111111\n' $$(d 2) $$(d 1) $$(d 3) $$(d 4) $$(d 5) > "$$v"; \
 	grep -q 'no signature check for TAG 000000000000' <<< "$$(dry)" || { echo "make diff took the digests checked for another TAG"; exit 1; }; \
 	sed -i.bak 's/^TAG=.*/TAG=000000000000/' "$$v"; rm -f "$$v.bak"; \
 	grep -qF -- "--set image.digest=$$(d 1) --set backoffice.image.digest=$$(d 3)" <<< "$$(dry)" \

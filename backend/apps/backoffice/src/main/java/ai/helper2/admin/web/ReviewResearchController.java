@@ -15,16 +15,16 @@ import ai.helper2.platform.NotFoundException;
 import ai.helper2.platform.ProblemType;
 import ai.helper2.research.ResearchResult;
 import ai.helper2.research.ResearchRun;
-import ai.helper2.research.ResearchRuns;
 import ai.helper2.research.ResearchStep;
 import ai.helper2.research.usecase.CancelResearch;
+import ai.helper2.research.usecase.FindLatestResearch;
+import ai.helper2.research.usecase.FollowResearchRun;
 import ai.helper2.research.usecase.StartResearch;
 import ai.helper2.shared.UtcTimes;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,12 +34,18 @@ class ReviewResearchController implements ReviewResearchApi {
 
   private final StartResearch start;
   private final CancelResearch cancel;
-  private final ResearchRuns runs;
+  private final FindLatestResearch latest;
+  private final FollowResearchRun follow;
 
-  ReviewResearchController(StartResearch start, CancelResearch cancel, ResearchRuns runs) {
+  ReviewResearchController(
+      StartResearch start,
+      CancelResearch cancel,
+      FindLatestResearch latest,
+      FollowResearchRun follow) {
     this.start = start;
     this.cancel = cancel;
-    this.runs = runs;
+    this.latest = latest;
+    this.follow = follow;
   }
 
   @Override
@@ -49,20 +55,27 @@ class ReviewResearchController implements ReviewResearchApi {
     if (allOpen == !ids.isEmpty()) {
       throw new ApiProblem(ProblemType.INVALID_REQUEST, "Give itemIds or allOpen, not both.");
     }
-    List<ResearchRun> queued =
-        allOpen ? start.startAllOpen(adminId()) : start.start(ids, adminId());
+    List<ResearchRun> queued;
+    try {
+      queued = allOpen ? start.startAllOpen(Admins.id()) : start.start(ids, Admins.id());
+    } catch (StartResearch.ResearchOff e) {
+      throw new ApiProblem(
+          ProblemType.UNAVAILABLE,
+          "Research is off on this back office (H2_RESEARCH_ENABLED). No run was queued.");
+    }
     return ResponseEntity.status(HttpStatus.ACCEPTED).body(runsDto(queued));
   }
 
   @Override
   public ResponseEntity<ReviewResearchRunsDto> listReviewResearch(List<UUID> itemId) {
-    return ResponseEntity.ok(runsDto(runs.latest(itemId)));
+    return ResponseEntity.ok(runsDto(latest.of(itemId)));
   }
 
   @Override
   public ResponseEntity<ReviewResearchEstimateDto> estimateReviewResearch() {
     StartResearch.Estimate e = start.estimateAllOpen();
-    return ResponseEntity.ok(new ReviewResearchEstimateDto(e.items(), e.maxModelCalls()));
+    return ResponseEntity.ok(
+        new ReviewResearchEstimateDto(e.items(), e.maxModelCalls(), e.alreadyResearched()));
   }
 
   @Override
@@ -71,7 +84,7 @@ class ReviewResearchController implements ReviewResearchApi {
     ReviewResearchDetailDto dto =
         new ReviewResearchDetailDto(
             runDto(run),
-            runs.steps(runId, 0).stream().map(ReviewResearchController::stepDto).toList());
+            follow.steps(runId, 0).stream().map(ReviewResearchController::stepDto).toList());
     if (run.result() != null) {
       dto.result(resultDto(run.result()));
     }
@@ -88,7 +101,7 @@ class ReviewResearchController implements ReviewResearchApi {
   }
 
   private ResearchRun found(UUID runId) {
-    return runs.find(runId).orElseThrow(() -> new NotFoundException("Research run not found."));
+    return follow.run(runId).orElseThrow(() -> new NotFoundException("Research run not found."));
   }
 
   static ReviewResearchRunsDto runsDto(List<ResearchRun> list) {
@@ -154,9 +167,5 @@ class ReviewResearchController implements ReviewResearchApi {
                         s.authoritative()))
                 .toList())
         .current(a.current());
-  }
-
-  private static String adminId() {
-    return SecurityContextHolder.getContext().getAuthentication().getName();
   }
 }

@@ -1,8 +1,6 @@
 package ai.helper2.catalog;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 public interface EmbeddingStore {
@@ -20,13 +18,11 @@ public interface EmbeddingStore {
     }
   }
 
-  default PendingEmbeddings pendingEmbeddings(String model, int limit) {
-    return pendingEmbeddings(model, limit, List.of());
-  }
+  PendingEmbeddings pendingEmbeddings(String model, int limit);
 
-  PendingEmbeddings pendingEmbeddings(String model, int limit, Collection<RefusedText> skipped);
+  boolean refuse(String model, RefusedText refused);
 
-  Set<UUID> stillRefused(String model, Collection<RefusedText> refused);
+  long forgetRefusalsThatNoLongerApply(String model);
 
   void saveEmbeddings(String model, List<EmbeddingTask> tasks, List<float[]> vectors);
 

@@ -63,4 +63,54 @@ describe('Feature: the catalog checked against the AI word rule (S2.12.2)', () =
     ).toBeInTheDocument();
     expect(m.callsTo('GET', '/admin/ai-check')[1]?.search).toContain('after=abc');
   });
+
+  it('Scenario: a resource that is not about AI is removed after a reason, and the row says so (S6.3.2)', async () => {
+    const m = mockApi({
+      'GET /me': () => ADMIN,
+      'GET /admin/enrichment-queue': () => ({ items: [], next: null }),
+      'GET /admin/ai-check': () => ({
+        notAboutAi: [
+          {
+            resourceId: PAPER,
+            title: 'awesome-crypto',
+            type: 'AWESOME_LIST',
+            popularity: 0.4,
+            waiting: false,
+          },
+        ],
+        checked: 500,
+        next: null,
+      }),
+      [`POST /admin/ai-check/${PAPER}/remove`]: () => undefined,
+    });
+    renderAdmin('/admin/enrichment');
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Check the 500 most popular' }),
+    );
+    const table = await screen.findByRole('table', { name: 'Not about AI by the word rule' });
+
+    await userEvent.click(
+      within(table).getByRole('button', { name: 'Remove awesome-crypto from the catalog' }),
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Remove awesome-crypto?' });
+    const reason = within(dialog).getByRole('textbox', {
+      name: 'Reason (kept in the audit trail)',
+    });
+    expect(reason).toHaveValue('Not about AI');
+    await userEvent.clear(reason);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove' }));
+    expect(m.callsTo('POST', `/admin/ai-check/${PAPER}/remove`)).toHaveLength(0);
+
+    await userEvent.type(reason, 'A crypto list');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Remove' }));
+
+    expect(m.callsTo('POST', `/admin/ai-check/${PAPER}/remove`)[0]?.body).toEqual({
+      reason: 'A crypto list',
+    });
+    expect(await within(table).findByText('Removed')).toBeInTheDocument();
+    expect(within(table).queryByRole('link', { name: 'awesome-crypto' })).not.toBeInTheDocument();
+    expect(
+      within(table).queryByRole('button', { name: 'Remove awesome-crypto from the catalog' }),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -6,10 +6,11 @@ import type { ReviewEvidence, ReviewQuote, Verification } from '@/api/types';
 import { RetryButton, StatePanel } from '@/ui/StatePanel';
 import { StatusPill, type StatusTone } from '@/ui/StatusPill';
 import { useApi } from '@/hooks/useApi';
-import { aiMark, isAiOrigin } from '@/lib/aiMark';
+import { aiMark, aiMarkWhen, isAiOrigin } from '@/lib/aiMark';
 import { formatDate, localDay, safeHref } from '@/lib/format';
 import { FieldCuration } from './FieldCuration';
 import { RelationshipTarget } from './RelationshipTarget';
+import { Loading, Skeleton, SkeletonRows } from '@/ui/Skeleton';
 
 const VERIFICATION_TONE: Record<Verification, StatusTone> = {
   CONFLICTING: 'warn',
@@ -43,9 +44,19 @@ export function ReviewEvidencePanel({
         {t('admin.evidence.title')}
       </h4>
       {evidence.loading ? (
-        <p role="status" className="muted">
-          {t('admin.evidence.loading')}
-        </p>
+        <Loading label={t('admin.evidence.loading')}>
+          <Skeleton>
+            <SkeletonRows
+              rows={2}
+              bars={[
+                { size: 'meta', width: 'short' },
+                { size: 'small', width: 'full' },
+                { size: 'small', width: 'wide' },
+              ]}
+              ruled
+            />
+          </Skeleton>
+        </Loading>
       ) : evidence.error !== undefined || !evidence.data ? (
         <StatePanel
           tone="error"
@@ -68,12 +79,23 @@ function EvidenceBody({
   onChanged: () => void;
 }) {
   const { t } = useTranslation();
-  const { item, run, relationship, fields, validationErrors } = evidence;
+  const { item, run, relationship, fields, validationErrors, directoryLists, directoryRatings } =
+    evidence;
   const retargetable = item.status === 'OPEN' && item.kind === 'RELATIONSHIP_CANDIDATE';
   const targetCurated = relationship?.targetOrigin === 'CURATED';
-  if (!run && !relationship) return <p className="muted">{t('admin.evidence.none')}</p>;
+  if (!run && !relationship) {
+    return (
+      <>
+        <DirectoryLists lists={directoryLists} />
+        <DirectoryRatings ratings={directoryRatings} />
+        <p className="muted">{t('admin.evidence.none')}</p>
+      </>
+    );
+  }
   return (
     <>
+      <DirectoryLists lists={directoryLists} />
+      <DirectoryRatings ratings={directoryRatings} />
       {run && (
         <dl className="h2-admin__run">
           <dt>{t('admin.evidence.model')}</dt>
@@ -111,7 +133,7 @@ function EvidenceBody({
         <div className="h2-admin__field">
           <p className="h2-admin__field-head">
             <span {...aiMark(run?.model)}>{t(`relationship.${relationship.kind}`)}</span>{' '}
-            <span {...(targetCurated ? {} : aiMark(run?.model))}>{relationship.target}</span>{' '}
+            <span {...aiMarkWhen(!targetCurated, run?.model)}>{relationship.target}</span>{' '}
             <StatusPill tone={VERIFICATION_TONE[relationship.verification]}>
               {t(`verification.${relationship.verification}`)}
             </StatusPill>
@@ -138,7 +160,7 @@ function EvidenceBody({
                 <span className="h2-admin__field-name">
                   {t(`detail.field.${f.field}`, { defaultValue: f.field })}
                 </span>{' '}
-                <span {...(isAiOrigin(f.origin) ? aiMark(run?.model) : {})}>{f.value}</span>{' '}
+                <span {...aiMarkWhen(isAiOrigin(f.origin), run?.model)}>{f.value}</span>{' '}
                 <StatusPill tone={VERIFICATION_TONE[f.verification]}>
                   {t(`verification.${f.verification}`)}
                 </StatusPill>
@@ -161,6 +183,77 @@ function EvidenceBody({
       {!relationship && fields.length === 0 && (
         <p className="muted">{t('admin.evidence.noFields')}</p>
       )}
+    </>
+  );
+}
+
+// UC-024 BR-020: the back office names the directories whose figures make the rating.
+function DirectoryRatings({ ratings }: { ratings: ReviewEvidence['directoryRatings'] }) {
+  const { t } = useTranslation();
+  if (ratings.length === 0) return null;
+  return (
+    <>
+      <p id="rq-directory-ratings" className="h2-admin__h3">
+        {t('admin.evidence.directoryRatings', { count: ratings.length })}
+      </p>
+      <ul aria-labelledby="rq-directory-ratings">
+        {ratings.map((rating) => {
+          const href = safeHref(rating.page);
+          return (
+            <li key={rating.page}>
+              {href ? (
+                <a href={href} target="_blank" rel="noopener noreferrer nofollow">
+                  {rating.host}
+                </a>
+              ) : (
+                rating.host
+              )}{' '}
+              <span className="muted">
+                {t('admin.evidence.directoryRating', {
+                  average: rating.average,
+                  scale: rating.scale,
+                  count: rating.votes,
+                  date: formatDate(rating.readAt, 'INSTANT'),
+                })}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
+function DirectoryLists({ lists }: { lists: ReviewEvidence['directoryLists'] }) {
+  const { t } = useTranslation();
+  if (lists.length === 0) return null;
+  return (
+    <>
+      <p id="rq-directory-lists" className="h2-admin__h3">
+        {t('admin.evidence.directoryLists', { count: lists.length })}
+      </p>
+      <ul aria-labelledby="rq-directory-lists">
+        {lists.map((list) => {
+          const href = safeHref(list.page);
+          return (
+            <li key={list.page}>
+              {href ? (
+                <a href={href} target="_blank" rel="noopener noreferrer nofollow">
+                  {list.title}
+                </a>
+              ) : (
+                list.title
+              )}
+              {list.headingPath && (
+                <span className="muted">
+                  {' '}
+                  {t('admin.evidence.directoryListUnder', { heading: list.headingPath })}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </>
   );
 }

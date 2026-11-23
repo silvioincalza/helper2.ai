@@ -2,6 +2,8 @@ package ai.helper2.catalog.internal;
 
 import ai.helper2.catalog.Embedder;
 import ai.helper2.catalog.EmbeddingStore;
+import ai.helper2.catalog.KnownTargets;
+import ai.helper2.catalog.ReviewQueue;
 import ai.helper2.catalog.config.CatalogProperties;
 import ai.helper2.catalog.usecase.IndexEmbeddings;
 import ai.helper2.platform.config.EmbeddingProperties;
@@ -51,8 +53,8 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
-  JdbcKnownTargetCandidates jdbcKnownTargetCandidates(JdbcClient jdbc) {
-    return new JdbcKnownTargetCandidates(jdbc);
+  JdbcKnownTargetCandidates jdbcKnownTargetCandidates(JdbcClient jdbc, ObjectMapper json) {
+    return new JdbcKnownTargetCandidates(jdbc, new KnownTargetProposalJson(json));
   }
 
   @Bean
@@ -66,6 +68,11 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcResourceRemoval jdbcResourceRemoval(JdbcClient jdbc) {
+    return new JdbcResourceRemoval(jdbc);
+  }
+
+  @Bean
   JdbcCatalogRetention jdbcCatalogRetention(JdbcClient jdbc, JdbcCatalogWriter writer) {
     return new JdbcCatalogRetention(jdbc, writer);
   }
@@ -76,13 +83,53 @@ public class CatalogBackOfficeAdapters {
   }
 
   @Bean
+  JdbcGoneLists jdbcGoneLists(JdbcClient jdbc) {
+    return new JdbcGoneLists(jdbc);
+  }
+
+  @Bean
+  JdbcGoneWebLists jdbcGoneWebLists(JdbcClient jdbc) {
+    return new JdbcGoneWebLists(jdbc);
+  }
+
+  @Bean
+  JdbcDirectoryListIndex jdbcDirectoryListIndex(JdbcClient jdbc, ObjectMapper json) {
+    return new JdbcDirectoryListIndex(jdbc, json);
+  }
+
+  @Bean
+  JdbcListNamings jdbcListNamings(JdbcClient jdbc) {
+    return new JdbcListNamings(jdbc);
+  }
+
+  @Bean
+  JdbcDirectoryRatingIndex jdbcDirectoryRatingIndex(JdbcClient jdbc, ObjectMapper json) {
+    return new JdbcDirectoryRatingIndex(jdbc, json);
+  }
+
+  @Bean
   JdbcReviewEvidence jdbcReviewEvidence(JdbcClient jdbc) {
     return new JdbcReviewEvidence(jdbc);
   }
 
   @Bean
+  JdbcRepositoryVisits jdbcRepositoryVisits(JdbcClient jdbc) {
+    return new JdbcRepositoryVisits(jdbc);
+  }
+
+  @Bean
   JdbcEnrichmentCandidates jdbcEnrichmentCandidates(JdbcClient jdbc) {
     return new JdbcEnrichmentCandidates(jdbc);
+  }
+
+  @Bean
+  JdbcEnrichmentResults jdbcEnrichmentResults(
+      JdbcClient jdbc,
+      ReviewQueue reviewQueue,
+      ObjectMapper json,
+      Clock clock,
+      KnownTargets knownTargets) {
+    return new JdbcEnrichmentResults(jdbc, reviewQueue, json, clock, knownTargets);
   }
 
   @Bean

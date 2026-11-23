@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { Notice } from '@/api/types';
-import { Icon } from '@/ui/Icon';
+import { Icon } from './Icon';
 
 type NoticeCode = Notice['code'];
 

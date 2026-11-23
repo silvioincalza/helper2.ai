@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.helper2.shared.ResourceType;
 import ai.helper2.shared.ValueOrigin;
+import ai.helper2.site.monetisation.CurrentMonetisation;
 import ai.helper2.site.monetisation.Monetisation;
 import ai.helper2.site.pages.config.PagesProperties;
 import ai.helper2.site.pages.internal.PageHtml;
@@ -32,6 +33,7 @@ class PageHtmlTest {
   private static final String HOSTILE =
       "</script><script>alert(1)</script>\" onload=\"x\" <b>&amp; \u2028";
   private static final UUID ID = UUID.fromString("8a0e6c1e-2f43-5b6e-9d0a-1f1e2d3c4b5a");
+  private static final UUID LIST_ID = UUID.fromString("5d2c9b7a-41f0-5c3e-8a6b-0e9d8c7b6a59");
 
   @TempDir Path dist;
 
@@ -47,7 +49,7 @@ class PageHtmlTest {
         new PageTemplate(new DefaultResourceLoader(), properties),
         JsonMapper.builder().build(),
         properties,
-        monetisation);
+        new CurrentMonetisation(monetisation, () -> true));
   }
 
   private static ResourceView hostile() {
@@ -68,7 +70,9 @@ class PageHtmlTest {
         List.of(
             new Link(HOSTILE, URI.create("https://github.com/acme/x")),
             new Link("bad", URI.create("javascript:alert(1)"))),
-        List.of(new Related(UUID.randomUUID(), HOSTILE)));
+        List.of(new Related(UUID.randomUUID(), HOSTILE)),
+        List.of(new Related(LIST_ID, HOSTILE)),
+        null);
   }
 
   @Test
@@ -80,8 +84,38 @@ class PageHtmlTest {
         .contains("<meta data-h2-head name=\"robots\" content=\"index, follow\">")
         .contains("<link data-h2-head rel=\"canonical\" href=\"https://helper2.ai/sources\">")
         .contains("<script nonce=\"n0nce\" type=\"module\" src=\"/assets/index.js\"></script>")
-        .contains("<div id=\"root\"></div>")
+        .contains(
+            "<div id=\"root\"><main class=\"h2-prerender\"><h1>Sources: where helper2.ai searches</h1>")
+        .contains("<nav><h2>More on helper2.ai</h2><ul><li><a href=\"/\">Search</a></li>")
+        .doesNotContain("<a href=\"/sources\">")
         .doesNotContain("<title>Helper2.ai</title>");
+  }
+
+  @Test
+  void aSiteListEscapesTheTitlesOfThirdParties() throws IOException {
+    SiteLists lists =
+        new SiteLists() {
+          @Override
+          public List<Related> newInCatalog() {
+            return List.of(new Related(ID, HOSTILE));
+          }
+
+          @Override
+          public List<Related> upcomingEvents() {
+            return List.of();
+          }
+
+          @Override
+          public List<Related> hub(ResourceType type) {
+            return List.of();
+          }
+        };
+    String page =
+        html(SHELL).render(new Pages("https://helper2.ai").of(PageKind.HOME, lists), "n0nce");
+    assertThat(page)
+        .contains("<h2>New in the catalog</h2><ul><li><a href=\"/resource/" + ID)
+        .doesNotContain("<script>alert(1)")
+        .doesNotContain("onload=\"x\"");
   }
 
   @Test
@@ -103,6 +137,8 @@ class PageHtmlTest {
             Optional.empty(),
             Optional.empty(),
             Optional.of("ca-pub-4688630163076563"),
+            Optional.empty(),
+            Optional.empty(),
             Optional.empty());
     String page = html(SHELL, adsense).render(new Pages("https://helper2.ai").home(), "n0nce");
 
@@ -139,6 +175,8 @@ class PageHtmlTest {
     assertThat(page).doesNotContain("\" onload=\"x\"");
     assertThat(page).doesNotContain("javascript:");
     assertThat(page).contains("<a href=\"https://github.com/acme/x\" rel=\"nofollow ugc\">");
+    assertThat(page)
+        .contains("<h2>Found in these lists</h2><ul><li><a href=\"/resource/" + LIST_ID);
     String jsonLd =
         page.substring(
             page.indexOf("application/ld+json\">"),
@@ -153,8 +191,35 @@ class PageHtmlTest {
   void theAppsOwnShellHasTheMarkers() throws IOException {
     String shell = Files.readString(Path.of("../frontend/index.html"));
     assertThat(html(shell).render(new Pages("https://helper2.ai").home(), "n0nce"))
-        .contains("<title data-h2-head>helper2.ai: the metasearch for the AI universe")
+        .contains("<title data-h2-head>helper2.ai: the metasearch for the AI ecosystem")
         .contains("<div id=\"root\"></div>");
+  }
+
+  @Test
+  void everyPageWithACanonicalNamesTheLinkPreviewImageAndItsSize() throws IOException {
+    Pages pages = new Pages("https://helper2.ai");
+    for (PageHead head : List.of(pages.home(), pages.of(PageKind.SOURCES))) {
+      assertThat(html(SHELL).render(head, "n0nce"))
+          .contains(
+              "<meta data-h2-head property=\"og:image\""
+                  + " content=\"https://helper2.ai/assets/og-1.png\">")
+          .contains("<meta data-h2-head property=\"og:image:type\" content=\"image/png\">")
+          .contains("<meta data-h2-head property=\"og:image:width\" content=\"1200\">")
+          .contains("<meta data-h2-head property=\"og:image:height\" content=\"630\">")
+          .contains("<meta data-h2-head property=\"og:image:alt\" content=\"helper2.ai: ")
+          .contains("<meta data-h2-head name=\"twitter:card\" content=\"summary_large_image\">");
+    }
+    assertThat(html(SHELL).render(pages.of(PageKind.SEARCH), "n0nce")).doesNotContain("og:image");
+  }
+
+  @Test
+  void theLinkPreviewImageIsAFileOfTheAppWithTheSizeThePageStates() throws IOException {
+    Path image = Path.of("../frontend/public" + Pages.SOCIAL_IMAGE);
+    assertThat(image).exists();
+    java.awt.image.BufferedImage read = javax.imageio.ImageIO.read(image.toFile());
+    assertThat(read.getWidth()).isEqualTo(Pages.SOCIAL_IMAGE_WIDTH);
+    assertThat(read.getHeight()).isEqualTo(Pages.SOCIAL_IMAGE_HEIGHT);
+    assertThat(Pages.SOCIAL_IMAGE).matches("/assets/[A-Za-z0-9_.-]+");
   }
 
   @Test

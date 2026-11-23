@@ -89,6 +89,7 @@ class PublicSecurityConfiguration {
                       "/api/v1/search",
                       "/api/v1/recent",
                       "/api/v1/events/upcoming",
+                      "/api/v1/hubs/*",
                       "/api/v1/resources/**",
                       "/api/v1/sources",
                       "/api/v1/categories",
