@@ -60,7 +60,8 @@ ISSUES_QUERY = """query($owner:String!,$name:String!,$endCursor:String){reposito
       priority:fieldValueByName(name:"Priority"){... on ProjectV2ItemFieldSingleSelectValue{name}}
       replay:fieldValueByName(name:"Replay PR"){... on ProjectV2ItemFieldNumberValue{number}}}}}}}}"""
 DETAILS_QUERY = """query($owner:String!,$name:String!,$endCursor:String){repository(owner:$owner,name:$name){
-  issues(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{number parent{number}
+  issues(first:100,after:$endCursor){pageInfo{hasNextPage endCursor} nodes{
+    number databaseId id url title body authorAssociation milestone{title} parent{number}
     issueFieldValues(first:20){nodes{
       ... on IssueFieldSingleSelectValue{name field{... on IssueFieldSingleSelect{name}}}
       ... on IssueFieldTextValue{value field{... on IssueFieldText{name}}}}}}}}}"""
@@ -254,27 +255,19 @@ class GhCli:
         self.change(f"keep the label {name}", ["label", "create", name, "--repo", repo, "--color", color, "--force"])
 
     def issues(self, repo: str) -> list[dict]:
-        found: list[dict] = []
-        page = 1
-        while True:
-            listed = self.api([f"repos/{repo}/issues?state=all&per_page={PAGE}&page={page}"])
-            found += [
-                {
-                    "number": i["number"],
-                    "id": i["id"],
-                    "node": i["node_id"],
-                    "url": i["html_url"],
-                    "title": i["title"],
-                    "body": i.get("body") or "",
-                    "author": i["author_association"],
-                    "milestone": (i.get("milestone") or {}).get("title"),
-                }
-                for i in listed
-                if "pull_request" not in i
-            ]
-            if len(listed) < PAGE:
-                return found
-            page += 1
+        return [
+            {
+                "number": n["number"],
+                "id": n["databaseId"],
+                "node": n["id"],
+                "url": n["url"],
+                "title": n["title"],
+                "body": n["body"],
+                "author": n["authorAssociation"],
+                "milestone": (n["milestone"] or {}).get("title"),
+            }
+            for n in self.details(repo)
+        ]
 
     def create_issue(self, repo: str, title: str, body: str, label: str) -> dict | None:
         payload = json.dumps({"title": title, "body": body, "labels": [label]})
@@ -1407,8 +1400,8 @@ def reads_are_paged() -> bool:
         return {"id": f"I{number}", "content": {"url": f"https://example.test/{number}"}, "fieldValues": {"nodes": values}}
 
     def listed(number: int, **more) -> dict:
-        issue = {"number": number, "id": number, "node_id": f"N{number}", "html_url": "u", "title": "t"}
-        return issue | {"author_association": "OWNER"} | more
+        issue = {"number": number, "databaseId": 1000 + number, "id": f"N{number}", "url": "u", "title": "t"}
+        return issue | {"body": "", "authorAssociation": "OWNER", "milestone": None, "parent": None} | more
 
     def named(field: str, **value) -> dict:
         return {**value, "field": {"name": field}}
@@ -1419,12 +1412,13 @@ def reads_are_paged() -> bool:
         [
             replied({"data": {"node": {"items": page_of(first, "c1")}}}),
             replied({"data": {"node": {"items": page_of(second, None)}}}),
-            replied([listed(number) for number in range(PAGE)]),
-            replied([listed(PAGE, pull_request={})]),
+            replied({"data": {"repository": {"issues": page_of([listed(n) for n in range(PAGE)], "c2")}}}),
+            replied({"data": {"repository": {"issues": page_of([listed(PAGE, milestone={"title": "v2026.11"})], None)}}}),
         ]
     )
     items = github.items({"id": "P1"}, ["Priority", "Release", "Replay PR"])
     issues = github.issues("example/shop")
+    parents = github.parents("example/shop")
     return (
         items
         == {
@@ -1432,8 +1426,20 @@ def reads_are_paged() -> bool:
             "https://example.test/2": {"id": "I2", "values": {"Priority": None, "Release": "2026.11.3", "Replay PR": 3.0}},
         }
         and json.loads(github.sent[1][1])["variables"] == {"endCursor": "c1", "project": "P1"}
-        and len(issues) == PAGE
-        and github.sent[3][0][-1].endswith("&page=2")
+        and len(issues) == PAGE + 1
+        and issues[-1]
+        == {
+            "number": PAGE,
+            "id": 1000 + PAGE,
+            "node": f"N{PAGE}",
+            "url": "u",
+            "title": "t",
+            "body": "",
+            "author": "OWNER",
+            "milestone": "v2026.11",
+        }
+        and json.loads(github.sent[3][1])["variables"]["endCursor"] == "c2"
+        and len(parents) == PAGE + 1
         and github.commands == 4
     )
 
@@ -1584,7 +1590,7 @@ def dry_run_writes_nothing() -> bool:
     with redirect_stdout(out):
         Import(SAMPLE, github).run()
     reads = all(args[:2] == ["api", "-i"] and "-X" not in args and "mutation" not in (data or "") for args, data in github.sent)
-    return reads and len(github.sent) == 5 and out.getvalue().count("would create the issue") == 7
+    return reads and len(github.sent) == 4 and out.getvalue().count("would create the issue") == 7
 
 
 def main() -> None:
