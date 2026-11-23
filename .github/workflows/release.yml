@@ -256,10 +256,8 @@ jobs:
           [[ $previous == "$tag" ]] || since=(-f previous_tag_name="$previous")
           notes=$(mktemp)
           [[ -z $HEADLINE ]] || printf '%s\n\n' "$HEADLINE" > "$notes"
-          # The pull requests that bring main or a fix into the release branch, the version pull request and the one
-          # back into main carry no change of their own: their chore(release) lines are left out.
           gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" -f tag_name="$tag" -f target_commitish="$SHA" \
-            "${since[@]}" --jq .body | { grep -vE '^\* chore\(release\): ' || true; } >> "$notes"
+            "${since[@]}" --jq .body | .github/scripts/release-notes.sh >> "$notes"
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
             tag -a "$tag" "$SHA" -F "$notes"
           git -c "$PUSH_AUTH" push --quiet origin "refs/tags/$tag"
