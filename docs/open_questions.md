@@ -345,7 +345,7 @@ counter of its own.
 **Element:** UC-016  
 **Raised by:** reviewer agent (review of pull request #1051), 2026-11-23  
 **Blocking:** No  
-**Status:** Open  
+**Status:** Answered  
 
 The goal and BR-002, BR-003 and BR-005 have the site count visits with Google Analytics, show Google ads and load
 Google's consent tool, each only when it is configured, and ads and the consent tool also only while the Google ads
@@ -364,3 +364,6 @@ the Google tools (one actor for Google, or one each), and the stack gets a row e
 that loads it; (b) only a system the backend calls is a secondary actor: the Google tools stay out, and the Payment
 Provider leaves UC-016, its diagram and the stack too; (c) the Payment Provider stays an actor because the visitor
 pays there and leaves the site, while the Google tools only run inside the site's page and stay out.
+
+**Answer:** (c)  
+**Answered by:** the human in the loop, 2026-11-23  
