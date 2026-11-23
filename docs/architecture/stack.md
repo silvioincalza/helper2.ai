@@ -5,7 +5,7 @@ independent of how the team documents its architecture. The Layers table says wh
 each technical layer: `/use-case-implement` runs the Skill column bottom-up, `/use-case-test` runs the Test skill
 column from the integration layer up, and `/use-case-coverage` searches for the markers in the last table.
 
-**Last updated:** 2026-11-20
+**Last updated:** 2026-11-23
 
 ## Layers
 
@@ -40,6 +40,8 @@ feature folders of the frontend). The project has no browser test layer.
 | Source Provider   | [sources.md](sources.md) | `ai.helper2.sources` (one package per source: `github`, `huggingface`, `arxiv`, `npm`, `pypi`, `hackernews`, `tavily`, `feeds`, ...) |
 | Embedding Service | –        | `ai.helper2.catalog.internal` (`NvidiaEmbedder`) |
 | Search Engine     | –        | `ai.helper2.catalog` (IndexNow: `catalog.schedule`, `catalog.config`) |
+| Identity Provider | –        | `ai.helper2.identity.security` in both apps (GitHub through Spring Security OAuth2 login, profile `oauth-github`; [ADR 0036](decisions/ADR-0036-identity-and-the-admin-host.md)) |
+| Payment Provider  | –        | `ai.helper2.site.monetisation` in `backend/apps/public` (links to GitHub Sponsors and a Stripe payment link; the visitor pays on the provider's page) |
 
 ## Module layout
 
