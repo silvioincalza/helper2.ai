@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 ARG BUILD=source
-FROM --platform=$BUILDPLATFORM docker.io/library/eclipse-temurin:25-jdk@sha256:b8705e936964c228dfce359e63dbf08f6c69cb380ed1d576b1f6b1064f15567d AS app-source
+FROM --platform=$BUILDPLATFORM docker.io/library/eclipse-temurin:25-jdk@sha256:ce2ef9d2d67a68de5e196d4de9d743327c44a10b57fe02ec39f572c652cacfd3 AS app-source
 WORKDIR /src
 COPY api ./api
 COPY backend ./backend
@@ -11,7 +11,7 @@ COPY prebuilt/public.jar /app.jar
 
 FROM app-${BUILD} AS app
 
-FROM docker.io/library/eclipse-temurin:25-jre@sha256:a640968ae55027b322cedd5f8228b01a84baff0b9e9360e47601c6a111ba1699
+FROM docker.io/library/eclipse-temurin:25-jre@sha256:4ed132f6832e9804b123e89a849a7b4502756ae64a4ee08ebab939d9d5d0a9fa
 RUN useradd --system --uid 10001 helper2
 USER 10001
 COPY --from=app /app.jar /app/app.jar
