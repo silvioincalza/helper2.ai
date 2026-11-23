@@ -1400,8 +1400,9 @@ def reads_are_paged() -> bool:
         return {"id": f"I{number}", "content": {"url": f"https://example.test/{number}"}, "fieldValues": {"nodes": values}}
 
     def listed(number: int, **more) -> dict:
-        issue = {"number": number, "databaseId": 1000 + number, "id": f"N{number}", "url": "u", "title": "t"}
-        return issue | {"body": "", "authorAssociation": "OWNER", "milestone": None, "parent": None} | more
+        issue = {"number": number, "databaseId": 1000 + number, "id": f"N{number}", "url": f"u{number}"}
+        texts = {"title": f"t{number}", "body": f"b{number}"}
+        return issue | texts | {"authorAssociation": "OWNER", "milestone": None, "parent": None} | more
 
     def named(field: str, **value) -> dict:
         return {**value, "field": {"name": field}}
@@ -1432,9 +1433,9 @@ def reads_are_paged() -> bool:
             "number": PAGE,
             "id": 1000 + PAGE,
             "node": f"N{PAGE}",
-            "url": "u",
-            "title": "t",
-            "body": "",
+            "url": f"u{PAGE}",
+            "title": f"t{PAGE}",
+            "body": f"b{PAGE}",
             "author": "OWNER",
             "milestone": "v2026.11",
         }
