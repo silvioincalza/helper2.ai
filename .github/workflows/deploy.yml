@@ -27,6 +27,10 @@ on:
         description: release.yml only, false for a release whose migration the release before it cannot run on (a maintenance window); no canary, prod by version straight away
         type: boolean
         default: true
+      release-dump:
+        description: release.yml only, true for a release that brings a migration. Prod's database is dumped before the canary (or before prod, with no canary), and the release names the dump; a failed dump stops the release
+        type: boolean
+        default: false
       release-commit:
         description: release.yml only, the full commit its checks passed, the head of release/YYYY.N
         type: string
@@ -42,6 +46,9 @@ on:
       harbor-tagged:
         description: true once the release's Harbor tag was started; the version names the images of tag from then on
         value: ${{ jobs.deploy.outputs.harbor-tagged }}
+      dump:
+        description: the dump of prod's database taken right before the release, on the pg-backup volume; empty for a release with no migration
+        value: ${{ jobs.deploy.outputs.dump }}
 
 permissions:
   contents: read
@@ -63,6 +70,7 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
       harbor-tagged: ${{ steps.retag.outputs.started }}
+      dump: ${{ steps.dump.outputs.dump }}
     defaults:
       run:
         working-directory: deploy/k8s
@@ -233,6 +241,17 @@ jobs:
           umask 077
           mkdir -p "$ENV"
           bao kv get -mount=helper2/kv -field=app_env "ci/$ENV" > "$ENV/app.env"
+
+      - name: Dump of the database (release with a migration)
+        id: dump
+        if: inputs.release-version != '' && inputs.release-dump
+        env:
+          VERSION: ${{ inputs.release-version }}
+        run: |
+          set -euo pipefail
+          dump=$(make --no-print-directory release-dump VERSION="$VERSION")
+          echo "dump=$dump" >> "$GITHUB_OUTPUT"
+          echo "Dump before $VERSION: \`$dump\` on the volume pg-backup of helper2-$ENV. Way back for the data: \`make -C deploy/k8s ENV=$ENV restore DUMP=$dump\` (RUNBOOK-release.md, Going back)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Canary and smoke test (release)
         if: inputs.release-version != '' && inputs.canary

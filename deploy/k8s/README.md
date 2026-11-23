@@ -277,9 +277,13 @@ has succeeded for 8 days (it too needs one successful run first: run the first o
 **Restore** (replaces the whole database; the app is down in the meantime). The dump is plain SQL with
 `CREATE EXTENSION vector` and Flyway's history, so the app starts on it as usual:
 
+The hosted helper2.ai restores from the volume with one command that checks first:
+`make -C deploy/k8s ENV=<env> restore DUMP=<file>` ([RUNBOOK-release.md, Going back](RUNBOOK-release.md#5-going-back)).
+By hand, with both apps stopped:
+
 ```bash
 NS=helper2; F=helper2-2026-10-27T013000Z.sql.gz
-kubectl -n $NS scale deployment/helper2 --replicas=0
+kubectl -n $NS scale deployment/helper2 deployment/helper2-backoffice --replicas=0
 kubectl -n $NS exec postgres-0 -- psql -U helper2 -d helper2 -v ON_ERROR_STOP=1 \
   -c 'DROP SCHEMA public CASCADE' -c 'CREATE SCHEMA public'
 
@@ -315,6 +319,7 @@ RCLONE_CONFIG_SEALED_PASSWORD=$(printf %s "$CRYPT" | rclone obscure -) \
   | kubectl -n $NS exec -i postgres-0 -- sh -c 'gunzip -c | psql -U helper2 -d helper2 -v ON_ERROR_STOP=1 -q'
 
 kubectl -n $NS scale deployment/helper2 --replicas=3   # your app.replicas
+kubectl -n $NS scale deployment/helper2-backoffice --replicas=1   # your backoffice.replicas
 ```
 
 ## The hosted helper2.ai

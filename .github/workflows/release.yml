@@ -35,6 +35,7 @@ jobs:
       base: ${{ steps.check.outputs.base }}
       fix: ${{ steps.check.outputs.fix }}
       line: ${{ steps.check.outputs.line }}
+      migration: ${{ steps.check.outputs.migration }}
     steps:
       - name: Started from main
         run: |
@@ -86,7 +87,18 @@ jobs:
             fix=true
             echo "release/$LINE changes $other and more beside the version: a fix release, the staging job runs it before prod (ADR 0045)"
           fi
-          { echo "sha=$sha"; echo "commit=${sha::12}"; echo "base=$base"; echo "fix=$fix"; echo "line=$LINE"; } >> "$GITHUB_OUTPUT"
+          migrations=backend/libs/schema/src/main/resources/db/migration
+          below=$({ git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; echo "v$VERSION"; } | sort -uV | grep -Fx -B1 -- "v$VERSION" | head -1)
+          migration=true
+          if [[ $below != "v$VERSION" ]] && git diff --quiet "$below" "$sha" -- "$migrations"; then
+            migration=false
+            echo "$VERSION brings no migration since $below: no dump of its own"
+          else
+            since="since $below"
+            [[ $below != "v$VERSION" ]] || since="no release below it"
+            echo "$VERSION brings a migration ($since): prod's database is dumped before the canary"
+          fi
+          { echo "sha=$sha"; echo "commit=${sha::12}"; echo "base=$base"; echo "fix=$fix"; echo "line=$LINE"; echo "migration=$migration"; } >> "$GITHUB_OUTPUT"
           echo "Release $VERSION: commit ${sha::12} of release/$LINE, cut from ${base::12}" >> "$GITHUB_STEP_SUMMARY"
 
   built:
@@ -172,6 +184,7 @@ jobs:
       tag: ${{ needs.check.outputs.commit }}
       release-version: ${{ inputs.version }}
       canary: ${{ inputs.canary }}
+      release-dump: ${{ needs.check.outputs.migration == 'true' }}
       release-commit: ${{ needs.check.outputs.sha }}
 
   used-up:
