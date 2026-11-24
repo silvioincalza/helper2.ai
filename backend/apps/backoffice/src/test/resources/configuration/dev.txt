@@ -1,7 +1,7 @@
+logging.structured.format.console = <empty>
 searchavo.identity.frontend-url = http://localhost:5174/admin
 searchavo.identity.metrics-public = true
 searchavo.schema.migrate = ${SA_SCHEMA_MIGRATE:true}  =>  true
-logging.structured.format.console = <empty>
 server.port = ${SA_PORT:8090}  =>  8090
 spring.datasource.password = ${SA_DATABASE_PASSWORD:searchavo-local-only}  =>  searchavo-local-only
 spring.docker.compose.enabled = true

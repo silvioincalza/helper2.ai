@@ -1,3 +1,142 @@
+logging.structured.format.console = ${SA_LOG_FORMAT:logstash}  =>  logstash
+management.endpoint.health.probes.enabled = true
+management.endpoint.health.show-details = never
+management.endpoints.web.exposure.include = health,prometheus
+management.health.redis.enabled = false
+management.logging.export.otlp.enabled = false
+management.metrics.distribution.percentiles-histogram.http.client.requests = true
+management.metrics.distribution.percentiles-histogram.http.server.requests = true
+management.metrics.distribution.percentiles-histogram.searchavo.llm.call = true
+management.metrics.distribution.percentiles-histogram.searchavo.scout.run = true
+management.metrics.distribution.percentiles-histogram.searchavo.search.latency = true
+management.metrics.tags.application = searchavo-backoffice
+management.metrics.tags.environment = ${SA_ENVIRONMENT:local}  =>  local
+management.opentelemetry.resource-attributes.deployment.environment.name = ${SA_ENVIRONMENT:local}  =>  local
+management.opentelemetry.resource-attributes.service.name = searchavo-backoffice
+management.opentelemetry.tracing.export.otlp.endpoint = ${SA_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}  =>  http://localhost:4318/v1/traces
+management.otlp.metrics.export.enabled = false
+management.server.port = ${SA_MANAGEMENT_PORT:}  =>  <empty>
+management.tracing.export.enabled = ${SA_TRACING_EXPORT:false}  =>  false
+management.tracing.sampling.probability = ${SA_TRACING_SAMPLING:1.0}  =>  1.0
+resilience4j.bulkhead.configs.catalog.max-concurrent-calls = ${SA_RESILIENCE_CATALOG_MAX_CONCURRENT:3}  =>  3
+resilience4j.bulkhead.configs.catalog.max-wait-duration = 0
+resilience4j.bulkhead.configs.source.max-concurrent-calls = ${SA_RESILIENCE_SOURCE_MAX_CONCURRENT:20}  =>  20
+resilience4j.bulkhead.configs.source.max-wait-duration = 0
+resilience4j.bulkhead.instances.db-cache.max-concurrent-calls = ${SA_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}  =>  2
+resilience4j.bulkhead.instances.db-cache.max-wait-duration = 0
+resilience4j.bulkhead.instances.guide.max-concurrent-calls = ${SA_GUIDE_MAX_CONCURRENT:8}  =>  8
+resilience4j.bulkhead.instances.guide.max-wait-duration = 0
+resilience4j.bulkhead.instances.source-arxiv.base-config = source
+resilience4j.bulkhead.instances.source-curated.base-config = catalog
+resilience4j.bulkhead.instances.source-github.base-config = source
+resilience4j.bulkhead.instances.source-hacker-news.base-config = source
+resilience4j.bulkhead.instances.source-hf-models.base-config = source
+resilience4j.bulkhead.instances.source-hf-spaces.base-config = source
+resilience4j.bulkhead.instances.source-live-web.base-config = source
+resilience4j.bulkhead.instances.source-npm.base-config = source
+resilience4j.bulkhead.instances.source-searchavo-index.base-config = catalog
+resilience4j.bulkhead.instances.source-searchavo-semantic.base-config = catalog
+resilience4j.circuitbreaker.configs.collector.failure-rate-threshold = 50
+resilience4j.circuitbreaker.configs.collector.ignore-exceptions = ai.searchavo.search.SourceFailure$RateLimited
+resilience4j.circuitbreaker.configs.collector.minimum-number-of-calls = 5
+resilience4j.circuitbreaker.configs.collector.permitted-number-of-calls-in-half-open-state = 1
+resilience4j.circuitbreaker.configs.collector.sliding-window-size = 10
+resilience4j.circuitbreaker.configs.collector.sliding-window-type = COUNT_BASED
+resilience4j.circuitbreaker.configs.collector.wait-duration-in-open-state = ${SA_RESILIENCE_COLLECTOR_OPEN_FOR:1m}  =>  1m
+resilience4j.circuitbreaker.configs.model.failure-rate-threshold = 50
+resilience4j.circuitbreaker.configs.model.minimum-number-of-calls = 5
+resilience4j.circuitbreaker.configs.model.permitted-number-of-calls-in-half-open-state = 2
+resilience4j.circuitbreaker.configs.model.sliding-window-size = 10
+resilience4j.circuitbreaker.configs.model.sliding-window-type = COUNT_BASED
+resilience4j.circuitbreaker.configs.model.wait-duration-in-open-state = ${SA_RESILIENCE_LLM_OPEN_FOR:30s}  =>  30s
+resilience4j.circuitbreaker.configs.source.failure-rate-threshold = ${SA_RESILIENCE_SOURCE_FAILURE_RATE:50}  =>  50
+resilience4j.circuitbreaker.configs.source.ignore-exceptions = ai.searchavo.search.SourceFailure$RateLimited
+resilience4j.circuitbreaker.configs.source.minimum-number-of-calls = 10
+resilience4j.circuitbreaker.configs.source.permitted-number-of-calls-in-half-open-state = 2
+resilience4j.circuitbreaker.configs.source.sliding-window-size = 20
+resilience4j.circuitbreaker.configs.source.sliding-window-type = COUNT_BASED
+resilience4j.circuitbreaker.configs.source.slow-call-duration-threshold = 2s
+resilience4j.circuitbreaker.configs.source.slow-call-rate-threshold = 50
+resilience4j.circuitbreaker.configs.source.wait-duration-in-open-state = ${SA_RESILIENCE_SOURCE_OPEN_FOR:30s}  =>  30s
+resilience4j.circuitbreaker.configs.store.failure-rate-threshold = 50
+resilience4j.circuitbreaker.configs.store.minimum-number-of-calls = 3
+resilience4j.circuitbreaker.configs.store.permitted-number-of-calls-in-half-open-state = 2
+resilience4j.circuitbreaker.configs.store.sliding-window-size = 10
+resilience4j.circuitbreaker.configs.store.sliding-window-type = COUNT_BASED
+resilience4j.circuitbreaker.configs.store.wait-duration-in-open-state = ${SA_RESILIENCE_REDIS_OPEN_FOR:30s}  =>  30s
+resilience4j.circuitbreaker.instances.collector-ai-deadlines.base-config = collector
+resilience4j.circuitbreaker.instances.collector-confs-tech.base-config = collector
+resilience4j.circuitbreaker.instances.collector-course-scout.base-config = collector
+resilience4j.circuitbreaker.instances.collector-deps-dev.base-config = collector
+resilience4j.circuitbreaker.instances.collector-discovery.base-config = collector
+resilience4j.circuitbreaker.instances.collector-gap-evidence.base-config = collector
+resilience4j.circuitbreaker.instances.collector-gap-web.base-config = collector
+resilience4j.circuitbreaker.instances.collector-github-awesome.base-config = collector
+resilience4j.circuitbreaker.instances.collector-github-sdks.base-config = collector
+resilience4j.circuitbreaker.instances.collector-github-topic-leaders.base-config = collector
+resilience4j.circuitbreaker.instances.collector-hf-provider-orgs.base-config = collector
+resilience4j.circuitbreaker.instances.collector-hf-trending.base-config = collector
+resilience4j.circuitbreaker.instances.collector-linkedin-scout.base-config = collector
+resilience4j.circuitbreaker.instances.collector-live-web-events-scout.base-config = collector
+resilience4j.circuitbreaker.instances.collector-live-web-scout.base-config = collector
+resilience4j.circuitbreaker.instances.collector-mcp-registry.base-config = collector
+resilience4j.circuitbreaker.instances.collector-news-feeds.base-config = collector
+resilience4j.circuitbreaker.instances.collector-pypi.base-config = collector
+resilience4j.circuitbreaker.instances.collector-repository-sweep.base-config = collector
+resilience4j.circuitbreaker.instances.db-cache.failure-rate-threshold = 50
+resilience4j.circuitbreaker.instances.db-cache.minimum-number-of-calls = 3
+resilience4j.circuitbreaker.instances.db-cache.permitted-number-of-calls-in-half-open-state = 2
+resilience4j.circuitbreaker.instances.db-cache.sliding-window-size = 10
+resilience4j.circuitbreaker.instances.db-cache.sliding-window-type = COUNT_BASED
+resilience4j.circuitbreaker.instances.db-cache.slow-call-duration-threshold = 250ms
+resilience4j.circuitbreaker.instances.db-cache.slow-call-rate-threshold = 50
+resilience4j.circuitbreaker.instances.db-cache.wait-duration-in-open-state = ${SA_RESILIENCE_DB_CACHE_OPEN_FOR:30s}  =>  30s
+resilience4j.circuitbreaker.instances.llm-chat.base-config = model
+resilience4j.circuitbreaker.instances.llm-chat.ignore-exception-predicate = ai.searchavo.platform.llm.ModelErrors$NotFromProvider
+resilience4j.circuitbreaker.instances.llm-embed-index.base-config = model
+resilience4j.circuitbreaker.instances.llm-embed-index.ignore-exception-predicate = ai.searchavo.platform.llm.ModelErrors$RejectedInput
+resilience4j.circuitbreaker.instances.llm-embed.base-config = model
+resilience4j.circuitbreaker.instances.page-status.base-config = collector
+resilience4j.circuitbreaker.instances.redis.base-config = store
+resilience4j.circuitbreaker.instances.research-huggingface.base-config = collector
+resilience4j.circuitbreaker.instances.research-web-search.base-config = collector
+resilience4j.circuitbreaker.instances.source-arxiv.base-config = source
+resilience4j.circuitbreaker.instances.source-curated.base-config = source
+resilience4j.circuitbreaker.instances.source-github.base-config = source
+resilience4j.circuitbreaker.instances.source-hacker-news.base-config = source
+resilience4j.circuitbreaker.instances.source-hf-models.base-config = source
+resilience4j.circuitbreaker.instances.source-hf-spaces.base-config = source
+resilience4j.circuitbreaker.instances.source-live-web.base-config = source
+resilience4j.circuitbreaker.instances.source-live-web.slow-call-duration-threshold = 5s
+resilience4j.circuitbreaker.instances.source-npm.base-config = source
+resilience4j.circuitbreaker.instances.source-searchavo-index.base-config = source
+resilience4j.circuitbreaker.instances.source-searchavo-semantic.base-config = source
+resilience4j.retry.configs.collector.enable-exponential-backoff = true
+resilience4j.retry.configs.collector.enable-randomized-wait = true
+resilience4j.retry.configs.collector.exponential-backoff-multiplier = 2
+resilience4j.retry.configs.collector.max-attempts = ${SA_RESILIENCE_COLLECTOR_MAX_ATTEMPTS:3}  =>  3
+resilience4j.retry.configs.collector.randomized-wait-factor = 0.5
+resilience4j.retry.configs.collector.retry-exception-predicate = ai.searchavo.sources.support.TransientSourceFailure
+resilience4j.retry.configs.collector.wait-duration = 1s
+resilience4j.retry.instances.collector-ai-deadlines.base-config = collector
+resilience4j.retry.instances.collector-confs-tech.base-config = collector
+resilience4j.retry.instances.collector-course-scout.base-config = collector
+resilience4j.retry.instances.collector-deps-dev.base-config = collector
+resilience4j.retry.instances.collector-discovery.base-config = collector
+resilience4j.retry.instances.collector-gap-evidence.base-config = collector
+resilience4j.retry.instances.collector-gap-web.base-config = collector
+resilience4j.retry.instances.collector-github-awesome.base-config = collector
+resilience4j.retry.instances.collector-github-sdks.base-config = collector
+resilience4j.retry.instances.collector-github-topic-leaders.base-config = collector
+resilience4j.retry.instances.collector-hf-provider-orgs.base-config = collector
+resilience4j.retry.instances.collector-hf-trending.base-config = collector
+resilience4j.retry.instances.collector-linkedin-scout.base-config = collector
+resilience4j.retry.instances.collector-live-web-events-scout.base-config = collector
+resilience4j.retry.instances.collector-live-web-scout.base-config = collector
+resilience4j.retry.instances.collector-mcp-registry.base-config = collector
+resilience4j.retry.instances.collector-news-feeds.base-config = collector
+resilience4j.retry.instances.collector-pypi.base-config = collector
+resilience4j.retry.instances.collector-repository-sweep.base-config = collector
 searchavo.admin.ads-enabled = ${SA_ADS_ENABLED:false}  =>  false
 searchavo.admin.grafana-url = ${SA_ADMIN_GRAFANA_URL:}  =>  <empty>
 searchavo.admin.guide-daily-model-calls = ${SA_GUIDE_DAILY_MODEL_CALLS:600}  =>  600
@@ -861,145 +1000,6 @@ searchavo.vitality.established-stars = ${SA_VITALITY_ESTABLISHED_STARS:10000}  =
 searchavo.vitality.fork-min-stars = ${SA_VITALITY_FORK_MIN_STARS:10}  =>  10
 searchavo.vitality.hosted-app-min-likes = ${SA_SOURCE_HF_SPACES_MIN_LIKES:3}  =>  3
 searchavo.vitality.maintained-within = ${SA_VITALITY_MAINTAINED_WITHIN:P1095D}  =>  P1095D
-logging.structured.format.console = ${SA_LOG_FORMAT:logstash}  =>  logstash
-management.endpoint.health.probes.enabled = true
-management.endpoint.health.show-details = never
-management.endpoints.web.exposure.include = health,prometheus
-management.health.redis.enabled = false
-management.logging.export.otlp.enabled = false
-management.metrics.distribution.percentiles-histogram.searchavo.llm.call = true
-management.metrics.distribution.percentiles-histogram.searchavo.scout.run = true
-management.metrics.distribution.percentiles-histogram.searchavo.search.latency = true
-management.metrics.distribution.percentiles-histogram.http.client.requests = true
-management.metrics.distribution.percentiles-histogram.http.server.requests = true
-management.metrics.tags.application = searchavo-backoffice
-management.metrics.tags.environment = ${SA_ENVIRONMENT:local}  =>  local
-management.opentelemetry.resource-attributes.deployment.environment.name = ${SA_ENVIRONMENT:local}  =>  local
-management.opentelemetry.resource-attributes.service.name = searchavo-backoffice
-management.opentelemetry.tracing.export.otlp.endpoint = ${SA_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}  =>  http://localhost:4318/v1/traces
-management.otlp.metrics.export.enabled = false
-management.server.port = ${SA_MANAGEMENT_PORT:}  =>  <empty>
-management.tracing.export.enabled = ${SA_TRACING_EXPORT:false}  =>  false
-management.tracing.sampling.probability = ${SA_TRACING_SAMPLING:1.0}  =>  1.0
-resilience4j.bulkhead.configs.catalog.max-concurrent-calls = ${SA_RESILIENCE_CATALOG_MAX_CONCURRENT:3}  =>  3
-resilience4j.bulkhead.configs.catalog.max-wait-duration = 0
-resilience4j.bulkhead.configs.source.max-concurrent-calls = ${SA_RESILIENCE_SOURCE_MAX_CONCURRENT:20}  =>  20
-resilience4j.bulkhead.configs.source.max-wait-duration = 0
-resilience4j.bulkhead.instances.db-cache.max-concurrent-calls = ${SA_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}  =>  2
-resilience4j.bulkhead.instances.db-cache.max-wait-duration = 0
-resilience4j.bulkhead.instances.guide.max-concurrent-calls = ${SA_GUIDE_MAX_CONCURRENT:8}  =>  8
-resilience4j.bulkhead.instances.guide.max-wait-duration = 0
-resilience4j.bulkhead.instances.source-arxiv.base-config = source
-resilience4j.bulkhead.instances.source-curated.base-config = catalog
-resilience4j.bulkhead.instances.source-github.base-config = source
-resilience4j.bulkhead.instances.source-hacker-news.base-config = source
-resilience4j.bulkhead.instances.source-searchavo-index.base-config = catalog
-resilience4j.bulkhead.instances.source-searchavo-semantic.base-config = catalog
-resilience4j.bulkhead.instances.source-hf-models.base-config = source
-resilience4j.bulkhead.instances.source-hf-spaces.base-config = source
-resilience4j.bulkhead.instances.source-live-web.base-config = source
-resilience4j.bulkhead.instances.source-npm.base-config = source
-resilience4j.circuitbreaker.configs.collector.failure-rate-threshold = 50
-resilience4j.circuitbreaker.configs.collector.ignore-exceptions = ai.searchavo.search.SourceFailure$RateLimited
-resilience4j.circuitbreaker.configs.collector.minimum-number-of-calls = 5
-resilience4j.circuitbreaker.configs.collector.permitted-number-of-calls-in-half-open-state = 1
-resilience4j.circuitbreaker.configs.collector.sliding-window-size = 10
-resilience4j.circuitbreaker.configs.collector.sliding-window-type = COUNT_BASED
-resilience4j.circuitbreaker.configs.collector.wait-duration-in-open-state = ${SA_RESILIENCE_COLLECTOR_OPEN_FOR:1m}  =>  1m
-resilience4j.circuitbreaker.configs.model.failure-rate-threshold = 50
-resilience4j.circuitbreaker.configs.model.minimum-number-of-calls = 5
-resilience4j.circuitbreaker.configs.model.permitted-number-of-calls-in-half-open-state = 2
-resilience4j.circuitbreaker.configs.model.sliding-window-size = 10
-resilience4j.circuitbreaker.configs.model.sliding-window-type = COUNT_BASED
-resilience4j.circuitbreaker.configs.model.wait-duration-in-open-state = ${SA_RESILIENCE_LLM_OPEN_FOR:30s}  =>  30s
-resilience4j.circuitbreaker.configs.source.failure-rate-threshold = ${SA_RESILIENCE_SOURCE_FAILURE_RATE:50}  =>  50
-resilience4j.circuitbreaker.configs.source.ignore-exceptions = ai.searchavo.search.SourceFailure$RateLimited
-resilience4j.circuitbreaker.configs.source.minimum-number-of-calls = 10
-resilience4j.circuitbreaker.configs.source.permitted-number-of-calls-in-half-open-state = 2
-resilience4j.circuitbreaker.configs.source.sliding-window-size = 20
-resilience4j.circuitbreaker.configs.source.sliding-window-type = COUNT_BASED
-resilience4j.circuitbreaker.configs.source.slow-call-duration-threshold = 2s
-resilience4j.circuitbreaker.configs.source.slow-call-rate-threshold = 50
-resilience4j.circuitbreaker.configs.source.wait-duration-in-open-state = ${SA_RESILIENCE_SOURCE_OPEN_FOR:30s}  =>  30s
-resilience4j.circuitbreaker.configs.store.failure-rate-threshold = 50
-resilience4j.circuitbreaker.configs.store.minimum-number-of-calls = 3
-resilience4j.circuitbreaker.configs.store.permitted-number-of-calls-in-half-open-state = 2
-resilience4j.circuitbreaker.configs.store.sliding-window-size = 10
-resilience4j.circuitbreaker.configs.store.sliding-window-type = COUNT_BASED
-resilience4j.circuitbreaker.configs.store.wait-duration-in-open-state = ${SA_RESILIENCE_REDIS_OPEN_FOR:30s}  =>  30s
-resilience4j.circuitbreaker.instances.collector-ai-deadlines.base-config = collector
-resilience4j.circuitbreaker.instances.collector-confs-tech.base-config = collector
-resilience4j.circuitbreaker.instances.collector-course-scout.base-config = collector
-resilience4j.circuitbreaker.instances.collector-deps-dev.base-config = collector
-resilience4j.circuitbreaker.instances.collector-discovery.base-config = collector
-resilience4j.circuitbreaker.instances.collector-gap-evidence.base-config = collector
-resilience4j.circuitbreaker.instances.collector-gap-web.base-config = collector
-resilience4j.circuitbreaker.instances.collector-github-awesome.base-config = collector
-resilience4j.circuitbreaker.instances.collector-github-sdks.base-config = collector
-resilience4j.circuitbreaker.instances.collector-github-topic-leaders.base-config = collector
-resilience4j.circuitbreaker.instances.collector-hf-provider-orgs.base-config = collector
-resilience4j.circuitbreaker.instances.collector-hf-trending.base-config = collector
-resilience4j.circuitbreaker.instances.collector-linkedin-scout.base-config = collector
-resilience4j.circuitbreaker.instances.collector-live-web-events-scout.base-config = collector
-resilience4j.circuitbreaker.instances.collector-live-web-scout.base-config = collector
-resilience4j.circuitbreaker.instances.collector-mcp-registry.base-config = collector
-resilience4j.circuitbreaker.instances.collector-news-feeds.base-config = collector
-resilience4j.circuitbreaker.instances.collector-pypi.base-config = collector
-resilience4j.circuitbreaker.instances.collector-repository-sweep.base-config = collector
-resilience4j.circuitbreaker.instances.db-cache.failure-rate-threshold = 50
-resilience4j.circuitbreaker.instances.db-cache.minimum-number-of-calls = 3
-resilience4j.circuitbreaker.instances.db-cache.permitted-number-of-calls-in-half-open-state = 2
-resilience4j.circuitbreaker.instances.db-cache.sliding-window-size = 10
-resilience4j.circuitbreaker.instances.db-cache.sliding-window-type = COUNT_BASED
-resilience4j.circuitbreaker.instances.db-cache.slow-call-duration-threshold = 250ms
-resilience4j.circuitbreaker.instances.db-cache.slow-call-rate-threshold = 50
-resilience4j.circuitbreaker.instances.db-cache.wait-duration-in-open-state = ${SA_RESILIENCE_DB_CACHE_OPEN_FOR:30s}  =>  30s
-resilience4j.circuitbreaker.instances.llm-chat.base-config = model
-resilience4j.circuitbreaker.instances.llm-chat.ignore-exception-predicate = ai.searchavo.platform.llm.ModelErrors$NotFromProvider
-resilience4j.circuitbreaker.instances.llm-embed-index.base-config = model
-resilience4j.circuitbreaker.instances.llm-embed-index.ignore-exception-predicate = ai.searchavo.platform.llm.ModelErrors$RejectedInput
-resilience4j.circuitbreaker.instances.llm-embed.base-config = model
-resilience4j.circuitbreaker.instances.page-status.base-config = collector
-resilience4j.circuitbreaker.instances.redis.base-config = store
-resilience4j.circuitbreaker.instances.research-huggingface.base-config = collector
-resilience4j.circuitbreaker.instances.research-web-search.base-config = collector
-resilience4j.circuitbreaker.instances.source-arxiv.base-config = source
-resilience4j.circuitbreaker.instances.source-curated.base-config = source
-resilience4j.circuitbreaker.instances.source-github.base-config = source
-resilience4j.circuitbreaker.instances.source-hacker-news.base-config = source
-resilience4j.circuitbreaker.instances.source-searchavo-index.base-config = source
-resilience4j.circuitbreaker.instances.source-searchavo-semantic.base-config = source
-resilience4j.circuitbreaker.instances.source-hf-models.base-config = source
-resilience4j.circuitbreaker.instances.source-hf-spaces.base-config = source
-resilience4j.circuitbreaker.instances.source-live-web.base-config = source
-resilience4j.circuitbreaker.instances.source-live-web.slow-call-duration-threshold = 5s
-resilience4j.circuitbreaker.instances.source-npm.base-config = source
-resilience4j.retry.configs.collector.enable-exponential-backoff = true
-resilience4j.retry.configs.collector.enable-randomized-wait = true
-resilience4j.retry.configs.collector.exponential-backoff-multiplier = 2
-resilience4j.retry.configs.collector.max-attempts = ${SA_RESILIENCE_COLLECTOR_MAX_ATTEMPTS:3}  =>  3
-resilience4j.retry.configs.collector.randomized-wait-factor = 0.5
-resilience4j.retry.configs.collector.retry-exception-predicate = ai.searchavo.sources.support.TransientSourceFailure
-resilience4j.retry.configs.collector.wait-duration = 1s
-resilience4j.retry.instances.collector-ai-deadlines.base-config = collector
-resilience4j.retry.instances.collector-confs-tech.base-config = collector
-resilience4j.retry.instances.collector-course-scout.base-config = collector
-resilience4j.retry.instances.collector-deps-dev.base-config = collector
-resilience4j.retry.instances.collector-discovery.base-config = collector
-resilience4j.retry.instances.collector-gap-evidence.base-config = collector
-resilience4j.retry.instances.collector-gap-web.base-config = collector
-resilience4j.retry.instances.collector-github-awesome.base-config = collector
-resilience4j.retry.instances.collector-github-sdks.base-config = collector
-resilience4j.retry.instances.collector-github-topic-leaders.base-config = collector
-resilience4j.retry.instances.collector-hf-provider-orgs.base-config = collector
-resilience4j.retry.instances.collector-hf-trending.base-config = collector
-resilience4j.retry.instances.collector-linkedin-scout.base-config = collector
-resilience4j.retry.instances.collector-live-web-events-scout.base-config = collector
-resilience4j.retry.instances.collector-live-web-scout.base-config = collector
-resilience4j.retry.instances.collector-mcp-registry.base-config = collector
-resilience4j.retry.instances.collector-news-feeds.base-config = collector
-resilience4j.retry.instances.collector-pypi.base-config = collector
-resilience4j.retry.instances.collector-repository-sweep.base-config = collector
 server.forward-headers-strategy = ${SA_FORWARD_HEADERS_STRATEGY:none}  =>  none
 server.port = ${SA_PORT:8080}  =>  8080
 server.servlet.session.cookie.http-only = true
