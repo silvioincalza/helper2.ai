@@ -3,7 +3,7 @@ set -euo pipefail
 
 POLL=${POLL:-10}
 TRIES=${TRIES:-180}
-DUMP_NAME='^searchavo-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}Z\.sql\.gz$'
+DUMP_NAME='^(searchavo|helper2)-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}Z\.sql\.gz$'
 APPS='searchavo searchavo-backoffice searchavo-canary'
 READER=pg-restore
 
@@ -103,7 +103,7 @@ restore() {
     return 1
   }
   [[ $file =~ $DUMP_NAME ]] || {
-    echo "database.sh: $file is not a dump name (searchavo-<UTC date>T<UTC time>Z.sql.gz)" >&2
+    echo "database.sh: $file is not a dump name (searchavo- or helper2-<UTC date>T<UTC time>Z.sql.gz)" >&2
     return 1
   }
   apps_stopped "$ns" || {

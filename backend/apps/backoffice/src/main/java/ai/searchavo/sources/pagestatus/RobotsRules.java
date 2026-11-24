@@ -20,9 +20,18 @@ final class RobotsRules {
 
   static final int MAX_PATTERN = 500;
 
-  /** The names a robots.txt can use for this robot: the product name of its User-Agent. */
+  /**
+   * The names a robots.txt can use for this robot: the product name of its User-Agent, and the
+   * helper2 names, which robots.txt files on the web still use for it.
+   */
   private static final Set<String> OWN_NAMES =
-      Set.of("searchavo", "searchavo.ai", "searchavo.ai-metasearch");
+      Set.of(
+          "searchavo",
+          "searchavo.ai",
+          "searchavo.ai-metasearch",
+          "helper2",
+          "helper2.ai",
+          "helper2.ai-metasearch");
 
   private record Rule(String pattern, boolean allow) {}
 

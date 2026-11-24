@@ -65,7 +65,7 @@ spec:
                   [ "$(wc -c < "$f.tmp")" -gt 1024 ]
                   mv "$f.tmp" "$f"
                   echo "dump: $f"
-                  ls -1 /backup/searchavo-*.sql.gz | cut -c17-26 | sort -ru | tail -n +{{ add1 .Values.backup.retentionDays }} | while read -r d; do rm -f /backup/searchavo-"$d"*.sql.gz; done
+                  ls -1 /backup/searchavo-*.sql.gz | cut -c19-28 | sort -ru | tail -n +{{ add1 .Values.backup.retentionDays }} | while read -r d; do rm -f /backup/searchavo-"$d"*.sql.gz; done
                   find /backup -name 'searchavo-*.sql.gz' -mtime +{{ sub .Values.backup.retentionDays 1 }} -delete
                   ls -l /backup
               resources:

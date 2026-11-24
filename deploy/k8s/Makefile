@@ -399,7 +399,7 @@ chart-check: ## helm lint + helm template | kubeconform, for staging and prod; R
 	grep -q 'set -o pipefail' <<< "$$bk" || { echo "backup: no pipefail"; exit 1; }; \
 	grep -q 'startingDeadlineSeconds: 3600' <<< "$$bk" || { echo "backup: no startingDeadlineSeconds"; exit 1; }; \
 	grep -qF 'f=/backup/searchavo-$$(date -u +%Y-%m-%dT%H%M%SZ).sql.gz' <<< "$$bk" || { echo "backup: each run needs its own dump name (UTC date and time)"; exit 1; }; \
-	awk '/gzip -t "\$$f.tmp"/ {t=NR} /mv "\$$f.tmp" "\$$f"/ {m=NR} /cut -c17-26 \| sort -ru \| tail -n \+8 \| while read -r d/ {d=NR} /find \/backup .* -mtime \+6 -delete/ {a=NR} END { exit !(t && m && d && a && t < m && m < d && m < a) }' <<< "$$bk" \
+	awk '/gzip -t "\$$f.tmp"/ {t=NR} /mv "\$$f.tmp" "\$$f"/ {m=NR} /cut -c19-28 \| sort -ru \| tail -n \+8 \| while read -r d/ {d=NR} /find \/backup .* -mtime \+6 -delete/ {a=NR} END { exit !(t && m && d && a && t < m && m < d && m < a) }' <<< "$$bk" \
 		|| { echo "backup: gzip -t must come before mv, and the prune to the dumps of the newest retentionDays (7) dates, and by age, after both"; exit 1; }; \
 	echo "== restore check (ADR 0043): the latest dump, off-site or from the volume, restored with ON_ERROR_STOP into a throwaway Postgres"; \
 	for o in true false; do \

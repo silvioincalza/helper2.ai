@@ -34,7 +34,8 @@ class LlmsTxtTest {
 
   @Test
   fun `it states no number, so no limit from the running server can go stale in it`() {
-    val withoutLicense = text.replace("Apache-2.0", "").replace(LlmsTxt.SOURCE_CODE, "").replace("llms", "")
+    val withoutLicense =
+      text.replace("Apache-2.0", "").replace(LlmsTxt.SOURCE_CODE, "").replace("llms", "")
     assertFalse(Regex("\\d").containsMatchIn(withoutLicense), "a digit in llms.txt")
   }
 
