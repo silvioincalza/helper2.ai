@@ -45,6 +45,7 @@ class QueryAnalyzer {
     val read = joinedTypes(padded)
     fun has(term: String) = contains(read, term)
     val useCases = linkedSetOf<String>()
+    // UC-001 BR-021: a need named in another language adds its English words.
     val expanded = linkedSetOf<String>()
     for (e in lexicon) {
       val enHit = e.en.any(::has)

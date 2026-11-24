@@ -179,6 +179,7 @@ public class JdbcCatalogSearch {
 
   public record Found(ResourceRow row, @Nullable ListMatch foundIn) {}
 
+  // UC-001 BR-020: a match found only in a curated list ranks below direct matches.
   public List<Found> searchFound(
       String query,
       List<String> requiredVariants,

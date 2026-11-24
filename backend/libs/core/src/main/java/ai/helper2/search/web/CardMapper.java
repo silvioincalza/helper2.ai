@@ -43,6 +43,7 @@ public final class CardMapper {
 
   private CardMapper() {}
 
+  // UC-001 BR-015: an AI-written description in a result is marked.
   public static List<String> aiWrittenFields(MergedResult r) {
     ResultCardDto card = card(r);
     List<String> fields = new ArrayList<>();

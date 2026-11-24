@@ -37,6 +37,7 @@ internal object SearchNotices {
       allSourcesFailedNotice(statuses),
     )
 
+  // UC-001 BR-007: paused, failing or busy count as queried; left out on purpose not.
   private fun wasExpectedToAnswer(status: SourceStatus): Boolean =
     status.outcome != SourceOutcome.SKIPPED ||
       status.servedFrom != ServedFrom.NONE ||
@@ -54,6 +55,7 @@ internal object SearchNotices {
     if (!cacheDown) null
     else Notice(NoticeCode.CACHE_UNAVAILABLE, "Cache unavailable; all sources were queried live.")
 
+  // UC-001 BR-021: say when English words of a named need were searched too.
   private fun queryExpandedNotice(analyzed: AnalyzedQuery): Notice? =
     if (analyzed.lexiconTerms.isEmpty()) null
     else
