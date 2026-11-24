@@ -649,7 +649,7 @@ describe('resource detail', () => {
     await screen.findByRole('heading', { name: 'All details' });
     const pricing = document.querySelector('[data-field="pricing"] dd') as HTMLElement;
     expect(pricing).toHaveTextContent('Paid');
-    expect(pricing).toHaveTextContent('Curated by helper2.ai');
+    expect(pricing).toHaveTextContent('Curated by searchavo.ai');
     expect(pricing).not.toHaveTextContent('Sources disagree');
     expect(within(pricing).getByText('Paid')).not.toHaveAttribute('data-ai-generated');
   });

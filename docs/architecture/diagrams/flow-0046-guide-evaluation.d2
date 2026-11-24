@@ -2,14 +2,14 @@
 # --intents and --adversarial differ only in the set, the pass rules and the report file).
 # Source of truth: scripts/eval-guide.mjs, scripts/eval-lib.mjs (guideRunStop), eval/guide-queries.json, eval/guide-qrels.tsv,
 #   .github/workflows/guide-eval.yml (nightly run on staging),
-#   backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideJudge.java (the guide judge).
+#   backend/apps/public/src/main/java/ai/searchavo/guide/internal/SpringAiGuideJudge.java (the guide judge).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0046-guide-evaluation.d2 && d2 flow-0046-guide-evaluation.d2 flow-0046-guide-evaluation.svg
 
 ...@style
 
 direction: down
 
-start: "node scripts/eval-guide.mjs\n[baseUrl] [--core] [--repeat n] [--min-pass]\n| --intents | --adversarial | --rescore\n(backend: H2_GUIDE_CACHE_TTL=PT1S)" {class: person}
+start: "node scripts/eval-guide.mjs\n[baseUrl] [--core] [--repeat n] [--min-pass]\n| --intents | --adversarial | --rescore\n(backend: SA_GUIDE_CACHE_TTL=PT1S)" {class: person}
 nightly: "guide-eval.yml, 01:41 UTC:\nstaging only, --core --min-pass 0.8,\nthen --adversarial" {class: config}
 queries: "Read eval/guide-queries.json\n(50 fixed queries; --core: the 20\nwithout \"extended\")" {class: data}
 csrf: "GET /api/v1/me →\nXSRF-TOKEN cookie?" {class: decision}
@@ -29,7 +29,7 @@ loop: For each query, in order {
   fromCache: "Mark (cache);\nleave out of latency" {class: end}
   row: "Keep status, AI picks,\nsources, checks, latency;\npassed = fresh model answer,\nanswered or empty as expected" {class: end}
   answered: "Answered (pick, comparison,\nexplanation, dated record)?" {class: decision}
-  judged: "Backend (staging and prod), after the answer:\nthe judge scores its claims\n(meter helper2.guide.judge,\nnot in the report)" {class: ai}
+  judged: "Backend (staging and prod), after the answer:\nthe judge scores its claims\n(meter searchavo.guide.judge,\nnot in the report)" {class: ai}
   candidates: "GET /api/v1/search\n?q=<searchQuery>&size=24:\ncandidates for the pool" {class: app}
 
   pause -> post

@@ -92,7 +92,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
    record of a GitHub or Hugging Face source (`ScoutConfiguration.OWNER_SOURCES`) whose title is `owner/name`. The
    record's source decides, not its address: an MCP Registry record often has a GitHub address. Owners that differ
    only in case are one owner, shown as most of its records write it. An owner with
-   `H2_SCOUT_KNOWN_TARGETS_OWNER_MIN_RESOURCES` (5) resources or more, whose name is no known target and was never
+   `SA_SCOUT_KNOWN_TARGETS_OWNER_MIN_RESOURCES` (5) resources or more, whose name is no known target and was never
    proposed, becomes a proposal of kind `VENDOR`. No model call. MCP Registry namespaces and npm scopes are not
    owners: anyone can register one. A failure of this step is logged and does not fail the run.
 6. **The model states the kind of a target, and agreement proposes it.**
@@ -108,7 +108,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
      stored on the relationship as `stated_target_kind`, it never makes a relationship `VERIFIED` and it is not shown
      on the site.
    - At the end of a Scout run, one SQL statement looks for agreement: a name that relationships of at least
-     `H2_SCOUT_KNOWN_TARGETS_MIN_AGREEING` (3) resources of 3 different owners state as `VENDOR`, or as `SERVICE`,
+     `SA_SCOUT_KNOWN_TARGETS_MIN_AGREEING` (3) resources of 3 different owners state as `VENDOR`, or as `SERVICE`,
      and more often than as any other kind. The name is no known target, names no catalog resource by the name rule
      and was never proposed. It becomes a proposal of that kind.
    - The fingerprint does not change ([0014](ADR-0014-evidence-gated-enrichment.md) §2): a new prompt alone sends
@@ -118,9 +118,9 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
    details are JSON: the name's key, the name, the kind, the rule that found it (`OWNER` or `AGREEMENT`), the count,
    the other names and up to 5 resources as examples, the most popular first. One item per key
    (`review_item_known_target_idx`).
-   - **The cap.** At most `H2_SCOUT_KNOWN_TARGETS_PER_DAY` (25) new ones a UTC day, the owners of the most resources
-     first; 0 turns the proposals off. The rest wait for a later run. Counters `helper2.scout.targets.proposed` and
-     `helper2.scout.targets.held`.
+   - **The cap.** At most `SA_SCOUT_KNOWN_TARGETS_PER_DAY` (25) new ones a UTC day, the owners of the most resources
+     first; 0 turns the proposals off. The rest wait for a later run. Counters `searchavo.scout.targets.proposed` and
+     `searchavo.scout.targets.held`.
    - **Accept adds the target** with origin `DISCOVERED` and the admin as the one who added it, in the transaction
      of the decision (`ResolveReview`, `ManageKnownTargets.addDiscovered`), with the audit entry of an add. A name
      another target holds by then is a 409 and the item stays open. A proposal is accepted one at a time, never in
@@ -145,32 +145,32 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
 ### Code
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql`
   (`known_target`, `known_target_name`, the 31 vendors, `relationship.target_kind`)
-- `backend/libs/core/src/main/java/ai/helper2/catalog/KnownTarget.java` (`key`, `KEY_OF_TITLE_SQL`),
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/KnownTarget.java` (`key`, `KEY_OF_TITLE_SQL`),
   `KnownTargets.java`, `catalog/internal/JdbcKnownTargets.java` (`named`)
 - `catalog/internal/JdbcRelationshipTargets.java` (`confirmOpenKnownTargetCandidates`),
   `catalog/usecase/LinkKnownRelationshipTargets.java`, `catalog/internal/JdbcEnrichmentResults.java`
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EvidenceValidator.kt` (`relationship`),
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/EvidenceValidator.kt` (`relationship`),
   `scout/Enrichment.kt` (`EnrichmentInput.knownTargets`), `scout/usecase/EnrichResource.kt` (`run`),
-  `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java` (`knownTargets`)
+  `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/CatalogEnrichmentStore.java` (`knownTargets`)
 
 - `V1__schema.sql` (`known_target.added_by`, `added_at`, `known_target_name.name`, three audit
   actions)
-- `backend/libs/core/src/main/java/ai/helper2/catalog/KnownTargetList.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/KnownTargetList.java`,
   `catalog/internal/JdbcKnownTargetList.java` (`release`, `setKind`), `catalog/usecase/ManageKnownTargets.java`
 - `catalog/internal/KnownTargetLock.java`, `catalog/internal/JdbcEnrichmentResults.java` (`knownNow`, `asKnownNow`),
   `catalog/internal/JdbcRelationshipTargets.java` (`confirmOpenKnownTargetCandidates` takes the lock)
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/KnownTargetsController.java`, `api/admin.yaml`
+- `backend/apps/backoffice/src/main/java/ai/searchavo/admin/web/KnownTargetsController.java`, `api/admin.yaml`
 
 - `frontend/src/admin/KnownTargetsPanel.tsx`, `SettingsPage.tsx`, `frontend/src/api/admin.ts`,
   `frontend/src/i18n/locales/en.admin.json` (`admin.settings.targets`)
 
 - `V1__schema.sql` (`known_target.origin`, `KNOWN_TARGET_CANDIDATE` in `review_item.kind` and
   `candidate_decision.kind`, `review_item_known_target_idx`)
-- `backend/libs/core/src/main/java/ai/helper2/catalog/KnownTargetCandidates.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/KnownTargetCandidates.java`,
   `catalog/internal/JdbcKnownTargetCandidates.java` (`proposeOwners`, `of`), `catalog/usecase/ProposeKnownTargets.java`,
   `catalog/usecase/ManageKnownTargets.java` (`addDiscovered`), `catalog/internal/JdbcReviewDecisions.java`
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` (`proposeKnownTargetsQuietly`),
-  `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` (`OWNER_SOURCES`),
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/RunScout.kt` (`proposeKnownTargetsQuietly`),
+  `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/ScoutConfiguration.java` (`OWNER_SOURCES`),
   `scout/config/ScoutProperties.java` (`KnownTargets`), `admin/usecase/ResolveReview.java` (`addKnownTarget`)
 - `frontend/src/admin/ReviewItemDetails.tsx` (`KnownTargetProposal`), `KnownTargetsPanel.tsx` ("proposed by a rule")
 
@@ -185,7 +185,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
   `scout/internal/SpringAiEnrichmentModel.java` (`Rel.targetKind`),
   `scout/EvidenceValidator.kt` (`statedKindOf`), `catalog/internal/JdbcEnrichmentResults.java`
 
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` (the agreement step)
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/RunScout.kt` (the agreement step)
 
 - `V2026.11.6.1__known_target_tool.sql` (`TOOL` in `known_target.kind` and `relationship.target_kind`),
   `catalog/KnownTarget.java` (`Kind.TOOL`), `catalog/usecase/LinkKnownRelationshipTargets.java` (`TOOL_NOTE`),
@@ -239,7 +239,7 @@ Staging, 11 Nov 2026, 35,147 resources, 587 relationships, 536 resources enriche
 | 7 | Data | Covered: two tables, one column, one more value in two checks; seed in the first migration. |
 | 8 | Browser & Computer Use | Deferred, safe: no page is fetched. |
 | 9 | Guardrails | Covered: the stated kind never verifies; agreement of different owners; a person approves; name checks. |
-| 10 | Observability | Covered: `helper2.scout.targets.proposed` and `helper2.scout.targets.held`, one log line per run that proposes. |
+| 10 | Observability | Covered: `searchavo.scout.targets.proposed` and `searchavo.scout.targets.held`, one log line per run that proposes. |
 | 11 | Evaluation | Gap: how often the stated kind is right is not measured. Measure on the first 200 enriched resources before trusting the agreement rule's numbers. |
 | 12 | Deployment | Covered: three settings with defaults, no chart change. Rollback: per-day 0 stops the proposals. |
 | 13 | Security & Identity | Covered: ADMIN only, audit, no new secret. |

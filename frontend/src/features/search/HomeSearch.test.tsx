@@ -317,7 +317,7 @@ describe('search results', () => {
         timeline: {
           published: known('2026-10-17T00:00:00Z'),
           updated: known('2026-10-20T00:00:00Z'),
-          discovered: known('2026-10-26T00:00:00Z', 'helper2'),
+          discovered: known('2026-10-26T00:00:00Z', 'searchavo'),
         },
       }),
       makeCard({
@@ -326,7 +326,7 @@ describe('search results', () => {
         timeline: {
           published: known('2023-07-14T00:00:00Z'),
           updated: known('2026-10-20T00:00:00Z'),
-          discovered: known('2026-10-26T00:00:00Z', 'helper2'),
+          discovered: known('2026-10-26T00:00:00Z', 'searchavo'),
         },
       }),
       makeCard({
@@ -335,7 +335,7 @@ describe('search results', () => {
         timeline: {
           published: unknownDate,
           updated: known('2026-10-20T00:00:00Z'),
-          discovered: known('2026-10-26T00:00:00Z', 'helper2'),
+          discovered: known('2026-10-26T00:00:00Z', 'searchavo'),
         },
       }),
     ];

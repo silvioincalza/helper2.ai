@@ -41,7 +41,7 @@ post when a search finds it.
 ### A list page discovery finds
 4. **A third shape.** `DiscoveryPages.classify` gives a list page of a directory host `LIST_TO_READ` when the switch
    of its host is on, and `LIST_TO_REVIEW` when it is off. A category with `index-lists: false` drops both.
-   The category searches exclude the hosts of `helper2.scout.discovery.exclude-domains` and of each category
+   The category searches exclude the hosts of `searchavo.scout.discovery.exclude-domains` and of each category
    ([0013](ADR-0013-discovery.md) point 4), and the known directories are among them. A host whose switch is on
    is taken out of that list for the run (`DiscoveryCollector.requestBody`, read from the hosts at the start of
    the run), so its list pages can be found. Its other pages may then come back from a search; `DiscoveryPages`
@@ -52,7 +52,7 @@ post when a search finds it.
    administrator's page passes: the address rules (`ListAddresses.check`) and the hosts never read
    (`HostsNeverRead`), which win over the switch.
 6. **Its own cap.** At most `web-pages.max-discovered` lists have the origin `DISCOVERY`
-   (`H2_SCOUT_AWESOME_WEB_PAGES_MAX_DISCOVERED`, 100). The 50 lists an administrator adds are counted apart
+   (`SA_SCOUT_AWESOME_WEB_PAGES_MAX_DISCOVERED`, 100). The 50 lists an administrator adds are counted apart
    (`ManageListSeeds` counts only the origin `ADMINISTRATOR`).
 7. **What is refused waits for review.** A page the checks refuse, and a page found when the cap is reached, is an
    `ARTICLE` candidate in the review list with the shape `LIST_TO_REVIEW`, as with the switch off. A page that is a
@@ -60,18 +60,18 @@ post when a search finds it.
 
 ### Reading
 8. **The reader of added web pages.** `WebPageLists` reads a discovered list like any added web page: through the
-   live web page reader, at most once in `H2_SCOUT_AWESOME_WEB_PAGES_EVERY` (7 days), one credit a read, the last
+   live web page reader, at most once in `SA_SCOUT_AWESOME_WEB_PAGES_EVERY` (7 days), one credit a read, the last
    read kept in `list_seed_last_read` and used between two reads. No page of a directory other than an added list
    page is read, and no link that redirects is followed, with two exceptions on a host whose switch is on: the
    directory's page of an item is read for its rating ([0056](ADR-0056-directory-rating.md) point 6), and a link of
    an entry that points at no item is followed to the item's own page
    ([0057](ADR-0057-follow-list-links.md)).
 9. **A budget of its own inside the Scout's.** A read costs one credit of the Scout's daily cap
-   (`H2_SCOUT_DAILY_CREDITS`, 40 by default), the cap the category searches, LinkedIn, the events scout, the courses
+   (`SA_SCOUT_DAILY_CREDITS`, 40 by default), the cap the category searches, LinkedIn, the events scout, the courses
    and the research assistant's web search also count on ([0013](ADR-0013-discovery.md) point 10). So that the
    lists never take the whole of it:
    - at most `web-pages.discovered-reads-per-day` reads of discovered lists a UTC day
-     (`H2_SCOUT_AWESOME_WEB_PAGES_DISCOVERED_READS_PER_DAY`, 10): at most 10 credits of the 40. The reads of a day are
+     (`SA_SCOUT_AWESOME_WEB_PAGES_DISCOVERED_READS_PER_DAY`, 10): at most 10 credits of the 40. The reads of a day are
      counted in PostgreSQL, from `list_seed.read_tried_at`, like the daily link cap;
    - in a pass the pages an administrator added are read first, the page read longest ago first; they do not count
      on the 10;
@@ -80,7 +80,7 @@ post when a search finds it.
 10. **What waits.** Past the 10 reads of a day, a discovered list waits for the next day (`page-daily-cap`). When
     the Scout's cap is spent, every web page waits (`page-credit-cap`), an administrator's too. A list that waits
     keeps what its last read gave; a list never read yet gives nothing until its first read. The page reader of
-    product pages has its own budget (`H2_SCOUT_PAGE_READER_DAILY_CREDITS`) and is not touched.
+    product pages has its own budget (`SA_SCOUT_PAGE_READER_DAILY_CREDITS`) and is not touched.
 11. **Switch off.** A discovered list is read only while the switch of its host is on, checked at every pass. With
     the switch off, or the host removed, it is not read (`page-host-off`) and costs nothing. Its last read is still
     used: what the list names is written again at each pass, so it is not aged out and the count on the public page
@@ -138,27 +138,27 @@ post when a search finds it.
       (https only, `rel="noopener noreferrer nofollow"`).
 17. **Lists to read.** `/admin/settings` shows a discovered list with the collector that found it; an administrator
     removes it like any other. `ListSeedEntry.origin` carries it in the API.
-18. **Metrics.** `helper2.scout.awesome.skips{reason}` gets `page-daily-cap` and `page-host-off`
-    ([0013](ADR-0013-discovery.md) point 19). A read counts on `helper2.live-web.credits{feature="scout-list-pages"}`.
+18. **Metrics.** `searchavo.scout.awesome.skips{reason}` gets `page-daily-cap` and `page-host-off`
+    ([0013](ADR-0013-discovery.md) point 19). A read counts on `searchavo.live-web.credits{feature="scout-list-pages"}`.
 
 ### Code
 - `backend/libs/schema/src/main/resources/db/migration/V2026.11.9.1__directory_lists.sql`.
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/DiscoveryHosts.kt` (`HostLists.readsListsOf`,
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/DiscoveryHosts.kt` (`HostLists.readsListsOf`,
   `DiscoveryHostStore.readLists`), `ListSeeds.kt` (`ListOrigin`, `DiscoveredLists`),
   `scout/usecase/ManageDiscoveryHosts.kt` (`readLists`), `AddDiscoveredList.kt`, `ManageListSeeds.kt`;
   `scout/internal/JdbcDiscoveryHostStore.java`, `JdbcListSeedStore.java`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryPages.java` (`LIST_TO_READ`),
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/liveweb/scout/DiscoveryPages.java` (`LIST_TO_READ`),
   `DiscoveryCollector.java` (`readAsList`); `sources/github/scout/WebPageLists.java` (`Reads`, `switchedOff`),
   `ListEntryLinks.java` (`Article`), `GitHubAwesomeCollector.java`;
-  `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorProperties.java` (`WebPages`).
-- `backend/libs/core/src/main/java/ai/helper2/catalog/DirectoryListIndex.java`, `AwesomeListEntries.java`,
+  `backend/libs/core/src/main/java/ai/searchavo/sources/config/CollectorProperties.java` (`WebPages`).
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/DirectoryListIndex.java`, `AwesomeListEntries.java`,
   `ResourceDetail.java` (`FoundIn`), `catalog/internal/JdbcDirectoryListIndex.java`, `JdbcResourceDetailReads.java`,
   `ListNamings.java`, `catalog/internal/JdbcListNamings.java`, `catalog/usecase/NameResourceByList.java`;
-  `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java`
+  `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/ScoutConfiguration.java`
   (`listIndex`).
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/DiscoveryHostsController.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/admin/web/DiscoveryHostsController.java`,
   `ListSeedsController.java`, `ReviewController.java`, `admin/usecase/GetReviewEvidence.java`;
-  `backend/apps/public/src/main/java/ai/helper2/catalog/web/ResourceDetailController.java`; `api/admin.yaml`,
+  `backend/apps/public/src/main/java/ai/searchavo/catalog/web/ResourceDetailController.java`; `api/admin.yaml`,
   `api/public.yaml`.
 - `frontend/src/admin/DiscoveryHostsPanel.tsx`, `ListSeedsPanel.tsx`, `ReviewEvidence.tsx`,
   `frontend/src/features/resource/FoundInLists.tsx`.

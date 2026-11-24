@@ -25,7 +25,7 @@ const CONFIG: EffectiveConfig = {
           kind: 'MODEL',
           value: 'nvidia/nemotron-3-super-120b-a12b',
           unit: null,
-          variable: 'H2_NEBIUS_REASONING_MODEL',
+          variable: 'SA_NEBIUS_REASONING_MODEL',
         },
         {
           key: 'models.fast',
@@ -33,7 +33,7 @@ const CONFIG: EffectiveConfig = {
           kind: 'MODEL',
           value: null,
           unit: null,
-          variable: 'H2_NEBIUS_FAST_MODEL',
+          variable: 'SA_NEBIUS_FAST_MODEL',
         },
       ],
     },
@@ -48,15 +48,15 @@ const CONFIG: EffectiveConfig = {
           kind: 'COUNT',
           value: '300',
           unit: 'calls a day',
-          variable: 'H2_SEARCH_DAILY_TRANSLATIONS',
+          variable: 'SA_SEARCH_DAILY_TRANSLATIONS',
         },
         {
           key: 'search.webGlobalDailyCredits',
-          label: 'Live web credits a day, all of helper2.ai',
+          label: 'Live web credits a day, all of searchavo.ai',
           kind: 'CAP',
           value: null,
           unit: 'credits a day',
-          variable: 'H2_LIVE_WEB_DAILY_CREDITS',
+          variable: 'SA_LIVE_WEB_DAILY_CREDITS',
         },
         {
           key: 'search.translationOn',
@@ -72,7 +72,7 @@ const CONFIG: EffectiveConfig = {
           kind: 'NAMES',
           value: 'arxiv,npm',
           unit: null,
-          variable: 'H2_SOURCE_<ID>_ENABLED',
+          variable: 'SA_SOURCE_<ID>_ENABLED',
         },
       ],
     },
@@ -93,7 +93,7 @@ const GUIDE: RuntimeSettingState = {
   help: "The AI guide's model calls a UTC day for everyone. 0: answers come from search only.",
   min: 0,
   max: 3000,
-  variable: 'H2_GUIDE_DAILY_MODEL_CALLS',
+  variable: 'SA_GUIDE_DAILY_MODEL_CALLS',
   defaultValue: 600,
   value: 600,
   overridden: false,
@@ -103,12 +103,12 @@ const GUIDE: RuntimeSettingState = {
 };
 const CREDITS: RuntimeSettingState = {
   key: 'search.webGlobalDailyCredits',
-  label: 'Live web credits a day, all of helper2.ai',
+  label: 'Live web credits a day, all of searchavo.ai',
   unit: 'credits a day',
-  help: 'Live web calls a UTC day for all of helper2.ai. 0: no live call, stored results only.',
+  help: 'Live web calls a UTC day for all of searchavo.ai. 0: no live call, stored results only.',
   min: 0,
   max: 3000,
-  variable: 'H2_LIVE_WEB_DAILY_CREDITS',
+  variable: 'SA_LIVE_WEB_DAILY_CREDITS',
   defaultValue: null,
   value: 120,
   overridden: true,
@@ -134,7 +134,7 @@ const ADS: RuntimeSwitchState = {
   key: 'ads.enabled',
   label: 'Google ads',
   help: 'On: one Google ad in each place whose ad unit is set. Off: no Google ad anywhere.',
-  variable: 'H2_ADS_ENABLED',
+  variable: 'SA_ADS_ENABLED',
   defaultOn: false,
   on: false,
   overridden: false,
@@ -145,7 +145,7 @@ const ADS: RuntimeSwitchState = {
 const versionConflict = () =>
   new Response(
     JSON.stringify({
-      type: 'https://helper2.ai/problems/version-conflict',
+      type: 'https://searchavo.ai/problems/version-conflict',
       title: 'Changed by someone else',
       status: 409,
       code: 'version-conflict',
@@ -182,7 +182,7 @@ describe('Feature: the Settings page shows what the app runs with now', () => {
       within(row(search, 'Translations a day')).getByText('300 calls a day'),
     ).toBeInTheDocument();
     expect(
-      within(row(search, 'Live web credits a day, all of helper2.ai')).getByText(
+      within(row(search, 'Live web credits a day, all of searchavo.ai')).getByText(
         '120 credits a day (changed at runtime)',
       ),
     ).toBeInTheDocument();
@@ -192,7 +192,7 @@ describe('Feature: the Settings page shows what the app runs with now', () => {
     ).toBeInTheDocument();
     expect(within(row(search, 'Sources on')).getByText('arxiv, npm')).toBeInTheDocument();
     expect(
-      within(row(search, 'Translations a day')).getByText('H2_SEARCH_DAILY_TRANSLATIONS'),
+      within(row(search, 'Translations a day')).getByText('SA_SEARCH_DAILY_TRANSLATIONS'),
     ).toBeInTheDocument();
 
     expect(
@@ -226,7 +226,7 @@ describe('Feature: the Settings page shows what the app runs with now', () => {
                 kind: 'COUNT',
                 value: '12',
                 unit: 'results',
-                variable: 'H2_GUIDE_MAX_CANDIDATES',
+                variable: 'SA_GUIDE_MAX_CANDIDATES',
               },
             ],
           },
@@ -461,7 +461,7 @@ describe('Feature: an administrator changes a spending limit without a deploy', 
 
     await userEvent.click(
       await screen.findByRole('button', {
-        name: 'Reset to default: Live web credits a day, all of helper2.ai',
+        name: 'Reset to default: Live web credits a day, all of searchavo.ai',
       }),
     );
     expect(screen.getByRole('group', { name: 'Review changes' })).toHaveTextContent(

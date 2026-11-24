@@ -20,14 +20,14 @@ Eight official feeds answer (checked 9 Nov 2026): OpenAI, Google DeepMind, Googl
 Mistral AI, NVIDIA and AWS Machine Learning. Anthropic, Meta AI and Microsoft AI publish no feed.
 
 ## Decision
-1. **One collector per feed.** The feeds are one YAML list, `helper2.feeds` in `helper2-shared.yaml`. Each
+1. **One collector per feed.** The feeds are one YAML list, `searchavo.feeds` in `searchavo-shared.yaml`. Each
    entry has an `id`, a `publisher`, a `short-name` (at most 12 characters), the feed `url` and the `homepage`, both
    https, and optional `require-words` and `enabled`. Each feed is a `NewsFeedCollector` with the source id
    `feed-<id>`: its own cursor, run record and row on the Sources page (`NewsFeedCollectorRegistrar` in the back
    office, `ScoutSourceDescriptors.NewsFeeds` in the public app). Startup fails on an id that is not lower-case words
    with hyphens or is longer than 35 characters, a short name over 12 characters, a URL that is not https, or two feeds
    with one id (`FeedProperties`).
-2. **Read once a day.** `helper2.scout.news-feeds.interval` (`H2_SCOUT_NEWS_FEEDS_INTERVAL`, default 1 day). A pass
+2. **Read once a day.** `searchavo.scout.news-feeds.interval` (`SA_SCOUT_NEWS_FEEDS_INTERVAL`, default 1 day). A pass
    asks for the feed with `Accept: application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8`,
    reads at most 100 posts (and no more than the run budget) and returns a checkpoint, no cursor.
 3. **RSS 2.0 and Atom, read with Jackson XML.** `FeedReader` reads both into `FeedItem` (title, link, date,
@@ -51,8 +51,8 @@ Mistral AI, NVIDIA and AWS Machine Learning. Anthropic, Meta AI and Microsoft AI
 5. **Required words for a feed with mixed topics.** A feed with `require-words` keeps only posts whose title or
    summary has one of them. A word matches a whole word; a word that ends with `*` matches the start of a word
    (`agent*` matches "agents" and "agentic"; `ai` does not match "aim"). Only the NVIDIA feed has them. A post left out
-   is counted (`helper2.source.items.dropped{reason=off-topic}`).
-6. **On by default, one switch.** `H2_SOURCE_NEWS_FEEDS_ENABLED` defaults to `true`, for every feed; `false` switches
+   is counted (`searchavo.source.items.dropped{reason=off-topic}`).
+6. **On by default, one switch.** `SA_SOURCE_NEWS_FEEDS_ENABLED` defaults to `true`, for every feed; `false` switches
    all of them off. One feed can be switched off with `enabled: false` in the YAML.
 7. **Retention.** A feed record is kept 180 days after its feed last listed it, the same period as web news
    (`WEB_NEWS`, [0010](ADR-0010-data-retention.md)): `JdbcCatalogRetention.deleteWebNewsRetrievedBefore`
@@ -63,18 +63,18 @@ Mistral AI, NVIDIA and AWS Machine Learning. Anthropic, Meta AI and Microsoft AI
    not. The observed client caps a response at 2 MB (the OpenAI feed is about 0.8 MB with 1,370 posts).
 
 ### Code
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/feeds/FeedReader.java`, `FeedItem.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/feeds/FeedReader.java`, `FeedItem.java`,
   `NewsFeedCollector.java`
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/NewsFeedCollectorRegistrar.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/config/scout/NewsFeedCollectorRegistrar.java`,
   `CollectorsConfiguration.java`
-- `backend/apps/public/src/main/java/ai/helper2/sources/config/scout/ScoutSourceDescriptors.java` (`NewsFeeds`)
-- `backend/libs/core/src/main/java/ai/helper2/sources/config/FeedProperties.java`, `CollectorDescriptors.java`
+- `backend/apps/public/src/main/java/ai/searchavo/sources/config/scout/ScoutSourceDescriptors.java` (`NewsFeeds`)
+- `backend/libs/core/src/main/java/ai/searchavo/sources/config/FeedProperties.java`, `CollectorDescriptors.java`
   (`newsFeed`), `CollectorProperties.java` (`NewsFeeds`)
-- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/NewsFeeds.kt`
-- `backend/libs/platform/src/main/java/ai/helper2/platform/http/XmlConverters.java`, `NoXmlConvertersConfiguration.java`,
+- `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/NewsFeeds.kt`
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/http/XmlConverters.java`, `NoXmlConvertersConfiguration.java`,
   `ObservedHttp.java`
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogRetention.java`
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml` (feeds, settings, resilience instances)
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcCatalogRetention.java`
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml` (feeds, settings, resilience instances)
 - Tests: `FeedReaderTest`, `NewsFeedCollectorTest`, `NewsFeedCollectorRegistrarTest`, `NoXmlConvertersTest`,
   `CatalogPurgeExpiredDataIT`, `ResiliencePoliciesConfigIT`
 

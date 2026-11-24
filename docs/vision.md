@@ -1,11 +1,11 @@
-# Vision: helper2.ai
+# Vision: searchavo.ai
 
 ## Mission
 
 New AI models, tools, agents, MCP servers and papers appear every day. General search engines mix them with marketing
 pages and old content, so it is hard to know what is real and current.
 
-helper2.ai helps people find the right AI resource for their need, and shows the proof behind every answer. It is a
+searchavo.ai helps people find the right AI resource for their need, and shows the proof behind every answer. It is a
 metasearch for the AI world only (tools, models, MCP servers, agents, prompts, libraries, papers and news), on one
 page with one box. Typing searches every source. Asking the guide answers on the same page, only from the results it
 retrieved, with a quote that code has checked word for word.
@@ -50,7 +50,7 @@ retrieved, with a quote that code has checked word for word.
 
 ### Out of scope
 
-- Searching the whole web: helper2.ai searches only its disclosed sources.
+- Searching the whole web: searchavo.ai searches only its disclosed sources.
 - Judging that a quoted claim is true: a quote proves that the source said it.
 - Fine-tuning or a substantial change of a model.
 - Selling data, or personalized ads and analytics without consent in Europe.

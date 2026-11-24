@@ -10,7 +10,7 @@
 
 ## Context
 
-Helper2.ai is free and has running costs every day: AI models, Tavily searches, servers. It needs money from its
+Searchavo.ai is free and has running costs every day: AI models, Tavily searches, servers. It needs money from its
 users without making search slower or less honest. Three ways, chosen together: gifts, ads, and analytics to see how
 the site is used.
 
@@ -30,16 +30,16 @@ The constraints:
 ## Decision
 
 1. **One part of the site, off by default.** `site.monetisation` ([0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md) §15) reads eight
-   `H2_` settings and publishes them as one value, `Monetisation`. An empty setting is off: no link, no script, no CSP
+   `SA_` settings and publishes them as one value, `Monetisation`. An empty setting is off: no link, no script, no CSP
    origin. A value with the wrong shape (a non-https link, an ID that is not `G-...`, a publisher that is not
    `ca-pub-` and 16 digits) stops the app at startup. None is a secret: every page shows them.
-   - `H2_SUPPORT_GITHUB_SPONSORS_URL`, `H2_SUPPORT_STRIPE_PAYMENT_URL`
-   - `H2_ANALYTICS_GA4_MEASUREMENT_ID`
-   - `H2_ADS_ADSENSE_CLIENT`, and one ad unit (8 to 12 digits) per place an ad can show: `H2_ADS_ADSENSE_SLOT`
-     for resource pages, `H2_ADS_ADSENSE_SLOT_SEARCH` for the box below the search results,
-     `H2_ADS_ADSENSE_SLOT_GUIDE` for the box below a guide answer. **The publisher alone**
+   - `SA_SUPPORT_GITHUB_SPONSORS_URL`, `SA_SUPPORT_STRIPE_PAYMENT_URL`
+   - `SA_ANALYTICS_GA4_MEASUREMENT_ID`
+   - `SA_ADS_ADSENSE_CLIENT`, and one ad unit (8 to 12 digits) per place an ad can show: `SA_ADS_ADSENSE_SLOT`
+     for resource pages, `SA_ADS_ADSENSE_SLOT_SEARCH` for the box below the search results,
+     `SA_ADS_ADSENSE_SLOT_GUIDE` for the box below a guide answer. **The publisher alone**
      answers Google's site check (8) and nothing else.
-   - `H2_ADS_ENABLED`, the ads switch, `false` by default. It is the default of the runtime switch `ads.enabled`
+   - `SA_ADS_ENABLED`, the ads switch, `false` by default. It is the default of the runtime switch `ads.enabled`
      ([0007](ADR-0007-configuration-secrets-runtime-settings.md) §10): an administrator sets it to `true`
      or `false` in the back office ("Google ads", under "Switches you can change"), with a reason and a line in the audit trail, and
      every replica follows within about 20 seconds, without a restart. **The switch, the publisher and at least
@@ -59,7 +59,7 @@ The constraints:
    - **Cached:** `Cache-Control: public, max-age=300`, like `/policy` and the home examples. The values change only
      with a restart or with the ads switch, so a browser can show a part up to 5 minutes after it was switched off, or miss a new one for
      5 minutes. No ETag: the body is a few hundred bytes.
-   - **Rate-limited** by the `site` limiter, `H2_RATE_LIMIT_RECENT_PER_MINUTE` requests per client address and
+   - **Rate-limited** by the `site` limiter, `SA_RATE_LIMIT_RECENT_PER_MINUTE` requests per client address and
      minute, like the other public reads. Public in the security chain (`permitAll`).
    - **One more request per page load.** The page reads it once, next to `/me`, and never waits for it: until the
      answer is there, and when the read fails, every part is off (no link, no question, no script). So the order
@@ -82,7 +82,7 @@ The constraints:
 4. **Gifts: GitHub Sponsors and a Stripe Payment Link.** A Support page (`/support`) says what running the site costs
    and links to both. GitHub takes no fee; Stripe lets anyone give by card without an account. Payment happens at the
    provider. Nothing is locked for anyone, there is no badge, and nobody is asked twice. Stripe sends the giver back
-   to `/support/thanks`. The footer shows "Support helper2" while one of the two is on.
+   to `/support/thanks`. The footer shows "Support searchavo" while one of the two is on.
 5. **Google Analytics only after "Accept", while AdSense is off.** A bar at the bottom asks once; it never covers the
    search box, and search works before an answer. "Reject" and "Accept" are the same size and style. The answer stays
    in the browser (`h2.consent`: yes or no and the date) until the purposes change. "Cookie settings" in the footer
@@ -107,7 +107,7 @@ The constraints:
    back office carry none. An ad is never written by our AI, never inside the text marked as AI-written and never
    looks like an answer ([0033](ADR-0033-marking-ai-written-text-research-trail.md)).
    While the first results of a plain search are still loading after 700 ms, and a gift link is on (4), the space
-   above the loading results shows a note of our own, marked "From helper2.ai": one line on what the site costs and
+   above the loading results shows a note of our own, marked "From searchavo.ai": one line on what the site costs and
    a link to `/support` (`SupportWhileSearching`). It holds nothing back: the results replace it the moment they
    come, a faster search never shows it, and a guide question never gets it. It is not an ad and sends nothing to
    anyone, so no network's rules on waiting screens apply.
@@ -184,23 +184,23 @@ The constraints:
 
 ### Code
 
-- `backend/apps/public/src/main/java/ai/helper2/site/monetisation/` — `Monetisation` (`adsenseOn()`, `adsTxt()`),
+- `backend/apps/public/src/main/java/ai/searchavo/site/monetisation/` — `Monetisation` (`adsenseOn()`, `adsTxt()`),
   `config/MonetisationProperties.java`, `config/MonetisationConfiguration.java`, `web/SiteController.java`
   (`GET /site`); `api/public.yaml` — `GET /site`, `Site`, `Monetisation`.
-- `backend/apps/public/src/main/java/ai/helper2/site/csp/` — `ContentSecurityPolicy.java` (`STRICT`, `ADSENSE`,
+- `backend/apps/public/src/main/java/ai/searchavo/site/csp/` — `ContentSecurityPolicy.java` (`STRICT`, `ADSENSE`,
   `forPublicSite`), `CspHeaderWriter.java`, `CspNonce.java`, `PublicSiteCsp.java` (the two header writers).
-- `backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java` (adds the header
+- `backend/apps/public/src/main/java/ai/searchavo/identity/security/PublicSecurityConfiguration.java` (adds the header
   writers, `/api/v1/site` public).
-- `backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java` — the `site` limiter.
-- `backend/apps/backoffice/src/main/java/ai/helper2/identity/security/BackOfficeEdge.java` — the back office's own CSP;
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/RateLimitInterceptor.java` — the `site` limiter.
+- `backend/apps/backoffice/src/main/java/ai/searchavo/identity/security/BackOfficeEdge.java` — the back office's own CSP;
   `deploy/web/headers.conf` — the web image's.
-- `backend/apps/public/src/main/java/ai/helper2/site/pages/internal/PageHtml.java` (the tag, the nonce),
+- `backend/apps/public/src/main/java/ai/searchavo/site/pages/internal/PageHtml.java` (the tag, the nonce),
   `site/pages/web/PageRoutes.java`, `site/pages/web/CrawlerFiles.java` (`/ads.txt`).
 - `frontend/src/context/MonetisationContext.tsx` (reads `/site` once), `AppProviders.tsx`, `lib/consent.ts`, `lib/analytics.ts`,
   `lib/googleConsent.ts`, `features/monetisation/AnalyticsConsent.tsx`, `features/monetisation/SponsorSlot.tsx`,
   `features/monetisation/AdSenseSlot.tsx`, `features/monetisation/SupportPage.tsx`, `features/monetisation/SupportThanksPage.tsx`, `features/resource/ResourcePage.tsx`,
   `shell/Layout.tsx` (footer), `features/search/Results.tsx` (slot).
-- `deploy/helm/helper2/values.yaml`, `values-prod.yaml`, `templates/app.yaml` — `app.monetisation.*`.
+- `deploy/helm/searchavo/values.yaml`, `values-prod.yaml`, `templates/app.yaml` — `app.monetisation.*`.
 - Tests: `site/csp/ContentSecurityPolicyTest.java`, `site/csp/CspHeaderWriterTest.java`,
   `site/monetisation/config/MonetisationConfigurationTest.java`, `site/monetisation/web/SiteControllerTest.java`,
   `site/pages/web/AdsTxtTest.java`, `api/HttpEdgeIT.java`, `frontend/src/features/monetisation/Monetisation.test.tsx`,

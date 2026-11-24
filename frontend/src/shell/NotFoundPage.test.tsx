@@ -5,11 +5,11 @@ import { renderApp, settle } from '@/test/render';
 describe('not found page', () => {
   it('sets the tab title, says what happened and offers the home page', async () => {
     mockApi();
-    document.title = 'Our mission · helper2.ai';
+    document.title = 'Our mission · searchavo.ai';
     renderApp('/no/such/page');
     await screen.findByRole('heading', { level: 1, name: 'Page not found' });
     await settle();
-    await waitFor(() => expect(document.title).toBe('Page not found · helper2.ai'));
+    await waitFor(() => expect(document.title).toBe('Page not found · searchavo.ai'));
     expect(screen.getByRole('link', { name: 'Go to the home page' })).toHaveAttribute('href', '/');
   });
 });

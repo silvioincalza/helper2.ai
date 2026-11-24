@@ -9,7 +9,7 @@ actor "Payment Provider" as payment
 rectangle "Site" {
     usecase "UC-014\nBrowse Hub Pages" as UC014
     usecase "UC-015\nRead Mission, Privacy and Terms" as UC015
-    usecase "UC-016\nSupport helper2.ai" as UC016
+    usecase "UC-016\nSupport searchavo.ai" as UC016
     usecase "UC-017\nNotify Search Engines of Changed Pages" as UC017
 }
 

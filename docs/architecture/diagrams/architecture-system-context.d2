@@ -1,7 +1,7 @@
-# Architecture, C4 level 1: system context. helper2 as one box, the people who use it and the systems it talks to.
+# Architecture, C4 level 1: system context. searchavo as one box, the people who use it and the systems it talks to.
 # What is inside the box is in architecture-containers.d2 (level 2) and architecture-context.d2 (level 3).
-# Source of truth: api/public.yaml, api/admin.yaml (what people ask), deploy/helm/helper2/values.yaml (hosts, egress),
-#   backend/libs/platform/src/main/resources/helper2-shared.yaml (base URLs of the models and the sources),
+# Source of truth: api/public.yaml, api/admin.yaml (what people ask), deploy/helm/searchavo/values.yaml (hosts, egress),
+#   backend/libs/platform/src/main/resources/searchavo-shared.yaml (base URLs of the models and the sources),
 #   frontend/src/features/monetisation, frontend/src/lib/consent.ts, googleConsent.ts, analytics.ts (the browser's third parties),
 #   .github/workflows/cd.yml, deploy.yml (delivery).
 # Render: cd docs/architecture/diagrams && d2 fmt architecture-system-context.d2 && d2 architecture-system-context.d2 architecture-system-context.svg
@@ -23,7 +23,7 @@ people: PEOPLE {
   admin: "Admin\nreviews the index\n(VPN, GitHub sign-in)" {class: person}
 }
 
-helper2: "helper2.ai\nmetasearch for the AI ecosystem:\none box, federated search,\nan AI guide that answers only\nfrom retrieved results;\nits own embedding model (ADR 0054)" {
+searchavo: "searchavo.ai\nmetasearch for the AI ecosystem:\none box, federated search,\nan AI guide that answers only\nfrom retrieved results;\nits own embedding model (ADR 0054)" {
   class: app
   style.bold: true
 }
@@ -44,16 +44,16 @@ operations: "DELIVERY AND OPERATIONS" {
   monitoring: "Prometheus · Tempo · Grafana\nmetrics, traces, alerts" {class: app}
 }
 
-people.visitor -> helper2: "search, guide (SSE),\nresource pages, saved" {class: hot}
-people.crawler -> helper2: "pages, sitemap.xml,\nrobots.txt"
-people.admin -> helper2: "review, Scout runs,\nsettings"
+people.visitor -> searchavo: "search, guide (SSE),\nresource pages, saved" {class: hot}
+people.crawler -> searchavo: "pages, sitemap.xml,\nrobots.txt"
+people.admin -> searchavo: "review, Scout runs,\nsettings"
 people.visitor -> thirdparty: "consent, ads,\nanalytics, gifts"
 
-helper2 -> models.nebius: "model calls" {class: ai-call}
-helper2 -> sources: "HTTPS: live search,\nScout, setup guides"
-helper2 -> oauth: "sign-in" {class: config}
+searchavo -> models.nebius: "model calls" {class: ai-call}
+searchavo -> sources: "HTTPS: live search,\nScout, setup guides"
+searchavo -> oauth: "sign-in" {class: config}
 
-operations.github -> helper2: "signed images,\nhelm upgrade" {class: config}
-operations.cloudflare -> helper2: "public hosts" {class: config}
-helper2 -> operations.monitoring: "metrics, traces" {class: config}
-helper2 -> operations.cloudflare: "encrypted dump" {class: config}
+operations.github -> searchavo: "signed images,\nhelm upgrade" {class: config}
+operations.cloudflare -> searchavo: "public hosts" {class: config}
+searchavo -> operations.monitoring: "metrics, traces" {class: config}
+searchavo -> operations.cloudflare: "encrypted dump" {class: config}

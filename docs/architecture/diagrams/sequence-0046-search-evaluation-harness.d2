@@ -1,7 +1,7 @@
 # Sequence: recording the snapshots once against the live sources (evalRecord), then the offline replay, the report
 # and the nDCG@10 gate (evalTest).
-# Source of truth: backend/apps/public/src/test/kotlin/ai/helper2/eval/SearchSnapshotRecorder.kt, SearchSnapshot.kt (SnapshotTaker,
-#   SearchReplay), SearchRelevanceEvalTest.kt, SearchEvaluation.kt, CutoffSweep.kt, EvalFiles.kt, backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts.
+# Source of truth: backend/apps/public/src/test/kotlin/ai/searchavo/eval/SearchSnapshotRecorder.kt, SearchSnapshot.kt (SnapshotTaker,
+#   SearchReplay), SearchRelevanceEvalTest.kt, SearchEvaluation.kt, CutoffSweep.kt, EvalFiles.kt, backend/build-logic/src/main/kotlin/searchavo.kotlin-library.gradle.kts.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0046-search-evaluation-harness.d2 && d2 sequence-0046-search-evaluation-harness.d2 sequence-0046-search-evaluation-harness.svg
 
 ...@style
@@ -19,7 +19,7 @@ files: "eval/ (queries, qrels,\nbaseline) and\nbackend/eval-data/" {class: data}
 record: "./gradlew evalRecord (tag eval-record, repo-root .env)" {
   owner -> test: "run" {class: hot}
   test -> files: "queries without a snapshot file"
-  test -> search: "take(queryId, text)\n(H2_EVAL_PAUSE, 4 s apart)"
+  test -> search: "take(queryId, text)\n(SA_EVAL_PAUSE, 4 s apart)"
   search -> sources: "search(SourceQuery), one per source" {class: hot}
   sources -> search: "ranked hits (RecordingSource keeps them)"
   search -> test: "SearchSnapshot: hits, outcome, latency"

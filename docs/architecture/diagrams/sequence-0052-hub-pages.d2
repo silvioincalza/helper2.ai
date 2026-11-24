@@ -1,5 +1,5 @@
 # Sequence: a person arrives on a hub page from a search engine (ADR 0052).
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java, HubController.java,
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/site/pages/web/PageRoutes.java, HubController.java,
 #   site/pages/internal/CatalogSiteLists.java, catalog/usecase/ListNewestIndexable.java,
 #   frontend/src/features/hubs/HubPage.tsx.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0052-hub-pages.d2 && d2 sequence-0052-hub-pages.d2 sequence-0052-hub-pages.svg
@@ -9,7 +9,7 @@
 shape: sequence_diagram
 
 person: "Person\n(browser)" {class: person}
-api: "helper2 public app\n(site.pages, catalog)" {class: app}
+api: "searchavo public app\n(site.pages, catalog)" {class: app}
 db: PostgreSQL {class: data}
 
 person -> api: "GET /mcp-servers"

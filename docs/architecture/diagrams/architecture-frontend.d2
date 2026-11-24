@@ -86,9 +86,9 @@ src: "frontend/src · React 19 · Vite · TypeScript" {
 
 checks: "CHECKS IN CI\nnpm run lint: the import rules\nnpm run knip: dead code\nnpm run check:bundle\nadminBundle.test.ts" {class: config}
 
-backend: "helper2" {
+backend: "searchavo" {
   class: group
-  web: "helper2-web (nginx)\nthe files of dist" {class: app}
+  web: "searchavo-web (nginx)\nthe files of dist" {class: app}
   public: "public app\nthe shell, /api/v1" {class: app}
   bo: "back office app\nthe files of dist-admin,\n/api/v1/admin" {class: app}
 }

@@ -86,7 +86,7 @@ describe('New in the catalog and Coming up on a wide screen: two columns of log 
     await within(t).findByRole('link', { name: 'News item 0' });
     expect(bodyRows(t)).toHaveLength(6);
     const more = within(section).getByRole('button', { name: 'show all 8' });
-    expect(more).toHaveTextContent('$ helper2 new --all · show all 8');
+    expect(more).toHaveTextContent('$ searchavo new --all · show all 8');
     expect(more).toHaveAttribute('aria-expanded', 'false');
     expect(more).toHaveAttribute('aria-controls', t.id);
     await userEvent.click(more);
@@ -187,7 +187,7 @@ describe('New in the catalog and Coming up on a wide screen: two columns of log 
     expect(source).toHaveClass('meta-line');
   });
 
-  it('a row with no stated date says when helper2.ai first saw it', async () => {
+  it('a row with no stated date says when searchavo.ai first saw it', async () => {
     const base = makeCard();
     mockApi({
       'GET /recent': () =>
@@ -204,7 +204,7 @@ describe('New in the catalog and Coming up on a wide screen: two columns of log 
                   alternatives: [],
                 },
                 updated: { value: null, precision: 'UNKNOWN', status: 'UNKNOWN', alternatives: [] },
-                discovered: day('2026-11-01T10:00:00Z', 'helper2'),
+                discovered: day('2026-11-01T10:00:00Z', 'searchavo'),
               },
             }),
           ],
@@ -365,7 +365,7 @@ describe('New in the catalog and Coming up on a phone: tabs with log rows', () =
     renderApp('/#news');
     const tab = await screen.findByRole('tab', { name: 'New in the catalog 3' });
     expect(tab).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tabpanel')).toHaveTextContent('$ helper2 new · 3');
+    expect(screen.getByRole('tabpanel')).toHaveTextContent('$ searchavo new · 3');
     await waitFor(() =>
       expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts).toContain(tab),
     );

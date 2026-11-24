@@ -11,7 +11,7 @@
 ## Context
 
 Search engines and answer engines need something to read. Without the server's help every address returns the same
-small shell: the title "Helper2.ai" and an empty `<div id="root">`, and React draws the rest.
+small shell: the title "Searchavo.ai" and an empty `<div id="root">`, and React draws the rest.
 - Google runs JavaScript, but later and only for pages it already chose to crawl.
 - Most AI crawlers (GPTBot, ClaudeBot, PerplexityBot and similar) do not run JavaScript. For them such a page is empty.
 - Link previews (Slack, LinkedIn, X, WhatsApp, Teams) never run JavaScript. A shared resource link would show only the
@@ -23,7 +23,7 @@ pages cannot.
 
 The Mission, Privacy and Terms pages state numbers: how many candidates the guide reads, how many picks it gives, the
 daily limits, and how long each store keeps data. The code reads the same numbers from configuration, and every one
-can change with an `H2_` variable, without a release. A page that typed them in could say "30 questions a day" while
+can change with an `SA_` variable, without a release. A page that typed them in could say "30 questions a day" while
 the server allows 50, and nothing would fail. For the Privacy page that is a legal problem, not only a bug.
 
 Both are about the public site itself, and only the public app serves them.
@@ -33,7 +33,7 @@ Both are about the public site itself, and only the public app serves them.
 ### Pages for crawlers
 1. **Spring fills the shell; React stays as it is.** The site's `pages` part answers every GET and HEAD of an address the
    client router owns (`ClientRoutes`: no file extension, not a server path) with a router function. It reads the
-   built `index.html` once at start-up (`helper2.pages.template`; in the cluster `file:/shell/index.html`, copied by an
+   built `index.html` once at start-up (`searchavo.pages.template`; in the cluster `file:/shell/index.html`, copied by an
    init container from the web image of the same tag, [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md)) and, per
    request, writes into it:
    the title, meta description, canonical link, robots meta, Open Graph and Twitter tags, JSON-LD, and for a
@@ -65,11 +65,11 @@ Both are about the public site itself, and only the public app serves them.
    and the sitemap use the readable address. The app has one route, `resource/:id/:slug?`: when the address it
    opened is not the readable one, it swaps it for the readable one once the resource is loaded, without moving the focus.
 3. **The resource head.**
-   - Title, about 60 characters: `{title}: {type in words} · helper2.ai`.
+   - Title, about 60 characters: `{title}: {type in words} · searchavo.ai`.
    - Meta description: the source's own description, cut at a word near 155 characters. An AI-written description
      (`AI_SUMMARY`, `AI_EXTRACTED`) is never used here, because a meta tag cannot carry the AI label (ADR 0033). Without
      a source description the text is built from facts: type, source, licence, pricing.
-   - Canonical: always absolute and always the public host (`H2_PUBLIC_BASE_URL`, `https://helper2.ai` in prod),
+   - Canonical: always absolute and always the public host (`SA_PUBLIC_BASE_URL`, `https://searchavo.ai` in prod),
      also when served from staging.
    - Open Graph and Twitter: title, description, URL, `og:type=website`, `og:site_name`,
      `twitter:card=summary_large_image`, and one brand image for every page: `og:image` with its type, width, height
@@ -87,7 +87,7 @@ Both are about the public site itself, and only the public app serves them.
      addresses only), up to 8 links to related resources (relationships a person did not reject), and up to 10 links to the pages
      of the lists that name the resource ("Found in these lists", [0023](ADR-0023-catalog-full-text-index.md)).
    - The indexed site pages have a body too, so a crawler that runs no JavaScript reads more than the head: an `<h1>`,
-     the page's description and a "More on helper2.ai" list of links to the other site pages. The home page adds
+     the page's description and a "More on searchavo.ai" list of links to the other site pages. The home page adds
      "New in the catalog" and the Events page "Coming up": up to 20 links each, from the same use cases as the app's
      lists (`ListRecentResources`, 14 days; `ListUpcomingEvents`). `CatalogSiteLists` keeps each list 5 minutes in
      memory; when a read fails the page goes out with the last list it had, or without one. The text pages state no
@@ -106,16 +106,16 @@ Both are about the public site itself, and only the public app serves them.
    `/sitemaps/pages.xml`, the indexed site pages, and `/sitemaps/resources-{n}.xml`, every index-worthy resource with
    `<lastmod>` from its last update, newest change first, 10,000 to a part (Google takes 50,000 or 50 MB per file).
    Each part in the index carries the newest `<lastmod>` it holds. A part that does not exist is a 404. The catalog
-   query applies the same rule as `IndexPolicy` and reads at most `helper2.pages.sitemap-limit` resources (200,000).
+   query applies the same rule as `IndexPolicy` and reads at most `searchavo.pages.sitemap-limit` resources (200,000).
    An integration test opens the listed pages of the first part and checks they say `index`. The index and its parts
    are built together at most once an hour and kept in memory; both answers share the `sitemap` rate limit.
    `/llms.txt` (the [llms.txt](https://llmstxt.org/) format, served as `text/plain`) says in a few lines what
-   helper2.ai is, how search and the guide work, and links the main pages, the sitemap and the source code. It
+   searchavo.ai is, how search and the guide work, and links the main pages, the sitemap and the source code. It
    states no number the code reads from configuration, so it cannot drift from the running server, and it holds no
    line written to steer an assistant: only facts the site pages also state. It names the rule of the Terms page on
-   automated bulk copying. It is built from `H2_PUBLIC_BASE_URL`; with `H2_NOINDEX` on it is a 404, like the sitemap. `robots.txt` blocks `/oauth2/`, `/login`, `/logout` and
+   automated bulk copying. It is built from `SA_PUBLIC_BASE_URL`; with `SA_NOINDEX` on it is a 404, like the sitemap. `robots.txt` blocks `/oauth2/`, `/login`, `/logout` and
    `/admin`, never `/api/` (Google needs the API to render a page), and names the sitemap. When
-   `H2_NOINDEX` is on (staging), the `X-Robots-Tag: noindex, nofollow` header stays ([0037](ADR-0037-http-edge.md)), every robots meta says
+   `SA_NOINDEX` is on (staging), the `X-Robots-Tag: noindex, nofollow` header stays ([0037](ADR-0037-http-edge.md)), every robots meta says
    `noindex` too, `robots.txt` allows all (a blocked page never shows its noindex) and there is no sitemap.
 7. **Client navigation drops the server's tags.** The tags Spring writes carry `data-h2-head`. At the first move to
    another page the app removes them (`useDropServerHead`); from then on it keeps the title itself. Crawlers
@@ -128,26 +128,26 @@ Both are about the public site itself, and only the public app serves them.
 9. **One public read: `GET /api/v1/policy`.** It returns the numbers the text pages state, as the running server
    applies them. No sign-in, no cookie, no personal data: the same answer for everyone.
 10. **What it holds.** Only values the code reads from configuration, or a rule fixed in code that a page states:
-   - `guide`: `maxCandidates` (`H2_GUIDE_MAX_CANDIDATES`) and `maxPicks` (`GuideValidator.MAX_PICKS`, fixed in code).
-   - `dailyLimits`: `guideQuestions` (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`), `freeAnswers` (answers with no pick and
-     failed questions that spend no question, `H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS`, [0032](ADR-0032-guide-cost-guard-and-answer-cache.md))
+   - `guide`: `maxCandidates` (`SA_GUIDE_MAX_CANDIDATES`) and `maxPicks` (`GuideValidator.MAX_PICKS`, fixed in code).
+   - `dailyLimits`: `guideQuestions` (`SA_GUIDE_CLIENT_DAILY_QUESTIONS`), `freeAnswers` (answers with no pick and
+     failed questions that spend no question, `SA_GUIDE_CLIENT_DAILY_FREE_ANSWERS`, [0032](ADR-0032-guide-cost-guard-and-answer-cache.md))
      and `webSearches` per feature (`search`, `guide`), the same for every visitor, signed in or not.
    - `retention`, in seconds: the web search counters (`RedisQuotaCounter.KEEP`, fixed in code) and the guide question
-     counters (`BudgetLedger.KEEP`, fixed in code); articles and news from web search (`H2_RETENTION_WEB_NEWS`),
-     pages waiting for review after the decision (`H2_RETENTION_RESOLVED_REVIEW_ITEMS`),
-     a product page's cleaned text (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`) and its address
-     with a fingerprint (`H2_SCOUT_EVIDENCE_PAGE_READ_TTL`, [0014](ADR-0014-evidence-gated-enrichment.md)); database backups
-     (`H2_RETENTION_BACKUPS`: the chart passes its `backup.retentionDays`, the app only states it,
-     [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md)); cached searches (`H2_SEARCH_STALE_FOR`), cached guide answers
-     (`H2_GUIDE_CACHE_TTL`), translations (`H2_SEARCH_TRANSLATION_TTL`), query vectors (`H2_SEARCH_QUERY_VECTOR_TTL`),
-     stored web results (`H2_RETENTION_LIVE_WEB_RESULTS`), inactive accounts with their saved items
-     (`H2_RETENTION_INACTIVE_ACCOUNTS`), handled reports (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`) and administrators'
-     records in the audit trail (`H2_RETENTION_ADMIN_AUDIT`, [0038](ADR-0038-back-office-and-review.md)), and runtime
-     setting changes (`H2_RETENTION_RUNTIME_SETTINGS`, [0007](ADR-0007-configuration-secrets-runtime-settings.md); each setting's newest change
-     stays while it applies), and events after they ended (`H2_RETENTION_PAST_EVENTS`,
+     counters (`BudgetLedger.KEEP`, fixed in code); articles and news from web search (`SA_RETENTION_WEB_NEWS`),
+     pages waiting for review after the decision (`SA_RETENTION_RESOLVED_REVIEW_ITEMS`),
+     a product page's cleaned text (`SA_SCOUT_EVIDENCE_PAGE_TEXT_TTL`) and its address
+     with a fingerprint (`SA_SCOUT_EVIDENCE_PAGE_READ_TTL`, [0014](ADR-0014-evidence-gated-enrichment.md)); database backups
+     (`SA_RETENTION_BACKUPS`: the chart passes its `backup.retentionDays`, the app only states it,
+     [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md)); cached searches (`SA_SEARCH_STALE_FOR`), cached guide answers
+     (`SA_GUIDE_CACHE_TTL`), translations (`SA_SEARCH_TRANSLATION_TTL`), query vectors (`SA_SEARCH_QUERY_VECTOR_TTL`),
+     stored web results (`SA_RETENTION_LIVE_WEB_RESULTS`), inactive accounts with their saved items
+     (`SA_RETENTION_INACTIVE_ACCOUNTS`), handled reports (`SA_RETENTION_RESOLVED_ISSUE_REPORTS`) and administrators'
+     records in the audit trail (`SA_RETENTION_ADMIN_AUDIT`, [0038](ADR-0038-back-office-and-review.md)), and runtime
+     setting changes (`SA_RETENTION_RUNTIME_SETTINGS`, [0007](ADR-0007-configuration-secrets-runtime-settings.md); each setting's newest change
+     stays while it applies), and events after they ended (`SA_RETENTION_PAST_EVENTS`,
      [0010](ADR-0010-data-retention.md)), for every source of events.
    - `sources`: what the Scout reads, as the Privacy page states it: how many categories the discovery searches cover
-     and how many searches that is (`helper2.categories`), the longest quote (`EvidenceValidator.MAX_EXCERPT_CHARS`),
+     and how many searches that is (`searchavo.categories`), the longest quote (`EvidenceValidator.MAX_EXCERPT_CHARS`),
      the excerpt kept of an article and of a product page, how many pages of a product's own website one read takes
      (`OfficialPages.MAX_LINKED_PAGES` + 1), and how much of a provider's error message the log keeps
      (`NvidiaEmbedder.MAX_REASON`). All fixed in code.
@@ -159,19 +159,19 @@ Both are about the public site itself, and only the public app serves them.
    `identity.AccountPolicy`, `catalog.CatalogPolicy`, `catalog.ScoutPolicy`. The config records stay internal to their
    module. The Scout runs in the back office and this endpoint in the public app, so the Scout's numbers live in the
    catalog context, with the limits the Scout's code reads, and the public app binds the two retention periods
-   (`helper2.scout.evidence`) from the same `H2_` variables ([0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md)). The platform's own numbers (the counter lifetimes, the backup period, the categories) the controller reads
+   (`searchavo.scout.evidence`) from the same `SA_` variables ([0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md)). The platform's own numbers (the counter lifetimes, the backup period, the categories) the controller reads
    from the platform directly: they belong to no module.
 12. **The site serves them.** `site.policy.web.PolicyController` maps the five values to the contract. It composes
    other modules and owns no table; no module depends on it. There is no use case: the endpoint makes no decision.
 13. **Cached and rate-limited.** `Cache-Control: public, max-age=300`, like the home examples. The values change only
    with a restart, so 5 minutes of a stale number after a deploy is acceptable. No ETag: the body is a few hundred
-   bytes, and no endpoint of the API has one. The `policy` limiter allows `H2_RATE_LIMIT_RECENT_PER_MINUTE`
+   bytes, and no endpoint of the API has one. The `policy` limiter allows `SA_RATE_LIMIT_RECENT_PER_MINUTE`
    requests per client address and minute, like the other public reads.
 14. **Public in the security chain.** `/api/v1/policy` is in the `permitAll` list of the public app's
    `PublicSecurityConfiguration`. It is not a page, so the pages for crawlers do not use it.
 
 ### The site module
-15. **One `site` module in the public app.** `ai.helper2.site` holds what the public site says about itself and how
+15. **One `site` module in the public app.** `ai.searchavo.site` holds what the public site says about itself and how
    it funds itself, one package each: `pages` (1-8), `policy` (9-14), `monetisation` and `csp`
    ([0042](ADR-0042-monetisation.md)). Only the public app uses them, so none of it is a library
    ([0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md)). The site sits on top: it reads the policy
@@ -189,31 +189,31 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
 
 ### Code
 
-- `backend/apps/public/src/main/java/ai/helper2/site/package-info.java` — the module and its four parts.
-- `backend/apps/public/src/main/kotlin/ai/helper2/site/pages/` — `Routes.kt` (`PageKind`, `PageAddress`), `PageHead.kt`
+- `backend/apps/public/src/main/java/ai/searchavo/site/package-info.java` — the module and its four parts.
+- `backend/apps/public/src/main/kotlin/ai/searchavo/site/pages/` — `Routes.kt` (`PageKind`, `PageAddress`), `PageHead.kt`
   (`PageHead`, `ResourceView`, `IndexPolicy`), `SiteLists.kt`, `LlmsTxt.kt`, `Pages.kt` (the head of each page, `JsonLd`);
-  `backend/libs/core/src/main/kotlin/ai/helper2/catalog/ResourcePaths.kt` (`Slug`, `resourcePath`) and `IndexRule.kt`.
-- `backend/apps/public/src/main/java/ai/helper2/site/pages/` — `usecase/RenderPage`, `usecase/ListSitemap`,
+  `backend/libs/core/src/main/kotlin/ai/searchavo/catalog/ResourcePaths.kt` (`Slug`, `resourcePath`) and `IndexRule.kt`.
+- `backend/apps/public/src/main/java/ai/searchavo/site/pages/` — `usecase/RenderPage`, `usecase/ListSitemap`,
   `internal/PageTemplate`, `internal/PageHtml` (the escaping), `internal/CatalogSiteLists` (the lists of the site pages), `web/PageRoutes`, `web/CrawlerFiles`,
   `config/PagesProperties`, `config/PagesUseCaseConfiguration` (the beans of the two use cases, which carry no Spring
   type).
-- `backend/libs/platform/src/main/java/ai/helper2/platform/ClientRoutes.java`; `catalog/usecase/ListIndexableResources.java`,
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/ClientRoutes.java`; `catalog/usecase/ListIndexableResources.java`,
   `catalog/internal/JdbcResources.indexable`.
-- `backend/apps/public/src/main/java/ai/helper2/site/policy/web/PolicyController.java`; `api/public.yaml` — `GET /policy`,
+- `backend/apps/public/src/main/java/ai/searchavo/site/policy/web/PolicyController.java`; `api/public.yaml` — `GET /policy`,
   schemas `Policy` and `WebSearchLimits`.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/SearchPolicy.kt`, `guide/GuidePolicy.kt`,
-  `backend/libs/core/src/main/java/ai/helper2/identity/AccountPolicy.java`, `catalog/CatalogPolicy.java`,
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/SearchPolicy.kt`, `guide/GuidePolicy.kt`,
+  `backend/libs/core/src/main/java/ai/searchavo/identity/AccountPolicy.java`, `catalog/CatalogPolicy.java`,
   `catalog/ScoutPolicy.java`, `catalog/config/ScoutEvidenceProperties.java` — the values; built in
   `search/config/SearchConfiguration.java`, `guide/internal/GuideConfiguration.java`,
   `identity/config/IdentityPolicyConfiguration.java`, `catalog/internal/CatalogConfiguration.java` (also `ScoutPolicy`).
-- `backend/libs/platform/src/main/java/ai/helper2/platform/config/PlatformRetentionProperties.java` (`backups` from
-  `H2_RETENTION_BACKUPS`, set by `deploy/helm/helper2/templates/app.yaml` from `backup.retentionDays`),
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/config/PlatformRetentionProperties.java` (`backups` from
+  `SA_RETENTION_BACKUPS`, set by `deploy/helm/searchavo/templates/app.yaml` from `backup.retentionDays`),
   `platform/config/CategoriesProperties.java` (`discoverySearches`), `platform/quota/RedisQuotaCounter.java` and
   `platform/llm/BudgetLedger.java` (`KEEP`) — the platform's numbers.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java` — the `policy` limiter.
-- `backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java` — the public paths,
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/RateLimitInterceptor.java` — the `policy` limiter.
+- `backend/apps/public/src/main/java/ai/searchavo/identity/security/PublicSecurityConfiguration.java` — the public paths,
   and the two header writers it takes from the site.
-- `backend/apps/public/src/test/java/ai/helper2/architecture/ModularityTest.java` — `noModuleNamesTheSite`, the site's
+- `backend/apps/public/src/test/java/ai/searchavo/architecture/ModularityTest.java` — `noModuleNamesTheSite`, the site's
   domain packages.
 - `frontend/src/lib/head.ts` (`useDropServerHead`), `frontend/src/styles/app.css` (`.h2-prerender`), `frontend/src/lib/slug.ts`,
   `frontend/src/lib/searchState.ts` (`resourcePath`), `frontend/src/features/resource/ResourcePage.tsx` (the address replaced).
@@ -260,7 +260,7 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
 - Until the app starts, a person sees the server's plain text of a resource page for a moment. Its nodes are
   replaced, not moved, so it adds no layout shift.
 - The pages add no data flow, cookie or storage of their own.
-- A text page can show the number the server applies. A changed `H2_` variable changes the page with the next cache
+- A text page can show the number the server applies. A changed `SA_` variable changes the page with the next cache
   refresh, with no release of the frontend.
 - A new setting that a page states needs one field in the contract, in the owning module's policy value and in the
   controller.
@@ -270,7 +270,7 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
   rate-limit windows stay as words ("the length of the limit"): each limiter has its own.
 - Every text page item with a number has a second wording without it, shown when the policy read fails.
 - The public app's site parts change together and ship in one jar; the back office has none of them
-  (`ModularityTest` of the back office: no `ai.helper2.site`).
+  (`ModularityTest` of the back office: no `ai.searchavo.site`).
 
 ### Security (STRIDE)
 
@@ -287,8 +287,8 @@ The Mission, Privacy and Terms pages read the numbers from `GET /api/v1/policy`
 
 No AI layer of its own. Guardrails: AI-written text never reaches a meta tag or JSON-LD, and the body shows it only with
 its label and `data-ai-generated` (ADR 0033). Observability: the 404 and 301 counts per route show up in the existing
-HTTP metrics. Deployment: one setting, `H2_PUBLIC_BASE_URL` (Helm `app.publicBaseUrl`, empty = the default),
-and `H2_NOINDEX`. The other layers are not touched.
+HTTP metrics. Deployment: one setting, `SA_PUBLIC_BASE_URL` (Helm `app.publicBaseUrl`, empty = the default),
+and `SA_NOINDEX`. The other layers are not touched.
 
 ### Open points
 

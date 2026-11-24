@@ -1,20 +1,20 @@
-# Flowchart: one guide model call (plan, choose, compare, explain or verify) with H2_GUIDE_MODEL_STREAM=ON:
+# Flowchart: one guide model call (plan, choose, compare, explain or verify) with SA_GUIDE_MODEL_STREAM=ON:
 # when the stream is disposed, what each stop means for the step, and when the step is asked again without thinking.
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (call, streamWithin),
-#   backend/apps/public/src/main/java/ai/helper2/guide/CallTimeLimit.java (forACallStartingNow, forThinking, forTheCallAfterThinking),
-#   backend/libs/platform/src/main/java/ai/helper2/platform/llm/ChatStream.java (collect), BudgetedChat.java (streamed),
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/guide/internal/SpringAiGuideModel.java (call, streamWithin),
+#   backend/apps/public/src/main/java/ai/searchavo/guide/CallTimeLimit.java (forACallStartingNow, forThinking, forTheCallAfterThinking),
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/llm/ChatStream.java (collect), BudgetedChat.java (streamed),
 #   ModelCallMetrics.java (tokens, thinkingFallback), CutAnswerWatch.java (isCut), ModelErrors.java,
-#   backend/apps/public/src/main/java/ai/helper2/guide/ModelActivity.java, guide/config/GuideProperties.java (ModelStream).
+#   backend/apps/public/src/main/java/ai/searchavo/guide/ModelActivity.java, guide/config/GuideProperties.java (ModelStream).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0035-guide-model-stream.d2 && d2 flow-0035-guide-model-stream.d2 flow-0035-guide-model-stream.svg
 
 ...@style
 
 direction: down
 
-mode: "H2_GUIDE_MODEL_STREAM?" {class: decision}
+mode: "SA_GUIDE_MODEL_STREAM?" {class: decision}
 blocking: "Blocking call\n(ADR 0008): prompt.call()\n.responseEntity(converter)" {class: app}
 window: "CallTimeLimit.forACallStartingNow:\nwindow = min(model timeout,\ntime left - margin)" {class: app}
-units: "BudgetedChat.streamed:\nthe model's circuit (llm-chat-guide-fast\nor -reasoning), one budget unit,\none helper2.llm.call observation\naround the whole subscription" {class: app}
+units: "BudgetedChat.streamed:\nthe model's circuit (llm-chat-guide-fast\nor -reasoning), one budget unit,\none searchavo.llm.call observation\naround the whole subscription" {class: app}
 ask: "prompt.stream().chatResponse()\nsame options, system and user text;\nschema on the options, or the\nformat text after the user text" {class: ai}
 collect: "ChatStream.collect on the\nquestion's virtual thread:\nnext signal?" {class: decision}
 chunk: "Chunk: join the text, keep the last\nfinish reason and the highest token counts" {class: app}

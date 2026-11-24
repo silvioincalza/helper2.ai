@@ -39,7 +39,7 @@
 
 ### A2: Invalid Name
 
-**Trigger:** The name is empty, is not one part of a host name, is shorter than 3 characters, is too common, or is used by a host of a helper2.ai source (step 4)  
+**Trigger:** The name is empty, is not one part of a host name, is shorter than 3 characters, is too common, or is used by a host of a searchavo.ai source (step 4)  
 **Flow:**
 
 1. System refuses the name and says which rule it breaks.
@@ -101,7 +101,7 @@ A name that many sites use as part of their host name is refused: www, com, net,
 
 ### BR-003: Names of Sources
 
-A name that is part of the host name of a helper2.ai source (such as github) is refused, so the list never hides a source.
+A name that is part of the host name of a searchavo.ai source (such as github) is refused, so the list never hides a source.
 
 ### BR-004: Reason
 

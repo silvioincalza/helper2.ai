@@ -28,7 +28,7 @@ home: Home {
   paint: "Beam passes a dot:\npop, glow, fade to 0.22" {class: app}
   bar: "Search box, pinned\nunder the header" {class: app}
   wide: "Wider than 768 px?" {class: decision}
-  columns: "TermList as two columns of log rows\n(helper2 new · N line, Show all in place)" {class: app}
+  columns: "TermList as two columns of log rows\n(searchavo new · N line, Show all in place)" {class: app}
   tabs: "TermList in tabs:\n> new in the catalog N | coming up N\n(log rows)" {class: app}
   feeds: "GET /api/v1/recent\nGET /api/v1/events/upcoming?days=90\n(total for Show all N)" {class: ext}
   measure: "ResizeObserver measures\nthe pinned box (--pinned-h)" {class: app}
@@ -73,7 +73,7 @@ fold: "Title folds away,\nbox stays pinned" {class: app}
 search: "Search: /search?q=…\nGET /api/v1/search" {class: ext}
 loaded: "Results view loaded?\n(on demand)" {class: decision}
 skeleton: "Skeleton rows under\nthe h1 and the box" {class: app}
-list: "One column: All results ·\n\$ helper2 search · N,\nrows, filters, coverage" {class: app}
+list: "One column: All results ·\n\$ searchavo search · N,\nrows, filters, coverage" {class: app}
 resource: "Resource page;\nBack keeps the place" {class: end}
 question: "Asked the guide?\n(button or Shift+Enter)" {class: decision}
 guide: "POST /api/v1/guide/stream (SSE)" {class: ext}

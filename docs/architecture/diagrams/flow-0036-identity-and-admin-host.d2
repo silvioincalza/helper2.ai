@@ -1,17 +1,17 @@
 # Flowchart: which app answers a request, who may call what, what a session without an account gets, how a sign-in
 # becomes ADMIN (only on the back office) and keeps no GitHub token, where bookmarks are kept, how an account is deleted, and how the admin audit trail is kept.
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java (NoBackOfficeHere),
-#   backend/apps/backoffice/src/main/java/ai/helper2/identity/security/BackOfficeSecurityConfiguration.java, BackOfficeEdge.java,
-#   backend/libs/core/src/main/java/ai/helper2/identity/config/WebSecurity.java (roles, header-only CSRF), SameOriginWrites.java,
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/identity/security/PublicSecurityConfiguration.java (NoBackOfficeHere),
+#   backend/apps/backoffice/src/main/java/ai/searchavo/identity/security/BackOfficeSecurityConfiguration.java, BackOfficeEdge.java,
+#   backend/libs/core/src/main/java/ai/searchavo/identity/config/WebSecurity.java (roles, header-only CSRF), SameOriginWrites.java,
 #   identity/config/NoProviderTokens.java, SignInConfiguration.java (no token kept), identity/CurrentUser.java, identity/internal/SignedInUser.java,
 #   identity/config/KnownAccountOnly.java, identity/internal/SignInAgain.java (a session without an account),
 #   identity/usecase/*.java, identity/Users.java, Bookmarks.java, AuditLog.java (ports), identity/internal/Jdbc*.java,
-#   backend/apps/public/src/main/java/ai/helper2/identity/web/MeController.java, BookmarksController.java, identity/schedule/AccountRetentionSchedule.java,
-#   backend/apps/backoffice/src/main/java/ai/helper2/identity/schedule/AuditRetentionSchedule.java,
+#   backend/apps/public/src/main/java/ai/searchavo/identity/web/MeController.java, BookmarksController.java, identity/schedule/AccountRetentionSchedule.java,
+#   backend/apps/backoffice/src/main/java/ai/searchavo/identity/schedule/AuditRetentionSchedule.java,
 #   backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (admin_audit triggers, grants),
-#   backend/libs/core/src/main/java/ai/helper2/identity/VisitorLimits.java, guide/internal/GuideVisitorLimits.java (limits on GET /me),
+#   backend/libs/core/src/main/java/ai/searchavo/identity/VisitorLimits.java, guide/internal/GuideVisitorLimits.java (limits on GET /me),
 #   frontend/src/context/BookmarksContext.tsx, frontend/src/features/account/AccountPage.tsx, frontend/src/admin/,
-#   deploy/helm/helper2/templates/backoffice.yaml (Service helper2-admin), networkpolicy.yaml,
+#   deploy/helm/searchavo/templates/backoffice.yaml (Service searchavo-admin), networkpolicy.yaml,
 #   the platform repo (Ingresses, allow-list), outside this repo.
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0036-identity-and-admin-host.d2 && d2 flow-0036-identity-and-admin-host.d2 flow-0036-identity-and-admin-host.svg
 
@@ -96,7 +96,7 @@ signin: Sign-in (both hosts, profile oauth-github) {
   github: "GitHub OAuth2, scope read:user;\neach host its own callback" {class: ext}
   token: "Access token used once for the user info,\nthen dropped (NoProviderTokens):\nnot in the session, not in memory" {class: config}
   where: "Which app?" {class: decision}
-  listed: "\"github:<numeric id>\"\nin H2_ADMINS?" {class: decision}
+  listed: "\"github:<numeric id>\"\nin SA_ADMINS?" {class: decision}
   user: "ROLE_USER, back to /" {class: end}
   bouser: "ROLE_USER, back to /admin\n(forbidden pages)" {class: end}
   adm: "ROLE_USER + ROLE_ADMIN,\nback to /admin" {class: end}
@@ -141,7 +141,7 @@ audit: Admin audit trail {
   row: "admin_audit row: admin id, action,\ntarget, at, outcome" {class: data}
   update: "UPDATE or TRUNCATE?" {class: decision}
   e_ro: "refused by trigger\n(owner too)" {class: fail}
-  purge: "Daily purge in the back office:\nDELETE rows older than\nH2_RETENTION_ADMIN_AUDIT (≥ 730 d)" {class: app}
+  purge: "Daily purge in the back office:\nDELETE rows older than\nSA_RETENTION_ADMIN_AUDIT (≥ 730 d)" {class: app}
   young: "Row younger than 729 days?" {class: decision}
   gone: "Row deleted" {class: end}
   e_young: "refused by trigger,\nthe whole DELETE fails" {class: fail}
@@ -155,7 +155,7 @@ audit: Admin audit trail {
   pub -> row: "denied"
 }
 
-accounts: "Daily purge in the public app:\naccounts with no sign-in for\nH2_RETENTION_INACTIVE_ACCOUNTS" {class: app}
+accounts: "Daily purge in the public app:\naccounts with no sign-in for\nSA_RETENTION_INACTIVE_ACCOUNTS" {class: app}
 
 req -> edge.host
 edge.host -> public.bo: "public host\n(Cloudflare, ingress-nginx)" {class: hot}

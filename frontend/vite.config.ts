@@ -11,7 +11,7 @@ const PRELOADED_FONTS = /^assets\/geist(-mono)?-latin-wght-normal-[\w-]+\.woff2$
 function preloadFonts(): Plugin {
   let base = '/';
   return {
-    name: 'helper2-preload-fonts',
+    name: 'searchavo-preload-fonts',
     apply: 'build',
     configResolved: (config) => {
       base = config.base;

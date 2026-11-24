@@ -31,7 +31,7 @@ From other modules: ENRICHMENT_RUN (Enrichment).
 
 ### SOURCE
 
-A source helper2.ai reads (an external API, a feed, the curated list or the catalog itself), with how it is used and the outcome of its last call.
+A source searchavo.ai reads (an external API, a feed, the curated list or the catalog itself), with how it is used and the outcome of its last call.
 
 | Attribute       | Description                                                                      | Data Type | Length/Precision | Validation Rules                                              |
 |-----------------|----------------------------------------------------------------------------------|-----------|------------------|---------------------------------------------------------------|
@@ -66,7 +66,7 @@ One AI resource in the catalog (a tool, model, MCP server, library, paper, news 
 | updated_source_id             | Source that states the update date                                                                                  | String    | -                | Optional, Foreign Key (SOURCE.id) |
 | event_starts_at               | Start of an event, as its source states it                                                                          | DateTime  | -                | Optional |
 | event_ends_at                 | End of an event, as its source states it                                                                            | DateTime  | -                | Optional |
-| first_discovered_at           | When helper2.ai first found the resource                                                                            | DateTime  | -                | Not Null |
+| first_discovered_at           | When searchavo.ai first found the resource                                                                            | DateTime  | -                | Not Null |
 | last_seen_at                  | When a source last returned the resource                                                                            | DateTime  | -                | Not Null |
 | data_origin                   | How the resource came into the catalog: seen in a live search, indexed by the Scout, curated by a person, or demonstration | String | -             | Not Null, Values: OBSERVED, INDEXED, CURATED, DEMO |
 | enrichment_status             | Outcome of the last AI enrichment; NOT_RUN by default                                                               | String    | -                | Not Null, Values: NOT_RUN, VALIDATED, PARTIAL, REJECTED, LLM_UNAVAILABLE |

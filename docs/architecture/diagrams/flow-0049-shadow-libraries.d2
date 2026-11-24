@@ -1,17 +1,17 @@
 # Flowchart: an admin adds a shadow library's name, and how a web result is checked against the list (ADR 0049).
-# Source of truth: backend/libs/core/src/main/kotlin/ai/helper2/search/ShadowLibraries.kt (ShadowLibraryNames.check,
-#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/WebAddresses.kt (the host check),
-#   ShadowLibraries.isShadowLibrary), backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/ManageShadowLibraries.kt,
-#   backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (mergeHits),
-#   backend/libs/core/src/main/java/ai/helper2/sources/tavily/TavilySource.java (toHit),
-#   backend/libs/core/src/main/java/ai/helper2/sources/hackernews/HackerNewsSource.java (aiStories),
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryCollector.java (keep),
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/LiveWebEventsCollector.java,
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/ProductLinks.java (check),
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/research/ReadPageTool.java,
-#   backend/libs/core/src/main/java/ai/helper2/catalog/ResourceCards.java (shownCard),
-#   backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (cached),
-#   backend/apps/public/src/main/kotlin/ai/helper2/setup/ToolGuides.kt (shown).
+# Source of truth: backend/libs/core/src/main/kotlin/ai/searchavo/search/ShadowLibraries.kt (ShadowLibraryNames.check,
+#   backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/WebAddresses.kt (the host check),
+#   ShadowLibraries.isShadowLibrary), backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/ManageShadowLibraries.kt,
+#   backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SearchResources.kt (mergeHits),
+#   backend/libs/core/src/main/java/ai/searchavo/sources/tavily/TavilySource.java (toHit),
+#   backend/libs/core/src/main/java/ai/searchavo/sources/hackernews/HackerNewsSource.java (aiStories),
+#   backend/apps/backoffice/src/main/java/ai/searchavo/sources/liveweb/scout/DiscoveryCollector.java (keep),
+#   backend/apps/backoffice/src/main/java/ai/searchavo/sources/liveweb/scout/LiveWebEventsCollector.java,
+#   backend/apps/backoffice/src/main/java/ai/searchavo/sources/github/scout/ProductLinks.java (check),
+#   backend/apps/backoffice/src/main/java/ai/searchavo/sources/research/ReadPageTool.java,
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/ResourceCards.java (shownCard),
+#   backend/apps/public/src/main/kotlin/ai/searchavo/guide/usecase/AskGuide.kt (cached),
+#   backend/apps/public/src/main/kotlin/ai/searchavo/setup/ToolGuides.kt (shown).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0049-shadow-libraries.d2 && d2 flow-0049-shadow-libraries.d2 flow-0049-shadow-libraries.svg
 
 ...@style

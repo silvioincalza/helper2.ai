@@ -1,13 +1,13 @@
 # Flowchart: what each Scout collector does in collect(), after RunScout has called it.
 # Shows the shared gates (enabled, token, run interval) and the decisions inside each collector,
 # with the awesome-list classifier in detail.
-# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/ (mcp/McpRegistryCollector,
+# Source of truth: backend/apps/backoffice/src/main/java/ai/searchavo/sources/ (mcp/McpRegistryCollector,
 #   huggingface/scout/HuggingFaceTrendingCollector, huggingface/scout/HuggingFaceProviderOrgsCollector,
 #   tavily/scout/LiveWebNewsCollector, tavily/scout/CourseCollector, tavily/scout/DiscoveryCollector,
 #   github/scout/GitHubAwesomeCollector, github/scout/AwesomeLists, classifier/SpringAiRepoClassifier, classifier/RepoClassifier,
 #   aideadlines/AiDeadlinesCollector, confstech/ConfsTechCollector, config/scout/CollectorsConfiguration),
-#   backend/libs/core/src/main/java/ai/helper2/sources/support/RunInterval.java,
-#   backend/libs/platform/src/main/resources/helper2-shared.yaml, backend/apps/backoffice/src/main/resources/application.yaml (helper2.scout.*, helper2.sources.*).
+#   backend/libs/core/src/main/java/ai/searchavo/sources/support/RunInterval.java,
+#   backend/libs/platform/src/main/resources/searchavo-shared.yaml, backend/apps/backoffice/src/main/resources/application.yaml (searchavo.scout.*, searchavo.sources.*).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0012-scout-collectors.d2 && d2 flow-0012-scout-collectors.d2 flow-0012-scout-collectors.svg
 
 ...@style
@@ -15,7 +15,7 @@
 direction: down
 
 call: "collect(checkpoint,\nresumeCursor, maxItems)" {class: app}
-enabled: "Enabled? (Tavily needs\nH2_LIVE_WEB_API_KEY, awesome\nlists need H2_GITHUB_TOKEN)" {class: decision}
+enabled: "Enabled? (Tavily needs\nSA_LIVE_WEB_API_KEY, awesome\nlists need SA_GITHUB_TOKEN)" {class: decision}
 skipped: "SKIPPED by RunScout" {class: end}
 due: "RunInterval: no checkpoint,\ninterval passed, or resume?" {class: decision}
 notDue: "CollectedBatch.notDue()" {class: end}

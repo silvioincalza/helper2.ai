@@ -1,9 +1,9 @@
 # Flowchart: how a link of a list page of a directory host is followed to the page of the item, and who says that the page is the item's (ADR 0057).
-# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/ListLinkFollower.java (follow, canBeFollowed, followOne, placeOf, linkToTheItem, checked, takeStep),
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/ItemPageCheck.java (nameInAddress, nameInTitle),
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/classifier/SpringAiItemPageJudge.java (parse),
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/pagestatus/LivePageStatusReader.java (status),
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/WebPageLists.java (followed).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/searchavo/sources/github/scout/ListLinkFollower.java (follow, canBeFollowed, followOne, placeOf, linkToTheItem, checked, takeStep),
+#   backend/apps/backoffice/src/main/java/ai/searchavo/sources/github/scout/ItemPageCheck.java (nameInAddress, nameInTitle),
+#   backend/apps/backoffice/src/main/java/ai/searchavo/sources/classifier/SpringAiItemPageJudge.java (parse),
+#   backend/apps/backoffice/src/main/java/ai/searchavo/sources/pagestatus/LivePageStatusReader.java (status),
+#   backend/apps/backoffice/src/main/java/ai/searchavo/sources/github/scout/WebPageLists.java (followed).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0057-follow-list-links.d2 && d2 flow-0057-follow-list-links.d2 flow-0057-follow-list-links.svg
 
 ...@style

@@ -2,7 +2,7 @@
 # the three deployables of the chart (ADR 0043), the migrate Job, the one embedder of production and staging (ADR 0054) and the two stores.
 # The modules inside the two Java apps are in architecture-context.d2; the folders inside the web apps are in
 # architecture-frontend.d2; sizes, ports and network policies are in infrastructure-workloads.d2.
-# Source of truth: deploy/helm/helper2/templates/app.yaml, web.yaml, backoffice.yaml, embedder.yaml, migrate.yaml,
+# Source of truth: deploy/helm/searchavo/templates/app.yaml, web.yaml, backoffice.yaml, embedder.yaml, migrate.yaml,
 #   postgres.yaml, redis.yaml, backend/settings.gradle.kts (apps and libraries),
 #   backend/apps/public, backend/apps/backoffice, frontend/vite.config.ts, frontend/vite.admin.config.ts,
 #   api/public.yaml, api/admin.yaml, api/common.yaml.
@@ -28,15 +28,15 @@ browser: "IN THE BROWSER" {
   adminspa: "admin web app\nReact 19 · the same shared code\nfrontend/src/admin\nbuild: dist-admin, base /admin/" {class: app}
 }
 
-helper2: "helper2 · Helm release, one namespace (ADR 0043)" {
+searchavo: "searchavo · Helm release, one namespace (ADR 0043)" {
   class: group
 
-  web: "helper2-web\nnginx · the public web app's files\n(every address that is not the public app's)" {class: app}
-  public: "helper2 · public app\nSpring Boot 4.1 · Java 25 + Kotlin\nthe shell (index.html) and pages for crawlers,\n/api/v1 (public.yaml): search, guide, setup, identity" {class: app}
-  bo: "helper2-backoffice\nSpring Boot 4.1 · Java 25 + Kotlin\n/api/v1/admin (admin.yaml), the admin web app,\nScout, catalog jobs, review research" {class: app}
+  web: "searchavo-web\nnginx · the public web app's files\n(every address that is not the public app's)" {class: app}
+  public: "searchavo · public app\nSpring Boot 4.1 · Java 25 + Kotlin\nthe shell (index.html) and pages for crawlers,\n/api/v1 (public.yaml): search, guide, setup, identity" {class: app}
+  bo: "searchavo-backoffice\nSpring Boot 4.1 · Java 25 + Kotlin\n/api/v1/admin (admin.yaml), the admin web app,\nScout, catalog jobs, review research" {class: app}
   libs: "shared libraries, in both apps\nkernel · platform · schema · core\n(search, catalog, sources, examples, identity)" {class: config}
-  embedder: "helper2-embedder · production's namespace\nNVIDIA embedding model on CPU,\nfor production and staging\nno Ingress, no egress (ADR 0054)" {class: ai}
-  migrate: "helper2-migrate Job\nFlyway as the owner,\nonce per release" {class: app}
+  embedder: "searchavo-embedder · production's namespace\nNVIDIA embedding model on CPU,\nfor production and staging\nno Ingress, no egress (ADR 0054)" {class: ai}
+  migrate: "searchavo-migrate Job\nFlyway as the owner,\nonce per release" {class: app}
 
   pg: "PostgreSQL 18 + pgvector\nsystem of record:\ncatalog, full text, vectors,\nusers, queues, audit" {
     shape: cylinder
@@ -67,14 +67,14 @@ outside: "INTERNET · TCP 443 only" {
 
 visitor -> browser.spa: uses {class: hot}
 admin -> browser.adminspa: uses
-browser.spa -> helper2.web: "JS, CSS, fonts" {class: hot}
-browser.spa -> helper2.public: "the shell, /api/v1 · JSON,\nguide over SSE" {class: hot}
-browser.adminspa -> helper2.bo: "files, /api/v1/admin · JSON,\nresearch steps over SSE"
-crawler -> helper2.public: "page head, sitemap.xml"
+browser.spa -> searchavo.web: "JS, CSS, fonts" {class: hot}
+browser.spa -> searchavo.public: "the shell, /api/v1 · JSON,\nguide over SSE" {class: hot}
+browser.adminspa -> searchavo.bo: "files, /api/v1/admin · JSON,\nresearch steps over SSE"
+crawler -> searchavo.public: "page head, sitemap.xml"
 
-helper2.public -> outside.nebius: "guide, setup,\ntranslation" {class: ai-call}
-helper2.bo -> outside.nebius: "enrichment,\nreview research" {class: ai-call}
-helper2.public -> outside.sources: "live search,\nsetup guides"
-helper2.bo -> outside.sources: "Scout collectors"
-helper2.public -> outside.oauth: "sign-in" {class: config}
-helper2.bo -> outside.oauth: "sign-in" {class: config}
+searchavo.public -> outside.nebius: "guide, setup,\ntranslation" {class: ai-call}
+searchavo.bo -> outside.nebius: "enrichment,\nreview research" {class: ai-call}
+searchavo.public -> outside.sources: "live search,\nsetup guides"
+searchavo.bo -> outside.sources: "Scout collectors"
+searchavo.public -> outside.oauth: "sign-in" {class: config}
+searchavo.bo -> outside.oauth: "sign-in" {class: config}

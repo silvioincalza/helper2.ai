@@ -7,7 +7,7 @@ const card = (id: string, published: ReturnType<typeof known> | typeof unknownDa
     timeline: {
       published,
       updated: known('2026-10-25T00:00:00Z'),
-      discovered: known('2026-10-26T00:00:00Z', 'helper2'),
+      discovered: known('2026-10-26T00:00:00Z', 'searchavo'),
     },
   });
 

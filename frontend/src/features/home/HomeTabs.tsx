@@ -96,12 +96,18 @@ export default function ListTabs({
           );
         })}
       </div>
-      <TabPanel id="news" selected={selected} feed={news} command="helper2 new" cells={newsCells} />
+      <TabPanel
+        id="news"
+        selected={selected}
+        feed={news}
+        command="searchavo new"
+        cells={newsCells}
+      />
       <TabPanel
         id="events"
         selected={selected}
         feed={events}
-        command="helper2 events"
+        command="searchavo events"
         cells={eventCells}
       />
     </div>

@@ -1,10 +1,10 @@
 # Sequence: one fresh guide question and the research trail it carries; then a paraphrase that reuses the answer
 # without its queries.
-# Source of truth: backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (ask, answerByIntent, similarAnswer),
-#   backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/Question.kt (GuideSteps.find, Question.ran),
-#   backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/PickAnswer.kt (picks); CompareAnswer.kt and ExplainAnswer.kt list removals alike,
-#   backend/apps/public/src/main/kotlin/ai/helper2/guide/Guide.kt (GuideValidator, ResearchTrail),
-#   backend/apps/public/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java, GuideStreamController.java,
+# Source of truth: backend/apps/public/src/main/kotlin/ai/searchavo/guide/usecase/AskGuide.kt (ask, answerByIntent, similarAnswer),
+#   backend/apps/public/src/main/kotlin/ai/searchavo/guide/steps/Question.kt (GuideSteps.find, Question.ran),
+#   backend/apps/public/src/main/kotlin/ai/searchavo/guide/steps/PickAnswer.kt (picks); CompareAnswer.kt and ExplainAnswer.kt list removals alike,
+#   backend/apps/public/src/main/kotlin/ai/searchavo/guide/Guide.kt (GuideValidator, ResearchTrail),
+#   backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideDtoMapper.java, GuideStreamController.java,
 #   frontend/src/features/guide/GuideAnswer.tsx.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0033-research-trail.d2 && d2 sequence-0033-research-trail.d2 sequence-0033-research-trail.svg
 

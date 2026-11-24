@@ -1,13 +1,13 @@
 # Architecture, view 5 of 6: Set it up on a resource page. The setup module, its ports and the adapters that answer them.
 # The registry entry and the README give the run options; the tool guide asks the model for steps, from the tool's own documents.
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/setup/web/SetupController.java,
-#   backend/apps/public/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, setup/usecase/GetToolGuide.java,
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/setup/web/SetupController.java,
+#   backend/apps/public/src/main/java/ai/searchavo/setup/usecase/GetResourceSetup.java, setup/usecase/GetToolGuide.java,
 #   setup/usecase/ShowSetupGuidesLeft.java (read by guide/internal/GuideVisitorLimits.java for GET /me),
-#   backend/apps/public/src/main/kotlin/ai/helper2/setup/Setup.kt, setup/Materials.kt, setup/ToolGuidePorts.kt (ports),
-#   backend/apps/public/src/main/java/ai/helper2/setup/config/SetupUseCaseConfiguration.java (plain use cases),
-#   backend/apps/public/src/main/java/ai/helper2/setup/internal/SetupConfiguration.java (adapters, budgets),
+#   backend/apps/public/src/main/kotlin/ai/searchavo/setup/Setup.kt, setup/Materials.kt, setup/ToolGuidePorts.kt (ports),
+#   backend/apps/public/src/main/java/ai/searchavo/setup/config/SetupUseCaseConfiguration.java (plain use cases),
+#   backend/apps/public/src/main/java/ai/searchavo/setup/internal/SetupConfiguration.java (adapters, budgets),
 #   setup/internal/HourlyFetchBudget.java (h2:v1:setup:fetches:*),
-#   backend/apps/public/src/main/resources/application.yaml (helper2.setup.*).
+#   backend/apps/public/src/main/resources/application.yaml (searchavo.setup.*).
 # Render: cd docs/architecture/diagrams && d2 fmt architecture-setup.d2 && d2 architecture-setup.d2 architecture-setup.svg
 
 ...@style

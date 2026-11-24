@@ -77,12 +77,12 @@ describe('Feature: saved resources', () => {
 describe('Feature: the saved page in the terminal style', () => {
   afterEach(() => window.localStorage.clear());
 
-  it('Scenario: the title carries `$ helper2 saved · N`, with N the items in the list', async () => {
+  it('Scenario: the title carries `$ searchavo saved · N`, with N the items in the list', async () => {
     window.localStorage.setItem(BOOKMARK_KEY, JSON.stringify(saved));
     mockApi();
     renderApp('/saved');
     await screen.findByRole('link', { name: 'Postgres MCP' });
-    expect(getCommandLine('$ helper2 saved · 2')).toBeInTheDocument();
+    expect(getCommandLine('$ searchavo saved · 2')).toBeInTheDocument();
   });
 
   it('Scenario: signed in, the page shows the loading lines until the account list arrives, not "Nothing saved yet"', async () => {
@@ -175,8 +175,8 @@ describe('Feature: the sources page', () => {
     renderApp('/sources');
     const table = await screen.findByRole('table', { name: 'Every source' });
     expect(within(table).getAllByRole('rowheader')).toHaveLength(4);
-    expect(getCommandLine('$ helper2 sources --all · 4')).toBeInTheDocument();
-    const seed = await rowOf(/Helper2 seed/);
+    expect(getCommandLine('$ searchavo sources --all · 4')).toBeInTheDocument();
+    const seed = await rowOf(/Searchavo seed/);
     expect(within(seed).getByRole('link', { name: /Curated/ })).toBeInTheDocument();
     expect(within(seed).getByText('ours, not on the radar')).toBeInTheDocument();
     expect(
@@ -216,7 +216,7 @@ describe('Feature: the sources page', () => {
     expect(within(gh).getByText('240 milliseconds')).toHaveClass('sr-only');
     const hf = await rowOf(/Hugging Face/);
     expect(within(hf).getByText(/No calls yet/)).toBeInTheDocument();
-    const seed = await rowOf(/Helper2 seed/);
+    const seed = await rowOf(/Searchavo seed/);
     expect(within(seed).queryByText(/Response time/)).not.toBeInTheDocument();
     expect(
       screen.getByText('Response time and pauses are from the server that answered this page.'),

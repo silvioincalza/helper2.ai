@@ -1,16 +1,16 @@
-# Helper2.ai
+# Searchavo.ai
 
-The design system for every part of Helper2.ai: the search box, results, the AI guide, New in the catalog and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Minimal and editorial: warm paper with one saffron accent, one tech font for the interface and a calm font for reading. [ADR 0040](../../docs/architecture/decisions/ADR-0040-design-system.md) is the decision: where this page and the ADR differ, the ADR holds. The boards of every page, its states and the dark theme are in [docs/mockups/boards](../../docs/mockups/boards).
+The design system for every part of Searchavo.ai: the search box, results, the AI guide, New in the catalog and Coming up, resource pages, saved resources, sign-in, the sources page and admin. Minimal and editorial: warm paper with one saffron accent, one tech font for the interface and a calm font for reading. [ADR 0040](../../docs/architecture/decisions/ADR-0040-design-system.md) is the decision: where this page and the ADR differ, the ADR holds. The boards of every page, its states and the dark theme are in [docs/mockups/boards](../../docs/mockups/boards).
 
 [`tokens.json`](tokens.json) is the one source of the tokens. `frontend/src/styles/tokens.css` writes them as CSS variables under plain names (`--font-mono` Geist Mono, `--font-body` Geist, `--font-code` the system monospace for code, `--box-height`), and `frontend/src/lib/breakpoints.ts` the breakpoints. A test (`frontend/src/styles/tokens.test.ts`) fails when they differ, when a colour is written by its hex value anywhere else, or when a media query uses a width that is not a breakpoint. In the public CSS it also fails on a font size, a `z-index` or a corner radius written as a number, and on `rgba()`. The list pages (Sources, Saved, the back office, Results) use the terminal style. The text pages stay prose: Geist for headings and reading text, Geist Mono only for small interface labels, no terminal look (`ui/text.css`). On every page, Geist for what a person reads or presses, Geist Mono for machine facts (principle 5).
 
 ## Principles
 
 1. **One entry point.** One search box: in the middle of the home page, in the header everywhere else. Two buttons, always: **Search** (primary, Enter) and **Ask the guide** (outline, Shift+Enter; its icon and its words, **Ask** up to 720px). The guide runs only when the user asks for it. Never add a second search field, a scope switch or a mode switch.
-2. **Show where every fact came from.** Each result, fact and pick names its source. A value no source stated is **not stated**, in `status-warn-ink`, grouped in one line. Dates are the source's own; otherwise "First seen" with the date Helper2.ai first saw it.
+2. **Show where every fact came from.** Each result, fact and pick names its source. A value no source stated is **not stated**, in `status-warn-ink`, grouped in one line. Dates are the source's own; otherwise "First seen" with the date Searchavo.ai first saw it.
 3. **Checked versus not checked.** A guide quote the validator matched word for word sits on `quote-bg` under "Checked word for word in the source". The model's own reason carries its own "AI-written reason" label and is never styled like the quote.
 4. **State in words, not color alone.** Every status (answered, slow, rate limited, timed out, failed, sources disagree) has a word and an icon: ✓ ! × ○ …. Color only repeats it.
-5. **One tech font, one reading font.** Geist Mono for machine facts: the logo, meta lines, counts, `$ helper2` commands, key hints and table cells (the two home lists, the list pages). Geist for everything a person reads or presses: running text, headings, titles, buttons, chips, tabs, links and fields.
+5. **One tech font, one reading font.** Geist Mono for machine facts: the logo, meta lines, counts, `$ searchavo` commands, key hints and table cells (the two home lists, the list pages). Geist for everything a person reads or presses: running text, headings, titles, buttons, chips, tabs, links and fields.
 6. **Quiet surfaces, one accent.** Saffron `accent` marks the one primary action per area. Selection uses `selected` (ink), so state and action never look alike.
 7. **Nothing moves on its own for more than 5 seconds, with two exceptions.** No CSS animation repeats, no line prints in, no cursor blinks. The first exception: the home radar, like a navigation radar. It holds still while the mouse is over it or the focus is on one of its dots, stands still under reduced motion, and a signed-in user can turn it off. The second: New in the catalog and Coming up move like a news ticker, one row every 4 seconds. Hover, focus or a tap holds them; on a phone, so does a scroll of the page; reduced motion and the radar's switch stop them.
 
@@ -34,7 +34,7 @@ The design system for every part of Helper2.ai: the search box, results, the AI 
 | Controls | `border-strong` | Inputs, selects, ghost buttons, chips, toggles. 3:1 on `bg`. |
 | Selected | `selected` + `on-selected` | The active chip or view (List, Timeline). |
 | Primary action | `accent` + `on-accent` | One per area: Search, Open on source ↗, Send report. |
-| Links | `accent-ink` | Text links, dates, ranks, "helper2.ai" in the home title. Saffron `accent` is never used for small text on `bg` (3:1 only). |
+| Links | `accent-ink` | Text links, dates, ranks, "searchavo.ai" in the home title. Saffron `accent` is never used for small text on `bg` (3:1 only). |
 | Checked | `quote-bg`, `status-ok-ink` | Checked quotes, answered sources. |
 | Caution | `status-warn-ink` | Not stated, sources disagree, slow, rate limited, timed out. |
 | Error | `danger` | Failed sources and requests, form errors, delete. |
@@ -119,7 +119,7 @@ Type is a word, not a coloured badge. In lists and on resource pages it is the f
 
 ## Logo
 
-The mark is an ink-stroke radar (outer ring, faint inner ring, one sweep line, one filled four-point AI spark) on a 40px `accent` tile with 12px corners (`assets/Logos/radar-mark.svg`). It sits 14px left of the wordmark "helper2.ai" in Geist Mono 20px, weight 600. Under it, 4px below, the tagline **AI ON YOUR RADAR**: Geist Mono 12px, weight 600, uppercase, 0.1em tracking, in `muted`. Below 420px the tagline hides and the wordmark is 18px. Never recolor the radar, add effects, or drop the wordmark in the header.
+The mark is an ink-stroke radar (outer ring, faint inner ring, one sweep line, one filled four-point AI spark) on a 40px `accent` tile with 12px corners (`assets/Logos/radar-mark.svg`). It sits 14px left of the wordmark "searchavo.ai" in Geist Mono 20px, weight 600. Under it, 4px below, the tagline **AI ON YOUR RADAR**: Geist Mono 12px, weight 600, uppercase, 0.1em tracking, in `muted`. Below 420px the tagline hides and the wordmark is 18px. Never recolor the radar, add effects, or drop the wordmark in the header.
 
 ### Link preview image
 
@@ -137,10 +137,10 @@ Apart from the radar mark, icons are small stroke glyphs beside words, never alo
 
 ## Home page
 
-1. **Hero**, centred, with no line above it: the title, one `h1` on two lines: "helper2.ai" in `accent-ink` (same size and weight), then "The metasearch for the AI ecosystem."; one line on what it does. Around it the radar (see Radar).
+1. **Hero**, centred, with no line above it: the title, one `h1` on two lines: "searchavo.ai" in `accent-ink` (same size and weight), then "The metasearch for the AI ecosystem."; one line on what it does. Around it the radar (see Radar).
 2. **Pinned search box**, full width up to 820px: box, Search, Ask the guide, one hint line (the keys with a mouse; "Search, or tap Ask for picks with proof." on a touch screen), the "Try:" chips, the radar legend ("5-10 of N sources at a time", the three colours, a link to the Sources page). It sticks under the header while the page scrolls; once the title is gone, the hints and legend fold away and it gets `shadow-pinned`.
 3. **New in the catalog** and **Coming up**: two lists of log rows side by side, stacked below 920px; tabs with the same log rows below 768px. See HomeLists.
-4. **What helper2 does for you**: a quiet strip of three steps.
+4. **What searchavo does for you**: a quiet strip of three steps.
 
 On phones (below 720px) the title and text fold away after 24px of scroll; the search box stays pinned; the lists scroll under it. Back at the top, everything opens again. News and Events move from the header into the menu.
 
@@ -222,13 +222,13 @@ The boards in [docs/mockups/boards](../../docs/mockups/boards) are the reference
 |---|---|
 | **Header** | Logo with tagline, News, Events, Saved, Sign in or the account button. With a search box on Results and Timeline. Sticky, except on a screen up to `bp-short` tall. |
 | **AccountPanel** | Under the account button: signed in with, searches left today, Your account, Sign out. A disclosure. |
-| **AdminHeader** | Ink band: "helper2.ai admin", VPN note, who is signed in. No public links. |
+| **AdminHeader** | Ink band: "searchavo.ai admin", VPN note, who is signed in. No public links. |
 | **Footer** | Logo, Mission, Sources, Privacy, Terms, GitHub, license, the theme switch, the coverage line. |
 | **SearchBox** | Box, **Search** (primary, ↵) and **Ask the guide** (outline, ⇧↵; the icon with the words, never the icon alone). Up to 720px it says **Ask**; its accessible name stays "Ask the guide". Up to 520px the box takes the full row and the two buttons share the row under it. No word count decides anything. Pinned on Home; in the header elsewhere. |
 | **PinnedSearchBar** | The home box with hint, chips and legend; sticks under the header; compact once scrolled. |
 | **Radar** | See Radar. |
-| **HomeLists** | New in the catalog, Coming up: one component, `TermList`. A `$ helper2 new · N` line (N = `total` from the API), log rows with dashed rules (the date and `[type]` in a fixed column, the title with its source or place under it), titles and tabs in Geist, the rest in Geist Mono. Wide: the two lists side by side, "on now" in `status-ok-ink`, `$ helper2 new --all · show all N` expands in place; Coming up also links to the Events page ("All events ›"). Below 768px: a tablist `> new in the catalog N | coming up N` (real tab buttons, 44px) with log rows. No terminal windows, no blinking cursor, no lines that print in. More rows than it shows: the list moves like a news ticker (principle 7), with Pause and Play above it and "Paused" beside them while it stands. Rows open the resource page. While a list scrolls by, its head (wide) or its tabs (phone) stay under the pinned box until the list ends. Loading is a Skeleton of the rows; empty and error (with Retry) are StatePanels. |
-| **ListPages** | Sources, Saved and the back office: the heading in Geist with `$ helper2 … · N` (N from the API), tables in Geist Mono with UPPERCASE column headers and dashed rules, names that are titles in Geist, a status as a coloured word with a glyph (✓ ! × ○) in the radar's colours. A wide table scrolls in its own box on a phone. Loading, empty and error as in HomeLists. |
+| **HomeLists** | New in the catalog, Coming up: one component, `TermList`. A `$ searchavo new · N` line (N = `total` from the API), log rows with dashed rules (the date and `[type]` in a fixed column, the title with its source or place under it), titles and tabs in Geist, the rest in Geist Mono. Wide: the two lists side by side, "on now" in `status-ok-ink`, `$ searchavo new --all · show all N` expands in place; Coming up also links to the Events page ("All events ›"). Below 768px: a tablist `> new in the catalog N | coming up N` (real tab buttons, 44px) with log rows. No terminal windows, no blinking cursor, no lines that print in. More rows than it shows: the list moves like a news ticker (principle 7), with Pause and Play above it and "Paused" beside them while it stands. Rows open the resource page. While a list scrolls by, its head (wide) or its tabs (phone) stay under the pinned box until the list ends. Loading is a Skeleton of the rows; empty and error (with Retry) are StatePanels. |
+| **ListPages** | Sources, Saved and the back office: the heading in Geist with `$ searchavo … · N` (N from the API), tables in Geist Mono with UPPERCASE column headers and dashed rules, names that are titles in Geist, a status as a coloured word with a glyph (✓ ! × ○) in the radar's colours. A wide table scrolls in its own box on a phone. Loading, empty and error as in HomeLists. |
 | **PickCard** | Rank, name, AI-written reason with its label and check note, the checked quote, Open ↗, Details, Save. |
 | **GuideSteps** | The streamed steps while the guide works. |
 | **ResultRow** | Meta line, title, one-line description as plain text, "From source" with each source once. The whole row is a link. |
@@ -278,7 +278,7 @@ What each page adds to the rules above.
 ### Results and the resource page
 
 - One column, no preview. A row opens the resource page; Back comes back to the same place in the list.
-- "Results" over `$ helper2 search · N` (`--timeline` on the timeline), dashed rules between rows.
+- "Results" over `$ searchavo search · N` (`--timeline` on the timeline), dashed rules between rows.
 - A row: type · host · date, the guide pick, the title with Save on its right, the description, "From" the sources.
   The host is a link to the resource itself (new tab). The title link covers the row; the host link and Save sit above
   it. Each source once: the catalog and the catalog searched by meaning are one name. The description is plain text,
@@ -312,8 +312,8 @@ What each page adds to the rules above.
 - Easier to read: more space in a row (28px above and below, 8px between lines), text up to about 68 characters a line.
 - With a mouse, the controls are smaller: buttons, tabs, the view switch and the sort 36px (`control-sm`), chips 32px
   (`chip-sm`). On a touch screen they stay 44px. Buttons, tabs and chips on this page are in Geist; Geist Mono stays for
-  the meta lines, counts, `$ helper2` lines and key hints. Search and Ask the guide in the box are in Geist too.
-- The guide's picks are a small terminal: `$ helper2 guide --picks N`, each pick with its reason (AI-written), and the
+  the meta lines, counts, `$ searchavo` lines and key hints. Search and Ask the guide in the box are in Geist too.
+- The guide's picks are a small terminal: `$ searchavo guide --picks N`, each pick with its reason (AI-written), and the
   model that chose them. On a phone it is the same list, one pick under the other, each with its reason: a pick that
   is not in the result list has its reason nowhere else.
 - In a picked row the reason comes first, then the checked quote in a light box, with a highlighter line under the
@@ -328,7 +328,7 @@ What each page adds to the rules above.
 ### News and Events pages
 
 - The header's News and Events open their own pages, `/news` and `/events`.
-- News: a newspaper front page. The date line, "AI news" over `$ helper2 news --7d · N`, site chips, one lead
+- News: a newspaper front page. The date line, "AI news" over `$ searchavo news --7d · N`, site chips, one lead
   headline, six under it in two columns, a Latest column of five, then the rest of the week in three columns. Headlines, site and date only:
   no excerpt until the web-search provider confirms in writing that we may show one. Nothing on it is AI-written.
 - Events: the next year, grouped by month. A date column, the kind in accent ink, the title, where, and a pill
@@ -338,7 +338,7 @@ What each page adds to the rules above.
 
 ### Radar
 
-- No line above the title. The title is one `h1` on two lines: "helper2.ai" in accent ink, then "The metasearch for the AI ecosystem."
+- No line above the title. The title is one `h1` on two lines: "searchavo.ai" in accent ink, then "The metasearch for the AI ecosystem."
 - Like a navigation radar: full rings around the title, and a beam that turns once every 5 s.
 - Only external sources. Our own index, the search by meaning and the curated list are not on it. The legend
   counts the same sources.
@@ -357,7 +357,7 @@ What each page adds to the rules above.
 
 ### Sources, Saved and the back office
 
-- A `$ helper2 … · N` line next to each list heading, N from the API: `sources --all`, `saved`, `review --open`,
+- A `$ searchavo … · N` line next to each list heading, N from the API: `sources --all`, `saved`, `review --open`,
   `scouts --runs`, `examples`, `audit`.
 - Sources is one table with every source, ours included. Same short names and colours as the radar. One line says
   the radar shows 5-10 of the external ones at a time.

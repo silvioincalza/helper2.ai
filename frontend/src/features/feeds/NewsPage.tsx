@@ -95,7 +95,7 @@ export default function NewsPage() {
         <div className="h2-term__bar">
           <h1>{t('newsPage.title')}</h1>
           <TermCommand
-            command="helper2 news --7d"
+            command="searchavo news --7d"
             total={feed.rows.length > 0 ? feed.total : null}
           />
         </div>

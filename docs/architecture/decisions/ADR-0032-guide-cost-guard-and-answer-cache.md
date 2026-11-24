@@ -37,32 +37,32 @@ Where the guide answers, the page shows what is left today ("2 of 3 AI answers l
 [0040](ADR-0040-design-system.md)).
 
 ### The guards, in code order
-Values are defaults; each has an `H2_` variable.
+Values are defaults; each has an `SA_` variable.
 1. **Per-minute rate limit** (`RateLimitInterceptor`, [0037](ADR-0037-http-edge.md)): 10 questions a
-   minute per client (`H2_RATE_LIMIT_GUIDE_PER_MINUTE`), one limiter shared by `askGuideStream` and the tool guide
+   minute per client (`SA_RATE_LIMIT_GUIDE_PER_MINUTE`), one limiter shared by `askGuideStream` and the tool guide
    `askResourceGuide`. The client is `platform.ClientKey`: the remote address, IPv4 as is, IPv6 by its /64 (zone id
    dropped, IPv4-mapped becomes IPv4). The rate limiters and the daily quota use the same key. Counted in Redis, so the
    limit holds across replicas. Over the limit: 429 with `Retry-After`.
-2. **Concurrency limit and deadline** (`GuideLimits`): one client has at most `H2_GUIDE_CLIENT_CONCURRENT_QUESTIONS` (2)
+2. **Concurrency limit and deadline** (`GuideLimits`): one client has at most `SA_GUIDE_CLIENT_CONCURRENT_QUESTIONS` (2)
    questions running at once per replica (by `ClientKey`, in memory); one more gets 503 "Guide busy" at once. A question
    does its work only with a slot in the `guide` bulkhead
-   ([0006](ADR-0006-outbound-calls-and-resilience.md), `Resilience.trySlot`), at most `H2_GUIDE_MAX_CONCURRENT`
+   ([0006](ADR-0006-outbound-calls-and-resilience.md), `Resilience.trySlot`), at most `SA_GUIDE_MAX_CONCURRENT`
    (8) questions at once per replica (24 on prod with 3 replicas), on virtual threads. The slot is taken lazily
    (`WorkGate`): `AskGuide` enters it only after the answer cache and single-flight missed, so a cached answer and a
    question that waits for an identical one hold no slot; a question that finds an identical one in flight after it
    entered gives its slot back while it waits. With no slot left, the question gets 503 "Guide busy" (`GuideBusy`, an
    `error` event on the stream, outcome `busy`). A question that got a slot receives a `:keep-alive` comment every
-   `H2_GUIDE_HEARTBEAT` (15 s) until its last event ([0031](ADR-0031-guide-pipeline.md)).
+   `SA_GUIDE_HEARTBEAT` (15 s) until its last event ([0031](ADR-0031-guide-pipeline.md)).
    **A model call never runs past the deadline.** Each model attempt (the first, the retry of a malformed answer or of a
-   plan call hit by a provider outage, the repeat without thinking of a cut answer) gets its own time: the smaller of the model timeout (`H2_LLM_TIMEOUT`,
-   40 s) and the time the question has left minus a margin (`helper2.guide.deadline-margin`, 2 s). `CallTimeLimit`
+   plan call hit by a provider outage, the repeat without thinking of a cut answer) gets its own time: the smaller of the model timeout (`SA_LLM_TIMEOUT`,
+   40 s) and the time the question has left minus a margin (`searchavo.guide.deadline-margin`, 2 s). `CallTimeLimit`
    computes it from `QuestionDeadline`, a scoped value `GuideLimits` sets for the question's worker, and
    `SpringAiGuideModel` sends it as the timeout of that one request (`OpenAiChatOptions.timeout`), so the bound does
-   not depend on the timeout the client was built with. A call read as a stream (`H2_GUIDE_MODEL_STREAM=ON`,
+   not depend on the timeout the client was built with. A call read as a stream (`SA_GUIDE_MODEL_STREAM=ON`,
    [0035](ADR-0035-guide-model-stream.md)) is also disposed at that time, and a streamed call that is still thinking when
-   only the margin and the shortest call are left is stopped and asked again without thinking. The timeout bounds one HTTP try: with `H2_LLM_MAX_RETRIES`
+   only the margin and the shortest call are left is stopped and asked again without thinking. The timeout bounds one HTTP try: with `SA_LLM_MAX_RETRIES`
    above 0 the SDK tries a timed-out call again inside the same attempt, each try with that timeout, and only the
-   deadline stops it (keep 0, [0008](ADR-0008-llm-integration.md)). With less than `helper2.guide.model-call-minimum` (10 s) left
+   deadline stops it (keep 0, [0008](ADR-0008-llm-integration.md)). With less than `searchavo.guide.model-call-minimum` (10 s) left
    before the margin the call does not start: it fails at once with `GuideUnavailable` category `deadline`, before
    the budget (a repeat without thinking that cannot start fails with `cut`,
    [0031](ADR-0031-guide-pipeline.md)). A call that its shortened time stops fails with the same category, is not asked again and is not
@@ -70,9 +70,9 @@ Values are defaults; each has an `H2_` variable.
    timeout is a provider failure as before. The step degrades as when the model is down: no plan means the question's
    words, no choice means the top results with the notice `GUIDE_OUT_OF_TIME`, no reason check means `NOT_CHECKED`
    (not cached). So a slow provider gives a degraded answer at least the margin before the deadline. The app does not
-   start when `H2_GUIDE_QUESTION_DEADLINE` is not longer than two model timeouts (plan and choose must both fit), or
+   start when `SA_GUIDE_QUESTION_DEADLINE` is not longer than two model timeouts (plan and choose must both fit), or
    when one model timeout is shorter than the shortest call plus the margin.
-   **At the deadline** (`H2_GUIDE_QUESTION_DEADLINE`, 90 s) `GuideLimits` interrupts the worker and frees its slot.
+   **At the deadline** (`SA_GUIDE_QUESTION_DEADLINE`, 90 s) `GuideLimits` interrupts the worker and frees its slot.
    The question still answers with what it has (`AskGuide`):
    - picks chosen and validated, reason check not finished: the normal answer with those picks, each reason
      `NOT_CHECKED`, the status that path gives (`OK` or `PARTIAL`). It spends a question like every answer with a pick;
@@ -98,8 +98,8 @@ Values are defaults; each has an `H2_` variable.
    Every answer states what the asker has left (`webSearches`).
 
 ### The per-client daily quota
-`ClientQuota` allows `H2_GUIDE_CLIENT_DAILY_QUESTIONS` (30) fresh questions per client per UTC day, per `ClientKey`,
-and `H2_GUIDE_NETWORK_DAILY_QUESTIONS` (300) per network (`ClientKey.network`: an IPv4 /24, an IPv6 /56, the first
+`ClientQuota` allows `SA_GUIDE_CLIENT_DAILY_QUESTIONS` (30) fresh questions per client per UTC day, per `ClientKey`,
+and `SA_GUIDE_NETWORK_DAILY_QUESTIONS` (300) per network (`ClientKey.network`: an IPv4 /24, an IPv6 /56, the first
 14 hex digits of the address), so a client that rotates its addresses inside one /56 (256 /64 networks, the block a
 home or small office line usually gets) shares one network count. A /56 and not a /48: a /48 is often a whole campus
 or company, and one count for all of it is too tight. A question needs both. The
@@ -116,7 +116,7 @@ value (staging sets 1000 for the nightly eval). It counts with a
 `DailyBudget` named `guide-client:<QuotaKeys.client(client)>` (and `guide-network:<QuotaKeys.client(network)>`), held
 by `platform.quota.ClientBudgets`: the client's keyed pseudonym of the UTC
 day, as for the rate limits ([0037](ADR-0037-http-edge.md)). So no address is stored, and the name cannot
-be turned back into an address without `H2_QUOTA_KEY_SECRET`. The pseudonym changes at midnight UTC, when the quota
+be turned back into an address without `SA_QUOTA_KEY_SECRET`. The pseudonym changes at midnight UTC, when the quota
 starts afresh anyway. Past the quota the client gets a search-only answer with the notice `GUIDE_DAILY_QUOTA`, not an
 error. Cached and shared answers do not count; a question answered with a similar question's answer counts, because its
 plan ran.
@@ -136,8 +136,8 @@ exit is covered exactly once, and gives the question back in three cases:
 
 **A closed connection.** What a closed connection does depends on how the guide runs
 (`GuideProperties.stopsAQuestionNobodyWaitsFor`, the one place of the rule):
-- **the model stream is ON and a step thinks** (`H2_GUIDE_MODEL_STREAM=ON` and at least one of
-  `H2_GUIDE_THINK_PLAN_TOKENS`, `H2_GUIDE_THINK_CHOOSE_TOKENS`, `H2_GUIDE_THINK_VERIFY_TOKENS` above 0): a question
+- **the model stream is ON and a step thinks** (`SA_GUIDE_MODEL_STREAM=ON` and at least one of
+  `SA_GUIDE_THINK_PLAN_TOKENS`, `SA_GUIDE_THINK_CHOOSE_TOKENS`, `SA_GUIDE_THINK_VERIFY_TOKENS` above 0): a question
   whose askers have all left stops, as described below;
 - **every other case** (the defaults): a closed connection changes nothing. The question runs on, its answer is
   cached and it settles like any answer (a pick counts, no pick is given back), so asking again is a free cache hit.
@@ -148,7 +148,7 @@ question takes about 6.5 s, so stopping it stops nothing and only loses the cach
 the calls are long (a plan call that thinks runs for about 30 s, [0035](ADR-0035-guide-model-stream.md)) and a stream can
 be closed at once, so the stop saves model time. The rule is read from the settings once, at the start: both
 settings need a restart, and neither can be changed from the back office. Settings, AI guide shows the result.
-`H2_GUIDE_THINK_BROWSE_TOKENS` does not count: it makes only the choose call of a browse by date think.
+`SA_GUIDE_THINK_BROWSE_TOKENS` does not count: it makes only the choose call of a browse by date think.
 
 Where a question stops: nobody reads its answer, and each model call
 left would be paid for nothing. Each stream has a `shared.Presence`. When the stream is cancelled (the browser closed
@@ -175,7 +175,7 @@ asker never saw it, and asking again is a free cache hit.
 
 A reservation has a random id. One Lua script in Redis (`RedisCallCounter`, `GIVE_BACK`) gives it back atomically:
 only when the id is not yet in `h2:v1:budget:guide-client:<pseudonym>:<day>:given-back`, the set holds fewer ids than
-`H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS` (default 5) and the count is above 0. Then it runs `DECR` on
+`SA_GUIDE_CLIENT_DAILY_FREE_ANSWERS` (default 5) and the count is above 0. Then it runs `DECR` on
 the count and `SADD` of the id; the set expires after 2 days like the count. So a retry, a second completion or a
 failure after a no-pick give-back gives nothing back twice, on any replica; the count never goes below 0; and no-pick
 answers, failures and shared answers share one cap, so a client cannot loop them for free. A refused question adds
@@ -189,22 +189,22 @@ Redis count, else this replica's count in memory), so a give-back on any replica
 ([0036](ADR-0036-identity-and-the-admin-host.md)).
 
 ### The global daily cap
-`H2_GUIDE_DAILY_MODEL_CALLS` (600): one unit before each model attempt ([0008](ADR-0008-llm-integration.md)),
+`SA_GUIDE_DAILY_MODEL_CALLS` (600): one unit before each model attempt ([0008](ADR-0008-llm-integration.md)),
 taken inside the guide model's circuit (`llm-chat-guide-fast` or `llm-chat-guide-reasoning`), so a call the open circuit refuses costs no unit. The cap opens through the
-day (`DailyBudget.paced`, `H2_GUIDE_BUDGET_PACE_SLOTS`, 12): by the end of each 2-hour part of the UTC day, at most
+day (`DailyBudget.paced`, `SA_GUIDE_BUDGET_PACE_SLOTS`, 12): by the end of each 2-hour part of the UTC day, at most
 that share of the cap is used (50, 100, … 600), and what an earlier part left unused carries over. So an early burst,
 or many rotating addresses, cannot take the whole day; 1 turns pacing off. Gauge
-`helper2.guide.budget.paced_remaining` shows what is left of the share open so far, next to
-`helper2.guide.budget.remaining` for the whole day. When spent, plan, choose, compare or explain fails
+`searchavo.guide.budget.paced_remaining` shows what is left of the share open so far, next to
+`searchavo.guide.budget.remaining` for the whole day. When spent, plan, choose, compare or explain fails
 with `GuideBudgetExhausted` and the answer is the degraded one; the reason check leaves reasons `NOT_CHECKED`. Gauge
-`helper2.guide.budget.remaining`.
+`searchavo.guide.budget.remaining`.
 
 **A spent budget is said, with the time it opens again.** The degraded answer carries the notice
 `GUIDE_BUDGET_SPENT` (`AskGuide`, `budgetSpentNotice`), so a visitor, an API client and the evaluation script can tell
 it from a provider that is down (status `LLM_UNAVAILABLE` with no notice). The notice has a machine-readable
 `retryAt`, a UTC instant from `DailyBudget.opensAgainAt`:
 - the day's cap still has room (`DailyBudget.opensMoreToday`), so only the part of the day open so far is spent: the
-  start of the next part. A part is 24 hours / `H2_GUIDE_BUDGET_PACE_SLOTS` of the UTC day and starts on the hour
+  start of the next part. A part is 24 hours / `SA_GUIDE_BUDGET_PACE_SLOTS` of the UTC day and starts on the hour
   (12 parts: 00:00, 02:00, … 22:00);
 - the day's cap is spent, the last part of the day is running, or pacing is off (1 part): the next 00:00 UTC.
 
@@ -270,7 +270,7 @@ The **config hash** (`AskGuide.configHash`) is the first 16 hex characters of a 
 ids, the model's config fingerprint (`SpringAiGuideModel.getConfigFingerprint`: the five rendered prompts, the thinking
 flags, the native-schema flag, the token limits, the candidate text size), the validator's limits, the comparison and
 explanation limits (`AnswerLimits`), `maxCandidates` and the way the question is read
-(`GuideAnswerCache.QUESTION_READING`). How a model call is read (`H2_GUIDE_MODEL_STREAM`) is not
+(`GuideAnswerCache.QUESTION_READING`). How a model call is read (`SA_GUIDE_MODEL_STREAM`) is not
 part of it: the request and the checks are the same, so it cannot change an answer
 ([0035](ADR-0035-guide-model-stream.md); a test pins it). The back office's Settings page shows it. A new prompt wording
 or limit therefore never serves answers of the old one: it starts a fresh cache by itself. Each prompt's label is the
@@ -280,12 +280,12 @@ the eval runs name; a test pins each one (`SpringAiGuideModelTest`), and [0031](
 **Store.** `SharedGuideAnswerStore` keeps each answer in the shared cache `guide-answer` (`SharedCaches`, table
 `ai_cache`, [0005](ADR-0005-redis-as-a-disposable-cache.md)), like the other model answers: one primary-key lookup,
 one upsert, the `db-cache` policy, the shared cache purge. The stored key is the SHA-256 of the running release
-(`H2_BUILD_VERSION`, the image tag the chart passes) and the guide's key: a release reads only its own answers. A
+(`SA_BUILD_VERSION`, the image tag the chart passes) and the guide's key: a release reads only its own answers. A
 restart keeps them; a deploy starts empty, so a change in how the guide reads or answers is seen at once. The answer is
 JSON in a versioned envelope; an entry that does not read is a miss, and a database error is a miss, never a failed
 question.
 
-**Time to live.** Counted from the answer's `generatedAt`, which the page shows: `H2_GUIDE_CACHE_TTL` (24 h), 6 h for a
+**Time to live.** Counted from the answer's `generatedAt`, which the page shows: `SA_GUIDE_CACHE_TTL` (24 h), 6 h for a
 question with a period or a `WHEN` question (a `WHEN` answer also ends at the next 00:00 UTC, when "this week" moves
 on), never past its web results; an answer built on stale web results is not
 cached ([0027](ADR-0027-live-web-store-first-daily-quota.md)). Only complete answers are cached: model used, at least
@@ -303,7 +303,7 @@ indexed for similar questions (`AskGuide.answerAndStore`), so a near twin still 
 a repeated question; a catalog that gains the missing resource answers it soon after.
 
 ### Reuse for a near-identical question
-Off unless `H2_GUIDE_SIMILAR_THRESHOLD` is set; prod sets 0.96 (`app.guideSimilarThreshold` in `values-prod.yaml`). On
+Off unless `SA_GUIDE_SIMILAR_THRESHOLD` is set; prod sets 0.96 (`app.guideSimilarThreshold` in `values-prod.yaml`). On
 an exact-key miss, after single-flight and the client quota, the plan runs as for any fresh question. Then `AskGuide`
 (`similarAnswer`) looks for a stored question read the same way:
 - Only a question with no clarification and no removed parts, whose plan succeeded. No model call is added to decide:
@@ -313,7 +313,7 @@ an exact-key miss, after single-flight and the client quota, the plan runs as fo
   planner gives, because the order carries the direction; a comparison's subjects are a set. Constraints are a set.
   Names compare without case, hyphens or underscores. The planned search query is left out: two wordings of one need
   are planned with different words.
-- **Group** = SHA-256(embedding model | release (`H2_BUILD_VERSION`) | config hash | audience path | reading key). The
+- **Group** = SHA-256(embedding model | release (`SA_BUILD_VERSION`) | config hash | audience path | reading key). The
   release is in the group because the answer store's key has it: after a deploy the old rows point at answers the new
   release cannot read, so they must not be the nearest row of a new question. Only questions of one group are
   compared.
@@ -371,59 +371,59 @@ stays off. Checked live on staging with the planner of the running release (1 No
 pair gets two readings, except the translation pair above (only its cosine keeps it apart); 1 of the 6 paraphrase pairs
 that reuse on the set was reused live, because the live planner reads two wordings of one need differently more often
 than the set assumes. That lowers reuse, not precision. Staging runs the nightly guide evaluation with answers kept one
-second ([0046](ADR-0046-evaluation-guide-and-search.md)), so reuse is measured on prod, through `helper2.guide.cache`.
+second ([0046](ADR-0046-evaluation-guide-and-search.md)), so reuse is measured on prod, through `searchavo.guide.cache`.
 
 ### Retention
 A row of `guide_similar_question` lives as long as its answer. A read skips an expired row; the guide's purge
-(`PurgeExpiredData`, run once a day by `guide.schedule.GuideRetentionSchedule` on `helper2.retention.cron`, UTC, under a
+(`PurgeExpiredData`, run once a day by `guide.schedule.GuideRetentionSchedule` on `searchavo.retention.cron`, UTC, under a
 cluster lock) deletes it the next night ([0010](ADR-0010-data-retention.md)). The answers themselves go with the
 shared cache purge.
 
 ### Metrics
-- `helper2.guide.cache{result}`: `exact` (key hit), `similar` (reused), `miss`, once per question when the cache is on.
-- `helper2.guide.questions{outcome}`: `cached` (a reused answer too), `shared`, `client_quota`, `network_quota`,
+- `searchavo.guide.cache{result}`: `exact` (key hit), `similar` (reused), `miss`, once per question when the cache is on.
+- `searchavo.guide.questions{outcome}`: `cached` (a reused answer too), `shared`, `client_quota`, `network_quota`,
   `answered`, `degraded`, `budget_exhausted`, `model_unavailable`, `no_candidates`, `timeout`, `abandoned`, `error`.
   `budget_exhausted` counts the answers that carry the notice `GUIDE_BUDGET_SPENT`: plan, choose, compare or explain
   found the guide's budget spent.
   `network_quota` counts every question refused because the asker's network is full. It carries no address and no
-  network label, so it says how often the network cap (`H2_GUIDE_NETWORK_DAILY_QUESTIONS`) refuses, not who: the
+  network label, so it says how often the network cap (`SA_GUIDE_NETWORK_DAILY_QUESTIONS`) refuses, not who: the
   number to judge the default from. The dashboard shows it next to `client_quota`.
-- `helper2.guide.quota.give_back{reason, outcome}`: reason `no_pick`, `failed`, `shared`, `abandoned`; outcome `given_back`,
+- `searchavo.guide.quota.give_back{reason, outcome}`: reason `no_pick`, `failed`, `shared`, `abandoned`; outcome `given_back`,
   `already_given_back`, `cap_reached`, `nothing_counted`.
-- `helper2.guide.budget.remaining`.
+- `searchavo.guide.budget.remaining`.
 
 ### Code
 
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt` — `ClientQuota`, `GuideAnswerCache` (`key`,
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/GuideCost.kt` — `ClientQuota`, `GuideAnswerCache` (`key`,
   `normalized`, `put`), `GuideAnswerStore`.
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/SimilarQuestions.kt` — `ReadingKey`, `SimilarQuestions`,
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/SimilarQuestions.kt` — `ReadingKey`, `SimilarQuestions`,
   `QuestionEmbedder`, `SimilarQuestionIndex`, `SimilarQuestionRetention`.
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — `ask` and `answerOnce` (order of the
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/usecase/AskGuide.kt` — `ask` and `answerOnce` (order of the
   guards, config hash, single-flight, the lazy slot, `QuotaTurn.settle`), `similarAnswer`; `steps/Question.kt`
   (`Asked.modelFailed`, `budgetSpentNotice`); `frontend/src/features/guide/GuideAnswer.tsx` (`budgetSpentReason`); `PurgeExpiredData.kt`;
-  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/SingleFlight.kt`.
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/AnswerLimits.kt` — comparison and explanation limits in the
+  `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/SingleFlight.kt`.
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/AnswerLimits.kt` — comparison and explanation limits in the
   config hash.
-- `backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — `getConfigFingerprint`, the
+- `backend/apps/public/src/main/java/ai/searchavo/guide/internal/SpringAiGuideModel.java` — `getConfigFingerprint`, the
   rendered prompts.
-- `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideLimits.java` — questions per client, the lazy slot in
+- `backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideLimits.java` — questions per client, the lazy slot in
   the `guide` bulkhead (`LazySlot`), deadline;
   `GuideStreamController.java` — keep-alive comments.
-- `backend/apps/public/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java`,
+- `backend/apps/public/src/main/java/ai/searchavo/guide/internal/SharedGuideAnswerStore.java`,
   `JdbcSimilarQuestionIndex.java`, `GuideConfiguration.java` (`similarQuestions`);
-  `backend/apps/public/src/main/java/ai/helper2/guide/schedule/GuideRetentionSchedule.java`.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/ClientKey.java` (`of`, `network`), `quota/ClientBudgets.java`,
+  `backend/apps/public/src/main/java/ai/searchavo/guide/schedule/GuideRetentionSchedule.java`.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/ClientKey.java` (`of`, `network`), `quota/ClientBudgets.java`,
   `RateLimitInterceptor.java`,
   `RateLimiter.java`, `PgVectors.java`; `platform/llm/DailyBudget.java`, `internal/RedisCallCounter.java` (the count and its
   give-back); `platform/llm/ModelCallMetrics.java` (`promptVersion`).
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `guide_similar_question`.
 - `eval/guide-similar.json`, `guide-similar-vectors.json`;
-  `backend/apps/public/src/test/kotlin/ai/helper2/eval/GuideSimilarEvaluation.kt`, `GuideSimilarEvaluationTest.kt`,
+  `backend/apps/public/src/test/kotlin/ai/searchavo/eval/GuideSimilarEvaluation.kt`, `GuideSimilarEvaluationTest.kt`,
   `GuideSimilarRecorder.kt`.
 - Tests: `ClientQuotaTest`, `GuideAnswerKeyTest`, `GuideAnswerCacheStoreTest`, `SimilarQuestionsTest`,
   `AskGuideSimilarTest`, `JdbcSimilarQuestionIndexIT`, `SharedGuideAnswerStoreTest`, `GuideSimilarConfigurationTest`,
   `GuideLimitsTest`, `SpringAiGuideModelTest` (prompt labels), `GuideApiIT`.
-- A closed connection: `backend/apps/public/src/main/java/ai/helper2/guide/config/GuideProperties.java`
+- A closed connection: `backend/apps/public/src/main/java/ai/searchavo/guide/config/GuideProperties.java`
   (`stopsAQuestionNobodyWaitsFor`, `Thinking.inAGuideStep`), `AskGuide.kt` (`countedIfQuestionsStop`); tests
   `GuidePropertiesBindingTest` (the rule), `SingleFlightTest`, `AskGuideAbandonTest`, `GuideStreamLeaveTest`,
   `GuideLeaveOnTheWireTest` (a real socket closed on Tomcat, both sides of the rule), `AbandonOnTheWireTest` (the
@@ -504,7 +504,7 @@ shared cache purge.
 | 10 | Observability | Covered: cache, question, give-back and budget metrics; the config hash on the Settings page; no question text in metrics. |
 | 11 | Evaluation | Covered: `GuideSimilarEvaluationTest` on 55 fixed pairs in every build; prompt labels pinned by a test. |
 | 12 | Deployment | Covered: config only; reuse off by default, 0.96 on prod; a deploy starts a new cache. |
-| 13 | Security & Identity | Covered: `H2_QUOTA_KEY_SECRET` from OpenBao; no new secret. |
+| 13 | Security & Identity | Covered: `SA_QUOTA_KEY_SECRET` from OpenBao; no new secret. |
 | 14 | Human-in-the-Loop | Covered: an administrator sets the daily cap. |
 | 15 | Cost & Reliability | Covered: every guard above; a database or embedding error is a miss, never a failed question. |
 
@@ -514,16 +514,16 @@ Tracked privately (S9.6.3).
 ### Known limits
 
 - A reused answer shows the reasons, comparison cells and explanation sentences the model wrote for the first asker's question. Each is checked against a quote of a public source, but its wording can follow the first question.
-- A guide question can answer up to 3 s after its 90 s deadline. The margin before the deadline (2 s) and the shortest model call (10 s) are fixed in the yaml; a call started with little time left takes a budget unit even when it runs out of time. The tool guide (`POST /resources/{id}/guide`) has no question deadline: it runs on the request thread, each of its model calls is bounded by `H2_LLM_TIMEOUT` alone, and nothing bounds the whole request; a failed call gives status `LLM_UNAVAILABLE`.
+- A guide question can answer up to 3 s after its 90 s deadline. The margin before the deadline (2 s) and the shortest model call (10 s) are fixed in the yaml; a call started with little time left takes a budget unit even when it runs out of time. The tool guide (`POST /resources/{id}/guide`) has no question deadline: it runs on the request thread, each of its model calls is bounded by `SA_LLM_TIMEOUT` alone, and nothing bounds the whole request; a failed call gives status `LLM_UNAVAILABLE`.
 - The time on the notices `GUIDE_BUDGET_SPENT`, `GUIDE_DAILY_QUOTA` and `GUIDE_NETWORK_QUOTA` and on the setup guide (`retryAt`) is when the next share opens, not a promise: other visitors can use it first. For `GUIDE_BUDGET_SPENT` it comes from what one replica knows of the count, so during a Redis outage two replicas can give different times.
-- A question nobody waits for stops only with `H2_GUIDE_MODEL_STREAM=ON` and a thinking budget for plan, choose or
+- A question nobody waits for stops only with `SA_GUIDE_MODEL_STREAM=ON` and a thinking budget for plan, choose or
   verify; in every other case (the defaults) it runs on and is cached. The rule is per deployment, not per question:
   with it on, a quick question that does not think is stopped too and loses its cache hit, and a browse by date,
-  whose choose call thinks by default (`H2_GUIDE_THINK_BROWSE_TOKENS`), does not turn it on. Where it stops, it stops
+  whose choose call thinks by default (`SA_GUIDE_THINK_BROWSE_TOKENS`), does not turn it on. Where it stops, it stops
   only when the server sees the closed connection: at the second write after the
   close, so one to two `:keep-alive` (15 to 30 s; measured 1.2 to 1.9 s with a 1 s keep-alive on a local Tomcat)
   plus the 3 s leave grace after the browser left; not measured behind ingress-nginx; a proxy that keeps the connection open hides it
-  longer. The askers are counted per replica, as single-flight is. The model calls made before the stop are paid. With `H2_GUIDE_MODEL_STREAM=ON` a call interrupted before
+  longer. The askers are counted per replica, as single-flight is. The model calls made before the stop are paid. With `SA_GUIDE_MODEL_STREAM=ON` a call interrupted before
   its response headers runs to its timeout. The log line of a question cut by a leave says "cancelled at its
   deadline".
 - Clients behind one shared address share one guide quota; the quota is taken before the question runs, so a failed question still counts.
