@@ -16,6 +16,7 @@ class SearchRetentionSchedule {
     return new PurgeExpiredData(retention, clock, periods.liveWebResults());
   }
 
+  // UC-001 BR-009: a daily job deletes stored web results older than their retention.
   @Bean
   DailyJob searchRetention(PurgeExpiredData searchPurgeExpiredData) {
     return new DailyJob("search", searchPurgeExpiredData::purge);

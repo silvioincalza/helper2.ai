@@ -111,6 +111,7 @@ internal class SourceFanOut(
       )
     }
 
+    // UC-001 BR-006: a live source answer is reused while it is fresh for that source.
     private fun answerFromFreshCache(d: SourceDescriptor, query: SourceQuery): Boolean {
       val cached = lookup(d, query)
       cachedFor[d.id] = cached
@@ -159,6 +160,7 @@ internal class SourceFanOut(
       pending += Pending(source, query, future, started, finished)
     }
 
+    // UC-001 BR-008: a live web search takes one of the visitor daily searches.
     private fun quotaAllows(d: SourceDescriptor): Boolean {
       val (reason, message) =
         when (quota?.take(asker) ?: QuotaDecision.Allowed(null)) {
@@ -183,6 +185,7 @@ internal class SourceFanOut(
       }
     }
 
+    // UC-001 BR-009: stored web results are reused for 24 h or 48 h by intent.
     private fun freshFor(d: SourceDescriptor): Duration =
       if (d.metered) webFreshness.of(intentClass) else d.cacheTtl
 
@@ -214,6 +217,7 @@ internal class SourceFanOut(
       return FanOutResult(attempts, cacheDown, webFreshUntil())
     }
 
+    // UC-001 BR-008: a web search counts only when it answered; else it is given back.
     private fun settleWebSearches() {
       if (asker == null) return
       pending
@@ -277,6 +281,7 @@ internal class SourceFanOut(
     ): SourceAttempt =
       when (cause) {
         is CallRefused -> refusedAttempt(d, cause.reason())
+        // UC-001 BR-006: paused until the stated time, or one minute.
         is SourceFailure.RateLimited -> {
           cooldownUntil[d.id] = startedAt.plus(cause.retryAfter ?: Duration.ofMinutes(1))
           fallBackToCache(d, latency, SourceOutcome.RATE_LIMITED, "Source rate limit reached")
@@ -316,6 +321,7 @@ internal class SourceFanOut(
       emptyList(),
     )
 
+  // UC-001 BR-006: a failed source shows a stored answer still young enough.
   private fun stale(
     d: SourceDescriptor,
     at: Instant,

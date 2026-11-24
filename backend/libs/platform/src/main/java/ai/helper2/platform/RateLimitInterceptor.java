@@ -65,6 +65,7 @@ class RateLimitInterceptor implements HandlerInterceptor, WebMvcConfigurer {
     this.meters = meters;
     this.clientKey = clientKey;
     Duration minute = Duration.ofMinutes(1);
+    // UC-001 BR-004: the "search" limiter counts searches a minute per network address.
     this.limiters =
         Map.of(
             "search",

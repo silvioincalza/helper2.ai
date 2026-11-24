@@ -24,6 +24,7 @@ internal class QueryTranslation(
     if (translator === QueryTranslator.NONE) null
     else executor.submit<String?> { translator.toEnglish(text, language) }
 
+  // UC-001 BR-010: discard a late, web-address, about-the-query or unchanged translation.
   fun await(future: Future<String?>, text: String): String? {
     val raw =
       try {

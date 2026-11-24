@@ -10,6 +10,7 @@ export function creationDate(card: ResultCard): string | null {
   return published.status !== 'UNKNOWN' && published.value ? published.value : null;
 }
 
+// UC-001 BR-019: by stated creation month, newest first; no date at the end.
 export function groupByCreationMonth(cards: ResultCard[]): TimelineGroup[] {
   const groups: TimelineGroup[] = [];
   const unknown: ResultCard[] = [];

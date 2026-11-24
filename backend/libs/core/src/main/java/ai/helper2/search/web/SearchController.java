@@ -59,11 +59,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 class SearchController implements SearchApi {
 
+  // UC-001 BR-016: every answer says it covers only the listed sources.
   static final String COVERAGE_NOTE =
       "Results come only from the sources listed here; helper2.ai does not search the whole web.";
 
   static final String TRANSLATED_QUERY = "interpretation.translatedQuery";
 
+  // UC-001 BR-015: the answer names the fields an AI model wrote.
   static final List<String> AI_WRITTEN_FIELDS =
       Stream.concat(
               Stream.of(TRANSLATED_QUERY),
@@ -105,6 +107,7 @@ class SearchController implements SearchApi {
       @Nullable SortOrderDto sort,
       Integer page,
       Integer size) {
+    // UC-001 BR-001: a query is not blank; the contract caps it at 200 characters.
     if (q.isBlank()) {
       throw new BadRequestException("Query must not be blank");
     }
@@ -237,6 +240,7 @@ class SearchController implements SearchApi {
         get.apply("category"));
   }
 
+  // UC-001 BR-003: a category is a listed one or "unknown"; any other is refused.
   private Set<String> categoryFilter(@Nullable List<String> category) {
     Set<String> selected = set(category, Function.identity());
     List<String> unknown = categories.notFilterValues(selected);

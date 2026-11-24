@@ -44,6 +44,7 @@ class VitalityPolicy @JvmOverloads constructor(private val rules: VitalityRules 
       .filter { hit -> refusalOf(hit)?.also { onRefusal(hit, it) } == null }
       .mapIndexed { place, hit -> if (hit.rank == place) hit else hit.withRank(place) }
 
+  // UC-001 BR-011: archived, deprecated, not running, too few likes or idle fork.
   fun refusalOf(hit: SourceHit): Refusal? {
     val stated = hit.vitality
     return when {
@@ -56,6 +57,7 @@ class VitalityPolicy @JvmOverloads constructor(private val rules: VitalityRules 
     }
   }
 
+  // UC-001 BR-011: a long idle library, MCP server, skill or agent ranks lower.
   fun isUnmaintained(result: MergedResult): Boolean {
     if (result.type !in MAINTAINED_TYPES) return false
     if (isEstablished(result)) return false

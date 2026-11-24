@@ -101,6 +101,7 @@ constructor(
     val title = normalize(r.title)
     if (title == q) s += weights.exactTitle
     else if (terms.isNotEmpty() && containsEveryWord(title, terms)) s += weights.title
+    // UC-001 BR-012: the audience path changes the score only; it hides nothing.
     if (path != null) {
       if (r.audience.matches(path)) s += weights.audience
       if (path == AudiencePath.USE_AI && r.type == ResourceType.PRODUCT) s += weights.pathType

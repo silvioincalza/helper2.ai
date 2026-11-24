@@ -66,6 +66,7 @@ class SpringAiQueryTranslator implements QueryTranslator {
     this.ttl = ttl;
   }
 
+  // UC-001 BR-010: within the daily translations, each reused for its time to live.
   @Override
   public String toEnglish(String text, String language) {
     if (language == null || !LANGUAGE_CODE.matcher(language).matches()) {
