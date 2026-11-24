@@ -73,10 +73,10 @@ Both are about the public site itself, and only the public app serves them.
      also when served from staging.
    - Open Graph and Twitter: title, description, URL, `og:type=website`, `og:site_name`,
      `twitter:card=summary_large_image`, and one brand image for every page: `og:image` with its type, width, height
-     and alt text. The image is `frontend/public/assets/og-1.png` (1200×630), served as `/assets/og-1.png` by the web
+     and alt text. The image is `frontend/public/assets/og-2.png` (1200×630), served as `/assets/og-2.png` by the web
      pods like the app's other files, so it needs no route of its own and is cached for a year. A new image is a new
      file name (`og-2.png`), set in `Pages.SOCIAL_IMAGE`; a test fails when the file is missing or its size is not
-     the one the page states. Its source is `frontend/design/assets/social/og-1.html`.
+     the one the page states. Its source is `frontend/design/assets/social/og-2.html`.
    - JSON-LD (schema.org) by type: `SoftwareApplication` for PRODUCT, AGENT and MODEL; `SoftwareSourceCode` with
      `codeRepository` and `license` for LIBRARY, MCP_SERVER and SKILL; `ScholarlyArticle` for PAPER; `Event` for EVENT;
      `Course` for COURSE; `Dataset` for DATASET; nothing for the rest. Every resource page also gets a
