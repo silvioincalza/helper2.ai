@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.searchavo.TestcontainersConfiguration;
+import ai.searchavo.platform.ProblemType;
 import ai.searchavo.testing.SourcesOff;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -162,7 +163,12 @@ class BackOfficeEdgeIT {
             "/actuatorx")) {
       HttpResponse<String> r = get(path);
       assertThat(r.statusCode()).as(path).isEqualTo(404);
-      assertThat(r.body()).as(path).doesNotContain(path.substring(1)).doesNotContain("<form");
+      // The problem type URI names the site, and "searchavo" holds "search": only the rest of
+      // the body must not echo the path.
+      assertThat(r.body().replace(ProblemType.BASE, ""))
+          .as(path)
+          .doesNotContain(path.substring(1))
+          .doesNotContain("<form");
       hasTheHeaders(r, "no-store");
     }
     assertThat(get("/api/v1/recent").body()).isEqualTo(NOT_FOUND);
