@@ -1,6 +1,12 @@
 # 0047 — Code format and dead-code audit
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0044](ADR-0044-ci-cd-and-supply-chain.md).
+
+**Requirements:** C-014
 
 ## Context
 

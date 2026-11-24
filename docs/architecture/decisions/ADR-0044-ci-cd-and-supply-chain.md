@@ -1,6 +1,12 @@
 # 0044 — CI/CD and supply chain
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0007](ADR-0007-configuration-secrets-runtime-settings.md), [0009](ADR-0009-observability.md), [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md), [0045](ADR-0045-releases-and-versions.md), [0047](ADR-0047-code-format-and-dead-code-audit.md).
+
+**Requirements:** C-011, C-012, C-013
 
 ## Context
 

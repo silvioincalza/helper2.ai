@@ -1,6 +1,12 @@
 # 0012 — Scout collectors and events
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0004](ADR-0004-persistence-and-the-schema.md), [0006](ADR-0006-outbound-calls-and-resilience.md), [0008](ADR-0008-llm-integration.md), [0010](ADR-0010-data-retention.md), [0011](ADR-0011-scout-runner.md), [0013](ADR-0013-discovery.md), [0014](ADR-0014-evidence-gated-enrichment.md), [0026](ADR-0026-filters-facets-categories.md), [0027](ADR-0027-live-web-store-first-daily-quota.md), [0033](ADR-0033-marking-ai-written-text-research-trail.md)
+
+**Requirements:** C-008, C-015
 
 ## Context
 The Scout runner ([0011](ADR-0011-scout-runner.md)) needs collectors that find new AI resources without a user query. Each

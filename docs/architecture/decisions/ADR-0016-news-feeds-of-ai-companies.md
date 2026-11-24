@@ -1,6 +1,12 @@
 # 0016 — News feeds of AI companies
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0006](ADR-0006-outbound-calls-and-resilience.md), [0010](ADR-0010-data-retention.md), [0011](ADR-0011-scout-runner.md), [0012](ADR-0012-scout-collectors-and-events.md), [0014](ADR-0014-evidence-gated-enrichment.md)
+
+**Requirements:** NFR-005, C-008
 
 ## Context
 Every news record in the index comes from a web search (Tavily: `live-web-scout`, `linkedin-scout`). Those are pages

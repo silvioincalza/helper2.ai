@@ -1,6 +1,12 @@
 # 0048 — Review research assistant
 
+**Status:** Accepted
+
+**Date:** 2026-11-18
+
 **Depends on:** [0011](ADR-0011-scout-runner.md), [0014](ADR-0014-evidence-gated-enrichment.md),
+
+**Requirements:** NFR-012, C-005, C-014
 [0038](ADR-0038-back-office-and-review.md), [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md),
 [0046](ADR-0046-evaluation-guide-and-search.md).
 

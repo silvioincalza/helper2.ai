@@ -191,12 +191,12 @@ monitoring:
   exporters:
     enabled: false
     postgres:
-      image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1@sha256:ac5ec343104fae0e2d84a27bb8d69b38430a11910c5382cad85d478d2bab713e
+      image: quay.io/prometheuscommunity/postgres-exporter:v0.21.1@sha256:a88794758ad461c75f3825b51cde4bde730bdff04b3b24d00efe14217e41f615
       resources:
         requests: { cpu: 10m, memory: 32Mi }
         limits: { memory: 128Mi }
     redis:
-      image: quay.io/oliver006/redis_exporter:v1.97.0@sha256:f5f903fbe77571d455ede0453b084d6840bc62fc105efac001034421cab83b99
+      image: quay.io/oliver006/redis_exporter:v1.98.0@sha256:2b68665248d909bb25de9d175c648932a8c358ba143e5dbed1eb48f91cc9d2e1
       resources:
         requests: { cpu: 10m, memory: 16Mi }
         limits: { memory: 64Mi }

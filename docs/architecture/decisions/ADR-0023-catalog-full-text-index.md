@@ -1,6 +1,12 @@
 # 0023 — Catalog full-text index
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0004](ADR-0004-persistence-and-the-schema.md), [0008](ADR-0008-llm-integration.md), [0010](ADR-0010-data-retention.md), [0011](ADR-0011-scout-runner.md), [0012](ADR-0012-scout-collectors-and-events.md), [0022](ADR-0022-federated-search.md), [0025](ADR-0025-ranking.md), [0040](ADR-0040-design-system.md).
+
+**Requirements:** NFR-001
 
 ## Context
 

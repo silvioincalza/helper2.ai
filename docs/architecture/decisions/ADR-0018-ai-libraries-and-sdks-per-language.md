@@ -1,6 +1,12 @@
 # 0018 — AI libraries and SDKs per language
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0004](ADR-0004-persistence-and-the-schema.md), [0006](ADR-0006-outbound-calls-and-resilience.md), [0011](ADR-0011-scout-runner.md), [0013](ADR-0013-discovery.md), [0015](ADR-0015-reference-projects.md), [0023](ADR-0023-catalog-full-text-index.md), [0032](ADR-0032-guide-cost-guard-and-answer-cache.md), [0038](ADR-0038-back-office-and-review.md), [0046](ADR-0046-evaluation-guide-and-search.md)
+
+**Requirements:** C-008
 
 ## Context
 A developer asks "java sdk for claude", "rust llm library" or "go openai client". The answer is a library or an

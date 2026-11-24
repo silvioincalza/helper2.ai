@@ -1,6 +1,12 @@
 # 0035 — Guide model stream
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0006](ADR-0006-outbound-calls-and-resilience.md), [0008](ADR-0008-llm-integration.md), [0031](ADR-0031-guide-pipeline.md), [0032](ADR-0032-guide-cost-guard-and-answer-cache.md), [0033](ADR-0033-marking-ai-written-text-research-trail.md).
+
+**Requirements:** NFR-002, C-005
 
 ## Context
 

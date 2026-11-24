@@ -1,6 +1,12 @@
 # 0022 — Federated search
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0004](ADR-0004-persistence-and-the-schema.md), [0005](ADR-0005-redis-as-a-disposable-cache.md), [0006](ADR-0006-outbound-calls-and-resilience.md), [0021](ADR-0021-resource-identity-one-resource-per-repository.md).
+
+**Requirements:** NFR-001, NFR-003, C-015
 
 ## Context
 

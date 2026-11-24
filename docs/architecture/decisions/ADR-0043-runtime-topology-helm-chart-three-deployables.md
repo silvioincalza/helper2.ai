@@ -1,6 +1,12 @@
 # 0043 — Runtime topology: Helm chart, three deployables
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0001](ADR-0001-stack-and-runtime.md), [0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0003](ADR-0003-contract-first-rest.md), [0004](ADR-0004-persistence-and-the-schema.md), [0005](ADR-0005-redis-as-a-disposable-cache.md), [0007](ADR-0007-configuration-secrets-runtime-settings.md), [0009](ADR-0009-observability.md), [0011](ADR-0011-scout-runner.md), [0036](ADR-0036-identity-and-the-admin-host.md), [0037](ADR-0037-http-edge.md), [0038](ADR-0038-back-office-and-review.md), [0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md), [0042](ADR-0042-monetisation.md), [0044](ADR-0044-ci-cd-and-supply-chain.md).
+
+**Requirements:** C-011, C-014
 
 ## Context
 

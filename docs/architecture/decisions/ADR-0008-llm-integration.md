@@ -1,6 +1,12 @@
 # 0008 — LLM integration
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0001](ADR-0001-stack-and-runtime.md), [0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0005](ADR-0005-redis-as-a-disposable-cache.md), [0007](ADR-0007-configuration-secrets-runtime-settings.md)
+
+**Requirements:** NFR-007, C-001, C-003
 
 ## Context
 Four features call a large language model (LLM): the artificial intelligence (AI) guide, the Scout's enrichment, search query translation and

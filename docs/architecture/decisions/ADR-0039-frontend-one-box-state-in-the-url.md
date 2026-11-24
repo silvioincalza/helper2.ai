@@ -1,6 +1,12 @@
 # 0039 — Frontend: one box, state in the URL
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0001](ADR-0001-stack-and-runtime.md), [0003](ADR-0003-contract-first-rest.md), [0005](ADR-0005-redis-as-a-disposable-cache.md), [0022](ADR-0022-federated-search.md), [0027](ADR-0027-live-web-store-first-daily-quota.md), [0031](ADR-0031-guide-pipeline.md), [0032](ADR-0032-guide-cost-guard-and-answer-cache.md), [0040](ADR-0040-design-system.md).
+
+**Requirements:** NFR-009
 
 The pages, their layout and the design system are in [0040](ADR-0040-design-system.md).
 

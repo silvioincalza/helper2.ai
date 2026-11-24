@@ -1,6 +1,12 @@
 # 0002 — Modules: modular monolith, hexagonal where the rules live
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0001](ADR-0001-stack-and-runtime.md), [0003](ADR-0003-contract-first-rest.md), [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md), [0047](ADR-0047-code-format-and-dead-code-audit.md)
+
+**Requirements:** C-003, C-014
 
 ## Context
 Helper2 has several features: federated search, a catalog, an artificial intelligence (AI) guide, a background Scout

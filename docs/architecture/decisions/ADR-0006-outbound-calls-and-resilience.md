@@ -1,6 +1,12 @@
 # 0006 — Outbound calls and resilience
 
+**Status:** Accepted
+
+**Date:** 2026-11-14
+
 **Depends on:** [0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md), [0005](ADR-0005-redis-as-a-disposable-cache.md), [0008](ADR-0008-llm-integration.md), [0009](ADR-0009-observability.md), [0022](ADR-0022-federated-search.md), [0032](ADR-0032-guide-cost-guard-and-answer-cache.md)
+
+**Requirements:** NFR-001, NFR-003, C-008
 
 ## Context
 Every search calls several public Application Programming Interfaces (APIs) in parallel: up to six, plus the

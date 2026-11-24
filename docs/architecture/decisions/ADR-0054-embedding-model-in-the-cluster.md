@@ -1,6 +1,12 @@
 # 0054 — The embedding model runs in the cluster
 
+**Status:** Accepted
+
+**Date:** 2026-11-20
+
 **Depends on:** [0006](ADR-0006-outbound-calls-and-resilience.md), [0024](ADR-0024-vector-search.md), [0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md), [0044](ADR-0044-ci-cd-and-supply-chain.md).
+
+**Requirements:** NFR-003, C-002
 
 ## Context
 
