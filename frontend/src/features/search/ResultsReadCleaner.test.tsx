@@ -14,8 +14,8 @@ const source = (sourceId: string, sourceName: string) => ({
   retrievedAt: '2026-10-20T10:00:00Z',
 });
 const GITHUB = source('github', 'GitHub');
-const CATALOG = source('helper2-index', 'helper2.ai catalog');
-const BY_MEANING = source('helper2-semantic', 'helper2.ai catalog, by meaning');
+const CATALOG = source('searchavo-index', 'searchavo.ai catalog');
+const BY_MEANING = source('searchavo-semantic', 'searchavo.ai catalog, by meaning');
 
 const FENCED = makeCard({
   id: 'ffffffff-ffff-5fff-8fff-ffffffffffff',
@@ -96,7 +96,7 @@ describe('Feature: the results read cleaner', () => {
       /^From helper2\.ai catalog$/,
     );
     const tiles = screen.getByRole('list', { name: 'Sources searched' });
-    expect(within(tiles).getByText('helper2.ai catalog, by meaning')).toBeInTheDocument();
+    expect(within(tiles).getByText('searchavo.ai catalog, by meaning')).toBeInTheDocument();
   });
 
   it('Scenario: a description with Markdown code fences shows as plain text, search words still marked', async () => {
