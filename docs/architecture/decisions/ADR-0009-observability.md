@@ -17,61 +17,61 @@ retention limit. The guide needs one latency number to hold: a full answer takes
 the guide work long before that, and what makes the wait feel long is the first moment the page shows nothing real.
 
 ## Decision
-1. **Logs.** Spring Boot structured logging on stdout, format `H2_LOG_FORMAT` (`logstash` JavaScript Object Notation (JSON); the `dev` profile uses
+1. **Logs.** Spring Boot structured logging on stdout, format `SA_LOG_FORMAT` (`logstash` JavaScript Object Notation (JSON); the `dev` profile uses
    plain text). Trace and span ids (`traceId`, `spanId`) are in every log line written inside a request or an observed
    background task: Micrometer Tracing puts them in the logging context while a span is in scope. Startup lines and
    the threads of their own (guide heartbeat, embedding indexer, catalog write queue) have none. No second copy over OpenTelemetry Protocol (OTLP).
    A search source that fails logs one WARN per call, with the source id: an unavailable source with its reason (a short
    message built by code, never the query text or the provider's answer), an unexpected exception with its class. A call
-   the policy refuses (circuit open, busy) and a rate-limited call write no line: `helper2.source.requests{source,outcome}` counts them.
-2. **Traces.** `spring-boot-starter-opentelemetry`. Export only when `H2_TRACING_EXPORT=true`; sampling
-   `H2_TRACING_SAMPLING` (1.0); endpoint `H2_OTLP_TRACES_ENDPOINT` (the chart: Alloy at
+   the policy refuses (circuit open, busy) and a rate-limited call write no line: `searchavo.source.requests{source,outcome}` counts them.
+2. **Traces.** `spring-boot-starter-opentelemetry`. Export only when `SA_TRACING_EXPORT=true`; sampling
+   `SA_TRACING_SAMPLING` (1.0); endpoint `SA_OTLP_TRACES_ENDPOINT` (the chart: Alloy at
    `http://alloy.observability.svc:4318/v1/traces`, which forwards to Tempo). Resource attributes: `service.name`
-   (`helper2` for the public app, `helper2-backoffice` for the back office), `deployment.environment.name=H2_ENVIRONMENT`.
+   (`searchavo` for the public app, `searchavo-backoffice` for the back office), `deployment.environment.name=SA_ENVIRONMENT`.
 3. **Context across threads.** The search executor is wrapped with `ContextExecutorService`, so each source call runs
    in the request's trace. So are the guide's question threads and its deadline callback (`GuideLimits`), and a Scout
    run started from the admin page (`ScoutConfiguration.RUN_THREADS`). Scheduled jobs (the Scout tick, the daily
    retention jobs) are observed by Spring (`tasks.scheduled.execution`), so each run is a trace of its own. Source and embedding clients share `ObservedHttp` ([0006](ADR-0006-outbound-calls-and-resilience.md)):
    `http.client.requests`, a client span and trace headers, with a bounded Uniform Resource Identifier (URI) tag
    and no query string. Every model call (guide steps, translation, setup guide with steps `tool-guide` and `tool-guide-verify`, enrichment, classifier with step
-   `classify`) is observed by `ModelCallMetrics` (span and timer `helper2.llm.call`), tagged with the version of its
+   `classify`) is observed by `ModelCallMetrics` (span and timer `searchavo.llm.call`), tagged with the version of its
    prompt.
    `ObservabilityConfiguration` drops observations of `/actuator/**` (probes and scrapes).
 4. **Meters** (Prometheus, pulled from `/actuator/prometheus` on the management port, [0037](ADR-0037-http-edge.md);
    OTLP metric push is off). Common tags `application` and `environment`. `application` names the app
-   ([0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md)): `helper2` for the public app, `helper2-backoffice` for the back office. Both apps
+   ([0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md)): `searchavo` for the public app, `searchavo-backoffice` for the back office. Both apps
    share the libraries, so some meters exist in both (measured: the embedding gauges, the review count, the
    example-draft budget); only the app that runs the work moves them, and the dashboards and rules read that app. Histogram buckets for
-   `http.server.requests`, `http.client.requests`, `helper2.scout.run`, `helper2.llm.call`,
-   `helper2.search.latency` (`application.yaml`), `helper2.source.latency` (set on the timer), and
-   `helper2.guide.first_useful` (set on the timer, with exact buckets at its 3 s and 8 s targets). Our meters:
-   - search: `helper2.search.requests{partial}`, `helper2.search.latency`, `helper2.source.requests{source,outcome,served_from}`,
-     `helper2.source.latency{source,outcome}` (one live call to a source: its time, failed and timed-out calls
+   `http.server.requests`, `http.client.requests`, `searchavo.scout.run`, `searchavo.llm.call`,
+   `searchavo.search.latency` (`application.yaml`), `searchavo.source.latency` (set on the timer), and
+   `searchavo.guide.first_useful` (set on the timer, with exact buckets at its 3 s and 8 s targets). Our meters:
+   - search: `searchavo.search.requests{partial}`, `searchavo.search.latency`, `searchavo.source.requests{source,outcome,served_from}`,
+     `searchavo.source.latency{source,outcome}` (one live call to a source: its time, failed and timed-out calls
      included; a skipped source or a fresh cache hit is not a call and records nothing; the recording rule
-     `environment_source:helper2_source_latency_seconds:p95_5m` gives its p95 per source), `helper2.cache.events{event}`,
-     `helper2.shared.cache{cache,result}` (`translation`, `query-vector`, `tool-guide`, `guide-answer`; a miss includes a database error
+     `environment_source:searchavo_source_latency_seconds:p95_5m` gives its p95 per source), `searchavo.cache.events{event}`,
+     `searchavo.shared.cache{cache,result}` (`translation`, `query-vector`, `tool-guide`, `guide-answer`; a miss includes a database error
      or timeout);
-   - catalog: `helper2.catalog.observations{outcome}`, `helper2.catalog.observations.queued`,
-     `helper2.embedding.backlog`, `helper2.embedding.failures{reason}` (`refused` is a batch the open circuit did not
-     send), `helper2.embedding.last.success`;
-   - guide and models: `helper2.guide.ask{outcome}`, `helper2.guide.questions{outcome}`, `helper2.guide.cache{result}`,
-     `helper2.guide.step{step,intent}`, `helper2.guide.first_useful{intent}` (item 8),
-     `helper2.guide.quote_origin{part,found}` (a quote and whether a record holds it, [0031](ADR-0031-guide-pipeline.md)),
-     `helper2.llm.call{step,model,prompt,outcome}`, `helper2.llm.tokens{step,prompt,type}`,
-     `helper2.llm.tokens_unknown{step,prompt,type}` (calls whose answer reported no such count),
-     `helper2.llm.thinking_fallback{step,reason}` (a guide step asked again with thinking off: `cut` while thinking,
+   - catalog: `searchavo.catalog.observations{outcome}`, `searchavo.catalog.observations.queued`,
+     `searchavo.embedding.backlog`, `searchavo.embedding.failures{reason}` (`refused` is a batch the open circuit did not
+     send), `searchavo.embedding.last.success`;
+   - guide and models: `searchavo.guide.ask{outcome}`, `searchavo.guide.questions{outcome}`, `searchavo.guide.cache{result}`,
+     `searchavo.guide.step{step,intent}`, `searchavo.guide.first_useful{intent}` (item 8),
+     `searchavo.guide.quote_origin{part,found}` (a quote and whether a record holds it, [0031](ADR-0031-guide-pipeline.md)),
+     `searchavo.llm.call{step,model,prompt,outcome}`, `searchavo.llm.tokens{step,prompt,type}`,
+     `searchavo.llm.tokens_unknown{step,prompt,type}` (calls whose answer reported no such count),
+     `searchavo.llm.thinking_fallback{step,reason}` (a guide step asked again with thinking off: `cut` while thinking,
      [0008](ADR-0008-llm-integration.md), or `time`, [0035](ADR-0035-guide-model-stream.md)),
-     `helper2.llm.outage_retry{step}` (a guide plan call asked once more after a short provider outage,
-     [0031](ADR-0031-guide-pipeline.md)), `helper2.guide.budget.remaining`,
-     `helper2.guide.judge{kind,evaluator,verdict,verify,prompt}` (the guide judge, [0046](ADR-0046-evaluation-guide-and-search.md)),
-     `helper2.search.translation.budget.remaining`;
-   - Scout: `helper2.scout.run`, `helper2.scout.cycle`, `helper2.scout.repository_sweep{outcome}` (a record the sweep visited, or `failed` for a batch, [0020](ADR-0020-resource-vitality.md)), `helper2.scout.lists.gone.checks{outcome}` (a status check of a web page list whose read failed) and `helper2.scout.lists.forgotten{kind}` (a list gone at its source that no longer names its resources, `github` or `web-page`; [0023](ADR-0023-catalog-full-text-index.md) point 17), `helper2.scout.items{source,kind}`, `helper2.scout.last.success{source}` (the newest SUCCEEDED `scout_run` of
+     `searchavo.llm.outage_retry{step}` (a guide plan call asked once more after a short provider outage,
+     [0031](ADR-0031-guide-pipeline.md)), `searchavo.guide.budget.remaining`,
+     `searchavo.guide.judge{kind,evaluator,verdict,verify,prompt}` (the guide judge, [0046](ADR-0046-evaluation-guide-and-search.md)),
+     `searchavo.search.translation.budget.remaining`;
+   - Scout: `searchavo.scout.run`, `searchavo.scout.cycle`, `searchavo.scout.repository_sweep{outcome}` (a record the sweep visited, or `failed` for a batch, [0020](ADR-0020-resource-vitality.md)), `searchavo.scout.lists.gone.checks{outcome}` (a status check of a web page list whose read failed) and `searchavo.scout.lists.forgotten{kind}` (a list gone at its source that no longer names its resources, `github` or `web-page`; [0023](ADR-0023-catalog-full-text-index.md) point 17), `searchavo.scout.items{source,kind}`, `searchavo.scout.last.success{source}` (the newest SUCCEEDED `scout_run` of
      each collector, read from Postgres at most every 30 s, so every replica reports it from start-up),
-     `helper2.scout.interval{source}` (each collector's run interval, in seconds, from start-up),
-     `helper2.scout.enabled` (1 when the Scout runs on its schedule on this environment, 0 when it is off),
-     `helper2.scout.enrichment{outcome}`, `helper2.scout.enrichment.budget.remaining`,
-     `helper2.scout.classifier.budget.remaining`;
-   - platform: `helper2.rate-limit.fallback{limiter}` (rate-limit decisions made in one replica's memory while
+     `searchavo.scout.interval{source}` (each collector's run interval, in seconds, from start-up),
+     `searchavo.scout.enabled` (1 when the Scout runs on its schedule on this environment, 0 when it is off),
+     `searchavo.scout.enrichment{outcome}`, `searchavo.scout.enrichment.budget.remaining`,
+     `searchavo.scout.classifier.budget.remaining`;
+   - platform: `searchavo.rate-limit.fallback{limiter}` (rate-limit decisions made in one replica's memory while
      Redis is down, [0037](ADR-0037-http-edge.md));
    - resilience policies (resilience4j-micrometer, [0006](ADR-0006-outbound-calls-and-resilience.md)), tag `name` = policy
      (`source-<id>`, `collector-<id>`, `redis`): `resilience4j.circuitbreaker.state{name,state}` (1 for the current
@@ -80,77 +80,77 @@ the guide work long before that, and what makes the wait feel long is the first 
      `resilience4j.bulkhead.available.concurrent.calls{name}`, `resilience4j.retry.calls{name,kind}`.
    Tag values are fixed words, source ids, policy names and configured model ids; never a query, a prompt or a user.
 5. **Dashboards, one per app** (variable `environment`, datasource uid `prometheus`, a link to each other).
-   `deploy/grafana/helper2.json` (uid `helper2`, `application="helper2"`): overview, Hypertext Transfer Protocol
+   `deploy/grafana/searchavo.json` (uid `searchavo`, `application="searchavo"`): overview, Hypertext Transfer Protocol
    (HTTP), search and sources, artificial intelligence (AI) guide, runtime, pod, logs.
-   `deploy/grafana/helper2-backoffice.json` (uid `helper2-backoffice`, `application="helper2-backoffice"`): overview,
+   `deploy/grafana/searchavo-backoffice.json` (uid `searchavo-backoffice`, `application="searchavo-backoffice"`): overview,
    Scout (time since each collector's last success, runs by status, failures by error, items), enrichment and budgets
    (every back office daily budget, the evidence step's page reads, the Scout's Tavily credits by feature, model
    calls), embedding indexer, admin and runtime, pod, logs. Latency panels (HTTP, search, source, model call, Scout
    run, guide first useful event) use `histogram_quantile` over the `_bucket` series, so they are percentiles across
-   all pods; `helper2.guide.ask` has no buckets, so its panel shows the mean. One panel per daily budget shows the
-   calls left, and "Rate-limit decisions in memory" shows `helper2.rate-limit.fallback`. Loaded by file provisioning
+   all pods; `searchavo.guide.ask` has no buckets, so its panel shows the mean. One panel per daily budget shows the
+   calls left, and "Rate-limit decisions in memory" shows `searchavo.rate-limit.fallback`. Loaded by file provisioning
    or the Grafana application programming interface (API).
-6. **Alert rules.** `deploy/monitoring/helper2-rules.yaml`, a plain Prometheus rule file, is the single source. The
+6. **Alert rules.** `deploy/monitoring/searchavo-rules.yaml`, a plain Prometheus rule file, is the single source. The
    chart embeds it as a `PrometheusRule` when `monitoring.prometheusRule.enabled` is true (off by default: the
    custom resource exists only where the Prometheus Operator runs); the template reads the file through the symlink
-   `files/helper2-rules.yaml`, so the rules are never copied. Without the operator, Prometheus loads the file in
+   `files/searchavo-rules.yaml`, so the rules are never copied. Without the operator, Prometheus loads the file in
    `rule_files`. App rules group by `environment` and select the app: the search, guide and HTTP rules
-   `application="helper2"`; the Scout, budget, indexer and review rules of the back office
-   `application="helper2-backoffice"`; the circuit rules and the Tavily credits both, because both apps call out and
-   spend credits. Pod and Job rules read kube-state-metrics in the namespaces `helper2-<environment>`. Each rule has a `severity` (`critical`: users get errors now; `warning`: look within
+   `application="searchavo"`; the Scout, budget, indexer and review rules of the back office
+   `application="searchavo-backoffice"`; the circuit rules and the Tavily credits both, because both apps call out and
+   spend credits. Pod and Job rules read kube-state-metrics in the namespaces `searchavo-<environment>`. Each rule has a `severity` (`critical`: users get errors now; `warning`: look within
    the day), a `for:`, a summary and description in plain English, and a `runbook` hint naming the dashboard panel
    and the first command. The rules:
-   - `Helper2HighServerErrorRatio` (critical): more than 5% of requests answer 5xx for 10 min, above one request a
+   - `SearchavoHighServerErrorRatio` (critical): more than 5% of requests answer 5xx for 10 min, above one request a
      minute;
-   - `Helper2SourceFailing`: more than 20% of a source's calls FAILED, TIMED_OUT or RATE_LIMITED for 15 min
-     (SKIPPED is a decision, not a failure); `Helper2PartialSearches`: more than half of the searches partial for
-     30 min; `Helper2SearchCacheErrors`: `helper2.cache.events{event="error"}` for 10 min;
-   - `Helper2RateLimitInMemory`: any `helper2.rate-limit.fallback`;
-   - `Helper2CircuitOpen`: a policy's circuit not closed on some pod for 5 min (it cycles open and half-open while
-     the dependency is down); `Helper2CallsNotPermitted`: an open circuit refuses more than one call a minute for
+   - `SearchavoSourceFailing`: more than 20% of a source's calls FAILED, TIMED_OUT or RATE_LIMITED for 15 min
+     (SKIPPED is a decision, not a failure); `SearchavoPartialSearches`: more than half of the searches partial for
+     30 min; `SearchavoSearchCacheErrors`: `searchavo.cache.events{event="error"}` for 10 min;
+   - `SearchavoRateLimitInMemory`: any `searchavo.rate-limit.fallback`;
+   - `SearchavoCircuitOpen`: a policy's circuit not closed on some pod for 5 min (it cycles open and half-open while
+     the dependency is down); `SearchavoCallsNotPermitted`: an open circuit refuses more than one call a minute for
      10 min ([0006](ADR-0006-outbound-calls-and-resilience.md));
-   - `Helper2DailyBudgetLow`: a public app's `*.budget.remaining` gauge below 20% of its cap for 5 min (the cap is
+   - `SearchavoDailyBudgetLow`: a public app's `*.budget.remaining` gauge below 20% of its cap for 5 min (the cap is
      the gauge's highest value of the last day; label `budget` = guide, tool_guide, search_translation);
-     `Helper2BackofficeBudgetLow`: the same for the back office's budgets and credits (scout_enrichment, scout_gap,
+     `SearchavoBackofficeBudgetLow`: the same for the back office's budgets and credits (scout_enrichment, scout_gap,
      scout_classifier, scout_event_reader, examples_draft, scout_evidence_credits; the shared translation cap is the
      public rule's);
-   - `Helper2LiveWebCreditsHigh`: more than 2,500 Tavily credits in a day, both apps added up;
-   - `Helper2ObservationsLost`: `helper2.catalog.observations` with outcome `dropped` or `failed` for 10 min (a
+   - `SearchavoLiveWebCreditsHigh`: more than 2,500 Tavily credits in a day, both apps added up;
+   - `SearchavoObservationsLost`: `searchavo.catalog.observations` with outcome `dropped` or `failed` for 10 min (a
      single burst that ends does not fire);
-   - `Helper2EmbeddingIndexerStalled`: no successful indexer batch for 30 min; `Helper2EmbeddingBacklogStuck`:
+   - `SearchavoEmbeddingIndexerStalled`: no successful indexer batch for 30 min; `SearchavoEmbeddingBacklogStuck`:
      backlog above 0 for 3 h on the replica that indexes, read over the last 20 min so a restart does not start the
-     3 h again; `Helper2ReviewBacklog`: more than 50 open review items for
+     3 h again; `SearchavoReviewBacklog`: more than 50 open review items for
      a day;
-   - `Helper2ScoutCollectorStale`: a collector's last success older than its run interval plus a day. The rule
-     reads the interval from `helper2.scout.interval`, never from a list of names, so a new or retuned collector
+   - `SearchavoScoutCollectorStale`: a collector's last success older than its run interval plus a day. The rule
+     reads the interval from `searchavo.scout.interval`, never from a list of names, so a new or retuned collector
      needs no rule change. An interval under a day counts as a day: the Scout runs once a day. A run that is not
      due is SKIPPED and does not move the last success, so a 7-day collector fires after 8 days, not 2. The last
      success comes from `scout_run`, not from the memory of the replica that ran it: a success stays visible when
      that replica stops before a scrape, or when Prometheus misses hours of scrapes. Both gauges are read over a
      9-day lookback; the discovery categories are left out;
-   - `Helper2DiscoveryStale`: one alert per environment when any discovery category (`discovery-*`) has had no
+   - `SearchavoDiscoveryStale`: one alert per environment when any discovery category (`discovery-*`) has had no
      success for its run interval plus a day, by the same two gauges; the description lists them
      ([0013](ADR-0013-discovery.md));
-   - `Helper2ScoutRunsFailing`: three or more collectors with a failed run in the last day, a cause they share;
-   - `Helper2GuidePicksFromLowRanks`: more than 45% of the day's kept picks, and at least 3, from search rank 9+
-     (`helper2.guide.picks{rank="9+"}`), the first sign of content poisoning ([0031](ADR-0031-guide-pipeline.md)).
+   - `SearchavoScoutRunsFailing`: three or more collectors with a failed run in the last day, a cause they share;
+   - `SearchavoGuidePicksFromLowRanks`: more than 45% of the day's kept picks, and at least 3, from search rank 9+
+     (`searchavo.guide.picks{rank="9+"}`), the first sign of content poisoning ([0031](ADR-0031-guide-pipeline.md)).
      The usual share is about 30%: the guide chooses among 24 candidates and often keeps a known project that search
      ranks low;
-   - `Helper2GuideFirstUsefulSlow`: the p95 of `helper2.guide.first_useful` above its 8 s target for 15 min, above
+   - `SearchavoGuideFirstUsefulSlow`: the p95 of `searchavo.guide.first_useful` above its 8 s target for 15 min, above
      3 questions in 15 min (item 8);
-   - `Helper2BackupFailed` (critical): a `pg-backup` Job that started in the last 24 h failed;
-     `Helper2BackupStale` (critical): no successful backup for 36 h;
-     `Helper2PodRestarting`: more than 2 restarts of a container in an hour;
-     `Helper2ContainerOOMKilled`: a container restarted in the last 10 min and its last termination was `OOMKilled`
+   - `SearchavoBackupFailed` (critical): a `pg-backup` Job that started in the last 24 h failed;
+     `SearchavoBackupStale` (critical): no successful backup for 36 h;
+     `SearchavoPodRestarting`: more than 2 restarts of a container in an hour;
+     `SearchavoContainerOOMKilled`: a container restarted in the last 10 min and its last termination was `OOMKilled`
      (kube-state-metrics), so a single out-of-memory kill is not silent;
-   - `Helper2ReplicasMissing`: the `helper2` Deployment has had fewer available replicas than wanted for 10 min;
-     `Helper2NoReplica` (critical): none for 2 min, the site is down. Both read kube-state-metrics, not `up{}`:
-     the scrape job's labels live outside this repository; `Helper2BackofficeDown`: no back office replica for
+   - `SearchavoReplicasMissing`: the `searchavo` Deployment has had fewer available replicas than wanted for 10 min;
+     `SearchavoNoReplica` (critical): none for 2 min, the site is down. Both read kube-state-metrics, not `up{}`:
+     the scrape job's labels live outside this repository; `SearchavoBackofficeDown`: no back office replica for
      15 min (the public site keeps answering, the Scout and the indexer stop);
-   - `Helper2VolumeAlmostFull`: a PersistentVolumeClaim in a `helper2-*` namespace (Postgres data, backups, the
-     Redis append-only file) under 20% free for 15 min; `Helper2VolumeFull` (critical): under 10% for 5 min.
-   - `Helper2RedisEvicting`: Redis dropped keys in the last 15 minutes to stay under `redis.maxMemory`
-     (`redis_evicted_keys_total`); `Helper2DatastoreExporterDown`: an exporter not scraped, or not logged in to its
+   - `SearchavoVolumeAlmostFull`: a PersistentVolumeClaim in a `searchavo-*` namespace (Postgres data, backups, the
+     Redis append-only file) under 20% free for 15 min; `SearchavoVolumeFull` (critical): under 10% for 5 min.
+   - `SearchavoRedisEvicting`: Redis dropped keys in the last 15 minutes to stay under `redis.maxMemory`
+     (`redis_evicted_keys_total`); `SearchavoDatastoreExporterDown`: an exporter not scraped, or not logged in to its
      data store, for 15 min.
    `promtool check rules` and `promtool test rules` (unit tests in `deploy/monitoring/tests/`) run in CI; chart-check
    renders the `PrometheusRule` once and validates it against its CRD schema.
@@ -160,7 +160,7 @@ the guide work long before that, and what makes the wait feel long is the first 
    query text) and `redis-exporter` (`redis_exporter` with `-config-command=-`: no `CONFIG GET`, which shows the admin
    password). Each logs in with its own account, never the owner's or the admin's: the Postgres role `h2_monitor`
    (`pg_monitor` only: statistics, no table; a connection limit of 3, a 10 s statement timeout), which the migrate Job
-   creates and opens (`MonitorLogin`, `H2_DATABASE_MONITOR_PASSWORD`), and the Redis user `h2_monitor` of
+   creates and opens (`MonitorLogin`, `SA_DATABASE_MONITOR_PASSWORD`), and the Redis user `h2_monitor` of
    `files/redis-users.acl` (`PING`, `INFO`, `LATENCY`, client naming; no key, no channel). Its network policy admits
    only the scraper's namespace on the metrics port and lets it reach only its own data store. The exporters run
    apart from Postgres and Redis, so turning them on never restarts Postgres; the Redis user does restart Redis once.
@@ -177,36 +177,36 @@ the guide work long before that, and what makes the wait feel long is the first 
    results the guide reads, with their count and sources) or `clarify` (the question back) on the stream
    ([0031](ADR-0031-guide-pipeline.md)): `retrieved` is the first step the page always shows, while
    `planned` is not shown and `understood` shows nothing for a plain suggestion, the most common question.
-   `GuideStreamController` records `helper2.guide.first_useful{intent}` once per question, from the request to that
+   `GuideStreamController` records `searchavo.guide.first_useful{intent}` once per question, from the request to that
    event reaching the connection; it covers the plan call and the search. A cached or shared answer has no step
-   events and is not timed; the end-to-end time stays in `helper2.guide.ask` and in the evaluation
+   events and is not timed; the end-to-end time stays in `searchavo.guide.ask` and in the evaluation
    ([0046](ADR-0046-evaluation-guide-and-search.md)). Targets: **p50 3 s, p95 8 s**, initial targets to confirm with
    the first weeks of data. They come from the measured steps: planning 0.5–2.8 s with thinking off
    ([0008](ADR-0008-llm-integration.md)), a search of 2.0–4.2 s when Tavily answers live and less from its stored
    results, Tavily's 6 s timeout as the slow end. The p95 target has an alert; the p50 target is read on the dashboard.
 
 ### Code
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml`, `backend/apps/public/src/main/resources/application.yaml`, `backend/apps/backoffice/src/main/resources/application.yaml` —
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml`, `backend/apps/public/src/main/resources/application.yaml`, `backend/apps/backoffice/src/main/resources/application.yaml` —
   `management.*` (the `application` tag), `logging.structured`, tracing settings (`service.name`).
-- `backend/libs/platform/src/main/java/ai/helper2/platform/observability/ObservabilityConfiguration.java` — actuator filter.
-- `backend/libs/core/src/main/java/ai/helper2/search/config/MicrometerSearchMetrics.java`, `SearchConfiguration.java` — search meters, context executor.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/ModelCallMetrics.java` — model call span, timer, tokens.
-- `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — `helper2.guide.first_useful`.
-- `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideLimits.java`, `scout/internal/ScoutConfiguration.java` (`RUN_THREADS`) —
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/observability/ObservabilityConfiguration.java` — actuator filter.
+- `backend/libs/core/src/main/java/ai/searchavo/search/config/MicrometerSearchMetrics.java`, `SearchConfiguration.java` — search meters, context executor.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/llm/ModelCallMetrics.java` — model call span, timer, tokens.
+- `backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideStreamController.java` — `searchavo.guide.first_useful`.
+- `backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideLimits.java`, `scout/internal/ScoutConfiguration.java` (`RUN_THREADS`) —
   trace context on the guide's threads and on a Scout run started from the admin page.
-- `backend/apps/public/src/test/java/ai/helper2/platform/observability/StructuredLogTraceIdIT.java` — trace and span ids in the JSON log lines.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — observed source and embedding clients.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/internal/LlmConfiguration.java`,
-  `backend/libs/core/src/main/java/ai/helper2/search/internal/TranslationConfiguration.java`,
-  `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java` —
+- `backend/apps/public/src/test/java/ai/searchavo/platform/observability/StructuredLogTraceIdIT.java` — trace and span ids in the JSON log lines.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/http/ObservedHttp.java` — observed source and embedding clients.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/llm/internal/LlmConfiguration.java`,
+  `backend/libs/core/src/main/java/ai/searchavo/search/internal/TranslationConfiguration.java`,
+  `backend/apps/backoffice/src/main/java/ai/searchavo/sources/config/scout/CollectorsConfiguration.java` —
   translation and classifier budget gauges.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexEmbeddings.java`, `ObservationQueue.java` — catalog meters.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt` — the log line of a failed source call.
-- `deploy/grafana/helper2.json`, `helper2-backoffice.json` (Grafana dashboards); `deploy/helm/helper2/templates/app.yaml`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/usecase/IndexEmbeddings.java`, `ObservationQueue.java` — catalog meters.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SourceFanOut.kt` — the log line of a failed source call.
+- `deploy/grafana/searchavo.json`, `searchavo-backoffice.json` (Grafana dashboards); `deploy/helm/searchavo/templates/app.yaml`,
   `backoffice.yaml` — scrape annotations, tracing env; `exporters.yaml` — the data store exporters;
-  `backend/libs/schema/src/main/java/ai/helper2/platform/schema/MonitorLogin.java` — the exporter's database role.
-- `deploy/monitoring/helper2-rules.yaml` (alert rules), `deploy/monitoring/tests/` (promtool unit tests);
-  `deploy/helm/helper2/templates/prometheusrule.yaml`, `files/helper2-rules.yaml` (symlink) — optional `PrometheusRule`.
+  `backend/libs/schema/src/main/java/ai/searchavo/platform/schema/MonitorLogin.java` — the exporter's database role.
+- `deploy/monitoring/searchavo-rules.yaml` (alert rules), `deploy/monitoring/tests/` (promtool unit tests);
+  `deploy/helm/searchavo/templates/prometheusrule.yaml`, `files/searchavo-rules.yaml` (symlink) — optional `PrometheusRule`.
 
 ## Alternatives considered
 - Push metrics over OTLP — the cluster scrapes with Alloy; pushing would send a second copy.
@@ -225,7 +225,7 @@ the guide work long before that, and what makes the wait feel long is the first 
   waits for while already seeing the results being read; the evaluation reports it.
 - `understood` as the first useful event — earlier, but empty on the page for a plain suggestion.
 - A `picked` event that shows the picks before the reason check — it does not move the first useful event and adds
-  a step whose picks can still disappear; it pays only when `helper2.guide.step` shows the reason check dominates
+  a step whose picks can still disappear; it pays only when `searchavo.guide.step` shows the reason check dominates
   the answer time.
 
 ## Consequences
@@ -235,7 +235,7 @@ the guide work long before that, and what makes the wait feel long is the first 
   pick raises an alert, and each alert says where to look first.
 - One rule file serves a plain Prometheus and the operator; the unit tests pin each threshold.
 - The guide's latency is held by one number the asker feels; the model step and the search behind a slow first
-  event are in `helper2.llm.call` and `helper2.source.latency`.
+  event are in `searchavo.llm.call` and `searchavo.source.latency`.
 - The rules look back over time windows, so a gauge kept by one replica (Scout, indexer) or a circuit open on any
   pod still raises its alert.
 

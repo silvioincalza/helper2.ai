@@ -112,7 +112,7 @@ export default function ReviewQueuePage() {
     '?': () => setHelp(true),
   });
 
-  const command = `helper2 review --${status.toLowerCase()}`;
+  const command = `searchavo review --${status.toLowerCase()}`;
 
   return (
     <section aria-labelledby="rq-h" className="h2-admin__part">

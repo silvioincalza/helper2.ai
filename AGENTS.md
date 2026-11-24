@@ -1,6 +1,6 @@
-# helper2.ai — instructions for coding assistants
+# searchavo.ai — instructions for coding assistants
 
-helper2.ai is a metasearch for the AI ecosystem (tools, models, MCP servers, agents, prompts,
+searchavo.ai is a metasearch for the AI ecosystem (tools, models, MCP servers, agents, prompts,
 libraries, papers, news): one page, one box, fast. An AI guide answers only from retrieved
 results, with quotes checked by code. Every change must serve this goal; flag anything else
 as scope creep.
@@ -70,7 +70,7 @@ Rules:
 - Until the human in the loop says the migration to the AI Unified Process is complete (epic E11), every page is the
   final text: no revision table, no change log, no "previously". Then revision history starts in the specification
   pages only.
-- Config and secrets: `H2_` prefix; secrets live in OpenBao, never in the repo.
+- Config and secrets: `SA_` prefix; secrets live in OpenBao, never in the repo.
 - One git worktree and one branch per session, from the latest `origin/main`, under `.claude/worktrees/`. The main
   checkout stays on `main` and clean.
 - Notes, reviews, plans and memory go in the git-ignored `.private/`, never in a commit.

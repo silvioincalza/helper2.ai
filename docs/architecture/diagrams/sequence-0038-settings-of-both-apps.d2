@@ -1,7 +1,7 @@
 # Sequence: the public app writes its settings groups at startup, the owner reads them in the back office (ADR 0038).
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/settings/PublishSettingsAtStartup.java,
-#   backend/libs/platform/src/main/java/ai/helper2/platform/settings/JdbcPublicAppSettings.java,
-#   backend/apps/backoffice/src/main/java/ai/helper2/admin/web/SettingsController.java, admin/usecase/GetEffectiveSettings.java,
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/site/settings/PublishSettingsAtStartup.java,
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/settings/JdbcPublicAppSettings.java,
+#   backend/apps/backoffice/src/main/java/ai/searchavo/admin/web/SettingsController.java, admin/usecase/GetEffectiveSettings.java,
 #   frontend/src/admin/SettingsPage.tsx.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0038-settings-of-both-apps.d2 && d2 sequence-0038-settings-of-both-apps.d2 sequence-0038-settings-of-both-apps.svg
 

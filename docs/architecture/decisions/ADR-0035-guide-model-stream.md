@@ -23,7 +23,7 @@ The provider can send the same answer as a stream of chunks (server-sent events)
 
 ## Decision
 
-1. **One setting.** `H2_GUIDE_MODEL_STREAM` is `OFF` (default) or `ON` (`GuideProperties.modelStream`, enum
+1. **One setting.** `SA_GUIDE_MODEL_STREAM` is `OFF` (default) or `ON` (`GuideProperties.modelStream`, enum
    `ModelStream`). `OFF` is the blocking call of [0008](ADR-0008-llm-integration.md). `ON` streams every
    guide step: plan, choose, compare, explain and the reason check. Any other value stops the start. The back
    office shows it under Settings, AI guide. There is no setting per step.
@@ -39,7 +39,7 @@ The provider can send the same answer as a stream of chunks (server-sent events)
    check decide what is shown, as in [0031](ADR-0031-guide-pipeline.md). `AskGuide` stays blocking, top-down code. The
    controllers stay Spring MVC ([0031](ADR-0031-guide-pipeline.md), Streaming).
 4. **One call is still one unit.** `BudgetedChat.streamed` runs the same order as a blocking call: circuit
-   (`llm-chat-guide-fast` or `llm-chat-guide-reasoning`), then one budget unit, then one observation (`helper2.llm.call`). They wrap the **whole
+   (`llm-chat-guide-fast` or `llm-chat-guide-reasoning`), then one budget unit, then one observation (`searchavo.llm.call`). They wrap the **whole
    subscription**, from subscribe to the last chunk or to the dispose. So the slow-call rule of the circuit
    measures the whole stream, not the 0.3 s to the response headers. The daily budget counts calls, not tokens: it
    is the same in both modes.
@@ -65,7 +65,7 @@ The provider can send the same answer as a stream of chunks (server-sent events)
    - At that moment, with reasoning chunks only and no answer text, the stream is disposed (`ThinkingTimeout`: not
      a provider failure, outcome `timeout` on the observation). The step is asked once more with thinking off: the
      same second call as for an answer cut while thinking, with its own budget unit and
-     `helper2.llm.thinking_fallback{step, reason="time"}` (`reason="cut"` for a cut answer).
+     `searchavo.llm.thinking_fallback{step, reason="time"}` (`reason="cut"` for a cut answer).
    - That second call gets the time left minus the margin. The minimum is not checked again: the time was kept
      for this call.
    - The rule does not apply when the call starts with no more than margin + minimum left (no time can be kept),
@@ -87,7 +87,7 @@ The provider can send the same answer as a stream of chunks (server-sent events)
    **EU AI Act Art. 50:** the two events say what the system is doing. They hold no AI-written text, so they
    carry no `aiContent` marker and no label; `GuideAiFieldsTest` classes `step` as not AI-written.
 9. **Usage.** Per call, the token counts are the highest values any chunk reported. A count that is missing or 0
-   is not a real 0: `helper2.llm.tokens` gets nothing, and `helper2.llm.tokens_unknown{step,prompt,type}` counts
+   is not a real 0: `searchavo.llm.tokens` gets nothing, and `searchavo.llm.tokens_unknown{step,prompt,type}` counts
    the call. The rule is the same for a blocking call. So the reasoning model's streamed calls show their
    completion tokens as unknown, never as 0.
 10. **Threads.** The adapter adds no platform thread: it waits on the question's virtual thread. The OkHttp
@@ -109,12 +109,12 @@ The provider can send the same answer as a stream of chunks (server-sent events)
 
 ### Code
 
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/ChatStream.java` — collects a stream on the calling
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/llm/ChatStream.java` — collects a stream on the calling
   thread: text, finish reason, usage, first reasoning and first text, the window and the thinking limit.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/BudgetedChat.java` (`streamed`),
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/llm/BudgetedChat.java` (`streamed`),
   `ModelCallMetrics.java` (`tokens`, `tokens_unknown`, `thinkingFallback`), `CutAnswerWatch.java` (`isCut`),
   `internal/StreamThreads.java`, `internal/LlmConfiguration.java`.
-- `backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` (`call`, `streamWithin`),
+- `backend/apps/public/src/main/java/ai/searchavo/guide/internal/SpringAiGuideModel.java` (`call`, `streamWithin`),
   `GuideConfiguration.java`; `guide/config/GuideProperties.java`, `ModelStream.java`; `guide/CallTimeLimit.java`
   (`forThinking`, `forTheCallAfterThinking`); `guide/ModelActivity.java`; `guide/Guide.kt` (`ModelStep`,
   `GuideProgress.reasoning`, `.writing`); `guide/usecase/AskGuide.kt`; `guide/web/GuideStreamController.java`.
@@ -155,7 +155,7 @@ The provider can send the same answer as a stream of chunks (server-sent events)
 - A change of the setting needs a restart and keeps the cache. `OFF` is the rollback.
 - Each running stream holds one SDK platform thread. With the default 8 guide slots that is at most 8.
 - The reasoning model's completion tokens are unknown on a stream: the tokens panel undercounts with `ON`.
-  `helper2.llm.tokens_unknown` says by how many calls.
+  `searchavo.llm.tokens_unknown` says by how many calls.
 
 ### Measurement
 
@@ -211,7 +211,7 @@ What changes against [0031](ADR-0031-guide-pipeline.md) and [0008](ADR-0008-llm-
 |---|---|---|
 | Spoofing | A chunk pretends to be from the provider | Same TLS connection and key as the blocking call; no new endpoint. |
 | Tampering / prompt injection (OWASP LLM01, LLM05) | Partial model text shown before it is checked | No chunk text leaves `ChatStream.collect`; only the whole text is converted and checked. `reasoning` and `writing` carry a step from a fixed enum. Reasoning text is never read into the answer and never logged. |
-| Repudiation | A stopped stream leaves no trace | One `helper2.llm.call` observation per subscription with its outcome (`ok`, `timeout`, `unavailable`, …); `thinking_fallback{reason}` says why the second call ran. |
+| Repudiation | A stopped stream leaves no trace | One `searchavo.llm.call` observation per subscription with its outcome (`ok`, `timeout`, `unavailable`, …); `thinking_fallback{reason}` says why the second call ran. |
 | Information disclosure | Reasoning text leaks to the page or the logs | Only "a reasoning chunk arrived" is kept (a flag). The debug log line prints the converted answer, as before. |
 | Denial of service | Many open streams hold threads and sockets; a provider that drips chunks keeps a call open | One stream per running question, bounded by the `guide` bulkhead and the per-client limit; the call window and the question deadline dispose it; the circuit times the whole subscription; chunks are joined up to the token limit of the call. |
 | Elevation of privilege | — | No new permission, no tool calling. |
@@ -229,7 +229,7 @@ What changes against [0031](ADR-0031-guide-pipeline.md) and [0008](ADR-0008-llm-
 | 7 | Data | Covered: nothing stored; no schema change. |
 | 8 | Browser & Computer Use | Covered: none. |
 | 9 | Guardrails | Covered: the whole answer goes through the converter, the evidence gate and the reason check; no partial text is shown. |
-| 10 | Observability | Covered: `helper2.llm.call` around the whole stream, `helper2.llm.tokens_unknown`, `thinking_fallback{reason}`; Spring AI's chat model observation still runs. Gap, deferred: no timer for the first chunk. |
+| 10 | Observability | Covered: `searchavo.llm.call` around the whole stream, `searchavo.llm.tokens_unknown`, `thinking_fallback{reason}`; Spring AI's chat model observation still runs. Gap, deferred: no timer for the first chunk. |
 | 11 | Evaluation | Covered: the guide eval runs against either mode; the wire tests run in both. A staging run `ON` against `OFF` is open ([#279](https://github.com/silvioincalza/helper2.ai/issues/279)). |
 | 12 | Deployment | Covered: one variable, Helm value `app.guideModelStream`, default `OFF`, `ON` in `values-prod.yaml`; rollback is `OFF`. |
 | 13 | Security & Identity | Covered: same key, no new secret. |
@@ -238,14 +238,14 @@ What changes against [0031](ADR-0031-guide-pipeline.md) and [0008](ADR-0008-llm-
 
 ### Known limits
 
-- Guide model stream (`H2_GUIDE_MODEL_STREAM=ON`): a stream is not faster in total; each running stream holds one
+- Guide model stream (`SA_GUIDE_MODEL_STREAM=ON`): a stream is not faster in total; each running stream holds one
   SDK platform thread (`openai-stream-handler-thread`, no way to replace the pool through Spring AI) and passes
   through Reactor's shared `boundedElastic` pool; a dispose before the response headers does not abort the request
   (the request timeout does); the reasoning model reports no completion tokens on a stream, so its tokens are
   counted as unknown; a provider that writes its reasoning inside the answer text (`<think>`) is seen as writing,
   and the thinking time rule does not stop it; an asker who follows a running question sees no `reasoning` or
   `writing` event; there is no timer for the first chunk; the mode is not in the configuration hash, so an eval of
-  the two modes needs `H2_GUIDE_CACHE_TTL=PT1S`.
+  the two modes needs `SA_GUIDE_CACHE_TTL=PT1S`.
 
 ## Diagrams
 
@@ -255,4 +255,4 @@ What changes against [0031](ADR-0031-guide-pipeline.md) and [0008](ADR-0008-llm-
 
 - Features: [F4.5](https://github.com/silvioincalza/helper2.ai/issues/68) Model calls as a stream (setting).
 - Open issues that change this decision:
-  - [#279](https://github.com/silvioincalza/helper2.ai/issues/279) S4.5.2 `H2_GUIDE_MODEL_STREAM=ON` and `OFF` compared on staging
+  - [#279](https://github.com/silvioincalza/helper2.ai/issues/279) S4.5.2 `SA_GUIDE_MODEL_STREAM=ON` and `OFF` compared on staging

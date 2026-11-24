@@ -38,9 +38,9 @@ describe('home', () => {
     mockApi({ 'GET /sources': () => STAGING_SOURCES });
     renderApp('/');
     const h1 = await screen.findByRole('heading', { level: 1 });
-    expect(h1).toHaveAccessibleName('helper2.ai The metasearch for the AI ecosystem.');
+    expect(h1).toHaveAccessibleName('searchavo.ai The metasearch for the AI ecosystem.');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
-    expect(within(h1).getByText('helper2.ai')).toHaveClass('h2-hero__name');
+    expect(within(h1).getByText('searchavo.ai')).toHaveClass('h2-hero__name');
     expect(screen.queryByText(/AI sources$/)).not.toBeInTheDocument();
     expect(await screen.findByText(/^5-10 of 13 sources at a time/)).toBeInTheDocument();
     expect(
@@ -50,7 +50,7 @@ describe('home', () => {
     ).not.toHaveTextContent(/\d/);
     expect(screen.getByText(/Enter searches\. Shift\+Enter asks the guide/)).toBeInTheDocument();
     const does = screen
-      .getByRole('heading', { name: 'What helper2.ai does for you' })
+      .getByRole('heading', { name: 'What searchavo.ai does for you' })
       .closest('section') as HTMLElement;
     expect(
       within(does)

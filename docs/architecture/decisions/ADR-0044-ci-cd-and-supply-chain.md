@@ -128,7 +128,7 @@ Harbor could put an image under a tag first.
      `ROLLED BACK` (the old revision is healthy), `ROLLED BACK, STILL NOT HEALTHY` (the fault may be outside the
      release: the edge, the database), `ROLLBACK FAILED`, or `NOT ROLLED BACK` (a first install has nothing to go
      back to). One rollback, one check after it, nothing more: no loop. The check reads the migrate Job the release's
-     manifest names: after a rollback that is the Job of the revision gone back to (`helper2-migrate-<that revision>`),
+     manifest names: after a rollback that is the Job of the revision gone back to (`searchavo-migrate-<that revision>`),
      not one named after the new revision number, and the rollback waits for it (`--wait-for-jobs`).
    - The same rule on staging and on prod. On staging the failed job fails the CD run, so that commit cannot reach
      prod.
@@ -164,8 +164,8 @@ Harbor could put an image under a tag first.
    only after. The `prod` environment has a required reviewer and allows branch `main` only.
 4. **OpenBao login with OpenID Connect (OIDC).** `.github/actions/bao-login` asks GitHub for the job's OIDC token
    (audience = repo variable `BAO_AUDIENCE`, equal to the role's `bound_audiences`) and logs in at
-   `auth/helper2/jwt` with a role bound to the repository and to the branch or environment: `deploy` (reads
-   `ci/harbor`, signs with the Transit key `helper2-images`), `deploy-staging` (reads `ci/staging` and
+   `auth/searchavo/jwt` with a role bound to the repository and to the branch or environment: `deploy` (reads
+   `ci/harbor`, signs with the Transit key `searchavo-images`), `deploy-staging` (reads `ci/staging` and
    `ci/harbor-pull`), `deploy-prod` (reads `ci/prod`, `ci/harbor-pull`, and `ci/harbor` to add a release's version
    tag, [0045](ADR-0045-releases-and-versions.md)). The prod role can log in only after the approval.
 5. **Tag checks in the deploy job.** The tag must be 12 hex characters with no branch or tag of that name, or a
@@ -225,7 +225,7 @@ Harbor could put an image under a tag first.
    - the rest of `backend/` (`libs/`, `build-logic/`, the Gradle files, settings, version catalog and wrapper) → the
      three backend chains, the architecture job and all three images: both apps take every library;
    - `api/` → frontend jobs, the three backend chains and all three images;
-   - `deploy/helm/helper2/files/redis-users.acl` → the three backend chains and the architecture job (the Redis
+   - `deploy/helm/searchavo/files/redis-users.acl` → the three backend chains and the architecture job (the Redis
      test container mounts it) and chart;
    - `deploy/k8s/app.env.example` → the libs chain (`EnvGuidesTest` reads it) and chart;
    - any other `*.md`, `docs/`, `LICENSE` → diagrams job only; `.claude/`, `.idea/` → nothing;
@@ -237,7 +237,7 @@ Harbor could put an image under a tag first.
    `frontend/package.json`, `backend/gradlew` for the libs chain, `backend/gradlew` with the `build.gradle.kts` of
    the app for each app chain, `backend/gradlew` with `backend/architecture/build.gradle.kts` for the architecture
    job, `deploy/k8s/Makefile` for the chart,
-   `deploy/monitoring/helper2-rules.yaml`, `deploy/postgres/Dockerfile` with `deploy/helm/helper2/values.yaml` for
+   `deploy/monitoring/searchavo-rules.yaml`, `deploy/postgres/Dockerfile` with `deploy/helm/searchavo/values.yaml` for
    the Postgres tag check, `docs/architecture/diagrams/render.sh`, and the Dockerfile of each image. A change to `.github/` in a
    tree with no `frontend/` runs no frontend job, and the pull request that adds `frontend/package.json` runs them,
    with no change to `ci.yml`.
@@ -290,8 +290,8 @@ Harbor could put an image under a tag first.
       fix (`--only-fixed`) in the job log and in GitHub code scanning (SARIF, categories `image/app`,
       `image/backoffice`, `image/web` and `image/postgres`). It reads artifacts only, never Harbor.
     - A release (`release.yml`): the SBOMs of the CD run of its release branch are attached to the GitHub release as
-      `helper2-vYYYY.N.P.cdx.json`, `helper2-backoffice-vYYYY.N.P.cdx.json`, `helper2-web-vYYYY.N.P.cdx.json` and
-      `helper2-postgres-vYYYY.N.P.cdx.json` (the Postgres image of `postgres.image.tag`). They are
+      `searchavo-vYYYY.N.P.cdx.json`, `searchavo-backoffice-vYYYY.N.P.cdx.json`, `searchavo-web-vYYYY.N.P.cdx.json` and
+      `searchavo-postgres-vYYYY.N.P.cdx.json` (the Postgres image of `postgres.image.tag`). They are
       public: they list packages and versions, no data.
     - Weekly (`image-scan.yml`, Monday): Grype with a fresh database against the SBOMs of the latest release, so a CVE
       published after a release is found without a new build. It covers all four images. Categories `release/app`,
@@ -310,8 +310,8 @@ Harbor could put an image under a tag first.
 ### Signed images, deployed by digest
 17. **Signing: only what the run pushed.** cosign v3.1.4, installed in the job from its GitHub release binary checked
     against a pinned SHA-256 (`.github/actions/install-cosign`), never `sigstore/cosign-installer`. The key is an
-    ECDSA P-256 key in OpenBao Transit (`helper2/transit`, key `helper2-images`), reached as
-    `hashivault://helper2-images`. The key never leaves OpenBao; the role `deploy` may only read its public half and
+    ECDSA P-256 key in OpenBao Transit (`searchavo/transit`, key `searchavo-images`), reached as
+    `hashivault://searchavo-images`. The key never leaves OpenBao; the role `deploy` may only read its public half and
     ask Transit to sign. Every image CD pushes is signed, the Postgres image too.
     - `make image` and `make postgres-image` write the digest of every image they push to a file (`PUSHED`), taken
       from the push itself (`podman push --digestfile`) and checked against Harbor right after. `make sign` signs
@@ -338,7 +338,7 @@ Harbor could put an image under a tag first.
     and take the digests only from that check, so a digest set by hand cannot skip it. A commit whose chart or
     Makefile has no digests deploys by tag, and only with `rollback: true`.
 20. **Deployed by digest.** The chart takes `image.digest`, `backoffice.image.digest`, `web.image.digest` and
-    `postgres.image.digest`, and then names each image `repository:tag@sha256:<digest>` (`helper2.atDigest`). The tag
+    `postgres.image.digest`, and then names each image `repository:tag@sha256:<digest>` (`searchavo.atDigest`). The tag
     stays in the name, so `deploy.yml` still reads the running tag (it cuts the digest first). Without a digest the
     chart renders by tag: a local or another cluster's install needs no signature.
 
@@ -386,7 +386,7 @@ Harbor could put an image under a tag first.
 - `deploy/k8s/check-release.sh` — the check after a deploy, the rollback to the revision deployed before
   (`make deploy`), the check alone (`make status`), and its self-test.
 - `deploy/k8s/cosign.pub`, `deploy/k8s/cosign-signing-config.json`.
-- `deploy/helm/helper2/templates/_helpers.tpl` (`helper2.atDigest`), `values.yaml` (the `digest` values).
+- `deploy/helm/searchavo/templates/_helpers.tpl` (`searchavo.atDigest`), `values.yaml` (the `digest` values).
 - `deploy/k8s/CI.md` — one-time setup of GitHub, the runner and OpenBao: the Transit key, the policies and the
   pull-only robot.
 - The platform repo (outside this repo) — the `deployer` Role, the prod deployer's read of staging's Deployment, the

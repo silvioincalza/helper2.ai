@@ -10,7 +10,7 @@
 
 ## Context
 
-The hosted Helper2 runs on one Kubernetes cluster, with a staging environment and prod (`helper2.ai`). The chart must
+The hosted Searchavo runs on one Kubernetes cluster, with a staging environment and prod (`searchavo.ai`). The chart must
 also run on any other cluster. A deploy must not interrupt the site, and one node going down must not take the app
 with it. The app talks to many public application programming interfaces (APIs), so a compromised pod must not reach
 the private network. User data (bookmarks, reports, reviews) cannot be rebuilt by the Scout, so prod needs backups.
@@ -25,9 +25,9 @@ database connections. A change to the web app would rebuild and redeploy the bac
 
 ### Ownership and the three deployables
 1. **Split of ownership.** The platform repository (incalza-me-infra) owns identity and edge: the namespace
-   (`helper2-<env>`, Pod Security `restricted` enforced), the Domain Name System (DNS) records, the Cloudflare
+   (`searchavo-<env>`, Pod Security `restricted` enforced), the Domain Name System (DNS) records, the Cloudflare
    tunnel, ingress-nginx and the Ingresses, and the `deployer` ServiceAccount and Role. The Helm chart
-   `deploy/helm/helper2` owns the workloads: one release `helper2` per namespace, values `values-staging.yaml` /
+   `deploy/helm/searchavo` owns the workloads: one release `searchavo` per namespace, values `values-staging.yaml` /
    `values-prod.yaml`. The chart creates no Ingress and no Secret.
 2. **Three deployables, one repo.** `web` (the built public React app, static files only), `public` (search, guide,
    setup, the catalog pages, sign-in for users, saved items, news, events, the policy) and `backoffice` (the admin API
@@ -55,13 +55,13 @@ database connections. A change to the web app would rebuild and redeploy the bac
 4. **One contract per app.** The public app generates its controllers from `api/public.yaml`, the back office from
    `api/admin.yaml`. Each serves the parts of `api/common.yaml` it names, but generates none of them: those come from
    `libs/core`, under the same names in both apps.
-5. **Workloads.** The Deployments `helper2-web`, `helper2` and `helper2-backoffice`; the `postgres` StatefulSet
+5. **Workloads.** The Deployments `searchavo-web`, `searchavo` and `searchavo-backoffice`; the `postgres` StatefulSet
    (5 Gi volume) and the `redis` StatefulSet (1 Gi volume for its append-only file), both on `local-path` in the
-   hosted environments; the migrate Job `helper2-migrate-<revision>`, once per release (§10); and on prod the
+   hosted environments; the migrate Job `searchavo-migrate-<revision>`, once per release (§10); and on prod the
    `pg-backup` CronJob. Both stateful workloads run one replica on a ReadWriteOnce volume from
    `volumeClaimTemplates`, with `fsGroup` so the non-root user can write it. Every container runs as non-root with a
    read-only root file system, no capabilities and the `RuntimeDefault` seccomp profile. Every pod runs as the
-   ServiceAccount `helper2`, which has no RoleBinding, with `automountServiceAccountToken: false`: no workload calls
+   ServiceAccount `searchavo`, which has no RoleBinding, with `automountServiceAccountToken: false`: no workload calls
    the Kubernetes API, so no pod holds a token. A private registry's pull secret goes on that ServiceAccount
    (`imagePullSecrets` in the values, empty by default), so every pod gets it; the hosted environments set none.
 
@@ -75,7 +75,7 @@ database connections. A change to the web app would rebuild and redeploy the bac
    - A pod that leaves first sleeps 10 s in `preStop` (the native `sleep` action, Kubernetes 1.30 and later) and keeps
      serving while the Service endpoints and ingress-nginx drop it.
    - Then SIGTERM. Both apps shut down gracefully (`server.shutdown: graceful`), take no new connections and give
-     requests in flight 30 s (`H2_SHUTDOWN_TIMEOUT`, `spring.lifecycle.timeout-per-shutdown-phase`).
+     requests in flight 30 s (`SA_SHUTDOWN_TIMEOUT`, `spring.lifecycle.timeout-per-shutdown-phase`).
      `terminationGracePeriodSeconds` is 10 + 30 + 5 = 45 s. All three numbers come from one place, `app.shutdown`
      (`preStopSeconds`, `drainSeconds`) in `values.yaml`, and the back office uses the same; chart-check pins them.
    - nginx gets SIGQUIT after its own 10 s `preStop` (`web.preStopSeconds`) and ends its connections gracefully;
@@ -90,27 +90,27 @@ database connections. A change to the web app would rebuild and redeploy the bac
    The `deployer` Role (incalza-me-infra) must allow PodDisruptionBudgets and Jobs.
 
 ### Edge, ports and probes
-7. **Edge: Cloudflare, ingress-nginx, one origin split by path.** The public names (`helper2.ai`, `www.helper2.ai`,
-   `helper2.incalza.me`) are proxied by Cloudflare, which terminates Transport Layer Security (TLS) and sends the
-   traffic through the platform's tunnel to ingress-nginx (namespace `ingress-nginx`). The Ingress `helper2-public`
-   routes the public app's own addresses to the Service `helper2` and everything else to the Service `helper2-web`,
+7. **Edge: Cloudflare, ingress-nginx, one origin split by path.** The public names (`searchavo.ai`, `www.searchavo.ai`,
+   `searchavo.incalza.me`) are proxied by Cloudflare, which terminates Transport Layer Security (TLS) and sends the
+   traffic through the platform's tunnel to ingress-nginx (namespace `ingress-nginx`). The Ingress `searchavo-public`
+   routes the public app's own addresses to the Service `searchavo` and everything else to the Service `searchavo-web`,
    port 80. The public app's addresses are: every address whose last segment has no dot (the pages, the API, the
    sign-in: the regular expression `/(.*/)?[^./]*$`, the rule of `ClientRoutes.owns`), `/api/`, `/oauth2/`,
    `/login/` and `/sitemaps/` (prefix), `/robots.txt`, `/sitemap.xml`, `/llms.txt`, `/ads.txt` and `/index.html`
    (exact) and the IndexNow key file (`/[A-Za-z0-9-]{8,128}\.txt$`). The list is in `deploy/k8s/README.md`. The
-   Ingress also names `/assets/` (prefix) for `helper2-web`: the canary attaches to it and to `/api/`
+   Ingress also names `/assets/` (prefix) for `searchavo-web`: the canary attaches to it and to `/api/`
    ([0045](ADR-0045-releases-and-versions.md) §6). The Ingress carries `nginx.ingress.kubernetes.io/use-regex`: ingress-nginx then matches every
    path of the host as a regular expression, without regard to case, the longest path first. A request for a file
-   that does not exist gets the web image's plain 404 and never reaches the public app. On prod it also redirects `www.helper2.ai` to the apex (301, path and query
-   kept). The admin names (`admin.helper2.ai`, `helper2-admin.incalza.me`) are DNS-only records to ingress-nginx; the
-   Ingress `helper2-admin` routes them, from the in-network ranges only, to the Service `helper2-admin`
+   that does not exist gets the web image's plain 404 and never reaches the public app. On prod it also redirects `www.searchavo.ai` to the apex (301, path and query
+   kept). The admin names (`admin.searchavo.ai`, `admin.searchavo.incalza.me`) are DNS-only records to ingress-nginx; the
+   Ingress `searchavo-admin` routes them, from the in-network ranges only, to the Service `searchavo-admin`
    ([0036](ADR-0036-identity-and-the-admin-host.md)). From ingress-nginx to the pods the traffic is plain Hypertext
    Transfer Protocol (HTTP). On any other cluster, your own Ingress or route targets the same three Services.
    Platform settings (registry, storage classes, Ingress controller, tracing, scraper) are values, set for the hosted
    environments in `values-<env>.yaml` ([deploy/k8s/README.md](../../../deploy/k8s/README.md)).
-8. **Ports and probes.** Each workload serves on 8080: the web files behind the Service `helper2-web`, the public app
-   behind the Service `helper2`, the back office behind the Service `helper2-admin`. Actuator is on 8081
-   (`H2_MANAGEMENT_PORT`) in both apps; the web pods answer `/healthz` on 8081. Probes and the Prometheus scrape use
+8. **Ports and probes.** Each workload serves on 8080: the web files behind the Service `searchavo-web`, the public app
+   behind the Service `searchavo`, the back office behind the Service `searchavo-admin`. Actuator is on 8081
+   (`SA_MANAGEMENT_PORT`) in both apps; the web pods answer `/healthz` on 8081. Probes and the Prometheus scrape use
    8081. No Service routes 8081; only the admin names reach the back office.
    - Both apps: a startup probe every 5 s, up to `app.startupSeconds` (300 s: the schema check, which waits up to
      4 minutes for the migrate Job, and the Lingua models); then readiness every 5 s and liveness every 10 s.
@@ -147,12 +147,12 @@ database connections. A change to the web app would rebuild and redeploy the bac
     image's migrate step (`MigrateStep`, `args: [migrate]`) as the database owner: Flyway migrates, the apps' roles get
     their login, and the Job ends. Each app connects as its own role (`h2_public`, `h2_backoffice`) and only checks
     the schema (`SchemaCheck`), waiting while the Job runs ([0004](ADR-0004-persistence-and-the-schema.md)).
-    The passwords are in their own Secret, `helper2-credentials`; every other `H2_` key is in `helper2-app-env`, which
+    The passwords are in their own Secret, `searchavo-credentials`; every other `SA_` key is in `searchavo-app-env`, which
     both apps load whole ([0007](ADR-0007-configuration-secrets-runtime-settings.md)). Each workload names only
     its own password keys; only Postgres, `pg-backup` and the migrate Job get the owner's. Daily budgets and quotas
     stay in the shared Redis, so they hold across both apps.
 11. **Redis auth.** `redis.auth.enabled: true`. The default user is the admin (probes, `redis-cli`), with
-    `requirepass` from `H2_REDIS_PASSWORD`. Each app connects as its own ACL user (`h2_public`, `h2_backoffice`,
+    `requirepass` from `SA_REDIS_PASSWORD`. Each app connects as its own ACL user (`h2_public`, `h2_backoffice`,
     `files/redis-users.acl`) with its own password: its keys and commands only. The passwords come from the
     credentials Secret (or `redis.auth.existingSecret`) and reach `redis-server` as config on standard input, never
     in the command line. Redis is a single-replica StatefulSet with an append-only file on its own
@@ -160,12 +160,12 @@ database connections. A change to the web app would rebuild and redeploy the bac
     rate-limit windows and cached answers. The volume holds only cache data and is not backed up.
 12. **Backups (prod).** `pg-backup` runs at 02:30 Europe/Zurich: `pg_dump --no-owner | gzip` to the volume
     `pg-backup` (NFS on prod, kept on `helm uninstall`). Each run writes its own dump, named by its UTC date and
-    time (`helper2-2026-11-18T013000Z.sql.gz`), so a run by hand leaves the nightly dump in place. The dumps of the
+    time (`searchavo-2026-11-18T013000Z.sql.gz`), so a run by hand leaves the nightly dump in place. The dumps of the
     newest `backup.retentionDays` (7) dates in their names are kept, and none older than 7 days, so dumps of a night
     that failed do not stretch the period the Privacy page states, and a run by hand does not shorten it. A failed `pg_dump` fails the Job (`pipefail`);
     the new dump takes the place of the old one only once `gzip -t` reads it back whole and it is bigger than an empty dump
     (1 KB), and the old dumps are deleted after that, never before. A run that cannot start within an hour is missed
-    (`startingDeadlineSeconds`). Two alerts: `Helper2BackupFailed` for a failed Job, `Helper2BackupStale` when no run
+    (`startingDeadlineSeconds`). Two alerts: `SearchavoBackupFailed` for a failed Job, `SearchavoBackupStale` when no run
     has succeeded for 36 hours (a suspended CronJob, a Pod stuck Pending, a missed start). With
     `backup.offsite.enabled` (on for prod), rclone then encrypts the new dump (`rclone crypt`) and copies it to a
     Cloudflare R2 bucket in the EU jurisdiction. The access key, the endpoint, the bucket name and the encryption
@@ -182,8 +182,8 @@ database connections. A change to the web app would rebuild and redeploy the bac
     of `V1__schema.sql` (`h2_public`, `h2_backoffice`, no login) that the dump grants rights to, loads the dump with
     `ON_ERROR_STOP`, and fails the Job when a Flyway history row is not successful or `flyway_schema_history`,
     `source` or `resource` is empty. It never connects to prod's Postgres and holds no database password; the copy
-    lives only as long as the Pod. Two alerts: `Helper2RestoreCheckFailed` for a failed Job (critical),
-    `Helper2RestoreCheckStale` when no check has succeeded for 8 days (warning).
+    lives only as long as the Pod. Two alerts: `SearchavoRestoreCheckFailed` for a failed Job (critical),
+    `SearchavoRestoreCheckStale` when no check has succeeded for 8 days (warning).
 
 ### The web image and the public app's shell
 13. **The `web` image serves the public web app's files; the public app writes the pages.** nginx
@@ -201,15 +201,15 @@ database connections. A change to the web app would rebuild and redeploy the bac
     holds a file nginx does not name, or a source map. The admin web app is not in this image: the back office
     image builds and serves it.
 14. **The shell of the same version.** The built `index.html` sits outside the served folder, at
-    `/usr/share/helper2/shell/index.html`. An init container of each public pod runs the web image of the same tag
-    (one Helm helper, `helper2.webImage`, names it for both) and copies it into an `emptyDir` that the app mounts
-    read-only at `/shell`. The public app reads it once at start (`H2_PAGES_TEMPLATE`, default
+    `/usr/share/searchavo/shell/index.html`. An init container of each public pod runs the web image of the same tag
+    (one Helm helper, `searchavo.webImage`, names it for both) and copies it into an `emptyDir` that the app mounts
+    read-only at `/shell`. The public app reads it once at start (`SA_PAGES_TEMPLATE`, default
     `file:/shell/index.html`) and writes every page into it ([0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md)). The
     public image holds no web files.
 
 ### The back office
 15. **The back office only on the admin host** ([0036](ADR-0036-identity-and-the-admin-host.md)). The Deployment
-    `helper2-backoffice` sits behind the Service `helper2-admin`; the public Deployment opens no admin port. On every
+    `searchavo-backoffice` sits behind the Service `searchavo-admin`; the public Deployment opens no admin port. On every
     response, errors included, the back office sends:
     - a fixed strict CSP, without a nonce: `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'
       data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self';
@@ -221,11 +221,11 @@ database connections. A change to the web app would rebuild and redeploy the bac
 
     Only its own paths answer (the admin API, the admin app, sign-in, a few shared reads such as `/api/v1/search`);
     anything else is a 404 (problem JSON). `/` and `/admin/admin.html` go to `/admin`, a resource link
-    (`/resource/**`) to the public site (`H2_PUBLIC_BASE_URL`).
+    (`/resource/**`) to the public site (`SA_PUBLIC_BASE_URL`).
 16. **Cookies and writes on the back office.** `__Host-SESSION` (Lax: the sign-in callback from GitHub is a
     cross-site navigation) in its own Redis namespace (`h2:v1:session:backoffice`), and `__Host-XSRF-TOKEN` (Strict).
     Every write needs the admin host's own Origin and the token in the `X-XSRF-TOKEN` header. Only the back office
-    grants ADMIN; its sign-in callback is pinned (`H2_ADMIN_BASE_URL`) and returns to the relative `/admin`. The
+    grants ADMIN; its sign-in callback is pinned (`SA_ADMIN_BASE_URL`) and returns to the relative `/admin`. The
     public app keeps its cookies and its CSP with the nonce ([0042](ADR-0042-monetisation.md)).
 
 ### Jobs and the environments
@@ -240,7 +240,7 @@ database connections. A change to the web app would rebuild and redeploy the bac
     the shared Redis count. Both apps register the same `source` rows at startup, from the same settings and the same
     descriptors.
 19. **Per environment.** The back office runs the Scout once a day at 03:07 UTC (`backoffice.scoutCron`; each replica
-    checks every 10 minutes, `H2_SCOUT_TICK`, and a restart does not add a run; each collector runs at most once a
+    checks every 10 minutes, `SA_SCOUT_TICK`, and a restart does not add a run; each collector runs at most once a
     day) with at most 200 enrichments per run (`backoffice.scoutMaxEnrichments`); the daily enrichment cap (500) still
     applies. Staging has the nightly backup and its restore check, with no off-site copy: the rehearsal of a
     release's way back for the database runs there ([0045](ADR-0045-releases-and-versions.md) §11). Its Scout is on only to fill an empty database before a first release; after
@@ -249,13 +249,13 @@ database connections. A change to the web app would rebuild and redeploy the bac
 ### Code
 
 The chart and the cluster:
-- `deploy/helm/helper2/values.yaml`, `values-staging.yaml`, `values-prod.yaml` — settings.
-- `deploy/helm/helper2/templates/web.yaml`, `app.yaml` (the shell's init container), `backoffice.yaml`,
+- `deploy/helm/searchavo/values.yaml`, `values-staging.yaml`, `values-prod.yaml` — settings.
+- `deploy/helm/searchavo/templates/web.yaml`, `app.yaml` (the shell's init container), `backoffice.yaml`,
   `migrate.yaml`, `postgres.yaml`, `redis.yaml`, `backup.yaml`, `exporters.yaml`, `networkpolicy.yaml`, `serviceaccount.yaml`,
-  `_helpers.tpl` (`helper2.webImage`, `helper2.credentialsSecret`, `helper2.redisPasswordFrom`, `helper2.offsiteEnv`) — workloads and
-  policies; `deploy/helm/helper2/files/redis-users.acl` — the apps' Redis users.
-- `deploy/monitoring/helper2-rules.yaml` — `Helper2BackupFailed`, `Helper2BackupStale`, `Helper2RestoreCheckFailed`,
-  `Helper2RestoreCheckStale`.
+  `_helpers.tpl` (`searchavo.webImage`, `searchavo.credentialsSecret`, `searchavo.redisPasswordFrom`, `searchavo.offsiteEnv`) — workloads and
+  policies; `deploy/helm/searchavo/files/redis-users.acl` — the apps' Redis users.
+- `deploy/monitoring/searchavo-rules.yaml` — `SearchavoBackupFailed`, `SearchavoBackupStale`, `SearchavoRestoreCheckFailed`,
+  `SearchavoRestoreCheckStale`.
 - `deploy/k8s/Makefile` (`deploy`, `rollback`, `env-secret`, `chart-check`), `deploy/k8s/check-app-env.sh`,
   `deploy/k8s/README.md` — deploy, rollback, backup and restore steps.
 - incalza-me-infra (outside this repo) — namespace, DNS, tunnel, ingress-nginx and the Ingresses, deployer.
@@ -265,25 +265,25 @@ The images:
   `deploy/backoffice.Dockerfile`; `.github/workflows/cd.yml`, `release.yml`, `image-scan.yml`.
 
 The apps:
-- `backend/settings.gradle.kts`, `backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts` — the projects;
+- `backend/settings.gradle.kts`, `backend/build-logic/src/main/kotlin/searchavo.spring-app.gradle.kts` — the projects;
   the contract per app.
 - `backend/apps/public`, `backend/apps/backoffice`, `backend/libs/core` (the shared web adapters in `search/web`, the
-  live sources in `sources`), `backend/libs/core/src/main/java/ai/helper2/catalog/ScoutPolicy.java`.
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml` — `server.shutdown`, `spring.lifecycle.timeout-per-shutdown-phase`,
-  `H2_PAGES_TEMPLATE`, `H2_SCOUT_TICK`.
-- `backend/libs/schema/src/main/java/ai/helper2/platform/schema/MigrateStep.java`, `SchemaCheck.java` — the migrate
+  live sources in `sources`), `backend/libs/core/src/main/java/ai/searchavo/catalog/ScoutPolicy.java`.
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml` — `server.shutdown`, `spring.lifecycle.timeout-per-shutdown-phase`,
+  `SA_PAGES_TEMPLATE`, `SA_SCOUT_TICK`.
+- `backend/libs/schema/src/main/java/ai/searchavo/platform/schema/MigrateStep.java`, `SchemaCheck.java` — the migrate
   step and the apps' schema check.
-- `backend/apps/backoffice/src/main/java/ai/helper2/BackOfficeApplication.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/BackOfficeApplication.java`,
   `catalog/config/CatalogBackOfficeConfiguration.java`, `examples/config/ExamplesBackOfficeConfiguration.java`,
   `search/config/SearchBackOfficeConfiguration.java` — the back office's wiring of the shared contexts;
-  `backend/libs/core/src/main/java/ai/helper2/catalog/config/EnableCatalogBackOfficeAdapters.java`,
+  `backend/libs/core/src/main/java/ai/searchavo/catalog/config/EnableCatalogBackOfficeAdapters.java`,
   `examples/config/EnableExamplesBackOfficeAdapters.java` — the library's entries.
-- `backend/apps/backoffice/src/main/java/ai/helper2/identity/security/BackOfficeSecurityConfiguration.java`,
-  `BackOfficeEdge.java`, `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/AdminWebApp.java`.
-- `backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java`.
-- `backend/apps/public/src/main/java/ai/helper2/site/pages/internal/PageTemplate.java`, `site/pages/web/PageRoutes.java`.
+- `backend/apps/backoffice/src/main/java/ai/searchavo/identity/security/BackOfficeSecurityConfiguration.java`,
+  `BackOfficeEdge.java`, `backend/apps/backoffice/src/main/java/ai/searchavo/admin/web/AdminWebApp.java`.
+- `backend/apps/public/src/main/java/ai/searchavo/identity/security/PublicSecurityConfiguration.java`.
+- `backend/apps/public/src/main/java/ai/searchavo/site/pages/internal/PageTemplate.java`, `site/pages/web/PageRoutes.java`.
 - `frontend/vite.admin.config.ts`, `frontend/src/api/client.ts` (either CSRF cookie name).
-- Tests: `backend/apps/*/src/test/java/ai/helper2/api/SchedulesIT.java`, `BackOfficeEdgeIT.java`, `HttpEdgeIT.java`;
+- Tests: `backend/apps/*/src/test/java/ai/searchavo/api/SchedulesIT.java`, `BackOfficeEdgeIT.java`, `HttpEdgeIT.java`;
   `make chart-check`.
 
 ## Alternatives considered
@@ -322,7 +322,7 @@ The apps:
 - The back office is closed by a fourth layer: its code is not in the public image.
 - A deploy or a node drain keeps the site up on prod, and one pod failing leaves two serving. On staging too, a deploy
   starts the new pod before the old one stops.
-- Postgres connections: (3 public replicas + 1 during a deploy) × `H2_DATABASE_POOL_SIZE` (16) = 64, plus the back
+- Postgres connections: (3 public replicas + 1 during a deploy) × `SA_DATABASE_POOL_SIZE` (16) = 64, plus the back
   office (2 × 16 during its deploy) and at worst one pod still terminating: 112, under the chart's `max_connections`
   of 150 (`postgres.maxConnections`; the backup and `psql` need a few more). A change of it restarts Postgres.
 - The Postgres and Redis volumes are not owned by the release, so the data outlives the release.
@@ -346,7 +346,7 @@ The apps:
   and the other way round (open point).
 - The Settings page shows the back office's groups and the site-wide caps; the public app's other guide and setup
   settings are not there (open, see Backlog).
-- Each app reports under its own name: metrics `application="helper2"` and `application="helper2-backoffice"`, traces
+- Each app reports under its own name: metrics `application="searchavo"` and `application="searchavo-backoffice"`, traces
   `service.name` the same. Each has its own Grafana dashboard and its own alert rules
   ([0009](ADR-0009-observability.md)).
 
@@ -358,7 +358,7 @@ The apps:
 | 3 | Orchestration | covered: every job in one app (`SchedulesIT` per app), ShedLock across replicas, the migrate Job before the apps start |
 | 4 | Tool & API | covered: the admin API in its own contract and app |
 | 9 | Guardrails | covered: the evidence gate and the quote checks moved with the Scout, unchanged |
-| 10 | Observability | covered: the back office reports as `helper2-backoffice`, with its own dashboard and alerts (Scout runs and collectors, budgets and credits, the indexer, the review queue; [0009](ADR-0009-observability.md)); the backup and restore-check alerts; model ids per answer unchanged |
+| 10 | Observability | covered: the back office reports as `searchavo-backoffice`, with its own dashboard and alerts (Scout runs and collectors, budgets and credits, the indexer, the review queue; [0009](ADR-0009-observability.md)); the backup and restore-check alerts; model ids per answer unchanged |
 | 12 | Deployment | covered: three images and three workloads with one tag; the public pod's shell from the web image of that tag; `helm --wait` and a rollback on failure. Deferred: the rollout order and the previous release's assets (open point) |
 | 13 | Security & Identity | covered: no ServiceAccount token, network policy per workload, a database role and a Redis user per app, ADMIN and the admin session only on the back office, `__Host-` cookies, Origin and header CSRF. Deferred: an env Secret per app (open point) |
 | 15 | Cost & Reliability | covered: budgets and quotas in the shared Redis; PodDisruptionBudgets; nightly backups with a verification gate and a weekly restore check; the public site does not depend on the back office being up |

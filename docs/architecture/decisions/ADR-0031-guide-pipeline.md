@@ -48,12 +48,12 @@ does the rest (`PickAnswer` for picks: retrieve, choose, gate, reason check).
   words (`PlannedQueries`). A search query that holds a link (`LinkText.containsLink`) is no query. If the plan call
   fails, or leaves no query, the user's own text is the query. A plan call hit by a short provider outage (a 5xx such
   as 529 "System is overloaded", or a broken connection: `ModelErrors.isOutage`) is asked once more after 300 ms,
-  inside the question's time, and counted in `helper2.llm.outage_retry`: without a plan the whole answer loses its AI
+  inside the question's time, and counted in `searchavo.llm.outage_retry`: without a plan the whole answer loses its AI
   part. A timeout, a rate limit or a rejected call is not asked again, and the reasoning model's calls are never
   repeated after an outage.
-- **Retrieve**: `SearchResources.search` with `size` = `H2_GUIDE_MAX_CANDIDATES` (24). Unless the user asks for
+- **Retrieve**: `SearchResources.search` with `size` = `SA_GUIDE_MAX_CANDIDATES` (24). Unless the user asks for
   something to read (model flag or words such as "papers", "news", "articoli"), only tool types are searched.
-- **Choose** (reasoning model, `prompts/guide/choose.txt`, native JSON schema when `H2_NEBIUS_NATIVE_SCHEMA=true`):
+- **Choose** (reasoning model, `prompts/guide/choose.txt`, native JSON schema when `SA_NEBIUS_NATIVE_SCHEMA=true`):
   the candidates go as `<candidate key="c1" …>` … `c24`, their text through `UntrustedText`, 800 characters each. The
   model returns up to 5 picks, best first (`GuideValidator.MAX_PROPOSED`), each with key, reason, verbatim quote and
   optional constraint quotes. It writes picks
@@ -104,7 +104,7 @@ each with its own maximum text length (400, 200 and 300 characters). A pick is k
 - only the first 5 proposals are read: every one after them is `OVER_LIMIT`, valid or not, so an early failure
   gives the model no extra try.
 
-Every kept pick increments `helper2.guide.picks{rank}` with its search rank band (`1-3`, `4-8`, `9+`), and the
+Every kept pick increments `searchavo.guide.picks{rank}` with its search rank band (`1-3`, `4-8`, `9+`), and the
 `guide timings` log line lists the ranks (`keptRanks`).
 
 **Where the quote can be read.** A resource shows one link and one text, but the text can come from another record
@@ -124,7 +124,7 @@ record holds the quote (a curated description, a cell without a quote): the page
 as before. AI-written descriptions are never a record's text here, as in the gate, and a `curated` record (a title or text a
 curator wrote, `AddCuratedResource`) is never a page that holds a quote. The lookup only names a page: it
 never keeps or drops a pick, a cell or a sentence. Every quote looked up increments
-`helper2.guide.quote_origin{part,found}` (`part`: `pick`, `cell` or `sentence`; `found`: `true` when a record holds the
+`searchavo.guide.quote_origin{part,found}` (`part`: `pick`, `cell` or `sentence`; `found`: `true` when a record holds the
 quote), each time the lookup runs: an exact cache hit is not looked up, so it is not counted again; an answer reused
 for a similar question is looked up, and counted, again. A part without a quote, and a quoted cell whose subject has
 no result, are not counted. When the stored records cannot be read (the database is down), the
@@ -150,13 +150,13 @@ lose a check, never create one.
 2. **Input.** One `ReasonClaim` per kept pick: key, reason, quote, the candidate's text, and only the constraint checks
    code already CONFIRMED. All picks go in one call.
 3. **Call.** `SpringAiGuideModel.verifyReasons`: reasoning model, `prompts/guide/verify-reasons.txt`, thinking off
-   (`H2_GUIDE_THINK_VERIFY_TOKENS`, default 0), 4096 output tokens, native JSON schema when `H2_NEBIUS_NATIVE_SCHEMA` is
+   (`SA_GUIDE_THINK_VERIFY_TOKENS`, default 0), 4096 output tokens, native JSON schema when `SA_NEBIUS_NATIVE_SCHEMA` is
    true. The reason and the evidence go through `UntrustedText`; the prompt says the reason, written by another model
    from third-party text, is data too. The answer gives two verdicts per key:
    `{"verdicts": [{"key": "c3", "claimsSupported": true, "fitsNeed": true}]}` (`ReasonVerdict`). The old key
    `supported` still reads as `claimsSupported`. Unknown keys are dropped; a key given twice must be true twice, for
    each verdict. A verdict without `fitsNeed` counts as fitting and increments
-   `helper2.llm.missing_field{step="verify",field="fitsNeed"}`.
+   `searchavo.llm.missing_field{step="verify",field="fitsNeed"}`.
 4. **Verdicts** (`ReasonCheck`, from `claimsSupported`):
    - `SUPPORTED`: every factual claim of the reason is in its evidence. The reason is shown.
    - `REMOVED`: some claim is not, or the reason tells the user to do something the evidence does not state (an
@@ -398,10 +398,10 @@ the window, so a windowed query is never served unwindowed hits.
 **Browse.** With a window and no subject words, the search text is empty and `SourceQuery.browse` is set: sources
 that can list by date and type alone (`SourceDescriptor.browses`) rank by popularity inside the window; the others are
 SKIPPED for that request. The chooser thinks before answering only for this browse (`GuideModel.choose(…, think)`),
-within `H2_GUIDE_THINK_BROWSE_TOKENS` (2048) thinking tokens:
+within `SA_GUIDE_THINK_BROWSE_TOKENS` (2048) thinking tokens:
 with thinking off, Nemotron 3 Super finds no pick for a question such as "AI tools born last month".
 
-**A step cut while thinking.** A step thinks when it has a thinking budget (`H2_GUIDE_THINK_PLAN_TOKENS`,
+**A step cut while thinking.** A step thinks when it has a thinking budget (`SA_GUIDE_THINK_PLAN_TOKENS`,
 `_CHOOSE_TOKENS`, `_VERIFY_TOKENS`; the browse above for choose). When the provider cuts such a call at its token
 limit, the step asks once more with thinking off, same prompt and same room for the answer, and uses that answer
 ([0008](ADR-0008-llm-integration.md), items 5 and 6). It does so only when the question has time left
@@ -472,11 +472,11 @@ virtual threads that carry the question's trace. They share the per-source cache
 source calls (GitHub search: 30 requests per minute authenticated).
 
 **Answer cache.** The cache is read before the plan call, so its key cannot hold the resolved window. Answers with a
-window live `min(H2_GUIDE_CACHE_TTL, 6 h)`, which bounds the drift of a "last month" window to 6 hours. The key has
+window live `min(SA_GUIDE_CACHE_TTL, 6 h)`, which bounds the drift of a "last month" window to 6 hours. The key has
 the answer shape's version (`v3`) and the config hash covers every prompt, including `compare.txt`, `explain.txt` and the shared `security.txt`, `need-input.txt` and `quote-rule.txt`.
 
 **Steps measured.** Each step of a question (`plan`, `search`, `choose`, `compare`, `explain`, `validate`, `verify`)
-is a child span and timer `helper2.guide.step{step,intent}`, and one `guide timings` log line per question lists the
+is a child span and timer `searchavo.guide.step{step,intent}`, and one `guide timings` log line per question lists the
 step times and what each step found.
 
 #### 8. Courses and certifications: one type and its sources
@@ -521,7 +521,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 ### Streaming
 - **Server-Sent Events.** `POST /api/v1/guide/stream` (`GuideStreamController`, hand-written; it returns a Reactor `Flux<ServerSentEvent>` on Spring MVC) sends
   `planned`, `understood`, `clarify`, `retrieved`, `chosen`, `validated`, `checked` and, always last, `answer` or
-  `error` (`Problem`). When the guide reads its model calls as a stream (`H2_GUIDE_MODEL_STREAM=ON`,
+  `error` (`Problem`). When the guide reads its model calls as a stream (`SA_GUIDE_MODEL_STREAM=ON`,
   [0035](ADR-0035-guide-model-stream.md)), `reasoning` and `writing` (`GuideStreamModelStep`: the step, no model text)
   come before the event of their step. A question that reaches its deadline still ends with `answer` when its search is done
   (picks `NOT_CHECKED`, or the top results with the notice `GUIDE_OUT_OF_TIME`); only a question cancelled before
@@ -530,7 +530,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
   `Cache-Control: no-store`, `X-Accel-Buffering: no`. The stream is the only guide endpoint. The work stays blocking code on a virtual
   thread under `GuideLimits` (a streamed model call is read to its end on that thread, [0035](ADR-0035-guide-model-stream.md)); the steps reach the flux through a `Sinks.Many` ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)). No server retry.
 - **Keep-alive comments.** While a question runs, the stream sends the SSE comment `:keep-alive` every
-  `H2_GUIDE_HEARTBEAT` (15 s). One model step can be silent for longer than the client's idle timeout (45 s,
+  `SA_GUIDE_HEARTBEAT` (15 s). One model step can be silent for longer than the client's idle timeout (45 s,
   [0039](ADR-0039-frontend-one-box-state-in-the-url.md)), and an asker who joined an identical question already running
   ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)) gets no step events at all. The comments are a `Flux.interval`
   merged into the event flux; they stop after the last event or when the client is gone (the flux is cancelled).
@@ -538,13 +538,13 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 
 ### Code
 
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` — the guards, the dispatch by intent, the
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/usecase/AskGuide.kt` — the guards, the dispatch by intent, the
   clarification answer.
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/QuestionReader.kt` — plan, grounding, backup rules,
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/steps/QuestionReader.kt` — plan, grounding, backup rules,
   window, `clarificationOf`, `askBackSubject`; `PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`, `DateAnswer.kt`
   — retrieval and answer per intent; `ReasonCheckStep.kt` — `verdicts`; `Question.kt` — step spans, searches,
   `askBack`, `namesakes`.
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/Guide.kt` — `GuideValidator`, `GuideModel`, `GuideProgress`,
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/Guide.kt` — `GuideValidator`, `GuideModel`, `GuideProgress`,
   `GuideSearchPlan`, `PlannedQueries`, `ReasonClaim`, `ReasonCheck`, `GuideAnswer`; `EvidenceGate.kt` — `EvidenceGate`
   (`claimProblem`: the text and quote rule of picks, cells and sentences); `QuoteOrigins.kt` — `QuoteOrigins`,
   `QuotedFrom` (the page that holds a quote), `QuoteRecords.kt` (the stored records it reads; wired in
@@ -554,16 +554,16 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
   `GuideAnswerCache.isCacheable`, `WINDOWED_TTL`.
 - `backend/apps/public/src/main/resources/i18n/intent-words_en.properties`, `intent-words_it.properties` — backup rule
   words and the event words (`when.event`).
-- `backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java` — the plan, choose, compare,
+- `backend/apps/public/src/main/java/ai/searchavo/guide/internal/SpringAiGuideModel.java` — the plan, choose, compare,
   explain and verify calls, `security()`, `needInput()`, `quoteRule()`.
-- `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java`, `GuideDtoMapper.java`.
+- `backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideStreamController.java`, `GuideDtoMapper.java`.
 - `backend/apps/public/src/main/resources/prompts/guide/plan.txt`, `choose.txt`, `compare.txt`, `explain.txt`,
   `verify-reasons.txt`, `security.txt`, `need-input.txt`, `quote-rule.txt`.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/Filtering.kt`, `Model.kt`, `usecase/SearchResources.kt` —
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/Filtering.kt`, `Model.kt`, `usecase/SearchResources.kt` —
   window filter, `SourceQuery.publishedAfter`, `browse`, cache key.
-- `backend/libs/core/src/main/java/ai/helper2/sources/github/GitHubSource.java`, `sources/tavily/TavilySource.java`,
-  `sources/npm/NpmSource.java`; `backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/CourseCollector.java`;
-  `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogSearch.java` — date pushdown, npm dates,
+- `backend/libs/core/src/main/java/ai/searchavo/sources/github/GitHubSource.java`, `sources/tavily/TavilySource.java`,
+  `sources/npm/NpmSource.java`; `backend/apps/backoffice/src/main/java/ai/searchavo/sources/liveweb/scout/CourseCollector.java`;
+  `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcCatalogSearch.java` — date pushdown, npm dates,
   courses.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`COURSE`, `COURSE_CANDIDATE`,
   `review_item.candidate_url`), `R__courses.sql`.
@@ -612,7 +612,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 - The guide writes no free text of its own beyond reasons, a comparison, an explanation and a question back, each
   checked or bounded by code. There is no ready-to-use prompt: it was in 0 of 20 answers of the eval run, and it was
   the one place where a shared question could put a model's prose on our page.
-- Picks from low search ranks are counted, and the alert `Helper2GuidePicksFromLowRanks` fires when they pass 45% of a
+- Picks from low search ranks are counted, and the alert `SearchavoGuidePicksFromLowRanks` fires when they pass 45% of a
   day's picks ([0009](ADR-0009-observability.md)). About 30% is the usual share on the fixed eval questions.
 - The guide answers the kind of question asked and shows how it read it, so a misreading is visible and correctable.
 - A question is asked back only when it has nothing to search or its one subject has own entries of different kinds.
@@ -646,7 +646,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 | 7 | Data | Covered: nothing new stored by this pipeline; courses in V1 and `R__courses.sql`. |
 | 8 | Browser & Computer Use | Covered: none. |
 | 9 | Guardrails | Covered: the evidence gate, constraint checks from source metadata, link filter, the reason check, grounding of the planner's values, one SECURITY block. |
-| 10 | Observability | Covered: `helper2.guide.step`, `helper2.guide.picks`, `helper2.guide.quote_origin`, `helper2.llm.call` with prompt label, `helper2.llm.thinking_fallback{step,reason}`, `helper2.llm.outage_retry{step}`, the `guide timings` line without user text. |
+| 10 | Observability | Covered: `searchavo.guide.step`, `searchavo.guide.picks`, `searchavo.guide.quote_origin`, `searchavo.llm.call` with prompt label, `searchavo.llm.thinking_fallback{step,reason}`, `searchavo.llm.outage_retry{step}`, the `guide timings` line without user text. |
 | 11 | Evaluation | Covered: guide question set, intents set and adversarial set ([0046](ADR-0046-evaluation-guide-and-search.md)); the labels are pinned by a test. The staging run with the prompts of this record is still to do (open point). |
 | 12 | Deployment | Covered: config only; the guide is off without a model key. |
 | 13 | Security & Identity | Covered: the model key from OpenBao; no new secret. |
@@ -658,7 +658,7 @@ exactly when expected ("new tools?", "Gemini", "what is Gemini?" are; "what is O
 - Generated API code is not committed: after a fresh checkout, run Gradle or npm once before the editor resolves the types. The guide SSE handler is hand-written, so the compiler checks only its event names.
 - The gate proves a quote, not that it is true: a description written to be chosen passes the gate and the reason check. Strict rules reject some good picks. A resource outside the 24 candidates cannot be picked.
 - `quotedFrom` names a page as the source last wrote it: a page changed since the record was read may no longer show the quote.
-- `helper2.guide.quote_origin` counts quotes, not questions, and fallback results as well as AI picks. An answer given from search only after a quota is reached is never cached, so its quotes count on every request. A database outage raises `found="false"` without any change in the answers. No alert reads it yet.
+- `searchavo.guide.quote_origin` counts quotes, not questions, and fallback results as well as AI picks. An answer given from search only after a quota is reached is never cached, so its quotes count on every request. A database outage raises `found="false"` without any change in the answers. No alert reads it yet.
 - The reason check is a model's judgment and can miss or reject a claim; it costs one more call per question (the 600-call daily cap covers at most 200 fresh questions).
 - The reason check reads up to 5 picks in one prompt, with their third-party texts. A 4th or 5th candidate whose text talks the check into finding the first ones off the need takes their place. The evidence gate and the SECURITY block still apply to it; no eval case plants such a text yet.
 - Asking back costs a round trip and a model call. A name is asked back only when our sources hold two kinds, and an unrelated project with a model's exact name also triggers it. A broad “what is new” question takes about 10 s longer; a subject slower than 10 s is reported as not found.
@@ -678,7 +678,7 @@ intents: [flow](../diagrams/flow-0031-guide-intents.svg) · [sequence](../diagra
 ## Backlog
 
 - Features: [F4.1](https://github.com/silvioincalza/helper2.ai/issues/64) Guide pipeline: intents, plan, retrieve, choose, evidence gate, reason check;
-  [F10.4](https://github.com/silvioincalza/helper2.ai/issues/110) Evaluation of guide and search: the `helper2.guide.quote_origin` meter (S10.4.6).
+  [F10.4](https://github.com/silvioincalza/helper2.ai/issues/110) Evaluation of guide and search: the `searchavo.guide.quote_origin` meter (S10.4.6).
 - Open issues that change this decision:
   - [#283](https://github.com/silvioincalza/helper2.ai/issues/283) S4.7.2 Tracked privately (security)
   - [#285](https://github.com/silvioincalza/helper2.ai/issues/285) S4.9.1 The guide latency targets confirmed

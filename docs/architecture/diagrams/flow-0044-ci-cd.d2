@@ -84,7 +84,7 @@ release: release.yml (run by hand, version YYYY.N.P) {
   canary: "deploy.yml env prod: canary\nof the commit, smoke test\nwith its header (0045)" {class: app}
   retag: "retag: Harbor adds YYYY.N.P\nto the commit's images\n(same digests)" {class: data}
   prod: "deploy.yml env prod:\nimage YYYY.N.P\n(built by CD, never rebuilt)" {class: app}
-  live: "helper2.ai runs the release;\nthen tag vYYYY.N.P, the GitHub release,\nthe pull request back into main" {class: end}
+  live: "searchavo.ai runs the release;\nthen tag vYYYY.N.P, the GitHub release,\nthe pull request back into main" {class: end}
 
   checks -> valid
   valid -> refused: no

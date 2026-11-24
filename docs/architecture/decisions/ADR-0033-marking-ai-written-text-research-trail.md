@@ -10,7 +10,7 @@
 
 ## Context
 
-The EU AI Act applies to Helper2.ai because people in the EU use it. Helper2.ai builds the guide on top of NVIDIA
+The EU AI Act applies to Searchavo.ai because people in the EU use it. Searchavo.ai builds the guide on top of NVIDIA
 Nemotron and offers it under its own name, so it is most likely the provider of an AI system that writes text.
 Art. 50 has applied since 2 August 2026:
 - Art. 50(1): people must know they deal with AI. The UI says so ("Ask the AI guide", "AI reasoning",
@@ -229,25 +229,25 @@ another person's words.
 - `api/common.yaml`, `api/public.yaml`: `AiContentMarker`, `GuideResponse.aiContent`, `SearchResponse.aiContent`,
   `ResourceDetail.aiContent`, `GuideTrail`,
   `GuideTrailRemoved`, `QueryInterpretation.translatedQuery`, `Notice.subject` and `Notice.query`.
-- `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java`: `AI_WRITTEN_FIELDS`, the marker,
+- `backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideDtoMapper.java`: `AI_WRITTEN_FIELDS`, the marker,
   `notices` (no `QUERY_EXPANDED`), `sourceDescription`, `trail`.
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/QuestionReader.kt`: `groundedSubjects`, the intent and
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/steps/QuestionReader.kt`: `groundedSubjects`, the intent and
   period read by code.
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/Guide.kt`: `ResearchTrail`, `RemovedSuggestion`, `TrailCheck`,
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/Guide.kt`: `ResearchTrail`, `RemovedSuggestion`, `TrailCheck`,
   `GuideValidator.Rejection.trailCheck`, `GuideValidator.removedOf`.
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/Question.kt`: `Question.ran`, `GuideSteps.find`.
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`;
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/steps/Question.kt`: `Question.ran`, `GuideSteps.find`.
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/steps/PickAnswer.kt`, `CompareAnswer.kt`, `ExplainAnswer.kt`;
   `usecase/AskGuide.kt` (`answerByIntent`, `similarAnswer`).
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt`: `SHAPE`.
-- `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java`: `translatedQuery` apart from
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/GuideCost.kt`: `SHAPE`.
+- `backend/libs/core/src/main/java/ai/searchavo/search/web/SearchController.java`: `translatedQuery` apart from
   the word-list terms (`AnalyzedQuery.translation`, `lexiconTerms`); `aiContent`, `AI_WRITTEN_FIELDS`.
   `CardMapper.java`: `aiWrittenFields`.
-- `backend/libs/core/src/main/java/ai/helper2/api/AiContentMarking.java`: `marker`, `inEachItem`, `POLICY`.
-- `backend/apps/public/src/main/java/ai/helper2/catalog/web/ResourceDetailController.java`: `aiContent`,
-  `AI_WRITTEN_FIELDS`. `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcResourceDetailReads.java`: the
+- `backend/libs/core/src/main/java/ai/searchavo/api/AiContentMarking.java`: `marker`, `inEachItem`, `POLICY`.
+- `backend/apps/public/src/main/java/ai/searchavo/catalog/web/ResourceDetailController.java`: `aiContent`,
+  `AI_WRITTEN_FIELDS`. `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcResourceDetailReads.java`: the
   run's model of an assertion and a relationship.
-- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Vocabulary.kt`: `ValueOrigin.isAiWritten`, `isFromAModel`.
-- `backend/apps/public/src/main/kotlin/ai/helper2/site/pages/PageHead.kt`: `WRITTEN_BY_PEOPLE`.
+- `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/Vocabulary.kt`: `ValueOrigin.isAiWritten`, `isFromAModel`.
+- `backend/apps/public/src/main/kotlin/ai/searchavo/site/pages/PageHead.kt`: `WRITTEN_BY_PEOPLE`.
 - `frontend/src/lib/aiMark.ts`: the AI origins (`AI_ORIGIN`, `isAiOrigin`) and the page attributes (`aiMark`, `aiMarkWhen`, `aiModel`,
   `aiSource`): no other file writes a `data-ai-*` attribute. Used in `GuideAnswer.tsx`, `Clarify.tsx`, `AnswerBlocks.tsx`,
   `GuidePicks.tsx`, `Understood.tsx`, `Results.tsx`, `ResultRow.tsx`, `Resource.tsx`, `ResultsTimeline.tsx`,

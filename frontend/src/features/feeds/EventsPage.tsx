@@ -100,7 +100,7 @@ export default function EventsPage() {
         <div className="h2-term__bar">
           <h1>{t('eventsPage.title')}</h1>
           <TermCommand
-            command="helper2 events --next 12m"
+            command="searchavo events --next 12m"
             total={feed.rows.length > 0 ? feed.total : null}
           />
         </div>

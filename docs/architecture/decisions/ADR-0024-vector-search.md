@@ -25,24 +25,24 @@ never break keyword search.
    `passage`, `truncate=END`, 1024 dimensions. The model also embeds images: NVIDIA reads a base64 data URI
    (`data:<mime>;base64,…`) anywhere in a text as an image and rejects the whole call with 422 when the payload is no
    image, so every base64 data URI in a text or a query becomes a space before the call. The stored `text_hash`
-   stays on the text as written. Settings: `H2_NVIDIA_API_KEY`, `H2_NVIDIA_EMBEDDING_BASE_URL`
-   (`https://integrate.api.nvidia.com/v1`), `H2_NVIDIA_EMBEDDING_MODEL` (`nvidia/nemotron-3.5-embed-1b`).
-   On the hosted helper2 the base URL is the pod that runs the same model in the cluster, and the indexer's
+   stays on the text as written. Settings: `SA_NVIDIA_API_KEY`, `SA_NVIDIA_EMBEDDING_BASE_URL`
+   (`https://integrate.api.nvidia.com/v1`), `SA_NVIDIA_EMBEDDING_MODEL` (`nvidia/nemotron-3.5-embed-1b`).
+   On the hosted searchavo the base URL is the pod that runs the same model in the cluster, and the indexer's
    period is 1 s ([0054](ADR-0054-embedding-model-in-the-cluster.md)): the rate limit, the batch
    failures and the 5 s period below describe NVIDIA's hosted endpoint, the default without the chart's embedder.
    Hypertext Transfer Protocol (HTTP) status 429 is reported as rate-limited. The response must hold one vector of the right size per input.
    The client is the observed client from [0006](ADR-0006-outbound-calls-and-resilience.md) (span, `http.client.requests`), with redirects off
    and a buffered body that carries a `Content-Length`.
 3. **Off without a key.** All beans live in `CatalogConfiguration.VectorSearch`, active only when
-   `helper2.embedding.api-key` is set. Without it, search is keyword-only.
+   `searchavo.embedding.api-key` is set. Without it, search is keyword-only.
 4. **Indexer** (`IndexEmbeddings.tick`) on its own thread `embedding-indexer`, fixed delay: first after 30 s, then
-   every 5 s (`helper2.catalog.indexer.every`, `H2_EMBEDDING_EVERY`). Each tick embeds up to 1 resource
-   (`helper2.catalog.indexer.batch`, `H2_EMBEDDING_BATCH`) that has no
+   every 5 s (`searchavo.catalog.indexer.every`, `SA_EMBEDDING_EVERY`). Each tick embeds up to 1 resource
+   (`searchavo.catalog.indexer.batch`, `SA_EMBEDDING_BATCH`) that has no
    vector for the model or whose `md5(title + "\n" + description)` changed, most popular first; demo rows are skipped.
-   It uses its own client with a 30 s timeout (`helper2.catalog.indexer.timeout`) and its own circuit, `llm-embed-index`
+   It uses its own client with a 30 s timeout (`searchavo.catalog.indexer.timeout`) and its own circuit, `llm-embed-index`
    ([0006](ADR-0006-outbound-calls-and-resilience.md)), so its failures never refuse a search query's embedding. After a rate limit it pauses for 2 min.
    When the API rejects a batch (an error answer: 5xx or another status that is not 429), the tick sends up to 5 of
-   its texts one per call (`helper2.catalog.indexer.singles-after-failure`); a text that fails on its own waits for
+   its texts one per call (`searchavo.catalog.indexer.singles-after-failure`); a text that fails on its own waits for
    a later tick, and a rate limit, a refused call or a timeout ends the round. A text the API refuses on its own
    (HTTP 400, 413 or 422, such as 422 "input rejected by content safety screening") is stored in
    `resource_embedding_refused` (resource id, model, text md5, time) and left out of later batches until its text
@@ -58,27 +58,27 @@ never break keyword search.
    NVIDIA fails every call of three or more texts and most calls of two (staging, measured on 11 Nov 2026: 1
    text 5 of 6, 2 texts 2 of 6, 3 to 50 texts 0), and each failed batch counts against the circuit, which then
    refuses the single texts too. So one text goes per call: 12 calls a minute for the cluster, under the trial
-   limit of 40 a minute, about 17,000 resources a day. `H2_EMBEDDING_BATCH` raises it again when NVIDIA batches.
+   limit of 40 a minute, about 17,000 resources a day. `SA_EMBEDDING_BATCH` raises it again when NVIDIA batches.
    Every replica runs the thread, but a tick runs only while it holds the cluster lock `embedding-indexer`
    (`platform.ClusterLock`, ShedLock row in PostgreSQL, see [0011](ADR-0011-scout-runner.md)): held at least 90 % of
    the period (4.5 s) and at most 3 × the timeout × (1 + the single texts after a failure) + 1 min (10 min with
    30 s and 5 singles; the lock is not renewed). So the cluster embeds one batch per
    period, as with one replica; a replica whose tick finds the lock taken skips that period.
-   Meters: `helper2.embedding.backlog`, `helper2.embedding.failures{reason}`, `helper2.embedding.last.success`,
-   `helper2.embedding.rejected` (the rows of `resource_embedding_refused` for the model: texts left out after a
+   Meters: `searchavo.embedding.backlog`, `searchavo.embedding.failures{reason}`, `searchavo.embedding.last.success`,
+   `searchavo.embedding.rejected` (the rows of `resource_embedding_refused` for the model: texts left out after a
    refusal; the backlog does not count them).
    The backlog counts what the indexer still has to do: rows with no vector for the model and rows whose text changed
    since their vector was made. The query that picks the batch counts it too (`count(*) OVER ()` before the limit),
    so the two always agree and there is no second scan; after a stored batch the gauge drops by the batch size.
    A process that has not run a tick yet has not counted: its gauge reports `NaN`, not 0. After a start that lasts
    until the lock of the replica before it runs out, up to 10 min.
-5. **One more source** (`SemanticSearchSource`, id `helper2-semantic`, mode `INDEXED`, priority 55). It embeds the
+5. **One more source** (`SemanticSearchSource`, id `searchavo-semantic`, mode `INDEXED`, priority 55). It embeds the
    query as typed (`usesTranslation = false`, [0023](ADR-0023-catalog-full-text-index.md)) and returns the nearest rows of the index, curated list and settled observed resources ([0022](ADR-0022-federated-search.md) §9) with cosine distance at most
-   `H2_SOURCE_SEMANTIC_MAX_DISTANCE` (0.65), within `H2_SOURCE_SEMANTIC_TIMEOUT` (3 s).
+   `SA_SOURCE_SEMANTIC_MAX_DISTANCE` (0.65), within `SA_SOURCE_SEMANTIC_TIMEOUT` (3 s).
    Rows carry labels and stored popularity like keyword rows ([0025](ADR-0025-ranking.md)).
    Query vectors are shared by every replica in the shared cache `query-vector` (`QueryVectorCache`, table `ai_cache`,
    [0004](ADR-0004-persistence-and-the-schema.md)): key a SHA-256 of the embedding model and the normalised query,
-   value the floats in Base64, kept `H2_SEARCH_QUERY_VECTOR_TTL` (7 days). A vector of another size is a miss, and so is
+   value the floats in Base64, kept `SA_SEARCH_QUERY_VECTOR_TTL` (7 days). A vector of another size is a miss, and so is
    a database error or a lookup over its time limit: the query is embedded again. So the guide's example questions and pagination spend the embedding rate limit once for the cluster.
    The model, origin and distance filters apply to the HNSW candidates, so the query runs in its own transaction with
    `SET LOCAL hnsw.iterative_scan = relaxed_order` (pgvector 0.8): the scan reads on until the limit is met instead of
@@ -89,13 +89,13 @@ never break keyword search.
 
 ### Code
 
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/SemanticSearchSource.java`, `QueryVectorCache.java` — the source and its shared
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/SemanticSearchSource.java`, `QueryVectorCache.java` — the source and its shared
   query vectors; `platform/cache/JdbcSharedCache.java` — the shared cache.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexEmbeddings.java` — batches, pause, meters.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java`, `catalog/Embedder.java` — API client and port.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java` — conditional beans, `IndexerSchedule`, indexer lock.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/ClusterLock.java` — lock shared by every replica.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEmbeddingStore.java` — `pendingEmbeddings` (batch and backlog), `saveEmbeddings` (drops other models' vectors), `semanticSearch` (iterative scan).
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/usecase/IndexEmbeddings.java` — batches, pause, meters.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/NvidiaEmbedder.java`, `catalog/Embedder.java` — API client and port.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/CatalogConfiguration.java` — conditional beans, `IndexerSchedule`, indexer lock.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/ClusterLock.java` — lock shared by every replica.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcEmbeddingStore.java` — `pendingEmbeddings` (batch and backlog), `saveEmbeddings` (drops other models' vectors), `semanticSearch` (iterative scan).
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `resource_embedding`, HNSW index.
 - `backend/libs/schema/src/main/resources/db/migration/V2026.11.8.2__resource_embedding_refused.sql` — refused texts.
 

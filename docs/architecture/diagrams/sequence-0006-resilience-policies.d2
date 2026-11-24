@@ -1,10 +1,10 @@
 # Sequence: a Scout collector riding out a short 503 under collector-<id> (retry outside, circuit inside), then a
 # search source whose circuit has opened, answered as SKIPPED without a call; then the guide's model calls under
 # llm-chat-guide-fast while the fast model is down (the reasoning model keeps its own circuit). The redis circuit is in sequence-0005-redis-disposable-cache.
-# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/mcp/McpRegistryCollector.java, support/TransientSourceFailure.java,
-#   HttpClients.java, backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java,
-#   backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, scout/usecase/RunScout.kt, application.yaml (resilience4j.*),
-#   backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (call), guide/steps/QuestionReader.kt.
+# Source of truth: backend/apps/backoffice/src/main/java/ai/searchavo/sources/mcp/McpRegistryCollector.java, support/TransientSourceFailure.java,
+#   HttpClients.java, backend/libs/platform/src/main/java/ai/searchavo/platform/resilience/Resilience4jPolicies.java,
+#   backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SearchResources.kt, scout/usecase/RunScout.kt, application.yaml (resilience4j.*),
+#   backend/apps/public/src/main/java/ai/searchavo/guide/internal/SpringAiGuideModel.java (call), guide/steps/QuestionReader.kt.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0006-resilience-policies.d2 && d2 sequence-0006-resilience-policies.d2 sequence-0006-resilience-policies.svg
 
 ...@style
@@ -56,7 +56,7 @@ llm: "Guide: the fast model is down (policy llm-chat-guide-fast)" {
   res -> tf: "budget unit, then the request"
   tf -> res: "529 overloaded (provider error: counted)"
   res -> guide: "failure: a short outage (ModelErrors.isOutage)"
-  guide -> guide: "wait 300 ms, helper2.llm.outage_retry +1"
+  guide -> guide: "wait 300 ms, searchavo.llm.outage_retry +1"
   guide -> res: "call(llm-chat-guide-fast, plan attempt 2)"
   res -> tf: "budget unit, then the request"
   tf -> res: "529 again (counted)"

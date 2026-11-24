@@ -19,10 +19,10 @@ must load the app on a direct visit, and a new release must reach browsers at on
 
 1. **Rate limits per client** (`RateLimitInterceptor`). The key is the handler method the request was
    routed to (the contract operationId), not the raw path, so path tricks (`;param`, encoding, double slashes) do not
-   bypass it. Limits: `search` 120/min (`H2_RATE_LIMIT_SEARCH_PER_MINUTE`), `reportResource` 20/hour
-   (`H2_RATE_LIMIT_REPORT_PER_HOUR`), `askGuideStream` and `askResourceGuide` share 10/min (`H2_RATE_LIMIT_GUIDE_PER_MINUTE`),
-   `listRecent` 60/min (`H2_RATE_LIMIT_RECENT_PER_MINUTE`). Everything else shares one default limit of 120/min
-   (`H2_RATE_LIMIT_DEFAULT_PER_MINUTE`): every other operation under `/api/` (told by the route pattern Spring
+   bypass it. Limits: `search` 120/min (`SA_RATE_LIMIT_SEARCH_PER_MINUTE`), `reportResource` 20/hour
+   (`SA_RATE_LIMIT_REPORT_PER_HOUR`), `askGuideStream` and `askResourceGuide` share 10/min (`SA_RATE_LIMIT_GUIDE_PER_MINUTE`),
+   `listRecent` 60/min (`SA_RATE_LIMIT_RECENT_PER_MINUTE`). Everything else shares one default limit of 120/min
+   (`SA_RATE_LIMIT_DEFAULT_PER_MINUTE`): every other operation under `/api/` (told by the route pattern Spring
    matched, not by the address), the server-rendered pages and `sitemap.xml`. So a new operation is limited from
    its first day, with no line to add. Static files, `robots.txt`, `ads.txt`, the error page and the management
    port are not counted. `RateLimitedOperationsTest` fails when an operation with its own limit is no longer in
@@ -36,19 +36,19 @@ must load the app on a direct visit, and a new release must reach browsers at on
    version 6 (IPv6) by its /64 prefix, a zone id (`%eth0`) dropped, IPv4-mapped addresses as IPv4, a missing address
    as `unknown`. Both limiters and the guide's daily quota ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)) use this one key.
    Redis never holds the address: the key holds `QuotaKeys.client(client)`, HMAC-SHA256(day key, client), where the
-   day key is HMAC-SHA256(`H2_QUOTA_KEY_SECRET`, UTC date), the same pseudonym as the daily web searches
+   day key is HMAC-SHA256(`SA_QUOTA_KEY_SECRET`, UTC date), the same pseudonym as the daily web searches
    ([0027](ADR-0027-live-web-store-first-daily-quota.md)). Without the secret, an IPv4 address cannot be found again by
    hashing all 2^32 of them, and the keys of two days cannot be linked. At midnight UTC the pseudonym changes, so a
    window open at midnight is followed by a fresh one: at most one more window's worth of requests (two windows' worth
-   in one window), the same as at any fixed-window edge. Without `H2_QUOTA_KEY_SECRET` the app starts, logs a warning
+   in one window), the same as at any fixed-window edge. Without `SA_QUOTA_KEY_SECRET` the app starts, logs a warning
    and uses a random key of the process: still no address in Redis, but the counts restart with the process and each
    replica counts on its own. The in-memory fallback holds the `ClientKey` only in the replica's memory.
 3. **In-memory fallback.** The script runs under the `redis` policy ([0006](ADR-0006-outbound-calls-and-resilience.md)). On a Redis
    error, or while that circuit is open (30 s after repeated errors), each replica counts in its own
    `InMemoryRateLimiter` with the same limits (windows in start order, at most 50,000 clients, oldest
-   evicted). Every such decision increments `helper2.rate-limit.fallback{limiter}`. Without Redis configured, only the
+   evicted). Every such decision increments `searchavo.rate-limit.fallback{limiter}`. Without Redis configured, only the
    in-memory limiter is used.
-4. **Client address.** `H2_FORWARD_HEADERS_STRATEGY` defaults to `none`, so `X-Forwarded-For` is ignored. The cluster
+4. **Client address.** `SA_FORWARD_HEADERS_STRATEGY` defaults to `none`, so `X-Forwarded-For` is ignored. The cluster
    sets `native`: only the Ingress controller can reach the app's port 8080 (NetworkPolicy `ingress-app`). The chain
    is Cloudflare (appends the visitor's address to `X-Forwarded-For`), the platform's tunnel, then ingress-nginx
    (`compute-full-forwarded-for`: appends the tunnel pod's address). Tomcat's remote-IP handling reads the header from
@@ -75,11 +75,11 @@ must load the app on a direct visit, and a new release must reach browsers at on
    `worker-src 'none'`, plus `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, COOP and CORP `same-origin`,
    `X-Robots-Tag: noindex, nofollow` and HSTS. The web image sends a third policy of its own on the files it serves
    (9). So three owners send a CSP, each its own; none reads another's.
-7. **Session cookie**: `SESSION` on the public site (Spring Session's name), `SameSite=Lax`, `HttpOnly`, `Secure` by default (`H2_COOKIE_SECURE`, true; the `dev` profile sets false).
+7. **Session cookie**: `SESSION` on the public site (Spring Session's name), `SameSite=Lax`, `HttpOnly`, `Secure` by default (`SA_COOKIE_SECURE`, true; the `dev` profile sets false).
    The session itself is in Redis ([0036](ADR-0036-identity-and-the-admin-host.md)). The back office's is `__Host-SESSION`, always
    Secure, in its own Redis namespace.
-8. **Management port.** `H2_MANAGEMENT_PORT` (empty = app port). The chart sets 8081; the Services and the Ingresses never route
-   it. The NetworkPolicy `ingress-app` opens 8081 only to the `observability` namespace, so `H2_METRICS_PUBLIC=true` exposes
+8. **Management port.** `SA_MANAGEMENT_PORT` (empty = app port). The chart sets 8081; the Services and the Ingresses never route
+   it. The NetworkPolicy `ingress-app` opens 8081 only to the `observability` namespace, so `SA_METRICS_PUBLIC=true` exposes
    `/actuator/prometheus` only there; the actuator serves only health and prometheus, and health is the one open to all. Health shows no details; Redis is left out of health.
 9. **SPA fallback and caching** (rules in [0001](ADR-0001-stack-and-runtime.md)): the web image
    ([0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md), `deploy/web/nginx.conf`) caches hashed assets for one year and
@@ -93,17 +93,17 @@ must load the app on a direct visit, and a new release must reach browsers at on
 
 ### Code
 
-- `backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java`, `RateLimiter.java` — limits, 429.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/ClientKey.java` — the client key (IPv6 by /64).
-- `backend/libs/platform/src/main/java/ai/helper2/platform/RedisRateLimiter.java`, `InMemoryRateLimiter.java` — Redis count, fallback.
-- `backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java` — CSRF, referrer policy, access rules;
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/RateLimitInterceptor.java`, `RateLimiter.java` — limits, 429.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/ClientKey.java` — the client key (IPv6 by /64).
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/RedisRateLimiter.java`, `InMemoryRateLimiter.java` — Redis count, fallback.
+- `backend/apps/public/src/main/java/ai/searchavo/identity/security/PublicSecurityConfiguration.java` — CSRF, referrer policy, access rules;
   the CSP from `site/csp/ContentSecurityPolicy.java` ([0042](ADR-0042-monetisation.md)).
-- `backend/apps/backoffice/src/main/java/ai/helper2/identity/security/BackOfficeSecurityConfiguration.java`, `BackOfficeEdge.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/identity/security/BackOfficeSecurityConfiguration.java`, `BackOfficeEdge.java`,
   `admin/web/AdminWebApp.java` — the back office's CSRF cookie, headers, cache rules and routes.
 - `deploy/web/nginx.conf`, `deploy/web/headers.conf` — the web image's routes, cache and security headers.
-- `backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java` — the shell on every client route.
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml` — forward headers, cookie, management port, rate limits; `backend/apps/public/src/main/resources/application.yaml` — the cookie's `secure` flag.
-- `deploy/helm/helper2/templates/app.yaml`, `web.yaml`, `networkpolicy.yaml` — port 8081, forwarded headers, the ingress
+- `backend/apps/public/src/main/java/ai/searchavo/site/pages/web/PageRoutes.java` — the shell on every client route.
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml` — forward headers, cookie, management port, rate limits; `backend/apps/public/src/main/resources/application.yaml` — the cookie's `secure` flag.
+- `deploy/helm/searchavo/templates/app.yaml`, `web.yaml`, `networkpolicy.yaml` — port 8081, forwarded headers, the ingress
   policies of the app and the web pods.
 - `frontend/src/api/client.ts`, `frontend/public/theme.js` — CSRF header, CSP-safe theme script.
 

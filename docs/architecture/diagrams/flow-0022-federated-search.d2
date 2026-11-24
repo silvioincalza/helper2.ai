@@ -3,12 +3,12 @@
 # policy source-<id> (circuit breaker and bulkhead, no retry), the per-source deadline counted from the source's own
 # start, and the notices. A metered source (Tavily) reads its stored result set instead of Redis and calls live only
 # inside the daily quota: its own flow is flow-0027-tavily-store-and-quota. Below: what GET /api/v1/sources shows of each source.
-# Source of truth: backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search), SourceFanOut.kt (Run.start, Run.collect, stale),
-#   backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt, search/SourceHealth.kt, search/WebSearch.kt (creditsToday),
-#   backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt,
-#   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java (resilience4j.* in application.yaml),
-#   backend/libs/core/src/main/java/ai/helper2/search/cache/RedisSearchCache.java, search/internal/JdbcWebResultStore.java,
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java (countsSince),
+# Source of truth: backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SearchResources.kt (search), SourceFanOut.kt (Run.start, Run.collect, stale),
+#   backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/ListSources.kt, search/SourceHealth.kt, search/WebSearch.kt (creditsToday),
+#   backend/libs/core/src/main/kotlin/ai/searchavo/search/ResultMerger.kt,
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/resilience/Resilience4jPolicies.java (resilience4j.* in application.yaml),
+#   backend/libs/core/src/main/java/ai/searchavo/search/cache/RedisSearchCache.java, search/internal/JdbcWebResultStore.java,
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/internal/CatalogResultObserver.java (countsSince),
 #   catalog/internal/JdbcResources.java (discoveredSince, discoveredInIndexSince),
 #   catalog/internal/JdbcCatalogSearch.java (the settled observed rows).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0022-federated-search.d2 && d2 flow-0022-federated-search.d2 flow-0022-federated-search.svg
@@ -100,7 +100,7 @@ sources: "GET /api/v1/sources: each disclosed source, by priority" {
   class: group
   direction: down
   last: "lastOutcome: the newer of this replica's\nlast search and the Scout's last run\n(record unreadable: this replica's only)" {class: app}
-  fresh: "newThisWeek: resources first discovered\nin the last 7 days, per source\n(helper2-index: the whole index;\nhelper2-semantic and DB down: null)" {class: data}
+  fresh: "newThisWeek: resources first discovered\nin the last 7 days, per source\n(searchavo-index: the whole index;\nsearchavo-semantic and DB down: null)" {class: data}
   time: "responseTimeMs: median of this replica's\nlast 20 calls (cache hits and\nskipped calls are not calls)" {class: app}
   enabled: "Enabled?" {class: decision}
   circuit: "circuit: state of this replica's\nsource-<id>; circuitOpenedAt\nwhile OPEN (none: null)" {class: app}

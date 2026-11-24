@@ -1,6 +1,6 @@
-# Requirements: helper2.ai
+# Requirements: searchavo.ai
 
-The requirements catalog of helper2.ai, derived from [the vision](vision.md). The terms are those of
+The requirements catalog of searchavo.ai, derived from [the vision](vision.md). The terms are those of
 [the glossary](glossary.md). Every requirement here is built and running; the use cases under `docs/use_cases/`
 describe how.
 
@@ -12,7 +12,7 @@ describe how.
 | FR-002 | Filter and Sort Results      | As a visitor, I want to filter the results by category and type and to sort them so that I narrow a long list to what fits my need. | High | Implemented |
 | FR-003 | Query in Any Language        | As a visitor, I want to search in my own language so that I find resources without knowing the English words for them. | Medium | Implemented |
 | FR-004 | Source Status per Search     | As a visitor, I want to see what each source returned for my search so that I know whether the results are complete. | High | Implemented |
-| FR-005 | Source Coverage              | As a visitor, I want to see the list of sources with their health and response time so that I know what helper2.ai covers and what it does not. | Medium | Implemented |
+| FR-005 | Source Coverage              | As a visitor, I want to see the list of sources with their health and response time so that I know what searchavo.ai covers and what it does not. | Medium | Implemented |
 | FR-006 | Example Searches             | As a visitor, I want the home page to offer example searches so that I learn what I can ask before I type. | Low | Implemented |
 | FR-007 | Ask the Guide                | As a visitor, I want to describe my need in my own words and get at most a few recommended resources so that I do not have to read every result. | High | Implemented |
 | FR-008 | Quoted Reason per Pick       | As a visitor, I want each pick of the guide to show a quote from its source and a reason so that I can check why it was recommended. | High | Implemented |
@@ -29,7 +29,7 @@ describe how.
 | FR-019 | Delete My Account            | As a signed-in user, I want to delete my account and my saved resources at once so that no data about me stays behind. | High | Implemented |
 | FR-020 | Hub Pages                    | As a visitor arriving from a search engine, I want one page per resource type so that I can browse that type directly. | Medium | Implemented |
 | FR-021 | Policy Pages                 | As a visitor, I want to read the mission, the privacy notice and the terms, with the limits and retention periods the site applies, so that I know how my data is used. | High | Implemented |
-| FR-022 | Support the Site             | As a visitor, I want to support helper2.ai through the provider's own page so that the site keeps running. | Low | Implemented |
+| FR-022 | Support the Site             | As a visitor, I want to support searchavo.ai through the provider's own page so that the site keeps running. | Low | Implemented |
 | FR-023 | Consent to Analytics and Ads | As a visitor in Europe, I want to accept or reject analytics and personalized ads so that nothing is counted or personalized without my consent. | High | Implemented |
 | FR-024 | Notify Search Engines        | As an administrator, I want changed pages to be sent to search engines once a day so that search engines index new resource pages within a day. | Low | Implemented |
 | FR-025 | Collect New Resources        | As an administrator, I want the Scout to collect new resources from the sources on a schedule, and on demand, so that the catalog stays current. | High | Implemented |
@@ -43,7 +43,7 @@ describe how.
 | FR-033 | Curate Resource Fields       | As an administrator, I want to set a resource's own value of a field or drop what the AI said about it so that a wrong value is corrected for good. | Medium | Implemented |
 | FR-034 | Research Help for Review     | As an administrator, I want the model to research a review item and show every step it took so that I can decide faster with the evidence in front of me. | Medium | Implemented |
 | FR-035 | Known Targets                | As an administrator, I want to keep the list of vendors, services and tools a relationship may name without a catalog resource so that relationships to them are not lost. | Medium | Implemented |
-| FR-036 | Shadow Libraries             | As an administrator, I want to keep a list of shadow library names no search shows so that helper2.ai never leads to pirated content. | High | Implemented |
+| FR-036 | Shadow Libraries             | As an administrator, I want to keep a list of shadow library names no search shows so that searchavo.ai never leads to pirated content. | High | Implemented |
 | FR-037 | Home Examples                | As an administrator, I want to add, draft with the model, change, pause and remove home examples, each checked regularly, so that every example shows good results. | Low | Implemented |
 | FR-038 | Runtime Settings             | As an administrator, I want to change the spending limits and switches at runtime, and see the settings in force, so that I control costs without a deploy. | High | Implemented |
 | FR-039 | Audit Log                    | As an administrator, I want a record of every administrator action, newest first, so that each change can be traced. | Medium | Implemented |
@@ -85,7 +85,7 @@ describe how.
 | C-009 | Digital Services Act    | The site meets the duties of the Digital Services Act for an intermediary service. | Regulatory | Regulation (EU) 2022/2065 (DSA) | High | Implemented |
 | C-010 | EU Hosting              | Every server runs in the EU. | Operational | | High | Implemented |
 | C-011 | Deployment              | The system runs on Kubernetes with Helm charts for staging and production, with no dependency on a specific cluster or infrastructure repository. | Operational | | High | Implemented |
-| C-012 | Secrets in OpenBao      | Secrets live in OpenBao, never in the repository; configuration keys carry the `H2_` prefix. | Operational | | High | Implemented |
+| C-012 | Secrets in OpenBao      | Secrets live in OpenBao, never in the repository; configuration keys carry the `SA_` prefix. | Operational | | High | Implemented |
 | C-013 | Open Source             | The source code is public under the Apache-2.0 license. | Business | | High | Implemented |
 | C-014 | One-Person Team         | The system is built and run by one person, so each choice is weighed by its operational cost and cognitive load. | Business | | High | Implemented |
 | C-015 | Disclosed Sources       | Search reads only the disclosed set of sources and never claims to search the whole web. | Business | | High | Implemented |

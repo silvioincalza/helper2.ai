@@ -13,7 +13,7 @@ description: Use when a change adds or changes a data flow (a field, a source, a
   the Terms page. The feature is not done until the pages match the code.
 - EU AI Act Art. 50: every AI-written text shown to users is labelled in the UI and marked
   machine-readable in the API and the HTML. A new AI feature without both is not done.
-- No fine-tuning or substantial model change without a new scope check: it can make helper2.ai
+- No fine-tuning or substantial model change without a new scope check: it can make searchavo.ai
   a general-purpose AI model provider, with much heavier duties.
 - Keep the AI regulation gap analysis current. Re-run it when the EU AI Act, its guidance or the
   Code of Practice change, and when the Swiss AI act goes to consultation (planned spring 2027).

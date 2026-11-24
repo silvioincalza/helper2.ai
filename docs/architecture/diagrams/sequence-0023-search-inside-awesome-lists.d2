@@ -1,12 +1,12 @@
 # Sequence: a Scout pass that indexes an awesome list, a search that finds a tool only by the list's words,
 #   then the resource page that names every list the tool is in.
-# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt,
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubAwesomeCollector.java, AwesomeListParser.java,
-#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java (listIndex),
-#   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexAwesomeLists.java, catalog/internal/JdbcAwesomeListIndex.java,
+# Source of truth: backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/RunScout.kt,
+#   backend/apps/backoffice/src/main/java/ai/searchavo/sources/github/scout/GitHubAwesomeCollector.java, AwesomeListParser.java,
+#   backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/ScoutConfiguration.java (listIndex),
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/usecase/IndexAwesomeLists.java, catalog/internal/JdbcAwesomeListIndex.java,
 #   catalog/internal/CatalogSearchSource.java, JdbcCatalogSearch.java (searchFound), search/web/CardMapper.java,
 #   catalog/usecase/GetResourceDetail.java, catalog/internal/JdbcResourceDetailReads.java (naming),
-#   backend/apps/public/src/main/java/ai/helper2/catalog/web/ResourceDetailController.java,
+#   backend/apps/public/src/main/java/ai/searchavo/catalog/web/ResourceDetailController.java,
 #   frontend/src/features/resource/FoundInLists.tsx.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0023-search-inside-awesome-lists.d2 && d2 sequence-0023-search-inside-awesome-lists.d2 sequence-0023-search-inside-awesome-lists.svg
 
@@ -20,7 +20,7 @@ github: "api.github.com" {class: ext}
 catalog: "IndexResources /\nIndexAwesomeLists" {class: app}
 pg: PostgreSQL {class: data}
 browser: Browser {class: person}
-source: "CatalogSearchSource\n(helper2-index)" {class: app}
+source: "CatalogSearchSource\n(searchavo-index)" {class: app}
 detail: "ResourceDetailController\n+ GetResourceDetail" {class: app}
 
 scout -> collector: "collect(checkpoint, cursor, 500)"

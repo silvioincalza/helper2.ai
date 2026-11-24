@@ -1,10 +1,10 @@
 # Architecture, view 3 of 6: one guide question. The guide module, the search it reuses, the LLM layer and its guards.
-# Source of truth: backend/apps/public/src/main/kotlin/ai/helper2/guide/Guide.kt, guide/GuideCost.kt,
+# Source of truth: backend/apps/public/src/main/kotlin/ai/searchavo/guide/Guide.kt, guide/GuideCost.kt,
 #   guide/usecase/AskGuide.kt, guide/steps/* (QuestionReader, PickAnswer, CompareAnswer, ExplainAnswer, DateAnswer),
-#   backend/apps/public/src/main/java/ai/helper2/guide/internal/*, guide/schedule/GuideRetentionSchedule.java,
+#   backend/apps/public/src/main/java/ai/searchavo/guide/internal/*, guide/schedule/GuideRetentionSchedule.java,
 #   guide/web/GuideStreamController.java, guide/web/GuideLimits.java,
-#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/SingleFlight.kt, Presence.kt,
-#   backend/libs/platform/src/main/java/ai/helper2/platform/llm/*.
+#   backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/SingleFlight.kt, Presence.kt,
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/llm/*.
 # Render: cd docs/architecture/diagrams && d2 fmt architecture-guide.d2 && d2 architecture-guide.d2 architecture-guide.svg
 
 ...@style
@@ -55,7 +55,7 @@ platform: "platform.llm" {
 
 redis: "Redis\nh2:v1:budget:*" {shape: cylinder; class: data}
 pg: "PostgreSQL + pgvector\nai_cache (guide-answer)\nguide_similar_question" {shape: cylinder; class: data}
-embed: "helper2-embedder, in the cluster\nnemotron-3.5-embed-1b on CPU\n(similar questions, ADR 0032;\nADR 0054)" {class: ai}
+embed: "searchavo-embedder, in the cluster\nnemotron-3.5-embed-1b on CPU\n(similar questions, ADR 0032;\nADR 0054)" {class: ai}
 nebius: "Nebius Token Factory\nNano: plan\nSuper: choose, reason check" {class: ai}
 
 browser -> guide.ctl: "ask (SSE)" {class: hot}

@@ -1,8 +1,8 @@
-# Sequence: the prod job of a release, from the approval to prod running helper2:YYYY.N.P: the canary beside the
+# Sequence: the prod job of a release, from the approval to prod running searchavo:YYYY.N.P: the canary beside the
 # release, its smoke test through the edge, the version tag in Harbor, prod by version, the canary removed (ADR 0045).
 # Source of truth: .github/workflows/deploy.yml (Resolve tag, Canary and smoke test, Version tag in Harbor, Deploy,
 #   Remove the canary), .github/actions/bao-login/action.yml, deploy/k8s/Makefile (canary, canary-smoke, retag,
-#   deploy, uncanary), deploy/k8s/check-release.sh (smoke), deploy/helm/helper2/templates/canary.yaml, .github/workflows/release.yml (used-up).
+#   deploy, uncanary), deploy/k8s/check-release.sh (smoke), deploy/helm/searchavo/templates/canary.yaml, .github/workflows/release.yml (used-up).
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0045-release-branches-and-version-tags.d2 && d2 sequence-0045-release-branches-and-version-tags.d2 sequence-0045-release-branches-and-version-tags.svg
 
 ...@style
@@ -14,7 +14,7 @@ github: "GitHub\n(Actions)" {class: ext}
 runner: "Self-hosted runner\n(one JIT job)" {class: app}
 bao: OpenBao {class: data}
 harbor: Harbor {class: data}
-k8s: "Kubernetes API\n(helper2-prod)" {class: ext}
+k8s: "Kubernetes API\n(searchavo-prod)" {class: ext}
 edge: "Public host\n(edge, ingress-nginx)" {class: ext}
 
 start: Approval {
@@ -29,19 +29,19 @@ start: Approval {
 
 canary: Canary {
   runner -> runner: "token = openssl rand -hex 16 (masked)"
-  runner -> k8s: "helm upgrade --install helper2-canary\ncanary.only=true, by digest" {class: hot}
-  k8s -> k8s: "helper2-canary-migrate Job (prod schema);\n1 app + 1 web pod; canary Ingress"
-  runner -> edge: "GET / and its scripts, sources, search\nwith X-Helper2-Canary: token" {class: hot}
+  runner -> k8s: "helm upgrade --install searchavo-canary\ncanary.only=true, by digest" {class: hot}
+  k8s -> k8s: "searchavo-canary-migrate Job (prod schema);\n1 app + 1 web pod; canary Ingress"
+  runner -> edge: "GET / and its scripts, sources, search\nwith X-Searchavo-Canary: token" {class: hot}
   edge -> runner: "200; a script names YYYY.N.P"
   runner -> edge: "GET / and the API without the header"
   edge -> runner: "200 from the release that runs,\non the migrated schema"
-  runner -> k8s: "helm uninstall helper2-canary:\nno canary during the rollout" {class: hot}
+  runner -> k8s: "helm uninstall searchavo-canary:\nno canary during the rollout" {class: hot}
 }
 
 promote: Prod by version {
   runner -> harbor: "make retag: POST artifacts/<commit>/tags\n{name: YYYY.N.P} for web, public, back office" {class: hot}
-  runner -> k8s: "make deploy TAG=YYYY.N.P:\nhelm upgrade helper2, check-release.sh" {class: hot}
-  runner -> k8s: "helm uninstall helper2-canary\n(always, when one is left)"
+  runner -> k8s: "make deploy TAG=YYYY.N.P:\nhelm upgrade searchavo, check-release.sh" {class: hot}
+  runner -> k8s: "helm uninstall searchavo-canary\n(always, when one is left)"
   runner -> github: "job succeeded: publish tags vYYYY.N.P"
 }
 
@@ -52,6 +52,6 @@ usedup: The rollout fails after the Harbor tag {
 }
 
 failed: The smoke test fails {
-  runner -> k8s: "helm uninstall helper2-canary"
+  runner -> k8s: "helm uninstall searchavo-canary"
   runner -> github: "job failed: no Harbor tag, no Git tag,\nprod runs the release before"
 }

@@ -2,8 +2,8 @@ import { rowSourceNames } from './rowSources';
 
 const source = (sourceId: string, sourceName: string) => ({ sourceId, sourceName });
 const github = source('github', 'GitHub');
-const catalog = source('helper2-index', 'helper2.ai catalog');
-const byMeaning = source('helper2-semantic', 'helper2.ai catalog, by meaning');
+const catalog = source('searchavo-index', 'searchavo.ai catalog');
+const byMeaning = source('searchavo-semantic', 'searchavo.ai catalog, by meaning');
 
 describe('rowSourceNames', () => {
   it('names the catalog once when the row came from it by words and by meaning', () => {

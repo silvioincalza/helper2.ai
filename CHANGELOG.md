@@ -1,7 +1,7 @@
 # Changelog
 
 One entry per release. The ADRs say why the code is as it is ([docs/architecture/decisions](docs/architecture/decisions/README.md)); this page says what
-each release holds for the people who use, run or build on helper2.ai. Versions are calendar versions, `YYYY.N.P`:
+each release holds for the people who use, run or build on searchavo.ai. Versions are calendar versions, `YYYY.N.P`:
 the year, the number of the release in that year's month series and the patch
 ([ADR 0045](docs/architecture/decisions/ADR-0045-releases-and-versions.md)). A breaking change goes on the first line of the
 release notes.

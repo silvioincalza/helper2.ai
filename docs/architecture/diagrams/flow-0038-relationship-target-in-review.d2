@@ -1,14 +1,14 @@
 # Flowchart: an admin changes the target of a relationship candidate in the review list, then decides it.
-# Source of truth: backend/libs/core/src/main/java/ai/helper2/catalog/usecase/ChangeRelationshipTarget.java,
-#   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/AddCuratedResource.java,
-#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/UnitOfWork.kt, Refused.kt,
-#   backend/libs/platform/src/main/java/ai/helper2/platform/TransactionalUnitOfWork.java (rolls back a Refused
+# Source of truth: backend/libs/core/src/main/java/ai/searchavo/catalog/usecase/ChangeRelationshipTarget.java,
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/usecase/AddCuratedResource.java,
+#   backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/UnitOfWork.kt, Refused.kt,
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/TransactionalUnitOfWork.java (rolls back a Refused
 #   outcome of the unit that opened the transaction; ReviewController is the one caller, so this unit opens it),
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcRelationshipTargets.java, CandidateText.java,
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcRelationshipTargets.java, CandidateText.java,
 #   frontend/src/admin/ReviewQueuePage.tsx, ReviewEvidence.tsx (heading from the reloaded evidence),
-#   backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java (target),
-#   backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java (supersedeEnrichmentItems),
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java (deleteUnreviewedAiRelationships).
+#   backend/apps/backoffice/src/main/java/ai/searchavo/admin/web/ReviewController.java (target),
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/ReviewQueue.java (supersedeEnrichmentItems),
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcEnrichmentResults.java (deleteUnreviewedAiRelationships).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0038-relationship-target-in-review.d2 && d2 flow-0038-relationship-target-in-review.d2 flow-0038-relationship-target-in-review.svg
 
 ...@style

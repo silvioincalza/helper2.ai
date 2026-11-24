@@ -1,5 +1,5 @@
 # Flowchart: what a public page loads for monetisation (ADR 0042).
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/monetisation/config/MonetisationConfiguration.java,
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/site/monetisation/config/MonetisationConfiguration.java,
 #   site/monetisation/web/SiteController.java, frontend/src/context/MonetisationContext.tsx,
 #   site/csp/ContentSecurityPolicy.java, frontend/src/features/monetisation/AnalyticsConsent.tsx,
 #   features/search/Results.tsx, features/monetisation/SupportWhileSearching.tsx, lib/analytics.ts.
@@ -36,7 +36,7 @@ nothing: "No analytics" {class: data}
 
 ads: "Search, guide answer, Home or a text page:\nno ad of any network\n(AdSense only on resource pages, ADR 0042 §9)" {class: data}
 wait: "Plain search, first results still loading\nafter 700 ms, and a gift link on?" {class: decision}
-note: "Note From helper2.ai: support link;\nthe results replace it" {class: app}
+note: "Note From searchavo.ai: support link;\nthe results replace it" {class: app}
 wait -> note: yes
 
 page -> admin

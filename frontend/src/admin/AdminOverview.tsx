@@ -15,7 +15,7 @@ import { TableSkeleton } from '@/ui/Skeleton';
 import { PATHS, RUN_TONE, SHOWN_PER_PATH } from './adminModel';
 
 const SHOWN_RUNS = 5;
-const COMMAND = 'helper2 status';
+const COMMAND = 'searchavo status';
 const HIDING: readonly ExampleCheckOutcome[] = ['WEAK', 'FAIL', 'PENDING'];
 
 export default function AdminOverview() {
@@ -168,7 +168,7 @@ function OverviewParts({
 
       <h3 className="h2-admin__h3">{t('admin.overview.lastRuns')}</h3>
       {data.recentRuns.length === 0 ? (
-        <AdminEmpty command="helper2 scouts --runs" text={t('admin.noRuns')} />
+        <AdminEmpty command="searchavo scouts --runs" text={t('admin.noRuns')} />
       ) : (
         <ul className="h2-admin__runs">
           {data.recentRuns.slice(0, SHOWN_RUNS).map((r) => (

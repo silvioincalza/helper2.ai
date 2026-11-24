@@ -34,7 +34,7 @@ export function Logo() {
     <span className="logo">
       <LogoMark />
       <span className="logo-text">
-        <span className="logo-word">helper2.ai</span>
+        <span className="logo-word">searchavo.ai</span>
         <span className="logo-tag">{t('nav.tagline')}</span>
       </span>
     </span>

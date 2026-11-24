@@ -14,8 +14,8 @@ describe('the head the server wrote for crawlers (ADR 0041)', () => {
 
   it('stays on the page the visitor landed on and goes at the first move to another page', async () => {
     mockApi({ 'GET /me': () => ANON });
-    serverTag('<meta data-h2-head name="description" content="About Helper2.ai">');
-    serverTag('<link data-h2-head rel="canonical" href="https://helper2.ai/mission">');
+    serverTag('<meta data-h2-head name="description" content="About Searchavo.ai">');
+    serverTag('<link data-h2-head rel="canonical" href="https://searchavo.ai/mission">');
     const { router } = renderApp('/mission');
     await screen.findByRole('heading', { level: 1 });
     expect(document.head.querySelectorAll('[data-h2-head]')).toHaveLength(2);

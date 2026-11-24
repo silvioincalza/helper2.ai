@@ -11,7 +11,7 @@
 ## Context
 
 People search Google for a kind of thing: "MCP servers", "open source AI agents", "AI datasets". The pages of
-helper2.ai that can rank are one page per resource ([0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md)). There is no
+searchavo.ai that can rank are one page per resource ([0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md)). There is no
 page for a kind of resource, so such a search has nothing of ours to land on, and the home page links to a few new
 resources only.
 
@@ -45,7 +45,7 @@ Google treats many thin pages made in bulk as spam. One page per type is a small
 3. **Read once every 10 minutes.** `CatalogSiteLists` keeps each hub's list 10 minutes in memory. The server page
    and the API read the same list. A failed read gives the last list it had, or an empty one.
 4. **The server page.** Spring answers each hub address like the other site pages
-   ([0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md) §2): `index`, the title `{Name}: newest in the catalog · helper2.ai`, a
+   ([0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md) §2): `index`, the title `{Name}: newest in the catalog · searchavo.ai`, a
    fixed description, a canonical, and a body with an `<h1>`, the description, the list ("Newest change first", up to
    50 links) and the links to the other site pages and hubs. Its JSON-LD is a `CollectionPage` whose `mainEntity` is
    an `ItemList` with one `ListItem` per link, in the same order. `/llms.txt` lists the hubs.

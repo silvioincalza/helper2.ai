@@ -18,7 +18,7 @@ gha: "GitHub Actions\n(cd.yml, release.yml)" {class: ext}
 runner: "Self-hosted runner\n(one JIT job)" {class: app}
 bao: OpenBao {class: data}
 k8s: Kubernetes API {class: ext}
-site: "https://helper2.ai" {class: ext}
+site: "https://searchavo.ai" {class: ext}
 
 window: "The reset window only: a manual run before the tag (runbook section 7)" {
   reviewer -> gha: "Run workflow cd.yml: environment prod,\ntag = the 12-char commit, rollback,\nkeep-unhealthy. No release tag exists yet:\nno release run holds deploy-prod"
@@ -41,7 +41,7 @@ approval: Approval {
 login: OpenBao login (OIDC) {
   runner -> gha: "request OIDC token\n(audience = BAO_AUDIENCE)"
   gha -> runner: "JWT, sub ...:environment:prod"
-  runner -> bao: "auth/helper2/jwt/login role=deploy-prod"
+  runner -> bao: "auth/searchavo/jwt/login role=deploy-prod"
   bao -> runner: "token (can read ci/prod only)"
   runner -> bao: "kv get ci/prod field kubeconfig"
   bao -> runner: "prod deployer kubeconfig"

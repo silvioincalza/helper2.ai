@@ -158,7 +158,7 @@ describe('the resource page', () => {
       'section',
     ) as HTMLElement;
     expect(time).toHaveTextContent('Published');
-    expect(time).toHaveTextContent('First seen by helper2.ai');
+    expect(time).toHaveTextContent('First seen by searchavo.ai');
     await settle();
   });
 

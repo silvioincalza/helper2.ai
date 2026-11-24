@@ -210,7 +210,7 @@ Each filter shows the count of its values and one value for results where no sou
 
 ### BR-019: Timeline
 
-The timeline shows the same results by month, newest first, by the creation date each source states. Results with no stated creation date form one group at the end; the date helper2.ai first saw a result is never used in its place.
+The timeline shows the same results by month, newest first, by the creation date each source states. Results with no stated creation date form one group at the end; the date searchavo.ai first saw a result is never used in its place.
 
 ### BR-020: Found Only in a Curated List
 

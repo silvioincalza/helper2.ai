@@ -3,17 +3,17 @@
 # → time for one model call (CallTimeLimit: never past the deadline minus a margin) → global daily budget (taken before each model attempt)
 #   → at the deadline the question answers with what it has → an answer with no AI pick, a failed or timed-out
 #   question, or a shared answer gives its question back (AskGuide.QuotaTurn.settle, in one finally).
-# Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, ClientKey.java,
-#   backend/apps/public/src/main/java/ai/helper2/guide/web/GuideLimits.java (guide bulkhead), GuideStreamController.java (keep-alive),
-#   backend/libs/platform/src/main/resources/helper2-shared.yaml (resilience4j.bulkhead.instances.guide), backend/apps/public/src/main/resources/application.yaml (llm-chat-guide circuit),
-#   backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask, answerOnce, QuotaTurn),
-#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/SingleFlight.kt, Presence.kt, backend/libs/platform/src/main/java/ai/helper2/platform/quota/ClientBudgets.java,
-#   backend/libs/platform/src/main/java/ai/helper2/platform/llm/DailyBudget.java (paced),
-#   backend/apps/public/src/main/java/ai/helper2/guide/config/GuideProperties.java (stopsAQuestionNobodyWaitsFor),
-#   backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt (ClientQuota, GuideAnswerCache),
-#   backend/apps/public/src/main/java/ai/helper2/guide/internal/SharedGuideAnswerStore.java, GuideConfiguration.java,
-#   backend/apps/public/src/main/java/ai/helper2/guide/QuestionDeadline.java, CallTimeLimit.java, internal/SpringAiGuideModel.java (call),
-#   backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/Question.kt (GuideSteps: which step a cancelled question still runs).
+# Source of truth: backend/libs/platform/src/main/java/ai/searchavo/platform/RateLimitInterceptor.java, ClientKey.java,
+#   backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideLimits.java (guide bulkhead), GuideStreamController.java (keep-alive),
+#   backend/libs/platform/src/main/resources/searchavo-shared.yaml (resilience4j.bulkhead.instances.guide), backend/apps/public/src/main/resources/application.yaml (llm-chat-guide circuit),
+#   backend/apps/public/src/main/kotlin/ai/searchavo/guide/usecase/AskGuide.kt (AskGuide.ask, answerOnce, QuotaTurn),
+#   backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/SingleFlight.kt, Presence.kt, backend/libs/platform/src/main/java/ai/searchavo/platform/quota/ClientBudgets.java,
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/llm/DailyBudget.java (paced),
+#   backend/apps/public/src/main/java/ai/searchavo/guide/config/GuideProperties.java (stopsAQuestionNobodyWaitsFor),
+#   backend/apps/public/src/main/kotlin/ai/searchavo/guide/GuideCost.kt (ClientQuota, GuideAnswerCache),
+#   backend/apps/public/src/main/java/ai/searchavo/guide/internal/SharedGuideAnswerStore.java, GuideConfiguration.java,
+#   backend/apps/public/src/main/java/ai/searchavo/guide/QuestionDeadline.java, CallTimeLimit.java, internal/SpringAiGuideModel.java (call),
+#   backend/apps/public/src/main/kotlin/ai/searchavo/guide/steps/Question.kt (GuideSteps: which step a cancelled question still runs).
 #   Normalised keys and the reuse of a similar question's answer: flow-0032-guide-answer-cache.
 #   The searches of a question take the asker's daily web searches (flow-0027-tavily-store-and-quota), not drawn here.
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0032-guide-cost-guard.d2 && d2 flow-0032-guide-cost-guard.d2 flow-0032-guide-cost-guard.svg
@@ -25,8 +25,8 @@ direction: down
 ask: "POST /api/v1/guide/stream" {class: person}
 rate: "Rate limit: 10 per minute\nper client (IPv6 by /64),\nshared with the tool guide" {class: decision}
 r429: "429 Too Many Requests\n+ Retry-After" {class: fail}
-perClient: "GuideLimits: fewer than 2 questions\nrunning for this ClientKey?\n(H2_GUIDE_CLIENT_CONCURRENT_QUESTIONS)" {class: decision}
-slot: "Free slot in the guide bulkhead?\n(H2_GUIDE_MAX_CONCURRENT 8;\ntaken only for real work)" {class: decision}
+perClient: "GuideLimits: fewer than 2 questions\nrunning for this ClientKey?\n(SA_GUIDE_CLIENT_CONCURRENT_QUESTIONS)" {class: decision}
+slot: "Free slot in the guide bulkhead?\n(SA_GUIDE_MAX_CONCURRENT 8;\ntaken only for real work)" {class: decision}
 busy: "503 Guide busy\n(error event on the stream)" {class: fail}
 key: "Cache key: SHA-256 of normalised\ntext | path | config hash and categories\n| clarification | drops (ADR 0032)" {class: app}
 cache: "Answer cache hit?\n(shared cache guide-answer,\nPostgreSQL)" {class: decision}
@@ -36,12 +36,12 @@ shared: "Wait for that answer\n(single-flight; the stream\ngets only :keep-alive
 quota: "ClientQuota.reserve: fresh question\nleft today for this ClientKey (30)\nand its /24 or /56 network (300)?" {class: decision}
 searchOnly: "Search-only answer + notice\nGUIDE_NETWORK_QUOTA (network full)\nor GUIDE_DAILY_QUOTA (own count full),\nretryAt = next 00:00 UTC" {class: end}
 run: "Plan; a similar question's\ncached answer (ADR 0032), or\nsearch → choose → validate →\nreason check" {class: ai}
-time: "Time for this model attempt?\n(left − margin 2 s ≥ 10 s; its timeout =\nmin(H2_LLM_TIMEOUT 40 s, left − margin))" {class: decision}
+time: "Time for this model attempt?\n(left − margin 2 s ≥ 10 s; its timeout =\nmin(SA_LLM_TIMEOUT 40 s, left − margin))" {class: decision}
 circuit: "The model's circuit closed?\n(llm-chat-guide-fast or -reasoning;\neach model attempt; opens at 50%\nfailed or slower than 35 s)" {class: decision}
 budget: "Global budget unit before each\nmodel attempt? (600 a day, opening\nin 12 two-hour parts, spill-over)" {class: decision}
 degraded: "Degraded answer\n(top search results; out of time:\nnotice GUIDE_OUT_OF_TIME)" {class: fail}
 spent: "Degraded answer + notice\nGUIDE_BUDGET_SPENT with retryAt (next part\nof the day when the cap has room,\nelse next 00:00 UTC);\nnot cached, free; a late reason\ncheck leaves NOT_CHECKED, no notice" {class: fail}
-deadline: "Deadline reached?\n(H2_GUIDE_QUESTION_DEADLINE 90 s:\nworker interrupted, slot freed)" {class: decision}
+deadline: "Deadline reached?\n(SA_GUIDE_QUESTION_DEADLINE 90 s:\nworker interrupted, slot freed)" {class: decision}
 searched: "Search done?" {class: decision}
 picked: "Picks chosen\nand validated?" {class: decision}
 unchecked: "Answer with those picks,\nreasons NOT_CHECKED (not cached,\nspends a question)" {class: end}
@@ -50,7 +50,7 @@ error: "Error escapes ask\n(error event on the stream)" {class: fail}
 gone: "Model stream ON and plan, choose\nor verify thinks, and every asker of\nthis question closed the stream and\nstayed away 3 s (LEAVE_GRACE)?" {class: decision}
 abandoned: "Worker interrupted, no answer,\nnothing cached; the same question\nasked now starts afresh" {class: fail}
 spends: "AI pick, comparison or\nexplanation in the answer?" {class: decision}
-free: "Free answers left today?\n(no pick, failed, shared and\nabandoned share one cap)\n(H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS,\ndefault 5)" {class: decision}
+free: "Free answers left today?\n(no pick, failed, shared and\nabandoned share one cap)\n(SA_GUIDE_CLIENT_DAILY_FREE_ANSWERS,\ndefault 5)" {class: decision}
 giveBack: "Give the question back, once\nper reservation, never below 0;\nthe network's unit only while the\nnetwork has free answers left\n(model calls stay in the global cap)" {class: data}
 cacheable: "Cacheable? AI pick, no reason\nNOT_CHECKED (or a WHEN answer, 6 h),\nweb results fresh, no web source\nskipped for its daily limit" {class: decision}
 store: "Store a copy without the question's\nwords for min(24 h, freshness left of\nits web results; a WHEN answer 6 h,\nnever past 00:00 UTC)" {class: data}

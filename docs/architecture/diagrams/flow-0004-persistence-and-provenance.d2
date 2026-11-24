@@ -8,16 +8,16 @@
 # labels, and the licence, the pricing, the open-source flag, the type and event dates copied from the card of the
 # resource page (or, behind a temporary switch, rebuilt by the older SQL rule).
 # Then the card of the resource page: which records count for its type, licence, pricing and open-source flag.
-# Source of truth: backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt (search, record),
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java (firstDiscovered, record),
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java,
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java (upsert,
+# Source of truth: backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SearchResources.kt (search, record),
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/internal/CatalogResultObserver.java (firstDiscovered, record),
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/internal/ObservationQueue.java,
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcCatalogWriter.java (upsert,
 #   moveReportsOfEmptiedResources, deleteOrphans),
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/ProjectedReconciliation.java,
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/SqlReconciliation.java,
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (reconciliation),
-#   backend/libs/core/src/main/java/ai/helper2/catalog/ResourceCards.java (card), RecordRow.java, DataOrigin.java,
-#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/DateFact.kt,
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/internal/ProjectedReconciliation.java,
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/internal/SqlReconciliation.java,
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/internal/CatalogConfiguration.java (reconciliation),
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/ResourceCards.java (card), RecordRow.java, DataOrigin.java,
+#   backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/DateFact.kt,
 #   backend/libs/schema/src/main/resources/db/migration/V1__schema.sql, R__*.sql (Flyway at startup).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0004-persistence-and-provenance.d2 && d2 flow-0004-persistence-and-provenance.d2 flow-0004-persistence-and-provenance.svg
 
@@ -74,7 +74,7 @@ writer: catalog-observations thread (one writer) {
   kept: "Keep it for\nthe reviewer" {class: data}
   orphan: "Delete it if OBSERVED\nand no field set by an admin" {class: data}
   labels: "Rebuild labels\nfrom current records" {class: data}
-  switch: "reconcile-by-projection?\n(H2_CATALOG_RECONCILE_BY_PROJECTION,\ntemporary, default true)" {class: decision}
+  switch: "reconcile-by-projection?\n(SA_CATALOG_RECONCILE_BY_PROJECTION,\ntemporary, default true)" {class: decision}
   project: "Lock the touched rows (id order),\nread all their records,\nbuild each card (ResourceCards.card);\ncopy its event days, and its type,\nlicence, pricing and open-source flag\nwhen the write is of the row's\norigin or stronger (not CURATED or DEMO)" {class: data}
   sqlRule: "SQL rule: rebuild licence, pricing,\nopen-source flag, type and event dates\nin two UPDATEs (same origin rule;\nkeeps the stored letter case\nof the licence; no lock)" {class: data}
   ok: "outcome=written" {class: end}

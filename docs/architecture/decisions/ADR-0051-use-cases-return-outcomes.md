@@ -65,7 +65,7 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
    `CurateField.Outcome.ValueRefused` (`UnknownField`, `ValueNotAllowed`, `InvalidDescription`, `NotADate`,
    `DateInTheFuture`), and `ConfirmedValueRefused` carries the field and that refusal.
 5. **A refusal after a write is a `Refused` record, and it runs in a unit of work.** `Refused` is a marker interface
-   of the kernel (`ai.helper2.shared`). `TransactionalUnitOfWork.run` looks at the result of the work: when it is
+   of the kernel (`ai.searchavo.shared`). `TransactionalUnitOfWork.run` looks at the result of the work: when it is
    `Refused` and this unit opened the transaction, the transaction is rolled back and the result is returned. A unit
    that joined a transaction never marks it: the unit that opened it decides. An exception rolls the transaction back and is thrown again.
    `AddBookmark` and `MergeLocalBookmarks` check the address first, with no transaction, then lock the account, insert
@@ -108,26 +108,26 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
 
 ### Code
 
-- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Refused.kt`, `UnitOfWork.kt` — the marker and the port.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/TransactionalUnitOfWork.java`,
+- `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/Refused.kt`, `UnitOfWork.kt` — the marker and the port.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/TransactionalUnitOfWork.java`,
   `UnitOfWorkConfiguration.java` — the rollback rule and the bean of both apps.
-- `backend/libs/core/src/main/java/ai/helper2/identity/usecase/` (`AddBookmark`, `MergeLocalBookmarks`,
+- `backend/libs/core/src/main/java/ai/searchavo/identity/usecase/` (`AddBookmark`, `MergeLocalBookmarks`,
   `BookmarkRules`, `ChangePreferences`, `ListAuditEntries`) — the outcomes;
   `.../identity/config/IdentityUseCaseConfiguration.java` — the wiring; `.../identity/internal/SignInAgain.java`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/` (`AddCuratedResource`, `ChangeRelationshipTarget`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/usecase/` (`AddCuratedResource`, `ChangeRelationshipTarget`,
   `CurateField`, `ListReviewItems`, `ResolveReviewItem`) — the outcomes;
-  `backend/apps/backoffice/src/main/java/ai/helper2/catalog/config/CatalogBackOfficeConfiguration.java` — the wiring.
-- `backend/apps/public/src/main/java/ai/helper2/identity/web/BookmarksController.java`, `PreferencesController.java`,
-  `backend/apps/backoffice/src/main/java/ai/helper2/identity/web/AuditController.java`,
-  `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java` — the mapping.
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/` (`ResolveReview`, `DecideReviewItem`,
+  `backend/apps/backoffice/src/main/java/ai/searchavo/catalog/config/CatalogBackOfficeConfiguration.java` — the wiring.
+- `backend/apps/public/src/main/java/ai/searchavo/identity/web/BookmarksController.java`, `PreferencesController.java`,
+  `backend/apps/backoffice/src/main/java/ai/searchavo/identity/web/AuditController.java`,
+  `backend/apps/backoffice/src/main/java/ai/searchavo/admin/web/ReviewController.java` — the mapping.
+- `backend/apps/backoffice/src/main/java/ai/searchavo/admin/usecase/` (`ResolveReview`, `DecideReviewItem`,
   `ResolveReviewItems`, `DecideRelationshipItem`, `DecideRelationshipTargetGroup`, `ChangeRuntimeSetting`,
   `ResetRuntimeSetting`, `ListEnrichmentQueue`) — the outcomes; `CheckAwesomeLists.java` (`setAsAwesomeList`) reads
   the outcome of `CurateField`; `.../admin/config/AdminUseCaseConfiguration.java` — the wiring.
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewProblems.java`, `CuratedFieldProblems.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/admin/web/ReviewProblems.java`, `CuratedFieldProblems.java`,
   `KnownTargetProblems.java`,
   `RelationshipTargetsController.java`, `KnownTargetsController.java`, `RuntimeSettingsController.java` — the mapping.
-- `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ModularityRules.java` — the rule.
+- `backend/libs/platform/src/testFixtures/java/ai/searchavo/testing/architecture/ModularityRules.java` — the rule.
 - Tests: `TransactionalUnitOfWorkTest` (rollback for a `Refused` result, a joined transaction is not marked),
   `BookmarkOutcomesTest`, `ChangePreferencesTest`, `PreferencesControllerTest`, `BookmarkCapIT` (the outcome and the
   rows after a refusal, two additions at once), `AccountApiIT`, `AdminAuditApiIT` (a page outside the bounds is a

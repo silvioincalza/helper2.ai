@@ -38,7 +38,7 @@ export function Saved() {
       <header className="h2-term__head">
         <div className="h2-term__bar">
           <h1>{t('saved.title')}</h1>
-          <TermCommand command="helper2 saved" total={ready ? items.length : null} />
+          <TermCommand command="searchavo saved" total={ready ? items.length : null} />
         </div>
         <p className="h2-term__box">
           {mode === 'server'

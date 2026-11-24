@@ -29,7 +29,7 @@ builds no image, so a new npm package with a known vulnerability would be found 
 1. **Style: Google.** google-java-format for Java, ktfmt with `googleStyle()` for Kotlin and the Gradle build files.
    Two-space indent, 100 columns. Neither formatter has options to argue about.
 2. **Tool: Spotless** (Gradle plugin, Apache-2.0) runs both formatters from the convention plugin
-   `backend/build-logic/src/main/kotlin/helper2.format.gradle.kts`. It formats `src/**/*.java`, `src/**/*.kt` and
+   `backend/build-logic/src/main/kotlin/searchavo.format.gradle.kts`. It formats `src/**/*.java`, `src/**/*.kt` and
    `*.gradle.kts` of every project; `backend/build-logic/build.gradle.kts` applies the same ktfmt rule to the
    convention plugins themselves. `./gradlew spotlessApply` rewrites the files, `./gradlew spotlessCheck` fails on any
    file that is not formatted. Generated OpenAPI code lives in `build/` and is not formatted.
@@ -78,7 +78,7 @@ No runtime path: these decisions run in the build and in CI only, so there is no
 
 ### Code
 
-- `backend/build-logic/src/main/kotlin/helper2.format.gradle.kts` — the Spotless plugin and the `spotless {}` block;
+- `backend/build-logic/src/main/kotlin/searchavo.format.gradle.kts` — the Spotless plugin and the `spotless {}` block;
   `backend/build-logic/build.gradle.kts` — the plugin's version and the format of the convention plugins.
 - `frontend/package.json` (`format`, `format:check`, `knip`, `preknip`), `frontend/.prettierrc.json`,
   `frontend/.prettierignore`, `frontend/eslint.config.js` — Prettier, its place next to ESLint, and the two knip runs.
