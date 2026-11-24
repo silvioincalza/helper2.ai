@@ -2,15 +2,15 @@
 set -euo pipefail
 
 REPO=${REPO:-silvioincalza/helper2.ai}
-SITE=${SITE:-https://helper2.ai}
+SITE=${SITE:-https://searchavo.ai}
 PUBLISHER=${PUBLISHER:-ca-pub-4688630163076563}
 UNIT_RESOURCE=${UNIT_RESOURCE-9345575694}
 UNIT_SEARCH=${UNIT_SEARCH-1139782613}
 UNIT_GUIDE=${UNIT_GUIDE-4261217083}
 BRANCH=${BRANCH:-chore/adsense-prod-ad-units}
 STORY=${STORY:-872}
-VALUES=deploy/helm/helper2/values-prod.yaml
-DEFAULTS=deploy/helm/helper2/values.yaml
+VALUES=deploy/helm/searchavo/values-prod.yaml
+DEFAULTS=deploy/helm/searchavo/values.yaml
 DRY_RUN=false
 ASSUME_YES=false
 
@@ -88,9 +88,9 @@ curl --fail --silent --show-error --max-time 20 "$SITE/" |
   stop "$SITE/ has no google-adsense-account tag for $PUBLISHER"
 
 echo "4. the AdSense account (only you can see it)"
-confirm "AdSense > Sites: helper2.ai shows \"Ready\"?"
-confirm "AdSense > Ads: Auto ads are OFF for helper2.ai (no anchor, vignette or side rail)?"
-confirm "AdSense > Privacy and messaging: the European regulations message is PUBLISHED for helper2.ai?"
+confirm "AdSense > Sites: searchavo.ai shows \"Ready\"?"
+confirm "AdSense > Ads: Auto ads are OFF for searchavo.ai (no anchor, vignette or side rail)?"
+confirm "AdSense > Privacy and messaging: the European regulations message is PUBLISHED for searchavo.ai?"
 
 with_ad_units() {
   awk -v resource="$UNIT_RESOURCE" -v search="$UNIT_SEARCH" -v guide="$UNIT_GUIDE" '

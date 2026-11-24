@@ -38,8 +38,8 @@ export function guideRunStop({ id, answer, withoutModel, base, report }) {
         `Stopped at ${id}: the guide's daily model budget on ${base} is used up (GUIDE_BUDGET_SPENT), so answers are ` +
         `search only and the run would not measure the model. The backend says: "${budget.message}" ${report} is ` +
         `unchanged. Run again ${budget.retryAt ? `after ${budget.retryAt}` : 'when the budget opens'} (the next part ` +
-        'of the UTC day, H2_GUIDE_BUDGET_PACE_SLOTS, or 00:00 UTC), or against a backend with a higher ' +
-        'H2_GUIDE_DAILY_MODEL_CALLS.',
+        'of the UTC day, SA_GUIDE_BUDGET_PACE_SLOTS, or 00:00 UTC), or against a backend with a higher ' +
+        'SA_GUIDE_DAILY_MODEL_CALLS.',
     };
   }
   const network = notice('GUIDE_NETWORK_QUOTA');
@@ -50,7 +50,7 @@ export function guideRunStop({ id, answer, withoutModel, base, report }) {
         `Stopped at ${id}: the runner's network has used its guide questions for today on ${base} ` +
         `(GUIDE_NETWORK_QUOTA), so answers are search only and the run would not measure the model. ${report} is ` +
         `unchanged. Run again after ${network.retryAt ?? '00:00 UTC'}, from another network, or against a backend ` +
-        'with a higher H2_GUIDE_NETWORK_DAILY_QUESTIONS.',
+        'with a higher SA_GUIDE_NETWORK_DAILY_QUESTIONS.',
     };
   }
   const quota = notice('GUIDE_DAILY_QUOTA');
@@ -60,7 +60,7 @@ export function guideRunStop({ id, answer, withoutModel, base, report }) {
       message:
         `Stopped at ${id}: this address has used its daily guide quota (GUIDE_DAILY_QUOTA), so answers are search ` +
         `only and the run would not measure the model. ${report} is unchanged. Run again after ${quota.retryAt ?? '00:00 UTC'}, ` +
-        'from another address, or against a backend with a higher H2_GUIDE_CLIENT_DAILY_QUESTIONS.',
+        'from another address, or against a backend with a higher SA_GUIDE_CLIENT_DAILY_QUESTIONS.',
     };
   }
   if (withoutModel >= MODEL_FREE_ANSWERS_IN_A_ROW) {

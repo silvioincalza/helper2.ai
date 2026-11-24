@@ -14,9 +14,9 @@ needs() {
     backend-backoffice) echo "backend/gradlew backend/apps/backoffice/build.gradle.kts" ;;
     backend-architecture) echo "backend/gradlew backend/architecture/build.gradle.kts" ;;
     chart) echo "deploy/k8s/Makefile" ;;
-    monitoring) echo "deploy/monitoring/helper2-rules.yaml" ;;
-    postgres) echo "deploy/postgres/Dockerfile deploy/helm/helper2/values.yaml" ;;
-    embedder) echo "deploy/embedder/Dockerfile deploy/helm/helper2/values.yaml" ;;
+    monitoring) echo "deploy/monitoring/searchavo-rules.yaml" ;;
+    postgres) echo "deploy/postgres/Dockerfile deploy/helm/searchavo/values.yaml" ;;
+    embedder) echo "deploy/embedder/Dockerfile deploy/helm/searchavo/values.yaml" ;;
     diagrams) echo "docs/architecture/diagrams/render.sh" ;;
     web) echo "deploy/web.Dockerfile" ;;
     public) echo "deploy/Dockerfile" ;;
@@ -47,7 +47,7 @@ classify() {
     backend/architecture/*) echo "backend-architecture" ;;
     backend/*) echo "$BACKEND backend-architecture web public backoffice" ;;
     api/*) echo "frontend $BACKEND web public backoffice" ;;
-    deploy/helm/helper2/files/redis-users.acl) echo "$BACKEND backend-architecture chart" ;;
+    deploy/helm/searchavo/files/redis-users.acl) echo "$BACKEND backend-architecture chart" ;;
     deploy/k8s/app.env.example) echo "backend-libs chart" ;;
     *.md | docs/* | LICENSE) echo "diagrams" ;;
     .claude/* | .idea/*) echo "" ;;
@@ -144,29 +144,29 @@ frontend/src/i18n/locales/en.json|frontend backend-public web backoffice
 frontend/src/i18n/locales/en.admin.json|frontend web backoffice
 deploy/web/nginx.conf|web
 deploy/web.Dockerfile|web
-backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|backend-public backend-architecture public
-backend/apps/public/src/main/kotlin/ai/helper2/search/Ranking.kt|backend-public backend-architecture public
-backend/apps/public/src/test/java/ai/helper2/PublicApplicationTest.java|backend-public public
+backend/apps/public/src/main/java/ai/searchavo/PublicApplication.java|backend-public backend-architecture public
+backend/apps/public/src/main/kotlin/ai/searchavo/search/Ranking.kt|backend-public backend-architecture public
+backend/apps/public/src/test/java/ai/searchavo/PublicApplicationTest.java|backend-public public
 backend/apps/public/src/main/resources/application.yaml|backend-libs backend-public public
 backend/apps/public/src/main/resources/prompts/guide.st|backend-public public
 backend/apps/public/build.gradle.kts|backend-public public
 deploy/Dockerfile|backend-public public
-backend/apps/backoffice/src/main/java/ai/helper2/BackOfficeApplication.java|backend-backoffice backend-architecture backoffice
-backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Scout.kt|backend-backoffice backend-architecture backoffice
-backend/apps/backoffice/src/test/kotlin/ai/helper2/scout/ScoutTest.kt|backend-backoffice backoffice
+backend/apps/backoffice/src/main/java/ai/searchavo/BackOfficeApplication.java|backend-backoffice backend-architecture backoffice
+backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/Scout.kt|backend-backoffice backend-architecture backoffice
+backend/apps/backoffice/src/test/kotlin/ai/searchavo/scout/ScoutTest.kt|backend-backoffice backoffice
 backend/apps/backoffice/src/main/resources/application.yaml|backend-libs backend-backoffice backoffice
 backend/apps/backoffice/build.gradle.kts|backend-backoffice backoffice
 deploy/backoffice.Dockerfile|backend-backoffice backoffice
-backend/loadtest/src/gatling/java/ai/helper2/load/SearchSimulation.java|backend-libs
+backend/loadtest/src/gatling/java/ai/searchavo/load/SearchSimulation.java|backend-libs
 backend/loadtest/build.gradle.kts|backend-libs
-backend/architecture/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java|backend-architecture
+backend/architecture/src/test/java/ai/searchavo/architecture/SourceBoundariesTest.java|backend-architecture
 backend/architecture/build.gradle.kts|backend-architecture
 backend/libs/core/src/main/kotlin/X.kt|BACKEND backend-architecture web public backoffice
 backend/libs/core/src/test/kotlin/XTest.kt|BACKEND backend-architecture web public backoffice
 backend/libs/core/build.gradle.kts|BACKEND backend-architecture web public backoffice
-backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java|BACKEND backend-architecture web public backoffice
+backend/libs/core/src/main/java/ai/searchavo/search/web/SearchController.java|BACKEND backend-architecture web public backoffice
 backend/libs/schema/src/main/resources/db/migration/V1__schema.sql|BACKEND backend-architecture web public backoffice
-backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts|BACKEND backend-architecture web public backoffice
+backend/build-logic/src/main/kotlin/searchavo.spring-app.gradle.kts|BACKEND backend-architecture web public backoffice
 backend/gradle/libs.versions.toml|BACKEND backend-architecture web public backoffice
 backend/gradle/wrapper/gradle-wrapper.properties|BACKEND backend-architecture web public backoffice
 backend/settings.gradle.kts|BACKEND backend-architecture web public backoffice
@@ -183,15 +183,15 @@ api/common.yaml|frontend BACKEND web public backoffice
 .github/scripts/released-migrations.sh|ALL
 compose.yaml|ALL
 .grype.yaml|ALL
-deploy/helm/helper2/values.yaml|chart
-deploy/helm/helper2/templates/app.yaml|chart
-deploy/helm/helper2/files/redis-users.acl|BACKEND backend-architecture chart
+deploy/helm/searchavo/values.yaml|chart
+deploy/helm/searchavo/templates/app.yaml|chart
+deploy/helm/searchavo/files/redis-users.acl|BACKEND backend-architecture chart
 deploy/k8s/Makefile|chart
 deploy/k8s/app.env.example|backend-libs chart
 deploy/k8s/cosign.pub|chart
-deploy/grafana/helper2.json|chart
-deploy/grafana/helper2-backoffice.json|chart
-deploy/monitoring/helper2-rules.yaml|monitoring chart
+deploy/grafana/searchavo.json|chart
+deploy/grafana/searchavo-backoffice.json|chart
+deploy/monitoring/searchavo-rules.yaml|monitoring chart
 deploy/postgres/Dockerfile|postgres chart
 deploy/embedder/server.py|embedder chart
 docs/architecture/decisions/README.md|diagrams
@@ -248,20 +248,20 @@ diagrams|ALL|diagrams
 diagrams|.github/workflows/ci.yml|diagrams
 diagrams|docs/architecture/decisions/README.md|diagrams
 diagrams|backend/libs/core/src/main/kotlin/X.kt|
-diagrams|backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|
+diagrams|backend/apps/public/src/main/java/ai/searchavo/PublicApplication.java|
 diagrams|frontend/src/main.tsx|
 diagrams backend-libs|backend/gradlew|backend-libs
-diagrams backend-libs|backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|
-diagrams backend-libs backend-public|backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|backend-public
+diagrams backend-libs|backend/apps/public/src/main/java/ai/searchavo/PublicApplication.java|
+diagrams backend-libs backend-public|backend/apps/public/src/main/java/ai/searchavo/PublicApplication.java|backend-public
 diagrams backend-libs backend-public|backend/libs/core/src/main/kotlin/X.kt|backend-libs backend-public
 diagrams backend-libs backend-public|frontend/src/main.tsx|
 diagrams backend-libs|README.md|diagrams
 diagrams backend-libs frontend|frontend/src/main.tsx|frontend
 diagrams backend-libs frontend|api/public.yaml|frontend backend-libs
-diagrams backend-libs monitoring|deploy/monitoring/helper2-rules.yaml|monitoring
+diagrams backend-libs monitoring|deploy/monitoring/searchavo-rules.yaml|monitoring
 diagrams backend-libs backend-public public|deploy/Dockerfile|backend-public public
-diagrams backend-libs backend-public backend-architecture|backend/apps/public/src/main/java/ai/helper2/PublicApplication.java|backend-public backend-architecture
-diagrams backend-libs backend-public backend-backoffice|backend/apps/backoffice/src/main/java/ai/helper2/BackOfficeApplication.java|backend-backoffice
+diagrams backend-libs backend-public backend-architecture|backend/apps/public/src/main/java/ai/searchavo/PublicApplication.java|backend-public backend-architecture
+diagrams backend-libs backend-public backend-backoffice|backend/apps/backoffice/src/main/java/ai/searchavo/BackOfficeApplication.java|backend-backoffice
 EOF
   rm -rf "$tree"
   local repo got
@@ -296,11 +296,11 @@ EOF
     }
     g init -q . && echo r > README.md && g add -A && g commit -qm init
     f=0
-    mkdir -p backend frontend deploy/helm/helper2 api
+    mkdir -p backend frontend deploy/helm/searchavo api
     printf 'version = "2026.1.0"\n' > backend/build.gradle.kts
     printf '{\n  "name": "f",\n  "private": true,\n  "version": "2026.1.0",\n  "type": "module"\n}\n' > frontend/package.json
     printf '{\n  "name": "f",\n  "version": "2026.1.0",\n  "lockfileVersion": 3,\n  "requires": true,\n  "packages": {\n    "": {\n      "name": "f",\n      "version": "2026.1.0",\n      "dependencies": {}\n    }\n  }\n}\n' > frontend/package-lock.json
-    printf 'name: h\nversion: 2026.1.0\n' > deploy/helm/helper2/Chart.yaml
+    printf 'name: h\nversion: 2026.1.0\n' > deploy/helm/searchavo/Chart.yaml
     for a in public admin common; do printf 'info:\n  version: 2026.1.0\n' > "api/$a.yaml"; done
     g add -A && g commit -qm versions
     "$SCRIPTS/bump-version.sh" bump 2026.1.1 > /dev/null && g commit -qam bump

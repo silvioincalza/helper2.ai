@@ -1,0 +1,127 @@
+package ai.searchavo.admin.web;
+
+import ai.searchavo.api.generated.DiscoveryHostsApi;
+import ai.searchavo.api.generated.model.DirectoryListReadingDto;
+import ai.searchavo.api.generated.model.DiscoveryHostAddDto;
+import ai.searchavo.api.generated.model.DiscoveryHostEntryDto;
+import ai.searchavo.api.generated.model.DiscoveryHostKindDto;
+import ai.searchavo.api.generated.model.DiscoveryHostRemoveDto;
+import ai.searchavo.api.generated.model.DiscoveryHostsDto;
+import ai.searchavo.platform.ApiProblem;
+import ai.searchavo.platform.NotFoundException;
+import ai.searchavo.platform.ProblemType;
+import ai.searchavo.scout.DiscoveryHost;
+import ai.searchavo.scout.HostKind;
+import ai.searchavo.scout.HostNames;
+import ai.searchavo.scout.usecase.ManageDiscoveryHosts;
+import ai.searchavo.shared.UtcTimes;
+import org.jspecify.annotations.Nullable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1")
+class DiscoveryHostsController implements DiscoveryHostsApi {
+
+  private final ManageDiscoveryHosts hosts;
+
+  DiscoveryHostsController(ManageDiscoveryHosts hosts) {
+    this.hosts = hosts;
+  }
+
+  @Override
+  public ResponseEntity<DiscoveryHostsDto> listDiscoveryHosts() {
+    return ResponseEntity.ok(
+        new DiscoveryHostsDto(
+            hosts.list().stream().map(DiscoveryHostsController::dto).toList(),
+            ManageDiscoveryHosts.MAX_HOSTS));
+  }
+
+  @Override
+  public ResponseEntity<DiscoveryHostEntryDto> addDiscoveryHost(DiscoveryHostAddDto body) {
+    HostKind kind = HostKind.valueOf(body.getKind().getValue());
+    return switch (hosts.add(Admins.id(), body.getHost(), kind, body.getReason())) {
+      case ManageDiscoveryHosts.Added.Done d ->
+          ResponseEntity.status(HttpStatus.CREATED).body(dto(d.getHost()));
+      case ManageDiscoveryHosts.Added.Invalid i -> throw invalid(i.getProblem());
+      case ManageDiscoveryHosts.Added.AlreadyListed a ->
+          throw new ApiProblem(
+              ProblemType.DUPLICATE,
+              a.getCurrent().getHost()
+                  + " is in the "
+                  + listName(a.getCurrent().getKind())
+                  + " list already. Remove it there first to move it.");
+      case ManageDiscoveryHosts.Added.Full f ->
+          throw new ApiProblem(
+              ProblemType.INVALID_REQUEST,
+              "The lists hold at most "
+                  + ManageDiscoveryHosts.MAX_HOSTS
+                  + " hosts. Remove one first.");
+      case ManageDiscoveryHosts.Added.BadReason r -> throw badReason();
+    };
+  }
+
+  @Override
+  public ResponseEntity<Void> removeDiscoveryHost(
+      String host, @Nullable DiscoveryHostRemoveDto body) {
+    String reason = body == null ? null : body.getReason();
+    return switch (hosts.remove(Admins.id(), host, reason)) {
+      case ManageDiscoveryHosts.Removed.Done d -> ResponseEntity.noContent().build();
+      case ManageDiscoveryHosts.Removed.NotFound n ->
+          throw new NotFoundException(host + " is in no list.");
+      case ManageDiscoveryHosts.Removed.BadReason r -> throw badReason();
+    };
+  }
+
+  @Override
+  public ResponseEntity<DiscoveryHostEntryDto> readDirectoryLists(
+      String host, DirectoryListReadingDto body) {
+    return switch (hosts.readLists(Admins.id(), host, body.getRead(), body.getReason())) {
+      case ManageDiscoveryHosts.ListReading.Done d -> ResponseEntity.ok(dto(d.getHost()));
+      case ManageDiscoveryHosts.ListReading.NotADirectory n ->
+          throw new ApiProblem(
+              ProblemType.INVALID_REQUEST,
+              n.getHost().getHost()
+                  + " is a writing host: only a directory host has lists to read.");
+      case ManageDiscoveryHosts.ListReading.NotFound n ->
+          throw new NotFoundException(host + " is in no list.");
+      case ManageDiscoveryHosts.ListReading.BadReason r -> throw badReason();
+    };
+  }
+
+  private static ApiProblem invalid(HostNames.Problem problem) {
+    return new ApiProblem(
+        ProblemType.INVALID_REQUEST,
+        switch (problem) {
+          case EMPTY -> "host: enter a host name, such as techcrunch.com.";
+          case NOT_A_HOST ->
+              "host: only the host name, such as techcrunch.com: no https://, path or port.";
+          case TOO_BROAD ->
+              "host: a name and its domain, such as techcrunch.com; a domain alone matches too"
+                  + " many sites.";
+          case GITHUB -> "host: discovery reads GitHub by its own rule.";
+        });
+  }
+
+  private static ApiProblem badReason() {
+    return new ApiProblem(
+        ProblemType.INVALID_REQUEST,
+        "reason: one plain line of at most " + ManageDiscoveryHosts.MAX_REASON + " characters.");
+  }
+
+  private static String listName(HostKind kind) {
+    return kind == HostKind.WRITING ? "writing" : "directory";
+  }
+
+  private static DiscoveryHostEntryDto dto(DiscoveryHost h) {
+    return new DiscoveryHostEntryDto(
+            h.getHost(),
+            DiscoveryHostKindDto.fromValue(h.getKind().name()),
+            h.getReadsLists(),
+            h.getAddedBy(),
+            UtcTimes.odt(h.getAddedAt()))
+        .reason(h.getReason());
+  }
+}

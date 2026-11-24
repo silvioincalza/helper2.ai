@@ -1,8 +1,8 @@
-import ai.helper2.buildlogic.BundleContract
+import ai.searchavo.buildlogic.BundleContract
 
-plugins { id("helper2.spring-app") }
+plugins { id("searchavo.spring-app") }
 
-base.archivesName = "helper2-public"
+base.archivesName = "searchavo-public"
 
 tasks.named<BundleContract>("bundleContract") {
   entries.from(rootProject.layout.projectDirectory.file("../api/public.yaml"))
@@ -51,7 +51,7 @@ dependencies {
 
 tasks.named<Test>("test") {
   inputs
-    .files(rootProject.files("../deploy/helm/helper2/files/redis-users.acl"))
+    .files(rootProject.files("../deploy/helm/searchavo/files/redis-users.acl"))
     .withPropertyName("redisUsers")
     .withPathSensitivity(PathSensitivity.RELATIVE)
   inputs
@@ -71,9 +71,9 @@ tasks.named<Test>("test") {
   inputs
     .files(
       rootProject.fileTree(".") {
-        include("apps/public/src/main/kotlin/ai/helper2/guide/**")
-        include("libs/core/src/main/kotlin/ai/helper2/search/**")
-        include("libs/kernel/src/main/kotlin/ai/helper2/shared/**")
+        include("apps/public/src/main/kotlin/ai/searchavo/guide/**")
+        include("libs/core/src/main/kotlin/ai/searchavo/search/**")
+        include("libs/kernel/src/main/kotlin/ai/searchavo/shared/**")
       }
     )
     .withPropertyName("sourcesTheTestsRead")

@@ -1,0 +1,170 @@
+{{- $name := include "searchavo.appName" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "searchavo.labels" . | nindent 4 }}
+spec:
+  replicas: {{ ternary 1 (required "app.replicas" .Values.app.replicas) .Values.canary.only }}
+  strategy: { type: RollingUpdate, rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
+  selector: { matchLabels: { app: {{ $name }} } }
+  template:
+    metadata:
+      labels: { app: {{ $name }} }
+      annotations:
+        {{- with .Values.envSecret.revision }}
+        checksum/env-revision: {{ . | quote }}
+        {{- end }}
+        {{- if and .Values.redis.auth.enabled .Values.redis.auth.existingSecret }}
+        checksum/redis-auth-revision: {{ include "searchavo.redisAuthRevision" . }}
+        {{- end }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: /actuator/prometheus
+    spec:
+      serviceAccountName: searchavo
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      topologySpreadConstraints:
+        - { maxSkew: 1, topologyKey: kubernetes.io/hostname, whenUnsatisfiable: ScheduleAnyway, labelSelector: { matchLabels: { app: {{ $name }} } } }
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, seccompProfile: { type: RuntimeDefault } }
+      {{- $shutdown := .Values.app.shutdown }}
+      terminationGracePeriodSeconds: {{ add (int (required "app.shutdown.preStopSeconds" $shutdown.preStopSeconds)) (int (required "app.shutdown.drainSeconds" $shutdown.drainSeconds)) 5 }}
+      initContainers:
+        - name: shell
+          image: {{ include "searchavo.webImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [cp, /usr/share/searchavo/shell/index.html, /shell/index.html]
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { memory: 32Mi }
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: shell, mountPath: /shell }]
+      containers:
+        - name: app
+          image: {{ include "searchavo.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom: [{ secretRef: { name: {{ include "searchavo.envSecret" . }} } }]
+          env:
+            - { name: SA_PROFILES, value: {{ .Values.app.springProfiles | quote }} }
+            - { name: SA_SHUTDOWN_TIMEOUT, value: "{{ int $shutdown.drainSeconds }}s" }
+            - { name: SA_DATABASE_URL, value: "jdbc:postgresql://postgres:5432/searchavo" }
+            - { name: SA_DATABASE_USER, value: h2_public }
+            - name: SA_DATABASE_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ include "searchavo.credentialsSecret" . }}, key: SA_DATABASE_PUBLIC_PASSWORD } }
+            - { name: SA_REDIS_HOST, value: redis }
+            {{- if .Values.redis.auth.enabled }}
+            - { name: SA_REDIS_USER, value: h2_public }
+            - name: SA_REDIS_PASSWORD
+              valueFrom: { {{ include "searchavo.redisPasswordFrom" (list . "SA_REDIS_PUBLIC_PASSWORD") }} }
+            {{- else }}
+            - { name: SA_REDIS_PASSWORD, value: "" }
+            {{- end }}
+            - { name: SA_BUILD_VERSION, value: {{ .Values.image.tag | quote }} }
+            - { name: SA_NOINDEX, value: {{ .Values.app.noindex | toString | quote }} }
+            {{- include "searchavo.embedderEnv" . | nindent 12 }}
+            {{- with .Values.app.monetisation }}
+            {{- with .githubSponsorsUrl }}
+            - { name: SA_SUPPORT_GITHUB_SPONSORS_URL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .stripePaymentUrl }}
+            - { name: SA_SUPPORT_STRIPE_PAYMENT_URL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .ga4MeasurementId }}
+            - { name: SA_ANALYTICS_GA4_MEASUREMENT_ID, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .adsenseClient }}
+            - { name: SA_ADS_ADSENSE_CLIENT, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .adsenseSlot }}
+            - { name: SA_ADS_ADSENSE_SLOT, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .adsenseSlotSearch }}
+            - { name: SA_ADS_ADSENSE_SLOT_SEARCH, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .adsenseSlotGuide }}
+            - { name: SA_ADS_ADSENSE_SLOT_GUIDE, value: {{ . | quote }} }
+            {{- end }}
+            {{- end }}
+            {{- with .Values.app.publicBaseUrl }}
+            - { name: SA_PUBLIC_BASE_URL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .Values.app.indexNowKey }}
+            - { name: SA_INDEXNOW_KEY, value: {{ . | quote }} }
+            {{- end }}
+            {{- $limits := .Values.app.dailyLimits }}
+            {{- range $name, $value := dict "SA_LIVE_WEB_GUEST_SEARCH" $limits.webSearches.search "SA_LIVE_WEB_GUEST_GUIDE" $limits.webSearches.guide "SA_GUIDE_CLIENT_DAILY_QUESTIONS" $limits.guideQuestions "SA_LIVE_WEB_DAILY_CREDITS" $limits.webSearchCredits "SA_GUIDE_DAILY_MODEL_CALLS" $limits.guideModelCalls "SA_GUIDE_BUDGET_PACE_SLOTS" $limits.guideBudgetPaceSlots "SA_GUIDE_NETWORK_DAILY_QUESTIONS" $limits.guideNetworkQuestions "SA_SETUP_GUIDE_STEP_TEXT" .Values.app.setupGuideStepText "SA_GUIDE_MODEL_STREAM" .Values.app.guideModelStream }}
+            {{- if not (kindIs "invalid" $value) }}
+            - { name: {{ $name }}, value: {{ $value | toString | quote }} }
+            {{- end }}
+            {{- end }}
+            {{- with .Values.app.guideJudge.model }}
+            - { name: SA_GUIDE_JUDGE_MODEL, value: {{ . | quote }} }
+            {{- end }}
+            {{- if not (kindIs "invalid" .Values.app.guideJudge.dailyCalls) }}
+            - { name: SA_GUIDE_JUDGE_DAILY_CALLS, value: {{ .Values.app.guideJudge.dailyCalls | toString | quote }} }
+            {{- end }}
+            {{- with .Values.app.guideCacheTtl }}
+            - { name: SA_GUIDE_CACHE_TTL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .Values.app.guideSimilarThreshold }}
+            - { name: SA_GUIDE_SIMILAR_THRESHOLD, value: {{ . | toString | quote }} }
+            {{- end }}
+            - { name: SA_RETENTION_BACKUPS, value: {{ printf "P%dD" (int .Values.backup.retentionDays) | quote }} }
+            - { name: SA_COOKIE_SECURE, value: "true" }
+            - { name: SA_FORWARD_HEADERS_STRATEGY, value: native }
+            - { name: SA_LOG_FORMAT, value: logstash }
+            - { name: SA_ENVIRONMENT, value: {{ required "app.environment" .Values.app.environment | quote }} }
+            - { name: SA_TRACING_EXPORT, value: {{ .Values.app.tracing.export | toString | quote }} }
+            - { name: SA_TRACING_SAMPLING, value: {{ .Values.app.tracing.sampling | toString | quote }} }
+            - { name: SA_OTLP_TRACES_ENDPOINT, value: {{ .Values.app.tracing.endpoint | quote }} }
+            - { name: SA_MANAGEMENT_PORT, value: "8081" }
+            - { name: SA_METRICS_PUBLIC, value: "true" }
+          ports:
+            - { containerPort: 8080, name: http }
+            - { containerPort: 8081, name: management }
+          startupProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 5
+            failureThreshold: {{ div (required "app.startupSeconds" .Values.app.startupSeconds) 5 }}
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: management }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 10
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              sleep: { seconds: {{ int $shutdown.preStopSeconds }} }
+          resources:
+            {{- toYaml .Values.app.resources | nindent 12 }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }, { name: shell, mountPath: /shell, readOnly: true }]
+      volumes: [{ name: tmp, emptyDir: {} }, { name: shell, emptyDir: { sizeLimit: 1Mi } }]
+{{- if and (not .Values.canary.only) (gt (int .Values.app.replicas) 1) }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: searchavo
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "searchavo.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ sub (int .Values.app.replicas) 1 }}
+  selector: { matchLabels: { app: searchavo } }
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "searchavo.labels" . | nindent 4 }}
+spec:
+  selector: { app: {{ $name }} }
+  ports: [{ port: 80, targetPort: http }]

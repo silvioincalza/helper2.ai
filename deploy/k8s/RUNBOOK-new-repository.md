@@ -1,6 +1,6 @@
 # Runbook: set up from zero
 
-These steps set up helper2.ai on a new GitHub repository, from zero: the repository and its settings, the CI
+These steps set up searchavo.ai on a new GitHub repository, from zero: the repository and its settings, the CI
 variables, the OpenBao roles, the self-hosted runner, the first deploy. The platform (cluster, OpenBao, Harbor,
 the runner VM) still runs: only what is bound to the repository changes.
 
@@ -18,14 +18,14 @@ Keep a copy of these before you start. Git cannot give them back.
 | What | Where | Also in |
 |---|---|---|
 | Notes, plans, reviews, memory, `launch.json` | `.private/` (`.remember` and `.claude/launch.json` point into it) | nowhere |
-| Each environment's settings and passwords | `deploy/k8s/staging/app.env`, `deploy/k8s/prod/app.env` | OpenBao `helper2/kv`, `ci/<env>` (`app_env`) |
+| Each environment's settings and passwords | `deploy/k8s/staging/app.env`, `deploy/k8s/prod/app.env` | OpenBao `searchavo/kv`, `ci/<env>` (`app_env`) |
 | Terraform backend and variables | `deploy/k8s/terraform/backend.hcl`, `terraform.tfvars` | nowhere |
 | Local settings | `.env`, `.claude/settings.local.json`, `CLAUDE.local.md` | nowhere |
 | The database | the Postgres PVC and the nightly dump | the off-site bucket ([Backups](README.md#backups)) |
-| The signing key `helper2-images` | OpenBao Transit `helper2/transit` (not exportable) | its public half is `deploy/k8s/cosign.pub` |
+| The signing key `searchavo-images` | OpenBao Transit `searchavo/transit` (not exportable) | its public half is `deploy/k8s/cosign.pub` |
 
-Repository secrets: optional, read only by the weekly `live` workflow: `H2_GITHUB_TOKEN`, `H2_HF_TOKEN`,
-`H2_LIVE_WEB_API_KEY`, `H2_NEBIUS_API_KEY`. A live test whose key is missing is skipped. Nothing that deploys
+Repository secrets: optional, read only by the weekly `live` workflow: `SA_GITHUB_TOKEN`, `SA_HF_TOKEN`,
+`SA_LIVE_WEB_API_KEY`, `SA_NEBIUS_API_KEY`. A live test whose key is missing is skipped. Nothing that deploys
 reads a GitHub secret.
 
 ## 2. Tools on the workstation
@@ -52,7 +52,7 @@ Actions stay off until step 10. Otherwise the first push starts `cd.yml`, and Gi
 `staging` and `prod` by itself, without their protection rules.
 
 ```bash
-R=<owner>/helper2.ai
+R=<owner>/searchavo.ai
 gh repo create $R --public
 gh api -X PUT repos/$R/actions/permissions -F enabled=false
 ```
@@ -132,9 +132,9 @@ gh variable set -R $R -f $S/variables.env
 The platform repository owns OpenBao, Harbor, the runner VM and the cluster's namespaces, Ingresses and `deployer`
 ServiceAccounts. For a new repository, three things change there:
 
-1. In `tenants.yml`, `owners.helper2.ci`: `repo` and `sub_prefix` (the prefix printed in step 6). Then
+1. In `tenants.yml`, `owners.searchavo.ci`: `repo` and `sub_prefix` (the prefix printed in step 6). Then
    `make bao-tenants` (playbook 33): the roles `deploy`, `deploy-staging` and `deploy-prod` of the auth mount
-   `helper2/jwt` now accept the new repository.
+   `searchavo/jwt` now accept the new repository.
 2. A new fine-grained token, this repository only, permission Administration read and write (the API that makes a
    just-in-time runner needs it). It goes into the platform's sealed `.secrets.env` as `GITHUB_RUNNER_PAT`. Then
    `make github-runner` (playbook 3a) on `gh-runner-01`.
@@ -147,13 +147,13 @@ ServiceAccounts. For a new repository, three things change there:
 
    It registers again for every job, so its name changes each time.
 
-The Harbor projects, the Transit key `helper2-images` and the namespaces stay as they are. When the Transit key is
+The Harbor projects, the Transit key `searchavo-images` and the namespaces stay as they are. When the Transit key is
 new too, write its public half and commit it: `make -C deploy/k8s cosign-pub`. Images signed with the old key then
 fail their check: sign them again before a rollback to them (`make -C deploy/k8s sign-existing TAG=<tag>`).
 
 ## 9. What OpenBao gives CI
 
-Log in as `helper2-operator` (OIDC, in the browser), then write each environment's `app.env` and the `deployer`
+Log in as `searchavo-operator` (OIDC, in the browser), then write each environment's `app.env` and the `deployer`
 kubeconfig into `ci/<env>`, and the off-site backup Secret of prod:
 
 ```bash
@@ -177,7 +177,7 @@ images Harbor already holds. The history pushed in step 4 started nothing, and t
 images, then deploys staging. A release also needs a green push run of its commit, so the first release is cut
 after this run, with `release-prepare`. Check:
 
-- the run is green and staging answers: `curl -s -o /dev/null -w '%{http_code}\n' https://helper2.incalza.me/`;
+- the run is green and staging answers: `curl -s -o /dev/null -w '%{http_code}\n' https://searchavo.incalza.me/`;
 - the pull request showed the check `ci-ok`, and the merge button offered squash and merge commit;
 - the next nightly `guide-eval` run reaches staging.
 
@@ -187,7 +187,7 @@ Prod gets the next release: [CI.md, Releases](CI.md), step by step in
 ## 11. The workstation
 
 ```bash
-git clone https://github.com/$R.git helper2.ai && cd helper2.ai
+git clone https://github.com/$R.git searchavo.ai && cd searchavo.ai
 cp -R <backup>/.private .private
 cp <backup>/.env .env
 cp <backup>/staging.app.env deploy/k8s/staging/app.env

@@ -1,4 +1,4 @@
-helper2.scout.enabled = false
+searchavo.scout.enabled = false
 resilience4j.bulkhead.instances.source-demo-catalog.base-config = source
 resilience4j.bulkhead.instances.source-demo-down.base-config = source
 resilience4j.bulkhead.instances.source-demo-mirror.base-config = source
@@ -7,4 +7,4 @@ resilience4j.circuitbreaker.instances.source-demo-catalog.base-config = source
 resilience4j.circuitbreaker.instances.source-demo-down.base-config = source
 resilience4j.circuitbreaker.instances.source-demo-mirror.base-config = source
 resilience4j.circuitbreaker.instances.source-demo-slow.base-config = source
-spring.profiles.active = ${H2_PROFILES:}  =>  demo
+spring.profiles.active = ${SA_PROFILES:}  =>  demo

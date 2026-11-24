@@ -78,8 +78,8 @@ does the rest (`PickAnswer` for picks: retrieve, choose, gate, reason check).
 - **Prompt labels.** A prompt's label is the first 8 hex digits of the SHA-256 of its rendered text
   (`ModelCallMetrics.promptVersion`). The meters, the answer cache key ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)) and the
   eval runs name it. `SpringAiGuideModelTest.theWordingOfEachPromptIsPinnedToItsLabel` pins each one, so a new wording
-  changes its label in the same change: plan `a0b9683a`, choose `07b0c3cd`, compare `b813f8b5`, explain `68a93456`,
-  verify-reasons `3ab524f4`. The prompts state the limits code enforces through `{{placeholders}}`, and a test checks
+  changes its label in the same change: plan `b1da04a3`, choose `180668d0`, compare `b17589b7`, explain `b4957760`,
+  verify-reasons `577afe2f`. The prompts state the limits code enforces through `{{placeholders}}`, and a test checks
   each number.
 
 ### The evidence gate

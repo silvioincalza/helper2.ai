@@ -1,4 +1,4 @@
-helper2:
+searchavo:
   test:
     client: h2_public
   schema:

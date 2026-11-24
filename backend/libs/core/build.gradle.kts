@@ -1,9 +1,9 @@
-import ai.helper2.buildlogic.SHARED_API_PACKAGE
-import ai.helper2.buildlogic.springContract
+import ai.searchavo.buildlogic.SHARED_API_PACKAGE
+import ai.searchavo.buildlogic.springContract
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
-  id("helper2.kotlin-library")
+  id("searchavo.kotlin-library")
   id("org.openapi.generator")
   `java-test-fixtures`
 }

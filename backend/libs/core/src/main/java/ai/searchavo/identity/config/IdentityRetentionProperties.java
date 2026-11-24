@@ -1,0 +1,21 @@
+package ai.searchavo.identity.config;
+
+import ai.searchavo.identity.AuditLog;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotNull;
+import java.time.Duration;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
+
+@Validated
+@ConfigurationProperties("searchavo.retention")
+public record IdentityRetentionProperties(
+    @NotNull Duration inactiveAccounts, @NotNull Duration adminAudit) {
+
+  @AssertTrue(
+      message =
+          "searchavo.retention.admin-audit must be at least P730D (V1 keeps every entry that long)")
+  boolean isAdminAuditAtLeastWhatTheTableKeeps() {
+    return adminAudit == null || adminAudit.compareTo(AuditLog.SHORTEST_RETENTION) >= 0;
+  }
+}

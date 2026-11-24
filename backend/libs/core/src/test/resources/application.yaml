@@ -1,5 +1,5 @@
 spring:
   config:
-    import: classpath:helper2-shared.yaml
+    import: classpath:searchavo-shared.yaml
   application:
-    name: helper2-core-test
+    name: searchavo-core-test

@@ -1,0 +1,63 @@
+image:
+  repository: harbor-i.infra.incalza.me/searchavo/apps/searchavo
+postgres:
+  image:
+    repository: harbor-i.infra.incalza.me/searchavo/apps/postgres
+  storageClassName: local-path
+redis:
+  storageClassName: local-path
+embedder:
+  enabled: true
+  clientNamespaces: [searchavo-staging]
+  indexEvery: PT3S
+  threads: 4
+  resources:
+    requests: { cpu: "4", memory: 6Gi }
+    limits: { memory: 8Gi }
+  image:
+    repository: harbor-i.infra.incalza.me/searchavo/apps/embedder
+networkPolicy:
+  ingressController:
+    namespace: ingress-nginx
+    podLabels: { app.kubernetes.io/name: ingress-nginx }
+  metricsNamespace: observability
+  egress:
+    otlp:
+      namespace: observability
+app:
+  springProfiles: llm-nebius,oauth-github
+  guideSimilarThreshold: 0.96
+  guideModelStream: "ON"
+  tracing:
+    export: true
+    endpoint: http://alloy.observability.svc:4318/v1/traces
+  environment: prod
+  indexNowKey: 81482628ff74f5de09b306b150596813
+  monetisation:
+    adsenseClient: ca-pub-4688630163076563
+  replicas: 3
+  dailyLimits:
+    webSearchCredits: "3000"
+  guideJudge:
+    model: nvidia/Nemotron-3-Ultra-550b-a55b
+    dailyCalls: 300
+web:
+  image:
+    repository: harbor-i.infra.incalza.me/searchavo/apps/searchavo-web
+backoffice:
+  image:
+    repository: harbor-i.infra.incalza.me/searchavo/apps/searchavo-backoffice
+  adminBaseUrl: https://admin.searchavo.ai
+  scoutCron: "0 7 3 * * *"
+backup:
+  enabled: true
+  timeZone: Europe/Zurich
+  storageClassName: nfs-k8s
+  offsite:
+    enabled: true
+canary:
+  host: searchavo.ai
+
+monitoring:
+  exporters:
+    enabled: true

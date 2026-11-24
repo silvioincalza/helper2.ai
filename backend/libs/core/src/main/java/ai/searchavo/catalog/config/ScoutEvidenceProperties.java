@@ -1,0 +1,20 @@
+package ai.searchavo.catalog.config;
+
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotNull;
+import java.time.Duration;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
+
+@Validated
+@ConfigurationProperties("searchavo.scout.evidence")
+public record ScoutEvidenceProperties(
+    @NotNull Duration pageReadTtl, @NotNull Duration pageTextTtl) {
+  @AssertTrue(message = "must be more than 0 and at most P1D")
+  public boolean isPageTextTtlAtMostADay() {
+    return pageTextTtl == null
+        || (!pageTextTtl.isNegative()
+            && !pageTextTtl.isZero()
+            && pageTextTtl.compareTo(Duration.ofDays(1)) <= 0);
+  }
+}

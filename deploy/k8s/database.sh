@@ -3,11 +3,11 @@ set -euo pipefail
 
 POLL=${POLL:-10}
 TRIES=${TRIES:-180}
-DUMP_NAME='^helper2-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}Z\.sql\.gz$'
-APPS='helper2 helper2-backoffice helper2-canary'
+DUMP_NAME='^searchavo-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}Z\.sql\.gz$'
+APPS='searchavo searchavo-backoffice searchavo-canary'
 READER=pg-restore
 
-namespace_ok() { [[ $1 =~ ^helper2-(staging|prod)$ ]]; }
+namespace_ok() { [[ $1 =~ ^searchavo-(staging|prod)$ ]]; }
 
 job_state() {
   kubectl -n "$1" get job "$2" -o json | jq -r '
@@ -18,7 +18,7 @@ job_state() {
 dump() {
   local ns=$1 version=$2 job state name log start
   namespace_ok "$ns" || {
-    echo "database.sh: $ns is not helper2-staging or helper2-prod" >&2
+    echo "database.sh: $ns is not searchavo-staging or searchavo-prod" >&2
     return 1
   }
   [[ $version =~ ^[0-9]{4}\.[1-9][0-9]*\.(0|[1-9][0-9]*)$ ]] || {
@@ -55,8 +55,8 @@ dump() {
     # named no earlier than the job's start.
     start=$(kubectl -n "$ns" get job "$job" -o jsonpath='{.status.startTime}') || start=
     start=${start//:/}
-    [[ -z $start ]] || name=$(grep -oE 'helper2-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}Z\.sql\.gz' <<< "$log" | sort -u |
-      awk -v from="helper2-$start" '$0 >= from' | tail -n 1)
+    [[ -z $start ]] || name=$(grep -oE 'searchavo-[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}Z\.sql\.gz' <<< "$log" | sort -u |
+      awk -v from="searchavo-$start" '$0 >= from' | tail -n 1)
   fi
   [[ $name =~ $DUMP_NAME ]] || {
     echo "database.sh: the dump job $job names no dump in its log" >&2
@@ -82,7 +82,7 @@ apps_stopped() {
     echo "database.sh: the jobs in $ns cannot be read" >&2
     return 1
   }
-  running=$(jq -r '.items[] | select(.metadata.name | test("^helper2-(canary-)?migrate-")) | select((.status.active // 0) > 0) | .metadata.name' <<< "$jobs") || {
+  running=$(jq -r '.items[] | select(.metadata.name | test("^searchavo-(canary-)?migrate-")) | select((.status.active // 0) > 0) | .metadata.name' <<< "$jobs") || {
     echo "database.sh: the jobs in $ns do not read as a job list" >&2
     return 1
   }
@@ -95,7 +95,7 @@ apps_stopped() {
 restore() {
   local ns=$1 file=$2 typed=$3 image
   namespace_ok "$ns" || {
-    echo "database.sh: $ns is not helper2-staging or helper2-prod" >&2
+    echo "database.sh: $ns is not searchavo-staging or searchavo-prod" >&2
     return 1
   }
   [[ $typed == "$ns" ]] || {
@@ -103,11 +103,11 @@ restore() {
     return 1
   }
   [[ $file =~ $DUMP_NAME ]] || {
-    echo "database.sh: $file is not a dump name (helper2-<UTC date>T<UTC time>Z.sql.gz)" >&2
+    echo "database.sh: $file is not a dump name (searchavo-<UTC date>T<UTC time>Z.sql.gz)" >&2
     return 1
   }
   apps_stopped "$ns" || {
-    echo "stop them first: kubectl -n $ns scale deployment/helper2 deployment/helper2-backoffice --replicas=0, and make uncanary" >&2
+    echo "stop them first: kubectl -n $ns scale deployment/searchavo deployment/searchavo-backoffice --replicas=0, and make uncanary" >&2
     return 1
   }
   image=$(kubectl -n "$ns" get statefulset postgres -o jsonpath='{.spec.template.spec.containers[0].image}')
@@ -140,8 +140,8 @@ EOF
   }
   echo "restoring $ns from $file: the whole database is replaced, in one transaction"
   kubectl -n "$ns" exec "$READER" -- sh -ec "printf 'BEGIN;\nDROP SCHEMA public CASCADE;\nCREATE SCHEMA public AUTHORIZATION pg_database_owner;\nGRANT USAGE ON SCHEMA public TO PUBLIC;\n'; gzip -dc /backup/$file; printf 'COMMIT;\n'" |
-    kubectl -n "$ns" exec -i postgres-0 -- psql -U helper2 -d helper2 -v ON_ERROR_STOP=1 -q
-  echo "$ns runs $file. The apps stay stopped: bring back the release that runs on this schema (make ENV=${ns#helper2-} rollback, or a deploy of that release)"
+    kubectl -n "$ns" exec -i postgres-0 -- psql -U searchavo -d searchavo -v ON_ERROR_STOP=1 -q
+  echo "$ns runs $file. The apps stay stopped: bring back the release that runs on this schema (make ENV=${ns#searchavo-} rollback, or a deploy of that release)"
 }
 
 fake_cluster() {
@@ -153,15 +153,15 @@ case " $* " in
   *" get job pg-backup-release-"*)
     [[ -z ${FAKE_NO_JOB:-} || -e $FAKE_DIR/created ]] || exit 1
     printf '{"status": {"conditions": [{"type": "%s", "status": "True"}]}}\n' "${FAKE_DUMP_JOB:-Complete}" ;;
-  *" logs job/"*) printf '%s\n' "${FAKE_DUMP_LOG-dump: /backup/helper2-2026-11-23T013000Z.sql.gz}" ;;
+  *" logs job/"*) printf '%s\n' "${FAKE_DUMP_LOG-dump: /backup/searchavo-2026-11-23T013000Z.sql.gz}" ;;
   *" get pods -l app="*)
     [[ -z ${FAKE_PODS_FAIL:-} ]] || exit 1
     all="$*"
     app=${all##*app=}
     app=${app%% *}
     [[ " ${FAKE_RUNNING:-} " != *" $app "* ]] || echo "pod/$app-1"
-    if [[ $app == helper2 && -n ${FAKE_STARTS_AT_SECOND_CHECK:-} ]] && [[ -e $FAKE_DIR/checked ]]; then echo "pod/helper2-2"; fi
-    [[ $app != helper2-canary ]] || touch "$FAKE_DIR/checked"
+    if [[ $app == searchavo && -n ${FAKE_STARTS_AT_SECOND_CHECK:-} ]] && [[ -e $FAKE_DIR/checked ]]; then echo "pod/searchavo-2"; fi
+    [[ $app != searchavo-canary ]] || touch "$FAKE_DIR/checked"
     ;;
   *" get jobs -o json "*)
     [[ -z ${FAKE_JOBS_FAIL:-} ]] || exit 1
@@ -193,8 +193,8 @@ self_test() {
       loaded) [[ $got == ok && -s $dir/loaded ]] && ! grep -q -- --single-transaction "$dir/calls" &&
         grep 'exec pg-restore -- sh -ec printf' "$dir/calls" | grep -q "^.*'BEGIN;.*DROP SCHEMA public CASCADE;.*gzip -dc /backup/[^;]*; printf 'COMMIT;.n'\$" && got=loaded ;;
       untouched) [[ $got == fail && ! -e $dir/loaded ]] && ! grep -q 'postgres-0' "$dir/calls" 2> /dev/null && got=untouched ;;
-      named) [[ $got == ok && ${out##*$'\n'} == helper2-2026-11-23T013000Z.sql.gz ]] && got=named ;;
-      made) [[ $got == ok && -e $dir/created && ${out##*$'\n'} == helper2-2026-11-23T013000Z.sql.gz ]] && got=made ;;
+      named) [[ $got == ok && ${out##*$'\n'} == searchavo-2026-11-23T013000Z.sql.gz ]] && got=named ;;
+      made) [[ $got == ok && -e $dir/created && ${out##*$'\n'} == searchavo-2026-11-23T013000Z.sql.gz ]] && got=made ;;
       kept) [[ $got == ok && ! -e $dir/created ]] && ! grep -q ' delete job' "$dir/calls" && got=kept ;;
     esac
     if [[ $got == "$want" ]]; then
@@ -204,27 +204,27 @@ self_test() {
       fails=$((fails + 1))
     fi
   done << 'EOF_CASES'
-restore with the apps stopped and a whole dump|loaded|NONE=1|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
-restore refuses another namespace|untouched|NONE=1|restore default helper2-2026-11-23T013000Z.sql.gz default
-restore refuses a namespace typed wrong|untouched|NONE=1|restore helper2-prod helper2-2026-11-23T013000Z.sql.gz helper2-staging
-restore refuses a name that is not a dump|untouched|NONE=1|restore helper2-staging ../etc/passwd helper2-staging
-restore refuses a running public app|untouched|FAKE_RUNNING=helper2|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
-restore refuses a running back office|untouched|FAKE_RUNNING=helper2-backoffice|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
-restore refuses a canary|untouched|FAKE_RUNNING=helper2-canary|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
-restore refuses a running migrate job|untouched|FAKE_JOBS={"metadata":{"name":"helper2-migrate-9"},"status":{"active":1}}|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
-restore refuses an app that started while the dump was read|untouched|FAKE_STARTS_AT_SECOND_CHECK=1|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
-restore refuses a dump that does not read back in full|untouched|FAKE_DUMP=cut|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
-restore refuses when the pods cannot be read|untouched|FAKE_PODS_FAIL=1|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
-restore refuses when the jobs cannot be read|untouched|FAKE_JOBS_FAIL=1|restore helper2-staging helper2-2026-11-23T013000Z.sql.gz helper2-staging
-dump names the dump of the release|named|NONE=1|dump helper2-prod 2026.11.12
-dump runs pg-backup once when the release has no dump yet|made|FAKE_NO_JOB=1|dump helper2-prod 2026.11.12
-dump of a rerun keeps the dump of the earlier run, taken before its canary|kept|NONE=1|dump helper2-prod 2026.11.12
-dump fails with a failed job|fail|FAKE_DUMP_JOB=Failed|dump helper2-prod 2026.11.12
-dump fails with a job that does not finish|fail|FAKE_DUMP_JOB=Suspended|dump helper2-prod 2026.11.12
-dump fails when the log names no dump|fail|FAKE_DUMP_LOG=done|dump helper2-prod 2026.11.12
-dump of a CronJob with no dump line names the newest file from its start|named|FAKE_DUMP_LOG=-rw-r--r--_70_9_helper2-2026-11-22T013000Z.sql.gz_-rw-r--r--_70_9_helper2-2026-11-23T013000Z.sql.gz|dump helper2-prod 2026.11.12
-dump of a CronJob with no dump line fails when no file is from its start|fail|FAKE_DUMP_LOG=-rw-r--r--_70_9_helper2-2026-11-22T013000Z.sql.gz|dump helper2-prod 2026.11.12
-dump refuses a version that is not YYYY.N.P|fail|NONE=1|dump helper2-prod 2026.11
+restore with the apps stopped and a whole dump|loaded|NONE=1|restore searchavo-staging searchavo-2026-11-23T013000Z.sql.gz searchavo-staging
+restore refuses another namespace|untouched|NONE=1|restore default searchavo-2026-11-23T013000Z.sql.gz default
+restore refuses a namespace typed wrong|untouched|NONE=1|restore searchavo-prod searchavo-2026-11-23T013000Z.sql.gz searchavo-staging
+restore refuses a name that is not a dump|untouched|NONE=1|restore searchavo-staging ../etc/passwd searchavo-staging
+restore refuses a running public app|untouched|FAKE_RUNNING=searchavo|restore searchavo-staging searchavo-2026-11-23T013000Z.sql.gz searchavo-staging
+restore refuses a running back office|untouched|FAKE_RUNNING=searchavo-backoffice|restore searchavo-staging searchavo-2026-11-23T013000Z.sql.gz searchavo-staging
+restore refuses a canary|untouched|FAKE_RUNNING=searchavo-canary|restore searchavo-staging searchavo-2026-11-23T013000Z.sql.gz searchavo-staging
+restore refuses a running migrate job|untouched|FAKE_JOBS={"metadata":{"name":"searchavo-migrate-9"},"status":{"active":1}}|restore searchavo-staging searchavo-2026-11-23T013000Z.sql.gz searchavo-staging
+restore refuses an app that started while the dump was read|untouched|FAKE_STARTS_AT_SECOND_CHECK=1|restore searchavo-staging searchavo-2026-11-23T013000Z.sql.gz searchavo-staging
+restore refuses a dump that does not read back in full|untouched|FAKE_DUMP=cut|restore searchavo-staging searchavo-2026-11-23T013000Z.sql.gz searchavo-staging
+restore refuses when the pods cannot be read|untouched|FAKE_PODS_FAIL=1|restore searchavo-staging searchavo-2026-11-23T013000Z.sql.gz searchavo-staging
+restore refuses when the jobs cannot be read|untouched|FAKE_JOBS_FAIL=1|restore searchavo-staging searchavo-2026-11-23T013000Z.sql.gz searchavo-staging
+dump names the dump of the release|named|NONE=1|dump searchavo-prod 2026.11.12
+dump runs pg-backup once when the release has no dump yet|made|FAKE_NO_JOB=1|dump searchavo-prod 2026.11.12
+dump of a rerun keeps the dump of the earlier run, taken before its canary|kept|NONE=1|dump searchavo-prod 2026.11.12
+dump fails with a failed job|fail|FAKE_DUMP_JOB=Failed|dump searchavo-prod 2026.11.12
+dump fails with a job that does not finish|fail|FAKE_DUMP_JOB=Suspended|dump searchavo-prod 2026.11.12
+dump fails when the log names no dump|fail|FAKE_DUMP_LOG=done|dump searchavo-prod 2026.11.12
+dump of a CronJob with no dump line names the newest file from its start|named|FAKE_DUMP_LOG=-rw-r--r--_70_9_searchavo-2026-11-22T013000Z.sql.gz_-rw-r--r--_70_9_searchavo-2026-11-23T013000Z.sql.gz|dump searchavo-prod 2026.11.12
+dump of a CronJob with no dump line fails when no file is from its start|fail|FAKE_DUMP_LOG=-rw-r--r--_70_9_searchavo-2026-11-22T013000Z.sql.gz|dump searchavo-prod 2026.11.12
+dump refuses a version that is not YYYY.N.P|fail|NONE=1|dump searchavo-prod 2026.11
 EOF_CASES
   if [[ $fails -gt 0 ]]; then
     echo "database.sh: $fails case(s) failed" >&2

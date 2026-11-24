@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: helper2.ai shared API types
+  title: searchavo.ai shared API types
   version: 2026.12.0
   description: Types and read-only paths used by both public.yaml and admin.yaml.
   license:
@@ -80,7 +80,7 @@ paths:
       operationId: listCategories
       summary: The categories of the AI world search can filter by, in the order people see them.
       description: >-
-        Read from the running configuration (`helper2.categories`, ADR 0013, 0026). The same answer for everyone, no
+        Read from the running configuration (`searchavo.categories`, ADR 0013, 0026). The same answer for everyone, no
         personal data; cached for an hour and validated by its ETag. Rate-limited like the other public reads.
       responses:
         '200':
@@ -108,7 +108,7 @@ components:
     Problem:
       type: object
       description: >-
-        RFC 9457 problem details (application/problem+json). `type` is https://helper2.ai/problems/<code>; `code` is
+        RFC 9457 problem details (application/problem+json). `type` is https://searchavo.ai/problems/<code>; `code` is
         the same stable code on its own, so a client reacts to the code, never to the title text. Codes:
         invalid-request (400), sign-in-required, sign-in-again (401), forbidden (403), not-found (404),
         method-not-allowed (405), not-acceptable (406), unsupported-media-type (415), already-decided,
@@ -135,7 +135,7 @@ components:
       description: |
         Tools (PRODUCT…DATASET), knowledge about AI (ARTICLE, PAPER, NEWS, EVENT) and learning (COURSE: a course or
         a certification, its platform in `platforms`, its credential and format in `tags`).
-        helper2.ai only covers the AI world; non-AI content is filtered out.
+        searchavo.ai only covers the AI world; non-AI content is filtered out.
       enum: [PRODUCT, MODEL, AGENT, PROMPT, SKILL, MCP_SERVER, LIBRARY, DATASET, ARTICLE, PAPER, NEWS, EVENT, COURSE, AWESOME_LIST, OTHER]
     TechLevel:
       type: string
@@ -170,7 +170,7 @@ components:
         (audience, tech level) an AI model made without a quote that states it: AI-generated, never
         a verified fact (ADR 0014). SELF_DECLARED = extracted by AI from a quote of the product's
         own web page only, so it is what the vendor says about itself (ADR 0014). CURATED = written
-        by the helper2.ai editorial seed (not live). COMMUNITY = user submission. DEMO = fixture data.
+        by the searchavo.ai editorial seed (not live). COMMUNITY = user submission. DEMO = fixture data.
       enum: [SOURCE_PROVIDED, AI_EXTRACTED, AI_SUMMARY, AI_ESTIMATED, SELF_DECLARED, CURATED, COMMUNITY, DEMO]
     Verification:
       type: string
@@ -178,7 +178,7 @@ components:
     SourceMode:
       type: string
       description: |
-        LIVE = queried at request time. INDEXED = helper2.ai's own PostgreSQL index, built ahead
+        LIVE = queried at request time. INDEXED = searchavo.ai's own PostgreSQL index, built ahead
         of time. CURATED = editorial seed shipped with the app. DEMO = fixture source for tests/demos.
       enum: [LIVE, INDEXED, CURATED, DEMO]
     SourceOutcome:
@@ -217,7 +217,7 @@ components:
         updated: { $ref: '#/components/schemas/DateFact' }
         discovered:
           $ref: '#/components/schemas/DateFact'
-          description: When helper2.ai first saw this resource (indexed or in a live search).
+          description: When searchavo.ai first saw this resource (indexed or in a live search).
         eventStart:
           description: EVENT only — when the event takes place (distinct from when it was announced). null for other types.
           oneOf: [{ $ref: '#/components/schemas/DateFact' }, { type: 'null' }]
@@ -508,7 +508,7 @@ components:
           type: array
           description: JSON paths of the AI-written fields, with [] for every item of an array (e.g. recommendations[].reason), or an index for one item (e.g. sections[0].steps[1].text).
           items: { type: string }
-        policy: { type: string, description: Path of the page that explains how helper2.ai marks AI text. }
+        policy: { type: string, description: Path of the page that explains how searchavo.ai marks AI text. }
 
     SourceInfo:
       type: object
@@ -524,7 +524,7 @@ components:
         external:
           type: boolean
           description: >-
-            False for helper2.ai's own sources (helper2-index, helper2-semantic, curated); true for every source run by
+            False for searchavo.ai's own sources (searchavo-index, searchavo-semantic, curated); true for every source run by
             someone else. The Home radar and its source count show only external sources.
         mode: { $ref: '#/components/schemas/SourceMode' }
         enabled: { type: boolean }
@@ -572,9 +572,9 @@ components:
           format: int64
           minimum: 0
           description: >-
-            Resources this source brought that helper2.ai first discovered in the last 7 days (a rolling window, not the
-            calendar week): those with a record from it, and for `helper2-index` every resource of the index (indexed
-            and observed). Null for `helper2-semantic` (the same index searched by meaning, no count of its own) and
+            Resources this source brought that searchavo.ai first discovered in the last 7 days (a rolling window, not the
+            calendar week): those with a record from it, and for `searchavo-index` every resource of the index (indexed
+            and observed). Null for `searchavo-semantic` (the same index searched by meaning, no count of its own) and
             when the catalog cannot answer.
 
     Category:
@@ -613,7 +613,7 @@ components:
         dailyCap:
           type: [integer, 'null']
           format: int64
-          description: The global daily cap (`H2_LIVE_WEB_DAILY_CREDITS`); the code maximum of the runtime setting when it is empty (ADR 0007); null only without a runtime setting.
+          description: The global daily cap (`SA_LIVE_WEB_DAILY_CREDITS`); the code maximum of the runtime setting when it is empty (ADR 0007); null only without a runtime setting.
 
     Me:
       type: object
@@ -657,17 +657,17 @@ components:
         guideQuestions:
           oneOf: [{ $ref: '#/components/schemas/DailyAllowance' }, { type: 'null' }]
           description: >-
-            Fresh guide questions per client address (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`, ADR 0032). An answer from the
+            Fresh guide questions per client address (`SA_GUIDE_CLIENT_DAILY_QUESTIONS`, ADR 0032). An answer from the
             cache costs none, and an answer with no AI pick or a question that fails gives its question back (at most
-            `H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS` a day); past the limit the guide answers from search only. Null when the guide has no model: it
+            `SA_GUIDE_CLIENT_DAILY_FREE_ANSWERS` a day); past the limit the guide answers from search only. Null when the guide has no model: it
             then always answers from search only and spends nothing.
         setupGuides:
           oneOf: [{ $ref: '#/components/schemas/DailyAllowance' }, { type: 'null' }]
           description: >-
-            New AI setup guides per client address (`H2_SETUP_GUIDE_CLIENT_DAILY`, ADR 0034), the ones "Set it up"
+            New AI setup guides per client address (`SA_SETUP_GUIDE_CLIENT_DAILY`, ADR 0034), the ones "Set it up"
             on a resource page writes. A guide that is already written costs none, and a guide the model could not
             write gives its turn back. `remaining` is the lower of what the address and what its network
-            (`H2_SETUP_GUIDE_NETWORK_DAILY`) have left; past the limit a new guide answers `LLM_UNAVAILABLE` with
+            (`SA_SETUP_GUIDE_NETWORK_DAILY`) have left; past the limit a new guide answers `LLM_UNAVAILABLE` with
             `unavailable: quota`. Null when the setup guide has no model: it then writes nothing and spends nothing.
         webSearches:
           type: object

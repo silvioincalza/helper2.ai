@@ -1,10 +1,10 @@
 spring:
   config:
-    import: classpath:helper2-shared.yaml
+    import: classpath:searchavo-shared.yaml
 ---
 spring:
   application:
-    name: helper2-backoffice
+    name: searchavo-backoffice
   session:
     data:
       redis:
@@ -21,90 +21,90 @@ server:
 management:
   metrics:
     tags:
-      application: helper2-backoffice
+      application: searchavo-backoffice
   opentelemetry:
     resource-attributes:
-      service.name: helper2-backoffice
+      service.name: searchavo-backoffice
 resilience4j:
   circuitbreaker:
     instances:
       research-web-search: {base-config: collector}
       research-huggingface: {base-config: collector}
-helper2:
+searchavo:
   spa:
     location: classpath:/static/admin/
   identity:
     frontend-url: /admin
-    admins: ${H2_ADMINS:}
+    admins: ${SA_ADMINS:}
   admin:
-    grafana-url: ${H2_ADMIN_GRAFANA_URL:}
-    public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
-    guide-daily-model-calls: ${H2_GUIDE_DAILY_MODEL_CALLS:600}
-    ads-enabled: ${H2_ADS_ENABLED:false}
+    grafana-url: ${SA_ADMIN_GRAFANA_URL:}
+    public-base-url: ${SA_PUBLIC_BASE_URL:https://searchavo.ai}
+    guide-daily-model-calls: ${SA_GUIDE_DAILY_MODEL_CALLS:600}
+    ads-enabled: ${SA_ADS_ENABLED:false}
   indexnow:
-    key: ${H2_INDEXNOW_KEY:}
-    noindex: ${H2_NOINDEX:false}
-    cron: ${H2_INDEXNOW_CRON:0 47 5 * * *}
-    public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
+    key: ${SA_INDEXNOW_KEY:}
+    noindex: ${SA_NOINDEX:false}
+    cron: ${SA_INDEXNOW_CRON:0 47 5 * * *}
+    public-base-url: ${SA_PUBLIC_BASE_URL:https://searchavo.ai}
     endpoint: https://api.indexnow.org/indexnow
     window: PT25H
     timeout: PT20S
     batch: 10000
   scout:
-    enabled: ${H2_SCOUT_ENABLED:false}
-    initial-delay: ${H2_SCOUT_INITIAL_DELAY:PT20S}
-    tick: ${H2_SCOUT_TICK:PT10M}
-    cron: ${H2_SCOUT_CRON:0 7 3 * * *}
+    enabled: ${SA_SCOUT_ENABLED:false}
+    initial-delay: ${SA_SCOUT_INITIAL_DELAY:PT20S}
+    tick: ${SA_SCOUT_TICK:PT10M}
+    cron: ${SA_SCOUT_CRON:0 7 3 * * *}
     mcp-registry:
-      items-per-run: ${H2_SCOUT_MCP_ITEMS_PER_RUN:5000}
+      items-per-run: ${SA_SCOUT_MCP_ITEMS_PER_RUN:5000}
     pypi:
-      project: ${H2_PYPI_BIGQUERY_PROJECT:}
+      project: ${SA_PYPI_BIGQUERY_PROJECT:}
     max-items-per-run: 1000
-    max-enrichments-per-run: ${H2_SCOUT_MAX_ENRICHMENTS:20}
-    daily-enrichment-calls: ${H2_SCOUT_DAILY_ENRICHMENT_CALLS:500}
-    gap-daily-calls: ${H2_SCOUT_GAP_DAILY_CALLS:400}
+    max-enrichments-per-run: ${SA_SCOUT_MAX_ENRICHMENTS:20}
+    daily-enrichment-calls: ${SA_SCOUT_DAILY_ENRICHMENT_CALLS:500}
+    gap-daily-calls: ${SA_SCOUT_GAP_DAILY_CALLS:400}
     evidence:
-      daily-page-read-credits: ${H2_SCOUT_PAGE_READER_DAILY_CREDITS:1000}
-    enrich-max-tokens: ${H2_NEBIUS_ENRICH_MAX_TOKENS:8192}
-    enrichment-model: ${H2_SCOUT_ENRICHMENT_MODEL:FAST}
+      daily-page-read-credits: ${SA_SCOUT_PAGE_READER_DAILY_CREDITS:1000}
+    enrich-max-tokens: ${SA_NEBIUS_ENRICH_MAX_TOKENS:8192}
+    enrichment-model: ${SA_SCOUT_ENRICHMENT_MODEL:FAST}
     known-targets:
-      owner-min-resources: ${H2_SCOUT_KNOWN_TARGETS_OWNER_MIN_RESOURCES:5}
-      per-day: ${H2_SCOUT_KNOWN_TARGETS_PER_DAY:25}
+      owner-min-resources: ${SA_SCOUT_KNOWN_TARGETS_OWNER_MIN_RESOURCES:5}
+      per-day: ${SA_SCOUT_KNOWN_TARGETS_PER_DAY:25}
     repository-sweep:
-      enabled: ${H2_SCOUT_REPOSITORY_SWEEP_ENABLED:true}
-      every: ${H2_SCOUT_REPOSITORY_SWEEP_EVERY:PT10M}
+      enabled: ${SA_SCOUT_REPOSITORY_SWEEP_ENABLED:true}
+      every: ${SA_SCOUT_REPOSITORY_SWEEP_EVERY:PT10M}
       initial-delay: PT2M
-      batch: ${H2_SCOUT_REPOSITORY_SWEEP_BATCH:50}
-      gone-list-visits: ${H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS:3}
+      batch: ${SA_SCOUT_REPOSITORY_SWEEP_BATCH:50}
+      gone-list-visits: ${SA_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS:3}
   research:
-    enabled: ${H2_RESEARCH_ENABLED:true}
-    model: ${H2_RESEARCH_MODEL:FAST}
-    max-tokens: ${H2_RESEARCH_MAX_TOKENS:4096}
-    daily-model-calls: ${H2_RESEARCH_DAILY_MODEL_CALLS:3000}
-    daily-page-reads: ${H2_RESEARCH_DAILY_PAGE_READS:300}
-    concurrency: ${H2_RESEARCH_CONCURRENCY:4}
-    max-streams: ${H2_RESEARCH_MAX_STREAMS:8}
-    check-url-deadline: ${H2_RESEARCH_CHECK_URL_DEADLINE:PT20S}
-    tick: ${H2_RESEARCH_TICK:PT2S}
+    enabled: ${SA_RESEARCH_ENABLED:true}
+    model: ${SA_RESEARCH_MODEL:FAST}
+    max-tokens: ${SA_RESEARCH_MAX_TOKENS:4096}
+    daily-model-calls: ${SA_RESEARCH_DAILY_MODEL_CALLS:3000}
+    daily-page-reads: ${SA_RESEARCH_DAILY_PAGE_READS:300}
+    concurrency: ${SA_RESEARCH_CONCURRENCY:4}
+    max-streams: ${SA_RESEARCH_MAX_STREAMS:8}
+    check-url-deadline: ${SA_RESEARCH_CHECK_URL_DEADLINE:PT20S}
+    tick: ${SA_RESEARCH_TICK:PT2S}
   sources:
     page-reader:
-      enabled: ${H2_SOURCE_PAGE_READER_ENABLED:true}
+      enabled: ${SA_SOURCE_PAGE_READER_ENABLED:true}
       base-url: https://api.tavily.com
-      token: ${H2_LIVE_WEB_API_KEY:}
+      token: ${SA_LIVE_WEB_API_KEY:}
       timeout: 20s
       cache-ttl: 30m
-      deadline: ${H2_SOURCE_PAGE_READER_DEADLINE:}
+      deadline: ${SA_SOURCE_PAGE_READER_DEADLINE:}
     pypi:
-      token: ${H2_PYPI_BIGQUERY_KEY:}
-      deadline: ${H2_SOURCE_PYPI_DEADLINE:}
+      token: ${SA_PYPI_BIGQUERY_KEY:}
+      deadline: ${SA_SOURCE_PYPI_DEADLINE:}
 ---
 spring:
   config:
     activate:
       on-profile: dev
 server:
-  port: ${H2_PORT:8090}
-helper2:
+  port: ${SA_PORT:8090}
+searchavo:
   identity:
     frontend-url: http://localhost:5174/admin
 ---
@@ -117,12 +117,12 @@ spring:
       client:
         registration:
           github:
-            redirect-uri: ${H2_ADMIN_BASE_URL:{baseUrl}}/login/oauth2/code/{registrationId}
+            redirect-uri: ${SA_ADMIN_BASE_URL:{baseUrl}}/login/oauth2/code/{registrationId}
 ---
 spring:
   config:
     activate:
       on-profile: demo
-helper2:
+searchavo:
   scout:
     enabled: false

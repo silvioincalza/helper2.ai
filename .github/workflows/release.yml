@@ -77,7 +77,7 @@ jobs:
           gradle=$(git show "$sha:backend/build.gradle.kts" | sed -n 's/^version = "\(.*\)"$/\1/p')
           npm=$(git show "$sha:frontend/package.json" | jq -r .version)
           lock=$(git show "$sha:frontend/package-lock.json" | jq -r '[.version, .packages[""].version] | unique | join(",")')
-          chart=$(git show "$sha:deploy/helm/helper2/Chart.yaml" | yq .version)
+          chart=$(git show "$sha:deploy/helm/searchavo/Chart.yaml" | yq .version)
           public=$(git show "$sha:api/public.yaml" | yq .info.version)
           admin=$(git show "$sha:api/admin.yaml" | yq .info.version)
           common=$(git show "$sha:api/common.yaml" | yq .info.version)
@@ -274,7 +274,7 @@ jobs:
           notes=$(mktemp)
           git tag -l --format='%(contents)' "$tag" > "$notes"
           # shellcheck disable=SC2016
-          printf '\nImages (commit `%s`):\n- `harbor-i.infra.incalza.me/helper2/apps/helper2-web:%s`\n- `harbor-i.infra.incalza.me/helper2/apps/helper2:%s`\n- `harbor-i.infra.incalza.me/helper2/apps/helper2-backoffice:%s`\n' "${SHA::12}" "$VERSION" "$VERSION" "$VERSION" >> "$notes"
+          printf '\nImages (commit `%s`):\n- `harbor-i.infra.incalza.me/searchavo/apps/searchavo-web:%s`\n- `harbor-i.infra.incalza.me/searchavo/apps/searchavo:%s`\n- `harbor-i.infra.incalza.me/searchavo/apps/searchavo-backoffice:%s`\n' "${SHA::12}" "$VERSION" "$VERSION" "$VERSION" >> "$notes"
           gh release create "$tag" --verify-tag --title "$tag" --notes-file "$notes"
 
       - name: Attach the CD run's SBOMs to the release
@@ -282,7 +282,7 @@ jobs:
           set -euo pipefail
           tag=v$VERSION
           dir=$(mktemp -d)
-          for entry in sbom:helper2 sbom-backoffice:helper2-backoffice sbom-web:helper2-web sbom-postgres:helper2-postgres sbom-embedder:helper2-embedder; do
+          for entry in sbom:searchavo sbom-backoffice:searchavo-backoffice sbom-web:searchavo-web sbom-postgres:searchavo-postgres sbom-embedder:searchavo-embedder; do
             artifact=${entry%%:*}; name=${entry#*:}
             if ! gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n "$artifact" -D "$dir/$artifact"; then
               echo "::warning::CD run $RUN has no artifact $artifact: release $tag has no SBOM for $name"; continue

@@ -31,7 +31,7 @@ manual:                 environment=staging|prod, tag=<12-char commit | YYYY.N.P
 Prod runs only released versions. Staging runs every commit of `main`, so unfinished work (for example
 a new design built page by page) can sit on `main` and on staging while prod stays on the last release.
 
-Rollback: run `cd` manually with the previous tag (`helm -n helper2-<env> history helper2`; an image from before
+Rollback: run `cd` manually with the previous tag (`helm -n searchavo-<env> history searchavo`; an image from before
 signing needs `make sign-existing` first, see [Image signing](#image-signing)) and
 `rollback` ticked (a deploy refuses a commit older than the one running without it), or
 `helm rollback`. The platform repo (incalza-me-infra) owns the namespaces, DNS, the Ingresses and the
@@ -69,7 +69,7 @@ Nothing long-lived is stored in GitHub.
 - Secret scanning with push protection, Dependabot alerts and security-update pull requests.
 - OIDC subject: the immutable one, `repo:<owner>@<owner id>/<repo>@<repo id>`.
 - Variables `BAO_ADDR` (the secrets store address), `BAO_AUDIENCE` (the OIDC audience, equal to the
-  OpenBao role's `bound_audiences`) and `H2_STAGING_URL` (staging, for `guide-eval`); optional `IMAGE_ENGINE`
+  OpenBao role's `bound_audiences`) and `SA_STAGING_URL` (staging, for `guide-eval`); optional `IMAGE_ENGINE`
   (default `podman`). Repository secrets: only the optional keys of the weekly `live` workflow.
 
 **Runner** — one just-in-time (JIT) registration per job: wipe the runner user's home and workspace, mint
@@ -81,7 +81,7 @@ an unprivileged user with rootless podman. No ambient credentials: no kubeconfig
 
 | Role | Bound `sub` | Can read |
 |---|---|---|
-| `deploy` | `repo:silvioincalza@644958/helper2.ai@1457242485:ref:refs/heads/main` or `…:ref:refs/heads/release/*`, `ref_protected` true | `ci/harbor` (registry push credentials), sign with the Transit key `helper2-images`; denied `ci/staging`, `ci/prod` |
+| `deploy` | `repo:silvioincalza@644958/helper2.ai@1457242485:ref:refs/heads/main` or `…:ref:refs/heads/release/*`, `ref_protected` true | `ci/harbor` (registry push credentials), sign with the Transit key `searchavo-images`; denied `ci/staging`, `ci/prod` |
 | `deploy-staging` | `…:environment:staging` | `ci/staging`, `ci/harbor-pull` |
 | `deploy-prod` | `…:environment:prod` (after the approval) | `ci/prod`, `ci/harbor-pull`, and `ci/harbor` to add the release's version tag to its image |
 
@@ -89,7 +89,7 @@ an unprivileged user with rootless podman. No ambient credentials: no kubeconfig
 `make ENV=<env> credentials` writes it.
 
 **Kubernetes** — `deployer` in each namespace may manage what the chart creates there, nothing
-cluster-wide (RBAC in incalza-me-infra). The prod deployer may also `get` the `helper2`
+cluster-wide (RBAC in incalza-me-infra). The prod deployer may also `get` the `searchavo`
 Deployment in staging (to promote what staging runs), but not staging's Secrets. After an `app.env`
 change, rerun `make ENV=<env> credentials`; the next deploy restarts the app with it.
 
@@ -143,17 +143,17 @@ CD signs every image it pushes with a key in OpenBao Transit, and a deploy check
 ([ADR 0044](../../docs/architecture/decisions/ADR-0044-ci-cd-and-supply-chain.md)). The private key never leaves
 OpenBao; [`cosign.pub`](cosign.pub) is its public half.
 
-The platform repo (incalza-me-infra) sets it up, from `tenants.yml` (`helper2.ci.signing`,
-`helper2.harbor.pull_robot`, `helper2.ci.environment_reads`), with `make bao-tenants` (playbook 33):
+The platform repo (incalza-me-infra) sets it up, from `tenants.yml` (`searchavo.ci.signing`,
+`searchavo.harbor.pull_robot`, `searchavo.ci.environment_reads`), with `make bao-tenants` (playbook 33):
 
-- the Transit engine `helper2/transit` with the key `helper2-images` (ECDSA P-256, not exportable, no plaintext
+- the Transit engine `searchavo/transit` with the key `searchavo-images` (ECDSA P-256, not exportable, no plaintext
   backup);
-- read on that key and sign with it, nothing else, in the policies `helper2-deploy` (role `deploy`, the CD image
-  job) and `helper2-write` (role `helper2-operator`, the workstation);
-- the pull-only Harbor robot `robot$helper2+github-pull` (repository pull, artifact read) in `helper2/kv`
+- read on that key and sign with it, nothing else, in the policies `searchavo-deploy` (role `deploy`, the CD image
+  job) and `searchavo-write` (role `searchavo-operator`, the workstation);
+- the pull-only Harbor robot `robot$searchavo+github-pull` (repository pull, artifact read) in `searchavo/kv`
   `ci/harbor-pull`, read by the roles `deploy-staging` and `deploy-prod`.
 
-Then, once, the public key into this repo (OIDC login as `helper2-operator`), and commit it:
+Then, once, the public key into this repo (OIDC login as `searchavo-operator`), and commit it:
 
 ```bash
 make -C deploy/k8s cosign-pub
@@ -165,8 +165,8 @@ then fails on the Postgres image, which was pushed before signing. That one, and
 are signed by hand on the workstation, never from a workflow:
 
 ```bash
-# Needs sign rights on helper2-images: helper2-operator has them (policy helper2-write). Without BAO_TOKEN the
-# target logs in with OIDC as helper2-operator.
+# Needs sign rights on searchavo-images: searchavo-operator has them (policy searchavo-write). Without BAO_TOKEN the
+# target logs in with OIDC as searchavo-operator.
 make -C deploy/k8s sign-existing TAG=<12-char commit or YYYY.N.P>  # also the Postgres image of postgres.image.tag
 ```
 
@@ -179,10 +179,10 @@ run log ("pushed ..."): sign only what CD built. An image signed by another key 
 checked the signatures before, and refuses such a commit without `rollback`.
 
 cosign gets the token as `VAULT_ADDR` and `VAULT_TOKEN`, set from `BAO_ADDR` and `BAO_TOKEN`; the Makefile drops every
-other `VAULT_` variable first and sets `TRANSIT_SECRET_ENGINE_PATH=helper2/transit`. In CD the token is revoked right
+other `VAULT_` variable first and sets `TRANSIT_SECRET_ENGINE_PATH=searchavo/transit`. In CD the token is revoked right
 after the signing step.
 
 Harbor keeps a signature as a referrer of the image's digest or, without the referrers API, under a tag
 `sha256-<digest>`. Check which one after the first signed run:
-`curl -u <robot> https://harbor-i.infra.incalza.me/v2/helper2/apps/helper2/referrers/<digest>`. With the tag, the
+`curl -u <robot> https://harbor-i.infra.incalza.me/v2/searchavo/apps/searchavo/referrers/<digest>`. With the tag, the
 tag-immutability rule must allow creating it; CD never updates it (an image is signed once).

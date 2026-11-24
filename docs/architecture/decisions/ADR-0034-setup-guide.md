@@ -112,7 +112,7 @@ and a snippet copied into an AI client's config file runs on the user's machine.
        plainer steps (the user reads the documentation's own words).
      The mode is part of the cache key next to `configFingerprint`, so after a switch no guide of the other mode
      is served. The back office Settings page shows it.
-   - **The step check** (`VERIFIED` only; `prompts/setup/verify-steps.txt`, label `cde95b18`, step
+   - **The step check** (`VERIFIED` only; `prompts/setup/verify-steps.txt`, label `42aa9908`, step
      `tool-guide-verify`). After the code checks below, one more call to the same model gets every kept step: its text, its quote and its command,
      each through `UntrustedText` in `<step key="sN">` tags, with the same data rule. It answers one verdict per
      step: `supported` is true only when the text says no more than the quote and the command show (when unsure:

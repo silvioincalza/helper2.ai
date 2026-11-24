@@ -1,14 +1,14 @@
-# helper2.ai
+# searchavo.ai
 
 **A metasearch engine only for the AI world** — tools, models, MCP servers, agents, prompts, libraries,
 papers and news — with **one page and one box**. Typing searches every source; **Ask the guide** answers
 on the same page. The guide runs on **NVIDIA Nemotron on Nebius Token Factory** and can only recommend
 what it actually found, with a quote that code has checked word for word.
 
-helper2.ai searches a **disclosed set of sources** ([docs/architecture/sources.md](docs/architecture/sources.md)), shows what
+searchavo.ai searches a **disclosed set of sources** ([docs/architecture/sources.md](docs/architecture/sources.md)), shows what
 happened to each one on every search, and never fills in dates, popularity or facts that no source stated.
 
-helper2.ai is a product, built and run by Silvio Incalza. The only instance is **https://helper2.ai**
+searchavo.ai is a product, built and run by Silvio Incalza. The only instance is **https://searchavo.ai**
 (no account needed).
 
 The history of this repository was rebuilt in November 2026 from an earlier repository, one pull request per part
@@ -37,7 +37,7 @@ of the system.
 - Every answer records the provider and model ids; the page shows them.
 - No key, provider down or credits exhausted: the guide shows the top real search results (`LLM_UNAVAILABLE`), and search keeps working.
 - Cost guard: 10 questions per minute and 30 new questions per day per client, at most 8 questions at a time, 600 model calls per day in total, AI answers cached 24 hours ([ADR 0032](docs/architecture/decisions/ADR-0032-guide-cost-guard-and-answer-cache.md)).
-- **Live web search** adds web results to search and to the guide (only with `H2_LIVE_WEB_API_KEY`). A stored answer is reused
+- **Live web search** adds web results to search and to the guide (only with `SA_LIVE_WEB_API_KEY`). A stored answer is reused
   first, and each visitor gets a few live web searches a day ([ADR 0027](docs/architecture/decisions/ADR-0027-live-web-store-first-daily-quota.md)).
 
 ## Known limitations
@@ -53,14 +53,14 @@ Every known limit sits with its decision: the Consequences of each [ADR](docs/ar
 
 ## Run locally
 
-These steps are for reviewing the code. Users do not need them: the product runs at https://helper2.ai.
+These steps are for reviewing the code. Users do not need them: the product runs at https://searchavo.ai.
 
 Prerequisites: Java 25 (Gradle downloads it if missing), Node 26, Docker or Podman.
 
 From the repository root:
 
 ```bash
-cp .env.example .env          # optional: H2_NEBIUS_API_KEY, H2_NVIDIA_API_KEY, H2_GITHUB_TOKEN, H2_LIVE_WEB_API_KEY
+cp .env.example .env          # optional: SA_NEBIUS_API_KEY, SA_NVIDIA_API_KEY, SA_GITHUB_TOKEN, SA_LIVE_WEB_API_KEY
 podman compose up -d postgres redis
 ```
 
@@ -77,9 +77,9 @@ cd frontend && npm ci --include=dev && npm run dev    # http://localhost:5173, p
 ```
 
 - Without `llm-nebius` or a key, everything runs and the guide answers in degraded mode.
-- Model ids: list them with `curl -s https://api.tokenfactory.nebius.com/v1/models -H "Authorization: Bearer $H2_NEBIUS_API_KEY"`, then set `H2_NEBIUS_REASONING_MODEL` (default `nvidia/Nemotron-3.5-Super-VL`) and `H2_NEBIUS_FAST_MODEL` (default `nvidia/Nemotron-3_5-Lightning`; empty = the reasoning model does its work too).
+- Model ids: list them with `curl -s https://api.tokenfactory.nebius.com/v1/models -H "Authorization: Bearer $SA_NEBIUS_API_KEY"`, then set `SA_NEBIUS_REASONING_MODEL` (default `nvidia/Nemotron-3.5-Super-VL`) and `SA_NEBIUS_FAST_MODEL` (default `nvidia/Nemotron-3_5-Lightning`; empty = the reasoning model does its work too).
 - Fixture data instead of real sources: profiles `demo,dev` (labeled DEMO everywhere).
-- Sign-in: a GitHub OAuth App with profile `oauth-github` (`H2_GITHUB_OAUTH_CLIENT_ID`/`_SECRET`, callback `http://localhost:5173/login/oauth2/code/github`). Put your numeric GitHub id in `H2_ADMINS=github:<id>` to open the admin page.
+- Sign-in: a GitHub OAuth App with profile `oauth-github` (`SA_GITHUB_OAUTH_CLIENT_ID`/`_SECRET`, callback `http://localhost:5173/login/oauth2/code/github`). Put your numeric GitHub id in `SA_ADMINS=github:<id>` to open the admin page.
 - The admin page is served by the second app, the back office: `cd backend && ./gradlew :apps:backoffice:bootRun --args='--spring.profiles.active=dev,oauth-github --spring.docker.compose.enabled=false'` (on :8090) and `cd frontend && npm run dev:admin` (http://localhost:5174/admin). A plain `./gradlew bootRun` starts both apps.
 
 ## Test and evaluate
@@ -92,9 +92,9 @@ node scripts/eval-guide.mjs http://localhost:8080   # needs a running backend; 2
 
 Details and known gaps: [docs/architecture/stack.md](docs/architecture/stack.md).
 
-## How helper2.ai runs
+## How searchavo.ai runs
 
-The Helm chart runs on any Kubernetes cluster ([deploy/k8s/README.md](deploy/k8s/README.md)). helper2.ai's
+The Helm chart runs on any Kubernetes cluster ([deploy/k8s/README.md](deploy/k8s/README.md)). searchavo.ai's
 staging and production use it, deployed by GitHub Actions ([deploy/k8s/CI.md](deploy/k8s/CI.md)). To set up a new
 repository from zero (its settings, the CI variables, the OpenBao roles, the runner and the first deploy):
 [deploy/k8s/RUNBOOK-new-repository.md](deploy/k8s/RUNBOOK-new-repository.md).

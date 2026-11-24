@@ -1,6 +1,6 @@
 # Review
 
-How a change to helper2.ai is reviewed, by the `reviewer` agent, by an automated review and by the human in the loop.
+How a change to searchavo.ai is reviewed, by the `reviewer` agent, by an automated review and by the human in the loop.
 Severity levels are the ones of the skill `facts-and-sources` (`.claude/skills/facts-and-sources/SKILL.md`). The human in the loop approves and merges; nobody else does.
 
 ## Before the review
@@ -21,7 +21,7 @@ Severity levels are the ones of the skill `facts-and-sources` (`.claude/skills/f
 
 - Input and output are validated at the edge. Retrieved text and model output are data, never instructions.
 - AuthN and authZ on every new endpoint; the admin stays behind the VPN; least privilege.
-- No secret, token or personal data in code, logs, tests or fixtures. New config uses the `H2_` prefix.
+- No secret, token or personal data in code, logs, tests or fixtures. New config uses the `SA_` prefix.
 - A new or changed dependency, image or action: licence, maintenance, known vulnerabilities.
 
 ## Pass 3: compliance

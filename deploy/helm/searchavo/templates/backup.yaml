@@ -1,0 +1,202 @@
+{{- if not .Values.canary.only }}
+{{- if .Values.backup.enabled }}
+{{- $offsite := .Values.backup.offsite }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pg-backup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "searchavo.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- with .Values.backup.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+  resources: { requests: { storage: {{ .Values.backup.storage }} } }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-backup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "searchavo.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  timeZone: {{ .Values.backup.timeZone }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata: { labels: { app: pg-backup } }
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: searchavo
+          automountServiceAccountToken: false
+          securityContext: { runAsNonRoot: true, runAsUser: 70, runAsGroup: 70, fsGroup: 70, seccompProfile: { type: RuntimeDefault } }
+          {{- if $offsite.enabled }}
+          initContainers:
+          {{- else }}
+          containers:
+          {{- end }}
+            - name: dump
+              image: {{ include "searchavo.postgresImage" . }}
+              env:
+                - { name: PGHOST, value: postgres }
+                - { name: PGUSER, value: searchavo }
+                - { name: PGDATABASE, value: searchavo }
+                - name: PGPASSWORD
+                  valueFrom: { secretKeyRef: { name: {{ include "searchavo.credentialsSecret" . }}, key: SA_DATABASE_PASSWORD } }
+              command: ["/bin/sh", "-ec"]
+              args:
+                - |
+                  set -o pipefail
+                  f=/backup/searchavo-$(date -u +%Y-%m-%dT%H%M%SZ).sql.gz
+                  trap 'rm -f "$f.tmp"' EXIT
+                  pg_dump --no-owner | gzip > "$f.tmp"
+                  gzip -t "$f.tmp"
+                  [ "$(wc -c < "$f.tmp")" -gt 1024 ]
+                  mv "$f.tmp" "$f"
+                  echo "dump: $f"
+                  ls -1 /backup/searchavo-*.sql.gz | cut -c17-26 | sort -ru | tail -n +{{ add1 .Values.backup.retentionDays }} | while read -r d; do rm -f /backup/searchavo-"$d"*.sql.gz; done
+                  find /backup -name 'searchavo-*.sql.gz' -mtime +{{ sub .Values.backup.retentionDays 1 }} -delete
+                  ls -l /backup
+              resources:
+                requests: { cpu: 20m, memory: 64Mi }
+                limits: { memory: 256Mi }
+              securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+              volumeMounts: [{ name: backup, mountPath: /backup }]
+          {{- if $offsite.enabled }}
+          containers:
+            - name: upload
+              image: {{ $offsite.image }}
+              env:
+                - { name: HOME, value: /tmp }
+                {{- include "searchavo.offsiteEnv" . | nindent 16 }}
+              command: ["/bin/sh", "-ec"]
+              args:
+                - |
+                  RCLONE_CONFIG_SEALED_PASSWORD=$(printf %s "$CRYPT_PASSWORD" | rclone obscure -)
+                  export RCLONE_CONFIG_SEALED_PASSWORD
+                  exec rclone copy /backup sealed: --include='searchavo-*.sql.gz' --max-age={{ $offsite.maxAge }} --verbose
+              resources:
+                requests: { cpu: 20m, memory: 64Mi }
+                limits: { memory: 256Mi }
+              securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+              volumeMounts: [{ name: backup, mountPath: /backup, readOnly: true }, { name: tmp, mountPath: /tmp }]
+          {{- end }}
+          volumes:
+            - { name: backup, persistentVolumeClaim: { claimName: pg-backup } }
+            {{- if $offsite.enabled }}
+            - { name: tmp, emptyDir: {} }
+            {{- end }}
+{{- with .Values.backup.restoreCheck }}
+{{- if .enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-restore-check
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "searchavo.labels" $ | nindent 4 }}
+spec:
+  schedule: {{ .schedule | quote }}
+  timeZone: {{ $.Values.backup.timeZone }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 3600
+      template:
+        metadata: { labels: { app: pg-restore-check } }
+        spec:
+          restartPolicy: Never
+          serviceAccountName: searchavo
+          automountServiceAccountToken: false
+          securityContext: { runAsNonRoot: true, runAsUser: 70, runAsGroup: 70, fsGroup: 70, seccompProfile: { type: RuntimeDefault } }
+          {{- if $offsite.enabled }}
+          initContainers:
+            - name: fetch
+              image: {{ $offsite.image }}
+              env:
+                - { name: HOME, value: /tmp }
+                {{- include "searchavo.offsiteEnv" $ | nindent 16 }}
+              command: ["/bin/sh", "-ec"]
+              args:
+                - |
+                  RCLONE_CONFIG_SEALED_PASSWORD=$(printf %s "$CRYPT_PASSWORD" | rclone obscure -)
+                  export RCLONE_CONFIG_SEALED_PASSWORD
+                  f=$(rclone lsf sealed: --include='searchavo-*.sql.gz' | sort | tail -n 1)
+                  [ -n "$f" ] || { echo "no dump off-site"; exit 1; }
+                  mkdir -p /work/dumps
+                  rclone copyto "sealed:$f" "/work/dumps/$f"
+                  echo "fetched $f"
+              resources:
+                requests: { cpu: 20m, memory: 64Mi }
+                limits: { memory: 256Mi }
+              securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+              volumeMounts: [{ name: work, mountPath: /work }, { name: tmp, mountPath: /tmp }]
+          {{- end }}
+          containers:
+            - name: check
+              image: {{ include "searchavo.postgresImage" $ }}
+              env:
+                - { name: DUMPS, value: {{ ternary "/work/dumps" "/backup" $offsite.enabled }} }
+                - { name: PGDATA, value: /work/pgdata }
+                - { name: PGHOST, value: /work }
+                - { name: PGUSER, value: searchavo }
+                - { name: PGDATABASE, value: searchavo }
+              command: ["/bin/sh", "-ec"]
+              args:
+                - |
+                  set -o pipefail
+                  f=$(ls -1 "$DUMPS"/searchavo-*.sql.gz | sort | tail -n 1)
+                  echo "restoring $f"
+                  initdb --username=searchavo --auth=trust --encoding=UTF8 --locale=C --no-sync > /dev/null
+                  pg_ctl -w -l /work/postgres.log \
+                    -o "-c listen_addresses= -c unix_socket_directories=/work -c fsync=off -c full_page_writes=off" start > /dev/null
+                  createdb searchavo
+                  for r in h2_public h2_backoffice; do psql -q -c "CREATE ROLE $r NOLOGIN"; done
+                  start=$(date +%s)
+                  gunzip -c "$f" | psql -v ON_ERROR_STOP=1 -q > /dev/null
+                  echo "restored in $(( $(date +%s) - start ))s"
+                  failed=$(psql -Atc 'select count(*) from flyway_schema_history where not success')
+                  [ "$failed" -eq 0 ] || { echo "$failed migration(s) not successful"; exit 1; }
+                  for t in flyway_schema_history source resource; do
+                    n=$(psql -Atc "select count(*) from $t")
+                    echo "$t: $n rows"
+                    [ "$n" -gt 0 ] || { echo "$t is empty"; exit 1; }
+                  done
+                  pg_ctl -m fast stop > /dev/null
+              {{- with .resources }}
+              resources:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+              volumeMounts:
+                - { name: work, mountPath: /work }
+                {{- if not $offsite.enabled }}
+                - { name: backup, mountPath: /backup, readOnly: true }
+                {{- end }}
+          volumes:
+            - { name: work, emptyDir: { sizeLimit: {{ .scratch }} } }
+            {{- if $offsite.enabled }}
+            - { name: tmp, emptyDir: {} }
+            {{- else }}
+            - { name: backup, persistentVolumeClaim: { claimName: pg-backup } }
+            {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

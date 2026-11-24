@@ -1,10 +1,10 @@
 spring:
   config:
-    import: classpath:helper2-shared.yaml
+    import: classpath:searchavo-shared.yaml
 ---
 spring:
   application:
-    name: helper2
+    name: searchavo
   session:
     data:
       redis:
@@ -13,115 +13,115 @@ server:
   servlet:
     session:
       cookie:
-        secure: ${H2_COOKIE_SECURE:true}
+        secure: ${SA_COOKIE_SECURE:true}
 management:
   metrics:
     tags:
-      application: helper2
+      application: searchavo
   opentelemetry:
     resource-attributes:
-      service.name: helper2
+      service.name: searchavo
 resilience4j:
   circuitbreaker:
     instances:
       llm-chat-guide-fast:
         base-config: model
-        ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
-        slow-call-duration-threshold: ${H2_RESILIENCE_LLM_SLOW_CALL:35s}
+        ignore-exception-predicate: ai.searchavo.platform.llm.ModelErrors$NotFromProvider
+        slow-call-duration-threshold: ${SA_RESILIENCE_LLM_SLOW_CALL:35s}
         slow-call-rate-threshold: 50
       llm-chat-guide-reasoning:
         base-config: model
-        ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
-        slow-call-duration-threshold: ${H2_RESILIENCE_LLM_SLOW_CALL:35s}
+        ignore-exception-predicate: ai.searchavo.platform.llm.ModelErrors$NotFromProvider
+        slow-call-duration-threshold: ${SA_RESILIENCE_LLM_SLOW_CALL:35s}
         slow-call-rate-threshold: 50
       llm-chat-guide-judge:
         base-config: model
-        ignore-exception-predicate: ai.helper2.platform.llm.ModelErrors$NotFromProvider
+        ignore-exception-predicate: ai.searchavo.platform.llm.ModelErrors$NotFromProvider
   bulkhead:
     instances:
       setup-guide:
-        max-concurrent-calls: ${H2_SETUP_GUIDE_MAX_CONCURRENT:2}
+        max-concurrent-calls: ${SA_SETUP_GUIDE_MAX_CONCURRENT:2}
         max-wait-duration: 0
-helper2:
+searchavo:
   cluster-lock:
     table: public_app_lock
   guide:
     thinking:
-      plan-tokens: ${H2_GUIDE_THINK_PLAN_TOKENS:0}
-      choose-tokens: ${H2_GUIDE_THINK_CHOOSE_TOKENS:0}
-      verify-tokens: ${H2_GUIDE_THINK_VERIFY_TOKENS:0}
-      browse-tokens: ${H2_GUIDE_THINK_BROWSE_TOKENS:2048}
-    daily-model-calls: ${H2_GUIDE_DAILY_MODEL_CALLS:600}
-    client-daily-questions: ${H2_GUIDE_CLIENT_DAILY_QUESTIONS:30}
-    client-daily-free-answers: ${H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS:5}
-    question-deadline: ${H2_GUIDE_QUESTION_DEADLINE:PT90S}
-    model-call-timeout: ${H2_LLM_TIMEOUT:40s}
+      plan-tokens: ${SA_GUIDE_THINK_PLAN_TOKENS:0}
+      choose-tokens: ${SA_GUIDE_THINK_CHOOSE_TOKENS:0}
+      verify-tokens: ${SA_GUIDE_THINK_VERIFY_TOKENS:0}
+      browse-tokens: ${SA_GUIDE_THINK_BROWSE_TOKENS:2048}
+    daily-model-calls: ${SA_GUIDE_DAILY_MODEL_CALLS:600}
+    client-daily-questions: ${SA_GUIDE_CLIENT_DAILY_QUESTIONS:30}
+    client-daily-free-answers: ${SA_GUIDE_CLIENT_DAILY_FREE_ANSWERS:5}
+    question-deadline: ${SA_GUIDE_QUESTION_DEADLINE:PT90S}
+    model-call-timeout: ${SA_LLM_TIMEOUT:40s}
     model-call-minimum: 10s
     deadline-margin: 2s
-    heartbeat: ${H2_GUIDE_HEARTBEAT:PT15S}
-    cache-ttl: ${H2_GUIDE_CACHE_TTL:PT24H}
-    similar-threshold: ${H2_GUIDE_SIMILAR_THRESHOLD:}
-    max-candidates: ${H2_GUIDE_MAX_CANDIDATES:24}
-    choose-max-tokens: ${H2_NEBIUS_CHOOSE_MAX_TOKENS:8192}
-    model-stream: ${H2_GUIDE_MODEL_STREAM:OFF}
+    heartbeat: ${SA_GUIDE_HEARTBEAT:PT15S}
+    cache-ttl: ${SA_GUIDE_CACHE_TTL:PT24H}
+    similar-threshold: ${SA_GUIDE_SIMILAR_THRESHOLD:}
+    max-candidates: ${SA_GUIDE_MAX_CANDIDATES:24}
+    choose-max-tokens: ${SA_NEBIUS_CHOOSE_MAX_TOKENS:8192}
+    model-stream: ${SA_GUIDE_MODEL_STREAM:OFF}
     fairness:
-      network-daily-questions: ${H2_GUIDE_NETWORK_DAILY_QUESTIONS:300}
-      client-concurrent-questions: ${H2_GUIDE_CLIENT_CONCURRENT_QUESTIONS:2}
-      budget-pace-slots: ${H2_GUIDE_BUDGET_PACE_SLOTS:12}
+      network-daily-questions: ${SA_GUIDE_NETWORK_DAILY_QUESTIONS:300}
+      client-concurrent-questions: ${SA_GUIDE_CLIENT_CONCURRENT_QUESTIONS:2}
+      budget-pace-slots: ${SA_GUIDE_BUDGET_PACE_SLOTS:12}
     judge:
-      model: ${H2_GUIDE_JUDGE_MODEL:}
-      daily-calls: ${H2_GUIDE_JUDGE_DAILY_CALLS:300}
-      concurrent: ${H2_GUIDE_JUDGE_CONCURRENT:2}
-    mcp-registry-url: ${helper2.sources.mcp-registry.base-url}
+      model: ${SA_GUIDE_JUDGE_MODEL:}
+      daily-calls: ${SA_GUIDE_JUDGE_DAILY_CALLS:300}
+      concurrent: ${SA_GUIDE_JUDGE_CONCURRENT:2}
+    mcp-registry-url: ${searchavo.sources.mcp-registry.base-url}
   identity:
-    frontend-url: ${H2_FRONTEND_URL:/}
-    noindex: ${H2_NOINDEX:false}
+    frontend-url: ${SA_FRONTEND_URL:/}
+    noindex: ${SA_NOINDEX:false}
   monetisation:
-    github-sponsors-url: ${H2_SUPPORT_GITHUB_SPONSORS_URL:}
-    stripe-payment-url: ${H2_SUPPORT_STRIPE_PAYMENT_URL:}
-    ga4-measurement-id: ${H2_ANALYTICS_GA4_MEASUREMENT_ID:}
-    ads-enabled: ${H2_ADS_ENABLED:false}
-    adsense-client: ${H2_ADS_ADSENSE_CLIENT:}
-    adsense-slot: ${H2_ADS_ADSENSE_SLOT:}
-    adsense-slot-search: ${H2_ADS_ADSENSE_SLOT_SEARCH:}
-    adsense-slot-guide: ${H2_ADS_ADSENSE_SLOT_GUIDE:}
+    github-sponsors-url: ${SA_SUPPORT_GITHUB_SPONSORS_URL:}
+    stripe-payment-url: ${SA_SUPPORT_STRIPE_PAYMENT_URL:}
+    ga4-measurement-id: ${SA_ANALYTICS_GA4_MEASUREMENT_ID:}
+    ads-enabled: ${SA_ADS_ENABLED:false}
+    adsense-client: ${SA_ADS_ADSENSE_CLIENT:}
+    adsense-slot: ${SA_ADS_ADSENSE_SLOT:}
+    adsense-slot-search: ${SA_ADS_ADSENSE_SLOT_SEARCH:}
+    adsense-slot-guide: ${SA_ADS_ADSENSE_SLOT_GUIDE:}
   schema:
     logins:
-      h2_public: ${H2_DATABASE_PUBLIC_PASSWORD:}
-      h2_backoffice: ${H2_DATABASE_BACKOFFICE_PASSWORD:}
+      h2_public: ${SA_DATABASE_PUBLIC_PASSWORD:}
+      h2_backoffice: ${SA_DATABASE_BACKOFFICE_PASSWORD:}
     statement-timeouts:
       h2_public: 5s
       h2_backoffice: 60s
-    monitor-password: ${H2_DATABASE_MONITOR_PASSWORD:}
+    monitor-password: ${SA_DATABASE_MONITOR_PASSWORD:}
   pages:
-    public-base-url: ${H2_PUBLIC_BASE_URL:https://helper2.ai}
-    noindex: ${H2_NOINDEX:false}
-    template: ${H2_PAGES_TEMPLATE:file:/shell/index.html}
+    public-base-url: ${SA_PUBLIC_BASE_URL:https://searchavo.ai}
+    noindex: ${SA_NOINDEX:false}
+    template: ${SA_PAGES_TEMPLATE:file:/shell/index.html}
     sitemap-limit: 200000
     indexnow:
-      key: ${H2_INDEXNOW_KEY:}
+      key: ${SA_INDEXNOW_KEY:}
   setup:
-    document-timeout: ${H2_SETUP_DOCUMENT_TIMEOUT:10s}
-    npm-readme-base-url: ${H2_SETUP_NPM_README_BASE_URL:https://cdn.jsdelivr.net}
-    cache-ttl: ${H2_SETUP_CACHE_TTL:PT1H}
-    document-cache: ${H2_SETUP_DOCUMENT_CACHE_MB:32}
-    hourly-fetches: ${H2_SETUP_HOURLY_FETCHES:1000}
-    github-token: ${H2_SETUP_GITHUB_TOKEN:}
+    document-timeout: ${SA_SETUP_DOCUMENT_TIMEOUT:10s}
+    npm-readme-base-url: ${SA_SETUP_NPM_README_BASE_URL:https://cdn.jsdelivr.net}
+    cache-ttl: ${SA_SETUP_CACHE_TTL:PT1H}
+    document-cache: ${SA_SETUP_DOCUMENT_CACHE_MB:32}
+    hourly-fetches: ${SA_SETUP_HOURLY_FETCHES:1000}
+    github-token: ${SA_SETUP_GITHUB_TOKEN:}
     hosts:
-      github: ${helper2.sources.github.base-url}
-      huggingface: ${helper2.sources.huggingface.base-url}
-      hf-token: ${helper2.sources.huggingface.token}
+      github: ${searchavo.sources.github.base-url}
+      huggingface: ${searchavo.sources.huggingface.base-url}
+      hf-token: ${searchavo.sources.huggingface.token}
     mcp-registry:
-      base-url: ${helper2.sources.mcp-registry.base-url}
-      timeout: ${helper2.sources.mcp-registry.timeout}
+      base-url: ${searchavo.sources.mcp-registry.base-url}
+      timeout: ${searchavo.sources.mcp-registry.timeout}
     guide:
-      daily-model-calls: ${H2_SETUP_GUIDE_DAILY_MODEL_CALLS:500}
-      client-daily-guides: ${H2_SETUP_GUIDE_CLIENT_DAILY:20}
-      network-daily-guides: ${H2_SETUP_GUIDE_NETWORK_DAILY:200}
-      reasoning: ${H2_SETUP_GUIDE_REASONING:false}
-      cache-ttl: ${H2_SETUP_GUIDE_CACHE_TTL:P7D}
-      unreadable-ttl: ${H2_SETUP_UNREADABLE_TTL:PT10M}
-      step-text: ${H2_SETUP_GUIDE_STEP_TEXT:VERIFIED}
+      daily-model-calls: ${SA_SETUP_GUIDE_DAILY_MODEL_CALLS:500}
+      client-daily-guides: ${SA_SETUP_GUIDE_CLIENT_DAILY:20}
+      network-daily-guides: ${SA_SETUP_GUIDE_NETWORK_DAILY:200}
+      reasoning: ${SA_SETUP_GUIDE_REASONING:false}
+      cache-ttl: ${SA_SETUP_GUIDE_CACHE_TTL:P7D}
+      unreadable-ttl: ${SA_SETUP_UNREADABLE_TTL:PT10M}
+      step-text: ${SA_SETUP_GUIDE_STEP_TEXT:VERIFIED}
 ---
 spring:
   config:
@@ -131,7 +131,7 @@ server:
   servlet:
     session:
       cookie:
-        secure: ${H2_COOKIE_SECURE:false}
-helper2:
+        secure: ${SA_COOKIE_SECURE:false}
+searchavo:
   identity:
     frontend-url: http://localhost:5173/

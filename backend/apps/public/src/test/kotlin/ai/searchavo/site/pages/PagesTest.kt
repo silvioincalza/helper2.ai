@@ -1,0 +1,373 @@
+package ai.searchavo.site.pages
+
+import ai.searchavo.catalog.DirectoryRating
+import ai.searchavo.catalog.Slug
+import ai.searchavo.catalog.resourcePath
+import ai.searchavo.shared.Pricing
+import ai.searchavo.shared.ResourceType
+import ai.searchavo.shared.ValueOrigin
+import java.net.URI
+import java.nio.file.Files
+import java.nio.file.Path
+import java.time.Instant
+import java.util.UUID
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import tools.jackson.databind.json.JsonMapper
+
+class PagesTest {
+
+  private val pages = Pages("https://searchavo.ai")
+  private val id = UUID.fromString("8a0e6c1e-2f43-5b6e-9d0a-1f1e2d3c4b5a")
+
+  private fun resource(
+    type: ResourceType = ResourceType.MCP_SERVER,
+    title: String = "postgres-mcp",
+    description: String? = "An MCP server that lets an agent query Postgres.",
+    origin: ValueOrigin = ValueOrigin.SOURCE_PROVIDED,
+    license: String? = "MIT",
+    related: List<Related> = emptyList(),
+    foundIn: List<Related> = emptyList(),
+    rating: DirectoryRating? = null,
+  ) =
+    ResourceView(
+      id = id,
+      title = title,
+      type = type,
+      description = description,
+      descriptionOrigin = origin,
+      url = URI.create("https://github.com/acme/postgres-mcp"),
+      license = license,
+      pricing = null,
+      platforms = emptySet(),
+      published = null,
+      eventStart = null,
+      eventEnd = null,
+      location = null,
+      sources = listOf(Link("GitHub", URI.create("https://github.com/acme/postgres-mcp"))),
+      related = related,
+      foundIn = foundIn,
+      rating = rating,
+    )
+
+  @Test
+  fun `UC-007 BR-011 the page for crawlers gives the rating and the number of directories`() {
+    assertTrue(
+      Pages.facts(resource(rating = DirectoryRating(4.66, 2)))
+        .contains(Fact("Rating", "4.7 out of 5, from 2 directories"))
+    )
+    assertTrue(
+      Pages.facts(resource(rating = DirectoryRating(3.32, 1)))
+        .contains(Fact("Rating", "3.3 out of 5, from 1 directory"))
+    )
+  }
+
+  @Test
+  fun `a resource page has its own title, the source's description and an absolute canonical`() {
+    val head = pages.resource(resource())
+    assertEquals("postgres-mcp: MCP server · searchavo.ai", head.title)
+    assertEquals("An MCP server that lets an agent query Postgres.", head.description)
+    assertEquals("/resource/$id/postgres-mcp", head.canonicalPath)
+    assertEquals(Robots.INDEX, head.robots)
+    assertEquals("SoftwareSourceCode", head.jsonLd.first()["@type"])
+    assertEquals("https://searchavo.ai/resource/$id/postgres-mcp", head.jsonLd.first()["url"])
+    assertEquals("BreadcrumbList", head.jsonLd.last()["@type"])
+  }
+
+  @Test
+  fun `every page names the product in lower case and in full`() {
+    val wrongName = Regex("Searchavo|searchavo(?!\\.ai)")
+    val fixed = PageKind.entries.filter { it != PageKind.RESOURCE }.map { pages.of(it) }
+    val heads = fixed + pages.pageNotFound() + pages.resourceNotFound() + pages.resource(resource())
+
+    heads.forEach { head ->
+      val words = listOfNotNull(head.title, head.description) + head.jsonLd.map { it.toString() }
+      words.forEach { assertFalse(wrongName.containsMatchIn(it), it) }
+      assertTrue(head.title.endsWith(" · searchavo.ai") || head.title.startsWith("searchavo.ai: "))
+    }
+    assertEquals("searchavo.ai", pages.home().jsonLd.first()["name"])
+  }
+
+  @Test
+  fun `an AI-written description never reaches the meta tag or JSON-LD`() {
+    val head = pages.resource(resource(origin = ValueOrigin.AI_SUMMARY, description = "AI words."))
+    assertEquals("postgres-mcp: MCP server, license MIT, found on GitHub.", head.description)
+    assertFalse(head.jsonLd.first().containsKey("description"))
+    assertNull(head.body?.description)
+    assertEquals(Robots.NOINDEX_FOLLOW, head.robots)
+  }
+
+  @Test
+  fun `a long title drops the type, then is cut`() {
+    assertEquals(
+      "A rather long resource title that goes on · searchavo.ai",
+      Pages.resourceTitle(resource(title = "A rather long resource title that goes on")),
+    )
+    val cut = Pages.resourceTitle(resource(title = "word ".repeat(30).trim()))
+    assertTrue(cut.length <= Pages.TITLE_MAX)
+    assertTrue(cut.endsWith("… · searchavo.ai"))
+  }
+
+  @Test
+  fun `a description is cut at a word, below 155 characters`() {
+    val long = "Lorem ipsum dolor sit amet, ".repeat(10)
+    val cut = Pages.cut(long, Pages.DESCRIPTION_MAX)
+    assertTrue(cut.length <= Pages.DESCRIPTION_MAX)
+    assertTrue(cut.endsWith("…"))
+    assertFalse(cut.contains(",…"))
+  }
+
+  @Test
+  fun `index-worthy types need a fact, news, articles and thin pages do not count`() {
+    assertTrue(IndexPolicy.indexWorthy(resource()))
+    assertFalse(IndexPolicy.indexWorthy(resource(license = null)))
+    assertTrue(
+      IndexPolicy.indexWorthy(
+        resource(license = null, related = listOf(Related(UUID.randomUUID(), "pgvector")))
+      )
+    )
+    assertFalse(IndexPolicy.indexWorthy(resource(type = ResourceType.NEWS)))
+    assertFalse(IndexPolicy.indexWorthy(resource(type = ResourceType.ARTICLE)))
+    assertFalse(IndexPolicy.indexWorthy(resource(type = ResourceType.OTHER)))
+    assertFalse(IndexPolicy.indexWorthy(resource(description = "  ")))
+  }
+
+  @Test
+  fun `a prompt counts only with its full text`() {
+    assertFalse(
+      IndexPolicy.indexWorthy(resource(type = ResourceType.PROMPT, description = "Summarise this."))
+    )
+    assertTrue(
+      IndexPolicy.indexWorthy(
+        resource(type = ResourceType.PROMPT, description = "x".repeat(200), license = null)
+      )
+    )
+  }
+
+  @Test
+  fun `the body lists facts, sources and related resources`() {
+    val related = listOf(Related(UUID.randomUUID(), "pgvector"))
+    val body = pages.resource(resource(related = related)).body!!
+    assertEquals("postgres-mcp", body.heading)
+    assertEquals(
+      listOf(Fact("Type", "MCP server"), Fact("Rating", "Not rated yet"), Fact("License", "MIT")),
+      body.facts,
+    )
+    assertEquals(related, body.related)
+    assertEquals(emptyList(), body.foundIn)
+  }
+
+  @Test
+  fun `the body lists the lists a resource was found in`() {
+    val lists = listOf(Related(UUID.randomUUID(), "acme/awesome-mcp"))
+    assertEquals(lists, pages.resource(resource(foundIn = lists)).body!!.foundIn)
+  }
+
+  @Test
+  fun `an event carries its dates and place`() {
+    val event =
+      resource(type = ResourceType.EVENT)
+        .copy(
+          eventStart = Instant.parse("2026-12-01T00:00:00Z"),
+          eventEnd = Instant.parse("2026-12-02T00:00:00Z"),
+          location = "Zurich",
+          pricing = Pricing.PAID,
+        )
+    val data = JsonLd.of(event, "https://searchavo.ai/resource/$id")!!
+    assertEquals("Event", data["@type"])
+    assertEquals("2026-12-01T00:00:00Z", data["startDate"])
+    assertEquals(mapOf("@type" to "Place", "name" to "Zurich"), data["location"])
+    assertTrue(Pages.facts(event).contains(Fact("When", "1 Dec 2026 to 2 Dec 2026")))
+  }
+
+  @Test
+  fun `static pages - listed ones are indexed, personal ones are not, the back office never`() {
+    assertEquals(Robots.INDEX, pages.of(PageKind.HOME).robots)
+    assertEquals("/sources", pages.of(PageKind.SOURCES).canonicalPath)
+    assertEquals(Robots.NOINDEX_FOLLOW, pages.of(PageKind.SEARCH).robots)
+    assertNull(pages.of(PageKind.SAVED).canonicalPath)
+    assertEquals(Robots.NOINDEX, pages.of(PageKind.ADMIN_PAGE).robots)
+    assertEquals(Robots.NOINDEX, pages.pageNotFound().robots)
+    assertEquals("/events", pages.of(PageKind.EVENTS).canonicalPath)
+    assertEquals(Robots.INDEX, pages.of(PageKind.EVENTS).robots)
+    assertEquals(Robots.NOINDEX_FOLLOW, pages.of(PageKind.NEWS).robots)
+  }
+
+  @Test
+  fun `addresses map to pages, a bad id or an unknown path does not`() {
+    assertEquals(PageAddress.Page(PageKind.HOME), PageAddress.of("/"))
+    assertEquals(PageAddress.Page(PageKind.SOURCES), PageAddress.of("/sources"))
+    assertEquals(PageAddress.Page(PageKind.NEWS), PageAddress.of("/news"))
+    assertEquals(PageAddress.Page(PageKind.EVENTS), PageAddress.of("/events"))
+    assertEquals(PageAddress.Page(PageKind.SIGNIN), PageAddress.of("/signin"))
+    assertEquals(PageAddress.Page(PageKind.ADMIN_PAGE), PageAddress.of("/admin/review"))
+    assertEquals(PageAddress.Resource(id.toString(), id), PageAddress.of("/resource/$id"))
+    assertEquals(PageAddress.Resource("nope", null), PageAddress.of("/resource/nope"))
+    assertEquals(PageAddress.Unknown, PageAddress.of("/sources/"))
+    assertEquals(
+      PageAddress.Resource(id.toString(), id, "postgres-mcp"),
+      PageAddress.of("/resource/$id/postgres-mcp"),
+    )
+    assertEquals(PageAddress.Unknown, PageAddress.of("/resource/$id/postgres-mcp/extra"))
+    assertEquals(PageAddress.Unknown, PageAddress.of("/nope"))
+  }
+
+  @Test
+  fun `a slug is the title in plain lowercase words, the same as the frontend's`() {
+    val vectors =
+      listOf(
+        "postgres-mcp" to "postgres-mcp",
+        "LangChain: Build LLM apps" to "langchain-build-llm-apps",
+        "Café Crème 2.0" to "cafe-creme-2-0",
+        "  --Hello__World--  " to "hello-world",
+        "日本語" to "",
+        "" to "",
+        "word ".repeat(20).trim() to "word-word-word-word-word-word-word-word-word-word-word-word",
+        "a".repeat(70) to "a".repeat(60),
+      )
+    for ((title, slug) in vectors) assertEquals(slug, Slug.of(title), title)
+    assertEquals("/resource/$id/postgres-mcp", resourcePath(id, "postgres-mcp"))
+    assertEquals("/resource/$id", resourcePath(id, "日本語"))
+  }
+
+  @Test
+  fun `an unlisted page says noindex whatever it was`() {
+    assertEquals(Robots.NOINDEX, pages.of(PageKind.SOURCES).unlisted().robots)
+    assertEquals(Robots.NOINDEX, pages.resource(resource()).unlisted().robots)
+    assertEquals("/sources", pages.of(PageKind.SOURCES).unlisted().canonicalPath)
+  }
+
+  @Test
+  fun `the home page says what the app's home says before the app loads`() {
+    val en =
+      JsonMapper.builder()
+        .build()
+        .readTree(Files.readString(Path.of("../frontend/src/i18n/locales/en.json")))
+    assertEquals(en.path("home").path("lede").asString(), pages.home().description)
+  }
+
+  private val lists =
+    object : SiteLists {
+      override fun newInCatalog() =
+        (1..25).map { Related(UUID.nameUUIDFromBytes("n$it".toByteArray()), "New tool $it") }
+
+      override fun upcomingEvents() = listOf(Related(id, "AI Summit"))
+
+      override fun hub(type: ResourceType) =
+        (1..60).map {
+          Related(UUID.nameUUIDFromBytes("$type$it".toByteArray()), "${type.name} $it")
+        }
+    }
+
+  @Test
+  fun `every listed site page has a body a crawler can read, with links to the other site pages`() {
+    val listed =
+      PageKind.entries
+        .filter { it != PageKind.RESOURCE }
+        .map { pages.of(it, lists) }
+        .filter { it.robots == Robots.INDEX }
+    assertEquals(7 + Hub.entries.size, listed.size)
+    listed.forEach { head ->
+      val body = head.body!!
+      assertTrue(body.heading.isNotBlank(), head.title)
+      assertEquals(head.description, body.description)
+      assertFalse(body.pages.any { it.path == head.canonicalPath }, head.title)
+      assertEquals(Pages.NAV.size - 1, body.pages.size, head.title)
+    }
+  }
+
+  @Test
+  fun `the home body lists what is new in the catalog, at most 20`() {
+    val listing = pages.of(PageKind.HOME, lists).body!!.listing!!
+    assertEquals("New in the catalog", listing.heading)
+    assertEquals(Pages.MAX_LISTED, listing.items.size)
+    assertEquals("New tool 1", listing.items.first().title)
+  }
+
+  @Test
+  fun `the events body lists the coming events`() {
+    val listing = pages.of(PageKind.EVENTS, lists).body!!.listing!!
+    assertEquals("Coming up", listing.heading)
+    assertEquals(listOf("AI Summit"), listing.items.map { it.title })
+  }
+
+  @Test
+  fun `an empty list leaves no heading, and a page that is not listed has no body`() {
+    assertNull(pages.of(PageKind.HOME).body!!.listing)
+    assertNull(pages.of(PageKind.EVENTS).body!!.listing)
+    assertNull(pages.of(PageKind.SEARCH, lists).body)
+    assertNull(pages.of(PageKind.SAVED, lists).body)
+  }
+
+  @Test
+  fun `every hub page is indexed, names its type and lists its newest 50`() {
+    Hub.entries.forEach { hub ->
+      val head = pages.of(hub.kind, lists)
+      assertEquals(Robots.INDEX, head.robots)
+      assertEquals(hub.path, head.canonicalPath)
+      assertEquals("${hub.label}: newest in the catalog · searchavo.ai", head.title)
+      assertTrue(head.title.length <= Pages.TITLE_MAX, head.title)
+      val listing = head.body!!.listing!!
+      assertEquals("Newest change first", listing.heading)
+      assertEquals(Hub.SIZE, listing.items.size)
+      assertEquals("${hub.type.name} 1", listing.items.first().title)
+    }
+  }
+
+  @Test
+  fun `a hub page says what it lists in JSON-LD, one item per link`() {
+    val head = pages.of(PageKind.HUB_MCP_SERVERS, lists)
+    val collection = head.jsonLd.single()
+    assertEquals("CollectionPage", collection["@type"])
+    assertEquals("https://searchavo.ai/mcp-servers", collection["url"])
+    val list = collection["mainEntity"] as Map<*, *>
+    assertEquals("ItemList", list["@type"])
+    assertEquals(Hub.SIZE, list["numberOfItems"])
+    val items = list["itemListElement"] as List<*>
+    assertEquals(head.body!!.listing!!.items.size, items.size)
+    val first = items.first() as Map<*, *>
+    assertEquals(1, first["position"])
+    assertEquals("MCP_SERVER 1", first["name"])
+    assertTrue((first["item"] as String).startsWith("https://searchavo.ai/resource/"))
+  }
+
+  @Test
+  fun `a hub with no resource is not indexed, and its links are still followed`() {
+    Hub.entries.forEach { hub ->
+      val head = pages.of(hub.kind)
+      assertEquals(Robots.NOINDEX_FOLLOW, head.robots, hub.path)
+      assertTrue(head.jsonLd.isEmpty(), hub.path)
+      assertNull(head.body!!.listing, hub.path)
+      assertEquals(Pages.NAV.size - 1, head.body!!.pages.size, hub.path)
+    }
+  }
+
+  @Test
+  fun `the hub description names only what the list states`() {
+    assertEquals(
+      "MCP servers in the searchavo.ai catalog, newest change first, with the license and pricing " +
+        "their sources state.",
+      Hub.MCP_SERVERS.description,
+    )
+  }
+
+  @Test
+  fun `every hub has its own type, and the types without a hub are the ones that are not indexed`() {
+    assertEquals(Hub.entries.size, Hub.entries.map { it.type }.toSet().size)
+    val withoutHub = ResourceType.entries.filter { Hub.of(it) == null }.toSet()
+    assertEquals(
+      setOf(
+        ResourceType.EVENT,
+        ResourceType.NEWS,
+        ResourceType.ARTICLE,
+        ResourceType.AWESOME_LIST,
+        ResourceType.OTHER,
+      ),
+      withoutHub,
+    )
+    assertTrue(Hub.entries.all { it.type in IndexPolicy.LISTED_TYPES })
+  }
+}

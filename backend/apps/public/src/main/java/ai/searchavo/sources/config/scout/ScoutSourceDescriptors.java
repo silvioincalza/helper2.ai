@@ -1,0 +1,169 @@
+package ai.searchavo.sources.config.scout;
+
+import ai.searchavo.platform.llm.LlmSettings;
+import ai.searchavo.search.DescribedSource;
+import ai.searchavo.search.SourceDescriptor;
+import ai.searchavo.shared.CollectorIds;
+import ai.searchavo.sources.config.CollectorDescriptors;
+import ai.searchavo.sources.config.CollectorProperties;
+import ai.searchavo.sources.config.DiscoveryCategories;
+import ai.searchavo.sources.config.FeedProperties;
+import ai.searchavo.sources.config.SourcesProperties;
+import ai.searchavo.sources.support.SourceSettings;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.BeanRegistrar;
+import org.springframework.beans.factory.BeanRegistry;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
+
+@Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties({
+  CollectorProperties.LiveWebScout.class,
+  CollectorProperties.Courses.class,
+  CollectorProperties.LinkedIn.class,
+  CollectorProperties.LiveWebEvents.class,
+  CollectorProperties.Discovery.class,
+  CollectorProperties.HfProviderOrgs.class,
+  CollectorProperties.GitHubTopicLeaders.class,
+  CollectorProperties.GitHubSdks.class
+})
+@Profile("!demo")
+@Import({ScoutSourceDescriptors.Discovery.class, ScoutSourceDescriptors.NewsFeeds.class})
+class ScoutSourceDescriptors {
+  record Described(SourceDescriptor descriptor) implements DescribedSource {
+    @Override
+    public SourceDescriptor getDescriptor() {
+      return descriptor;
+    }
+  }
+
+  @Bean
+  DescribedSource aiDeadlinesSource(SourcesProperties p) {
+    return new Described(CollectorDescriptors.aiDeadlines(p.get(CollectorIds.AI_DEADLINES)));
+  }
+
+  @Bean
+  DescribedSource confsTechSource(SourcesProperties p) {
+    return new Described(CollectorDescriptors.confsTech(p.get(CollectorIds.CONFS_TECH)));
+  }
+
+  @Bean
+  DescribedSource gitHubAwesomeSource(SourcesProperties p) {
+    return new Described(CollectorDescriptors.gitHubAwesome(p.get(CollectorIds.GITHUB_AWESOME)));
+  }
+
+  @Bean
+  DescribedSource curatedWebListsSource(SourcesProperties p) {
+    return new Described(CollectorDescriptors.curatedWebLists(p.get(CollectorIds.GITHUB_AWESOME)));
+  }
+
+  @Bean
+  DescribedSource gitHubTopicLeadersSource(
+      SourcesProperties p, CollectorProperties.GitHubTopicLeaders c) {
+    return new Described(
+        CollectorDescriptors.gitHubTopicLeaders(
+            p.get(CollectorIds.GITHUB_TOPIC_LEADERS), c.topics()));
+  }
+
+  @Bean
+  DescribedSource gitHubSdksSource(SourcesProperties p, CollectorProperties.GitHubSdks c) {
+    return new Described(
+        CollectorDescriptors.gitHubSdks(p.get(CollectorIds.GITHUB_SDKS), c.languages(), c.orgs()));
+  }
+
+  @Bean
+  DescribedSource hfProviderOrgsSource(SourcesProperties p, CollectorProperties.HfProviderOrgs c) {
+    return new Described(
+        CollectorDescriptors.hfProviderOrgs(p.get(CollectorIds.HF_PROVIDER_ORGS), c.orgs()));
+  }
+
+  @Bean
+  DescribedSource hfTrendingSource(SourcesProperties p) {
+    return new Described(CollectorDescriptors.hfTrending(p.get(CollectorIds.HF_TRENDING)));
+  }
+
+  @Bean
+  DescribedSource mcpRegistrySource(SourcesProperties p) {
+    return new Described(CollectorDescriptors.mcpRegistry(p.get(CollectorIds.MCP_REGISTRY)));
+  }
+
+  @Bean
+  DescribedSource pypiSource(SourcesProperties p) {
+    return new Described(CollectorDescriptors.pypi(p.get(CollectorIds.PYPI)));
+  }
+
+  @Bean
+  DescribedSource liveWebScoutSource(SourcesProperties p, CollectorProperties.LiveWebScout c) {
+    return new Described(
+        CollectorDescriptors.liveWebScout(p.get(CollectorIds.LIVE_WEB_SCOUT), c.queries()));
+  }
+
+  @Bean
+  DescribedSource coursesSource(SourcesProperties p, CollectorProperties.Courses c) {
+    return new Described(
+        CollectorDescriptors.courses(p.get(CollectorIds.COURSES), c.query(), c.platforms()));
+  }
+
+  @Bean
+  DescribedSource liveWebEventsSource(
+      SourcesProperties p,
+      CollectorProperties.LiveWebEvents c,
+      ObjectProvider<ChatModel> chatModel,
+      LlmSettings llm) {
+    return new Described(
+        CollectorDescriptors.liveWebEvents(
+            p.get(CollectorIds.LIVE_WEB_EVENTS),
+            c.queries(),
+            llm.usable(chatModel.getIfAvailable())));
+  }
+
+  @Bean
+  DescribedSource linkedInSource(SourcesProperties p, CollectorProperties.LinkedIn c) {
+    return new Described(CollectorDescriptors.linkedIn(p.get(CollectorIds.LINKEDIN), c.queries()));
+  }
+
+  static class Discovery implements BeanRegistrar {
+    @Override
+    public void register(BeanRegistry registry, Environment env) {
+      DiscoveryCategories categories = DiscoveryCategories.bind(env);
+      for (String id : categories.ids()) {
+        registry.registerBean(
+            "discovery-" + id,
+            DescribedSource.class,
+            spec ->
+                spec.supplier(ctx -> {
+                  SourceSettings s = ctx.bean(SourcesProperties.class).get("discovery");
+                  var category =
+                      categories.resolve(ctx.bean(CollectorProperties.Discovery.class)).stream()
+                          .filter(c -> c.id().equals(id))
+                          .findFirst()
+                          .orElseThrow();
+                  return new Described(CollectorDescriptors.discovery(s, category));
+                }));
+      }
+    }
+  }
+
+  static class NewsFeeds implements BeanRegistrar {
+    @Override
+    public void register(BeanRegistry registry, Environment env) {
+      FeedProperties feeds = FeedProperties.bind(env);
+      for (String id : feeds.ids()) {
+        FeedProperties.Feed feed = feeds.get(id);
+        registry.registerBean(
+            feed.sourceId(),
+            DescribedSource.class,
+            spec ->
+                spec.supplier(ctx ->
+                    new Described(
+                        CollectorDescriptors.newsFeed(
+                            ctx.bean(SourcesProperties.class).get("news-feeds"), feed))));
+      }
+    }
+  }
+}

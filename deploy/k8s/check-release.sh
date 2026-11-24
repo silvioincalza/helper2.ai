@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RELEASE=helper2
+RELEASE=searchavo
 ROLLOUT_TIMEOUT=${ROLLOUT_TIMEOUT:-120s}
 ROLLBACK_TIMEOUT=${ROLLBACK_TIMEOUT:-12m}
 HTTP_TRIES=${HTTP_TRIES:-5}
@@ -177,7 +177,7 @@ case " $* " in
   *" get manifest "*)
     restored=7
     [[ -e $FAKE_DIR/rolled-back ]] && restored=$(< "$FAKE_DIR/rolled-back")
-    printf 'kind: Job\nmetadata:\n  name: helper2-migrate-%s\n' "$restored"
+    printf 'kind: Job\nmetadata:\n  name: searchavo-migrate-%s\n' "$restored"
     ;;
   *" status "*)
     [[ -n ${FAKE_RELEASE:-} ]] || exit 1
@@ -199,7 +199,7 @@ fi
 case " $* " in
   *" get deployments,statefulsets "*) printf '%s\n' ${FAKE_WORKLOADS:-} ;;
   *" rollout status "*) [[ " ${FAKE_STUCK:-} " != *" $5 "* ]] ;;
-  *" get job helper2-migrate-$restored "*)
+  *" get job searchavo-migrate-$restored "*)
     case $state in
       complete) echo '{"status": {"conditions": [{"type": "Complete", "status": "True"}]}}' ;;
       failed) echo '{"status": {"conditions": [{"type": "Failed", "status": "True"}]}}' ;;
@@ -246,8 +246,8 @@ self_test() {
     : > "$dir/tries"
     # shellcheck disable=SC2086
     if env PATH="$dir:$PATH" FAKE_DIR="$dir" HTTP_PAUSE=0 GITHUB_ACTIONS= FAKE_RELEASE=deployed FAKE_JOB=complete \
-      FAKE_WORKLOADS="deployment.apps/helper2 deployment.apps/helper2-web statefulset.apps/postgres" \
-      $settings "$SELF" $mode helper2-test https://site.test/ https://site.test/api > "$dir/out" 2>&1; then
+      FAKE_WORKLOADS="deployment.apps/searchavo deployment.apps/searchavo-web statefulset.apps/postgres" \
+      $settings "$SELF" $mode searchavo-test https://site.test/ https://site.test/api > "$dir/out" 2>&1; then
       got=ok
     else
       got=fail
@@ -272,8 +272,8 @@ fail|no release|FAKE_RELEASE=|||no release
 fail|the release failed|FAKE_RELEASE=failed|||is failed
 fail|the release is pending|FAKE_RELEASE=pending-upgrade|||is pending-upgrade
 fail|no workload|FAKE_WORKLOADS=|||has no Deployment
-fail|a Deployment is not rolled out|FAKE_STUCK=deployment.apps/helper2-web|||deployment.apps/helper2-web in helper2-test is not rolled out
-fail|a StatefulSet is not rolled out|FAKE_STUCK=statefulset.apps/postgres|||statefulset.apps/postgres in helper2-test is not rolled out
+fail|a Deployment is not rolled out|FAKE_STUCK=deployment.apps/searchavo-web|||deployment.apps/searchavo-web in searchavo-test is not rolled out
+fail|a StatefulSet is not rolled out|FAKE_STUCK=statefulset.apps/postgres|||statefulset.apps/postgres in searchavo-test is not rolled out
 fail|the migrate Job failed|FAKE_JOB=failed|||did not complete
 fail|the migrate Job still runs|FAKE_JOB=running|||did not complete
 fail|the page answers 503|FAKE_DOWN=https://site.test/|||https://site.test/ did not answer 200
@@ -281,16 +281,16 @@ fail|the API answers 503|FAKE_DOWN=https://site.test/api|||https://site.test/api
 fail|the site never answers|FAKE_UP_AT_TRY=99|||did not answer 200
 fail|a plain check never rolls back|FAKE_DOWN=https://site.test/|||not healthy
 ok|deploy: healthy, no rollback||--or-roll-back-to 6||is healthy
-fail|deploy: the page answers 503, rolled back to the revision deployed before, healthy again|FAKE_DOWN=https://site.test/|--or-roll-back-to 6|-n helper2-test rollback helper2 6 --wait --wait-for-jobs --timeout 12m|ROLLED BACK: helper2 in helper2-test was not healthy at revision 7. It runs revision 6 again, which is healthy. The deploy failed
-fail|deploy: the rollback goes to the recorded revision, not to the one before the current|FAKE_DOWN=https://site.test/api|--or-roll-back-to 4|-n helper2-test rollback helper2 4 --wait --wait-for-jobs --timeout 12m|It runs revision 4 again
-fail|deploy: a first install is not rolled back|FAKE_DOWN=https://site.test/|--or-roll-back-to none||NOT ROLLED BACK: helper2 in helper2-test is not healthy and no revision was deployed before this one
-fail|deploy: no upgrade happened, nothing to undo|FAKE_DOWN=https://site.test/|--or-roll-back-to 7||NOT ROLLED BACK: helper2 in helper2-test is not healthy at revision 7
-fail|deploy: the rollback is switched off, the release stays|FAKE_DOWN=https://site.test/|--or-roll-back-to off||NOT ROLLED BACK: rollback switched off for this deploy. helper2 in helper2-test is not healthy at revision 7 and stays as it is
+fail|deploy: the page answers 503, rolled back to the revision deployed before, healthy again|FAKE_DOWN=https://site.test/|--or-roll-back-to 6|-n searchavo-test rollback searchavo 6 --wait --wait-for-jobs --timeout 12m|ROLLED BACK: searchavo in searchavo-test was not healthy at revision 7. It runs revision 6 again, which is healthy. The deploy failed
+fail|deploy: the rollback goes to the recorded revision, not to the one before the current|FAKE_DOWN=https://site.test/api|--or-roll-back-to 4|-n searchavo-test rollback searchavo 4 --wait --wait-for-jobs --timeout 12m|It runs revision 4 again
+fail|deploy: a first install is not rolled back|FAKE_DOWN=https://site.test/|--or-roll-back-to none||NOT ROLLED BACK: searchavo in searchavo-test is not healthy and no revision was deployed before this one
+fail|deploy: no upgrade happened, nothing to undo|FAKE_DOWN=https://site.test/|--or-roll-back-to 7||NOT ROLLED BACK: searchavo in searchavo-test is not healthy at revision 7
+fail|deploy: the rollback is switched off, the release stays|FAKE_DOWN=https://site.test/|--or-roll-back-to off||NOT ROLLED BACK: rollback switched off for this deploy. searchavo in searchavo-test is not healthy at revision 7 and stays as it is
 ok|deploy: the rollback is switched off and the release is healthy||--or-roll-back-to off||is healthy
-fail|deploy: the rollback itself fails, once|FAKE_DOWN=https://site.test/ FAKE_ROLLBACK=fails|--or-roll-back-to 6|-n helper2-test rollback helper2 6 --wait --wait-for-jobs --timeout 12m|ROLLBACK FAILED: helper2 in helper2-test was not healthy at revision 7 and the rollback to revision 6 failed
-fail|deploy: not healthy after the rollback either, rolled back once|FAKE_DOWN=https://site.test/ FAKE_DOWN_AFTER_ROLLBACK=https://site.test/|--or-roll-back-to 6|-n helper2-test rollback helper2 6 --wait --wait-for-jobs --timeout 12m|ROLLED BACK, STILL NOT HEALTHY
-fail|deploy: after the rollback the migrate Job of the restored revision is read, and it failed|FAKE_DOWN=https://site.test/ FAKE_JOB_AFTER_ROLLBACK=failed|--or-roll-back-to 6|-n helper2-test rollback helper2 6 --wait --wait-for-jobs --timeout 12m|job helper2-migrate-6 in helper2-test did not complete
-fail|deploy: after the rollback the migrate Job of the restored revision is complete|FAKE_DOWN=https://site.test/|--or-roll-back-to 6|-n helper2-test rollback helper2 6 --wait --wait-for-jobs --timeout 12m|job helper2-migrate-6: complete
+fail|deploy: the rollback itself fails, once|FAKE_DOWN=https://site.test/ FAKE_ROLLBACK=fails|--or-roll-back-to 6|-n searchavo-test rollback searchavo 6 --wait --wait-for-jobs --timeout 12m|ROLLBACK FAILED: searchavo in searchavo-test was not healthy at revision 7 and the rollback to revision 6 failed
+fail|deploy: not healthy after the rollback either, rolled back once|FAKE_DOWN=https://site.test/ FAKE_DOWN_AFTER_ROLLBACK=https://site.test/|--or-roll-back-to 6|-n searchavo-test rollback searchavo 6 --wait --wait-for-jobs --timeout 12m|ROLLED BACK, STILL NOT HEALTHY
+fail|deploy: after the rollback the migrate Job of the restored revision is read, and it failed|FAKE_DOWN=https://site.test/ FAKE_JOB_AFTER_ROLLBACK=failed|--or-roll-back-to 6|-n searchavo-test rollback searchavo 6 --wait --wait-for-jobs --timeout 12m|job searchavo-migrate-6 in searchavo-test did not complete
+fail|deploy: after the rollback the migrate Job of the restored revision is complete|FAKE_DOWN=https://site.test/|--or-roll-back-to 6|-n searchavo-test rollback searchavo 6 --wait --wait-for-jobs --timeout 12m|job searchavo-migrate-6: complete
 CASES
   while IFS='|' read -r want settings version says what; do
     [[ -z $what ]] && continue
@@ -328,7 +328,7 @@ CASES
   while IFS='|' read -r want settings what; do
     [[ -z $what ]] && continue
     # shellcheck disable=SC2086
-    got=$(env PATH="$dir:$PATH" FAKE_DIR="$dir" $settings "$SELF" deployed-revision helper2-test)
+    got=$(env PATH="$dir:$PATH" FAKE_DIR="$dir" $settings "$SELF" deployed-revision searchavo-test)
     if [[ $got == "$want" ]]; then
       echo "ok   [$what] -> '$got'"
     else

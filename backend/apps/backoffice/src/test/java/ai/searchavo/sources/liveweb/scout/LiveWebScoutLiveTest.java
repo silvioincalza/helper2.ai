@@ -1,0 +1,88 @@
+package ai.searchavo.sources.liveweb.scout;
+
+import static ai.searchavo.sources.SourceFixtures.SHADOW_LIBRARIES;
+import static ai.searchavo.sources.SourceFixtures.live;
+import static ai.searchavo.sources.SourceFixtures.liveHttp;
+import static ai.searchavo.sources.SourceFixtures.query;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import ai.searchavo.platform.resilience.Resilience;
+import ai.searchavo.scout.CollectedBatch;
+import ai.searchavo.search.SourceHit;
+import ai.searchavo.sources.support.RunInterval;
+import ai.searchavo.sources.tavily.TavilySource;
+import java.time.Clock;
+import java.time.Duration;
+import java.util.List;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
+@Tag("live")
+@EnabledIfEnvironmentVariable(named = "SA_LIVE_WEB_API_KEY", matches = ".+")
+class LiveWebScoutLiveTest {
+
+  static final String API = "https://api.tavily.com";
+
+  @Test
+  void searchSourceFindsPagesWithTheirAnswerSnippet() {
+    TavilySource source =
+        new TavilySource(
+            live(API, "SA_LIVE_WEB_API_KEY"), liveHttp(), Clock.systemUTC(), SHADOW_LIBRARIES);
+
+    List<SourceHit> hits = source.search(query("new open-source LLM released"));
+
+    assertThat(hits)
+        .isNotEmpty()
+        .allSatisfy(h -> assertThat(h.getUrl().getScheme()).isEqualTo("https"));
+  }
+
+  @Test
+  void discoveryCollectorRunsOneNewsQuery() {
+    LiveWebNewsCollector collector =
+        new LiveWebNewsCollector(
+            live(API, "SA_LIVE_WEB_API_KEY"),
+            liveHttp(),
+            Clock.systemUTC(),
+            Resilience.NONE,
+            new RunInterval(Duration.ZERO),
+            List.of("new MCP server released"),
+            unlimitedCredits(),
+            SHADOW_LIBRARIES);
+
+    CollectedBatch batch = collector.collect(null, null, 20);
+
+    assertThat(batch.getHits()).isNotEmpty();
+    assertThat(batch.getCheckpoint()).isNotNull();
+  }
+
+  @Test
+  void courseCollectorKeepsOnlyPagesOnThePlatform() {
+    CourseCollector collector =
+        new CourseCollector(
+            live(API, "SA_LIVE_WEB_API_KEY"),
+            liveHttp(),
+            Clock.systemUTC(),
+            Resilience.NONE,
+            new RunInterval(Duration.ZERO),
+            "new artificial intelligence course or certification",
+            List.of("deeplearning.ai=DeepLearning.AI"),
+            unlimitedCredits());
+
+    CollectedBatch batch = collector.collect(null, null, 10);
+
+    assertThat(batch.getHits()).isEmpty();
+    assertThat(batch.getCheckpoint()).isNotNull();
+    assertThat(batch.getCandidates())
+        .allSatisfy(c -> assertThat(c.getUrl().getValue()).contains("deeplearning.ai"));
+  }
+
+  private static ScoutLiveWebCredits unlimitedCredits() {
+    Clock clock = Clock.systemUTC();
+    return new ScoutLiveWebCredits(
+        new DiscoveryCollectorTest.MapCounter(),
+        new ai.searchavo.platform.quota.QuotaKeys("", clock),
+        () -> Long.MAX_VALUE,
+        new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
+  }
+}

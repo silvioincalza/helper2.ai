@@ -389,7 +389,7 @@ jobs:
       - name: Changed, and tag bumped?
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
-          VALUES: deploy/helm/helper2/values.yaml
+          VALUES: deploy/helm/searchavo/values.yaml
         run: |
           set -euo pipefail
           if git diff --quiet "$BASE" HEAD -- deploy/postgres; then
@@ -422,7 +422,7 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
-          VALUES: deploy/helm/helper2/values.yaml
+          VALUES: deploy/helm/searchavo/values.yaml
         run: |
           set -euo pipefail
           if git diff --quiet "$BASE" HEAD -- deploy/embedder ':!deploy/embedder/test_embedding_api.py' ':!deploy/embedder/requirements.in'; then
@@ -479,7 +479,7 @@ jobs:
           chmod +x "$RUNNER_TEMP/bin/promtool"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/bin/promtool" --version
-      - run: promtool check rules deploy/monitoring/helper2-rules.yaml
+      - run: promtool check rules deploy/monitoring/searchavo-rules.yaml
       - run: promtool test rules deploy/monitoring/tests/*.yaml
 
   diagrams:

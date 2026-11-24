@@ -1,4 +1,4 @@
-plugins { id("helper2.kotlin-library") }
+plugins { id("searchavo.kotlin-library") }
 
 dependencies {
   api("org.springframework.boot:spring-boot-starter-flyway")

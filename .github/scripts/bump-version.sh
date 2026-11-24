@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-FILES=(backend/build.gradle.kts frontend/package.json frontend/package-lock.json deploy/helm/helper2/Chart.yaml api/public.yaml api/admin.yaml api/common.yaml)
+FILES=(backend/build.gradle.kts frontend/package.json frontend/package-lock.json deploy/helm/searchavo/Chart.yaml api/public.yaml api/admin.yaml api/common.yaml)
 VERSION_RE='^[0-9]{4}\.[1-9][0-9]*\.(0|[1-9][0-9]*)$'
 
 version_in() {
@@ -15,7 +15,7 @@ current() {
 rewrite() {
   local from=$1 to=$2 root=$3 file
   sed -i.bak "s/^version = \"${from//./\\.}\"\$/version = \"$to\"/" "$root/backend/build.gradle.kts"
-  sed -i.bak "s/^version: ${from//./\\.}\$/version: $to/" "$root/deploy/helm/helper2/Chart.yaml"
+  sed -i.bak "s/^version: ${from//./\\.}\$/version: $to/" "$root/deploy/helm/searchavo/Chart.yaml"
   sed -i.bak "s/^  version: ${from//./\\.}\$/  version: $to/" "$root/api/public.yaml" "$root/api/admin.yaml" "$root/api/common.yaml"
   sed -i.bak "4s/^  \"version\": \"${from//./\\.}\",\$/  \"version\": \"$to\",/" "$root/frontend/package.json"
   sed -i.bak -e "3s/^  \"version\": \"${from//./\\.}\",\$/  \"version\": \"$to\",/" \
@@ -83,11 +83,11 @@ self_test() {
       fi
       echo "ok   [$name] -> $got"
     }
-    mkdir -p backend frontend deploy/helm/helper2 api docs
+    mkdir -p backend frontend deploy/helm/searchavo api docs
     printf 'plugins {}\n\ngroup = "x"\n\nversion = "2026.1.0"\n' > backend/build.gradle.kts
     printf '{\n  "name": "f",\n  "private": true,\n  "version": "2026.1.0",\n  "type": "module"\n}\n' > frontend/package.json
     printf '{\n  "name": "f",\n  "version": "2026.1.0",\n  "lockfileVersion": 3,\n  "requires": true,\n  "packages": {\n    "": {\n      "name": "f",\n      "version": "2026.1.0",\n      "dependencies": {}\n    }\n  }\n}\n' > frontend/package-lock.json
-    printf 'apiVersion: v2\nname: h\nversion: 2026.1.0\n' > deploy/helm/helper2/Chart.yaml
+    printf 'apiVersion: v2\nname: h\nversion: 2026.1.0\n' > deploy/helm/searchavo/Chart.yaml
     for f in public admin common; do printf 'openapi: 3.1.0\ninfo:\n  title: %s\n  version: 2026.1.0\n' "$f" > "api/$f.yaml"; done
     echo d > docs/x.md
     g init -q . && g add -A && g commit -qm init

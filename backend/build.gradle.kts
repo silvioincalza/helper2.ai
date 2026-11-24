@@ -1,6 +1,6 @@
-plugins { id("helper2.format") }
+plugins { id("searchavo.format") }
 
-group = "ai.helper2"
+group = "ai.searchavo"
 
 version = "2026.12.0"
 

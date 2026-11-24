@@ -1,0 +1,390 @@
+package ai.searchavo.guide.internal;
+
+import ai.searchavo.catalog.Embedder;
+import ai.searchavo.catalog.RecordRow;
+import ai.searchavo.catalog.Resources;
+import ai.searchavo.guide.AnswerLimits;
+import ai.searchavo.guide.CallTimeLimit;
+import ai.searchavo.guide.ClientQuota;
+import ai.searchavo.guide.EvidenceGate;
+import ai.searchavo.guide.GuideAnswerCache;
+import ai.searchavo.guide.GuideAnswerStore;
+import ai.searchavo.guide.GuideJudge;
+import ai.searchavo.guide.GuideModel;
+import ai.searchavo.guide.GuidePolicy;
+import ai.searchavo.guide.GuideValidator;
+import ai.searchavo.guide.QuoteOrigins;
+import ai.searchavo.guide.QuoteRecords;
+import ai.searchavo.guide.SimilarQuestionIndex;
+import ai.searchavo.guide.SimilarQuestions;
+import ai.searchavo.guide.config.GuideProperties;
+import ai.searchavo.guide.usecase.AskGuide;
+import ai.searchavo.platform.cache.SharedCaches;
+import ai.searchavo.platform.config.BuildInfoProperties;
+import ai.searchavo.platform.config.LlmProperties;
+import ai.searchavo.platform.llm.CallCounter;
+import ai.searchavo.platform.llm.DailyBudget;
+import ai.searchavo.platform.llm.LlmSettings;
+import ai.searchavo.platform.llm.ModelCallMetrics;
+import ai.searchavo.platform.quota.QuotaKeys;
+import ai.searchavo.platform.resilience.Resilience;
+import ai.searchavo.platform.settings.RuntimeSetting;
+import ai.searchavo.platform.settings.RuntimeSettings;
+import ai.searchavo.platform.settings.Setting;
+import ai.searchavo.platform.settings.SettingsGroup;
+import ai.searchavo.search.ShadowLibraries;
+import ai.searchavo.search.SourceHit;
+import ai.searchavo.search.usecase.SearchResources;
+import ai.searchavo.shared.ResourceId;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.observation.ObservationRegistry;
+import java.time.Clock;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import tools.jackson.databind.ObjectMapper;
+
+@Configuration(proxyBeanMethods = false)
+class GuideConfiguration {
+
+  private static final Logger log = LoggerFactory.getLogger(GuideConfiguration.class);
+
+  static final int INDEX_DIMENSIONS = 1024;
+
+  @Bean
+  SharedGuideAnswerStore guideAnswerStore(
+      SharedCaches caches, ObjectMapper json, BuildInfoProperties build) {
+    return new SharedGuideAnswerStore(caches.named("guide-answer"), json, build.version());
+  }
+
+  @Bean
+  JdbcSimilarQuestionIndex similarQuestionIndex(JdbcClient jdbc) {
+    return new JdbcSimilarQuestionIndex(jdbc);
+  }
+
+  @Bean
+  DailyBudget guideBudget(
+      Clock clock,
+      CallCounter budgetCounter,
+      MeterRegistry meters,
+      RuntimeSettings runtime,
+      GuideProperties settings) {
+    DailyBudget budget =
+        DailyBudget.paced(
+            runtime.declare(RuntimeSetting.GUIDE_DAILY_MODEL_CALLS, settings.dailyModelCalls()),
+            clock,
+            "guide",
+            budgetCounter,
+            settings.fairness().budgetPaceSlots());
+    Gauge.builder("searchavo.guide.budget.remaining", budget, DailyBudget::remaining)
+        .description("Guide model calls left under today's cap (UTC day)")
+        .register(meters);
+    Gauge.builder(
+            "searchavo.guide.budget.paced_remaining", budget, DailyBudget::remainingSoFarToday)
+        .description("Guide model calls left under the share of today's cap open so far")
+        .register(meters);
+    return budget;
+  }
+
+  static SimilarQuestions similarQuestions(
+      Double threshold, Embedder embedder, SimilarQuestionIndex index, Clock clock, String build) {
+    if (threshold == null) {
+      return null;
+    }
+    if (embedder == null || embedder.dimensions() != INDEX_DIMENSIONS) {
+      log.warn(
+          "SA_GUIDE_SIMILAR_THRESHOLD is set but {}: similar questions are not reused",
+          embedder == null
+              ? "the embedding API key is missing"
+              : "the embeddings are not " + INDEX_DIMENSIONS + " long");
+      return null;
+    }
+    double value = threshold;
+    log.info(
+        "AI guide reuses the answer of a similar question: cosine at least {}, embeddings by {}",
+        value,
+        embedder.model());
+    return new SimilarQuestions(
+        value,
+        embedder.model(),
+        question -> embedder.embed(List.of(question), Embedder.Kind.QUERY).getFirst(),
+        index,
+        clock,
+        build);
+  }
+
+  @Bean
+  GuidePolicy guidePolicy(GuideProperties settings) {
+    return new GuidePolicy(
+        settings.clientDailyQuestions(),
+        settings.clientDailyFreeAnswers(),
+        settings.maxCandidates(),
+        settings.cacheTtl());
+  }
+
+  @Bean
+  ClientQuota guideClientQuota(
+      Clock clock, CallCounter budgetCounter, QuotaKeys quotaKeys, GuideProperties settings) {
+    return new ClientQuota(
+        settings.clientDailyQuestions(),
+        clock,
+        quotaKeys,
+        budgetCounter,
+        ClientQuota.MAX_CLIENTS,
+        settings.clientDailyFreeAnswers(),
+        settings.fairness().networkDailyQuestions());
+  }
+
+  @Bean
+  AskGuide guideService(
+      SearchResources search,
+      ObjectProvider<ChatModel> chatModel,
+      LlmSettings llm,
+      Clock clock,
+      DailyBudget guideBudget,
+      GuideAnswerStore answerStore,
+      ObjectProvider<Embedder> embedder,
+      JdbcSimilarQuestionIndex similarQuestionIndex,
+      ModelCallMetrics metrics,
+      ObservationRegistry observations,
+      MeterRegistry meters,
+      Resilience resilience,
+      ClientQuota clientQuota,
+      LlmProperties llmProperties,
+      BuildInfoProperties build,
+      GuideProperties settings,
+      Resources resources,
+      CallCounter budgetCounter,
+      ShadowLibraries shadowLibraries) {
+    boolean nativeSchema = llmProperties.nativeSchema();
+    int chooseMaxTokens = settings.chooseMaxTokens();
+    int maxCandidates = settings.maxCandidates();
+    var thinking =
+        new SpringAiGuideModel.Thinking(
+            settings.thinking().planTokens(),
+            settings.thinking().chooseTokens(),
+            settings.thinking().verifyTokens(),
+            settings.thinking().browseTokens());
+    ChatModel model = chatModel.getIfAvailable();
+    GuideModel guideModel = null;
+    if (llm.usable(model) && llm.hasReasoningModel()) {
+      guideModel =
+          new SpringAiGuideModel(
+              model,
+              llm.provider(),
+              llm.fast(),
+              llm.reasoningModel(),
+              nativeSchema,
+              chooseMaxTokens,
+              thinking,
+              guideBudget,
+              metrics,
+              resilience,
+              new CallTimeLimit(
+                  settings.modelCallTimeout(),
+                  settings.deadlineMargin(),
+                  settings.modelCallMinimum()),
+              clock,
+              settings.modelStream());
+      log.info(
+          "AI guide enabled: provider={}, fast={}, reasoning={}, nativeSchemaForChoose={}, chooseMaxTokens={}, "
+              + "thinking tokens plan/choose/verify/browse={}/{}/{}/{}, modelStream={}",
+          llm.provider(),
+          llm.fast(),
+          llm.reasoningModel(),
+          nativeSchema,
+          chooseMaxTokens,
+          thinking.plan(),
+          thinking.choose(),
+          thinking.verify(),
+          thinking.browse(),
+          settings.modelStream());
+    } else {
+      log.info("AI guide without a model: answers degrade to top search results (LLM_UNAVAILABLE)");
+    }
+    log.info(
+        "AI guide: a question nobody waits for {}",
+        settings.stopsAQuestionNobodyWaitsFor()
+            ? "stops (model stream ON and a step thinks)"
+            : "runs on and is cached (it stops only with the model stream ON and a step that thinks)");
+    log.info(
+        "AI guide: Nemotron chooses among up to {} candidates; {} fresh questions per client per day",
+        maxCandidates,
+        clientQuota.getLimit());
+    return new AskGuide(
+        search,
+        guideModel,
+        clock,
+        maxCandidates,
+        new GuideValidator(),
+        new GuideAnswerCache(settings.cacheTtl(), clock, answerStore),
+        observations,
+        meters,
+        clientQuota,
+        AskGuide.SUBJECT_SEARCH_DEADLINE,
+        AnswerLimits.DEFAULT,
+        similarQuestions(
+            settings.similarThreshold(),
+            embedder.getIfAvailable(),
+            similarQuestionIndex,
+            clock,
+            build.version()),
+        settings.stopsAQuestionNobodyWaitsFor(),
+        quoteRecords(resources),
+        new QuoteOrigins(new EvidenceGate(), settings.mcpRegistryUrl().toString()),
+        guideModel == null
+            ? GuideJudge.NONE
+            : guideJudge(
+                model,
+                settings.judge(),
+                llm.reasoningModel(),
+                clock,
+                budgetCounter,
+                metrics,
+                resilience,
+                meters),
+        shadowLibraries);
+  }
+
+  static GuideJudge guideJudge(
+      ChatModel model,
+      GuideProperties.Judge judge,
+      String reasoningModel,
+      Clock clock,
+      CallCounter counter,
+      ModelCallMetrics metrics,
+      Resilience resilience,
+      MeterRegistry meters) {
+    if (!judge.on()) {
+      log.info("AI guide judge off: no judge model (SA_GUIDE_JUDGE_MODEL) or no daily calls");
+      return GuideJudge.NONE;
+    }
+    if (judge.model().strip().equals(reasoningModel)) {
+      log.error(
+          "AI guide judge off: SA_GUIDE_JUDGE_MODEL is the reasoning model {}; a model does not judge"
+              + " its own answers",
+          reasoningModel);
+      return GuideJudge.NONE;
+    }
+    log.info(
+        "AI guide judge on: model={}, {} calls a day, at most {} answers at a time, after each"
+            + " answer, never changing it",
+        judge.model(),
+        judge.dailyCalls(),
+        judge.concurrent());
+    return new SpringAiGuideJudge(
+        model,
+        judge.model(),
+        new DailyBudget(judge.dailyCalls(), clock, "guide-judge", counter),
+        metrics,
+        resilience,
+        meters,
+        new JudgeBulkhead(
+            judge.concurrent(),
+            task -> Thread.ofVirtual().name("guide-judge").start(task),
+            meters.counter(SpringAiGuideJudge.METER + ".dropped")::increment));
+  }
+
+  static QuoteRecords quoteRecords(Resources resources) {
+    return ids -> {
+      Map<UUID, ResourceId> byUuid = new HashMap<>();
+      ids.forEach(id -> byUuid.put(id.getValue(), id));
+      Map<ResourceId, List<SourceHit>> records = new HashMap<>();
+      try {
+        resources
+            .recordsOf(byUuid.keySet())
+            .forEach((uuid, rows) ->
+                records.put(byUuid.get(uuid), rows.stream().map(RecordRow::hit).toList()));
+      } catch (org.springframework.dao.DataAccessException e) {
+        log.warn("quote records unavailable: {}", e.getClass().getSimpleName());
+      }
+      return records;
+    };
+  }
+
+  @Bean
+  SettingsGroup guideSettings(GuideProperties settings, LlmSettings llm, AskGuide guideService) {
+    return guideSettingsGroup(
+        settings, llm, guideService.getAnswersWithModel(), guideService.getConfigHash());
+  }
+
+  static SettingsGroup guideSettingsGroup(
+      GuideProperties settings, LlmSettings llm, boolean withModel, String configHash) {
+    return new SettingsGroup(
+        "guide",
+        "AI guide",
+        SettingsGroup.GUIDE,
+        List.of(
+            Setting.count(
+                "guide.dailyModelCalls",
+                "Model calls a day, all visitors",
+                settings.dailyModelCalls(),
+                "calls a day",
+                "SA_GUIDE_DAILY_MODEL_CALLS"),
+            Setting.count(
+                "guide.clientDailyQuestions",
+                "Questions a day per visitor",
+                settings.clientDailyQuestions(),
+                "questions a day",
+                "SA_GUIDE_CLIENT_DAILY_QUESTIONS"),
+            Setting.count(
+                "guide.clientDailyFreeAnswers",
+                "Answers with no pick given back a day",
+                settings.clientDailyFreeAnswers(),
+                "answers a day",
+                "SA_GUIDE_CLIENT_DAILY_FREE_ANSWERS"),
+            Setting.count(
+                "guide.networkDailyQuestions",
+                "Questions a day per network (IPv4 /24, IPv6 /56)",
+                settings.fairness().networkDailyQuestions(),
+                "questions a day",
+                "SA_GUIDE_NETWORK_DAILY_QUESTIONS"),
+            Setting.count(
+                "guide.clientConcurrentQuestions",
+                "Questions running at once per visitor",
+                settings.fairness().clientConcurrentQuestions(),
+                "questions",
+                "SA_GUIDE_CLIENT_CONCURRENT_QUESTIONS"),
+            Setting.count(
+                "guide.budgetPaceSlots",
+                "Parts of the day the model-call cap opens in",
+                settings.fairness().budgetPaceSlots(),
+                "parts",
+                "SA_GUIDE_BUDGET_PACE_SLOTS"),
+            Setting.count(
+                "guide.maxCandidates",
+                "Results the model chooses from",
+                settings.maxCandidates(),
+                "results",
+                "SA_GUIDE_MAX_CANDIDATES"),
+            Setting.count(
+                "guide.chooseMaxTokens",
+                "Output cap of the choose call",
+                settings.chooseMaxTokens(),
+                "tokens",
+                "SA_NEBIUS_CHOOSE_MAX_TOKENS"),
+            Setting.names(
+                "guide.modelStream",
+                "Model calls read as a stream (OFF or ON)",
+                List.of(settings.modelStream().name()),
+                "SA_GUIDE_MODEL_STREAM"),
+            Setting.flag(
+                "guide.stopsWhenNobodyWaits",
+                "A question nobody waits for stops (model stream ON and plan, choose or verify thinks)",
+                settings.stopsAQuestionNobodyWaitsFor(),
+                null),
+            Setting.model("guide.planModel", "Plan model", withModel ? llm.fast() : null, null),
+            Setting.model(
+                "guide.chooseModel", "Choose model", withModel ? llm.reasoningModel() : null, null),
+            Setting.version("guide.configHash", "Configuration hash", configHash)));
+  }
+}
