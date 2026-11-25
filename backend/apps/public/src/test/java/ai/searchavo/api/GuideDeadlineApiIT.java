@@ -147,7 +147,7 @@ class GuideDeadlineApiIT extends ApiTestBase {
   }
 
   private static String data(String stream, String event) {
-    Matcher m = Pattern.compile("event:" + event + "\\ndata:(.*)\\n").matcher(stream);
+    Matcher m = Pattern.compile("event:" + event + "\\ndata: (.*)\\n").matcher(stream);
     assertThat(m.find()).as("event " + event + " in " + stream).isTrue();
     return m.group(1);
   }

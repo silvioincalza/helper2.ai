@@ -280,7 +280,7 @@ class GuideLimitsTest {
     assertTrue(answer.contains("\"aiReasoned\":true"), answer)
     assertTrue(answer.contains("\"reasonCheck\":\"NOT_CHECKED\""), answer)
     assertTrue(
-      events.contains("event:checked\ndata:{\"supported\":0,\"removed\":0,\"notChecked\":1"),
+      events.contains("event:checked\ndata: {\"supported\":0,\"removed\":0,\"notChecked\":1"),
       events,
     )
   }
