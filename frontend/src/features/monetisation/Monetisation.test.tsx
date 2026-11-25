@@ -85,7 +85,7 @@ describe('monetisation (ADR 0042)', () => {
     renderApp('/search?q=agents');
     await settle();
     expect(
-      within(footer()).queryByRole('link', { name: 'Support helper2.ai' }),
+      within(footer()).queryByRole('link', { name: 'Support searchavo.ai' }),
     ).not.toBeInTheDocument();
     expect(
       within(footer()).queryByRole('button', { name: 'Cookie settings' }),
@@ -178,7 +178,9 @@ describe('monetisation (ADR 0042)', () => {
     await act(() => router.navigate('/support'));
     await settle();
     expect(callsTo('GET', '/site')).toHaveLength(1);
-    expect(within(footer()).getByRole('link', { name: 'Support helper2.ai' })).toBeInTheDocument();
+    expect(
+      within(footer()).getByRole('link', { name: 'Support searchavo.ai' }),
+    ).toBeInTheDocument();
   });
 
   it('while GET /site fails everything stays off', async () => {
@@ -186,7 +188,7 @@ describe('monetisation (ADR 0042)', () => {
     renderApp('/search?q=agents');
     await settle();
     expect(
-      within(footer()).queryByRole('link', { name: 'Support helper2.ai' }),
+      within(footer()).queryByRole('link', { name: 'Support searchavo.ai' }),
     ).not.toBeInTheDocument();
     expect(banner()).not.toBeInTheDocument();
     expect(document.querySelectorAll('script[src*="google"]')).toHaveLength(0);
@@ -196,14 +198,14 @@ describe('monetisation (ADR 0042)', () => {
     mockApi({ 'GET /site': site({ githubSponsorsUrl: ON.githubSponsorsUrl }) });
     renderApp('/support');
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Support helper2.ai' }),
+      await screen.findByRole('heading', { level: 1, name: 'Support searchavo.ai' }),
     ).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: /Sponsor on GitHub/ })).toHaveAttribute(
       'href',
       ON.githubSponsorsUrl,
     );
     expect(screen.queryByRole('link', { name: 'Give by card' })).not.toBeInTheDocument();
-    expect(within(footer()).getByRole('link', { name: 'Support helper2.ai' })).toHaveAttribute(
+    expect(within(footer()).getByRole('link', { name: 'Support searchavo.ai' })).toHaveAttribute(
       'href',
       '/support',
     );

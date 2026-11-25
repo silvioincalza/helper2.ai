@@ -1,8 +1,8 @@
 # Flowchart: the two answers of a resource page's "Set it up": the setup options and client snippets from source data
 # (no model), and the step-by-step guide the model writes from the tool's own documents, checked against them.
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/setup/usecase/GetResourceSetup.java, GetToolGuide.java,
-#   backend/apps/public/src/main/kotlin/ai/helper2/setup/SetupGuides.kt, RunOptionRules.kt, Launch.kt, Clients.kt, ToolGuides.kt,
-#   ToolGuideValidator.kt, backend/apps/public/src/main/java/ai/helper2/setup/internal/RegistryMcpServerSpecs.java,
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/setup/usecase/GetResourceSetup.java, GetToolGuide.java,
+#   backend/apps/public/src/main/kotlin/ai/searchavo/setup/SetupGuides.kt, RunOptionRules.kt, Launch.kt, Clients.kt, ToolGuides.kt,
+#   ToolGuideValidator.kt, backend/apps/public/src/main/java/ai/searchavo/setup/internal/RegistryMcpServerSpecs.java,
 #   ReadmeMcpConfigs.java, HttpToolMaterials.java, HourlyFetchBudget.java, SpringAiToolGuideModel.java,
 #   backend/apps/public/src/main/resources/prompts/setup/tool-guide.txt, setup/web/SetupController.java (aiContent),
 #   prompts/setup/verify-steps.txt, setup/StepTexts.kt, StepTextMode.kt (step check or source only),
@@ -18,7 +18,7 @@ setup: "GET /api/v1/resources/{id}/setup (limiter setup, GetResourceSetup)" {
   class: group
   direction: down
   reg: "Source record from\nmcp-registry?" {class: decision}
-  latest: "RegistryMcpServerSpecs.latest(name):\nin memory H2_SETUP_CACHE_TTL (1 h), else\nGET /v0.1/servers/{name}/versions/latest" {class: ext}
+  latest: "RegistryMcpServerSpecs.latest(name):\nin memory SA_SETUP_CACHE_TTL (1 h), else\nGET /v0.1/servers/{name}/versions/latest" {class: ext}
   usable: "Entry found with an option\nRunOptionRules.accepts?" {class: decision}
   mcp: "MCP_SERVER with a GitHub repo\nor npm package?" {class: decision}
   readme: "ReadmeMcpConfigs.of(ref):\nREADME config example,\nonly the entry naming this resource" {class: ext}
@@ -47,9 +47,9 @@ setup: "GET /api/v1/resources/{id}/setup (limiter setup, GetResourceSetup)" {
 guide: "POST /api/v1/resources/{id}/guide (limiter guide, GetToolGuide)" {
   class: group
   direction: down
-  docs: "ToolMaterials.load(ref): GitHub (own token\nH2_SETUP_GITHUB_TOKEN, else anonymous),\njsDelivr, Hugging Face documents\nfrom checked identifiers" {class: ext}
-  docCache: "Documents in memory?\n(H2_SETUP_CACHE_TTL,\nH2_SETUP_DOCUMENT_CACHE_MB)" {class: decision}
-  budget: "Hourly fetch unit left?\n(H2_SETUP_HOURLY_FETCHES,\ncounted in Redis)" {class: decision}
+  docs: "ToolMaterials.load(ref): GitHub (own token\nSA_SETUP_GITHUB_TOKEN, else anonymous),\njsDelivr, Hugging Face documents\nfrom checked identifiers" {class: ext}
+  docCache: "Documents in memory?\n(SA_SETUP_CACHE_TTL,\nSA_SETUP_DOCUMENT_CACHE_MB)" {class: decision}
+  budget: "Hourly fetch unit left?\n(SA_SETUP_HOURLY_FETCHES,\ncounted in Redis)" {class: decision}
   skipped: "Document skipped;\nanswer not cached" {class: fail}
   hasDocs: "Any document?" {class: decision}
   noMat: "NO_MATERIAL" {class: end}
@@ -57,7 +57,7 @@ guide: "POST /api/v1/resources/{id}/guide (limiter guide, GetToolGuide)" {
   hit: "Cached answer" {class: end}
   write: "ToolGuideModel.write: tool name and\ndocuments in escaped tags, data only;\nan instruction per step, with its\npassage and command (fast model,\ntool-guide daily budget)" {class: ai}
   unav: "LLM_UNAVAILABLE, not cached\n(no model, budget spent, provider\nerror or open llm-chat circuit);\nbudget: retryAt = next 00:00 UTC" {class: fail}
-  unreadable: "LLM_UNAVAILABLE \"error\", cached\nH2_SETUP_UNREADABLE_TTL (10 min)" {class: fail}
+  unreadable: "LLM_UNAVAILABLE \"error\", cached\nSA_SETUP_UNREADABLE_TTL (10 min)" {class: fail}
   check: "ToolGuideValidator: a found quote\n(30 chars and 5 words, or a whole line)\nfor every step; whole command lines;\nno link; risky commands marked caution;\n≤ 8 per section" {class: app}
   verify: "ToolGuideModel.confirm: one call,\nevery kept step's text, quote and\ncommand in escaped tags; supported\nonly when the text says no more\n(same budget)" {class: ai}
   confirmed: "StepTexts: verdict true\nfor this step, none false?" {class: decision}
@@ -86,7 +86,7 @@ guide: "POST /api/v1/resources/{id}/guide (limiter guide, GetToolGuide)" {
   write -> check: {class: ai-call}
   check -> anyKept
   anyKept -> mode: yes
-  mode: "H2_SETUP_GUIDE_STEP_TEXT\n(StepTextMode)?" {class: decision}
+  mode: "SA_SETUP_GUIDE_STEP_TEXT\n(StepTextMode)?" {class: decision}
   allSource: "StepTexts.sourceOnly: every text\nnull, no second call (one model\ncall a guide); every step\n\"From the source\", not marked" {class: app}
   mode -> verify: "VERIFIED (default)" {class: ai-call}
   mode -> allSource: "SOURCE_ONLY"

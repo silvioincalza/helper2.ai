@@ -123,7 +123,7 @@ An account is identified by the identity provider and the user's identifier at t
 
 ### BR-003: Data Kept on the Account
 
-The account keeps only the provider, the identifier at the provider, the display name, the time of the last sign-in and the home page motion preference. helper2.ai keeps nothing else from the person's profile at the provider, and no access to the person's account at the provider after sign-in.
+The account keeps only the provider, the identifier at the provider, the display name, the time of the last sign-in and the home page motion preference. searchavo.ai keeps nothing else from the person's profile at the provider, and no access to the person's account at the provider after sign-in.
 
 ### BR-004: Home Page Motion
 
@@ -131,7 +131,7 @@ The home page motion (the radar and the moving lists) is on by default for a new
 
 ### BR-005: Administrator Role
 
-Every signed-in person has the user role. Only the back office grants the administrator role, and only to an identity named in the administrator list (`H2_ADMINS`), by provider and identifier, or by a verified email address for providers that give one.
+Every signed-in person has the user role. Only the back office grants the administrator role, and only to an identity named in the administrator list (`SA_ADMINS`), by provider and identifier, or by a verified email address for providers that give one.
 
 ### BR-006: Daily Allowances
 
@@ -151,4 +151,4 @@ A sign-in ends when the person signs out, or 30 minutes after their last request
 
 ### BR-010: Page After Sign-In
 
-After the sign-in the visitor returns to the page they were on, or to the home page when they opened the sign-in page directly. Only a page of helper2.ai is accepted as the page to return to.
+After the sign-in the visitor returns to the page they were on, or to the home page when they opened the sign-in page directly. Only a page of searchavo.ai is accepted as the page to return to.

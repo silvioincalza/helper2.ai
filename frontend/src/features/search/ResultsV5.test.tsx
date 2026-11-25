@@ -45,7 +45,7 @@ describe('PicksBar as a terminal', () => {
     );
     const bar = screen.getByRole('region', { name: 'Guide picks' });
     const cmd = bar.querySelector('.h2-picks__cmd');
-    expect(cmd).toHaveTextContent('$ helper2 guide --picks 3');
+    expect(cmd).toHaveTextContent('$ searchavo guide --picks 3');
     expect(cmd).toHaveAttribute('aria-hidden', 'true');
     expect(within(bar).getByText('Chosen by nvidia/nemotron-3-super')).toBeInTheDocument();
   });
@@ -53,7 +53,7 @@ describe('PicksBar as a terminal', () => {
   it('while reading, shows the command without a count', () => {
     render(<PicksBar state={{ kind: 'reading', candidates: 24 }} />);
     const cmd = screen.getByRole('region', { name: 'Guide picks' }).querySelector('.h2-picks__cmd');
-    expect(cmd).toHaveTextContent('$ helper2 guide');
+    expect(cmd).toHaveTextContent('$ searchavo guide');
     expect(cmd).not.toHaveTextContent('--picks');
   });
 });

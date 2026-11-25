@@ -12,7 +12,7 @@
 
 Sources state different facts, and many facts are missing. A filter must not hide a resource only because no
 source stated the value, and it must not pretend a value is known. Dates are the most misleading field:
-"when was this made" and "when did Helper2.ai first see it" are different facts. Users also want a view of
+"when was this made" and "when did Searchavo.ai first see it" are different facts. Users also want a view of
 results by time, not only by relevance.
 
 Users want to know if a resource works with the tool they already use (OpenAI, Ollama, a Model Context Protocol (MCP) client, VS Code…).
@@ -54,7 +54,7 @@ them assigned by code first, and measured on labelled items before a model is ev
    - the other values stay as alternatives. `DateFactView` shows a conflicting date as a "conflicting" badge with
      the kept value and the alternatives, each with its source. Sort and the timeline still use the kept value.
    Dates read from the catalog (detail page, next events) have one value each and are never `CONFLICTING`.
-   `discovered` is Helper2.ai's own first-seen time (source id `helper2`). Event days (`eventStart`, `eventEnd`) are
+   `discovered` is Searchavo.ai's own first-seen time (source id `searchavo`). Event days (`eventStart`, `eventEnd`) are
    sent only for `EVENT` results.
 6. **Timeline view** (frontend only). `view=timeline` stays in the browser address (URL). `toApiParams` sends `sort=NEWEST` and
    `size=50`. `ResultsTimeline` groups cards by the Coordinated Universal Time (UTC) month of the published date. Results without a stated date
@@ -88,7 +88,7 @@ them assigned by code first, and measured on labelled items before a model is ev
 ### Categories, assigned by code
 12. **A label kind of its own.** A resource's categories are `resource_label` rows of kind `CATEGORY` (`V1__schema.sql`),
    apart from `TAG`. They do not count in the 20 tags. A resource can have several.
-13. **The categories come from one list.** `helper2.categories` in `helper2-shared.yaml` stays the one list
+13. **The categories come from one list.** `searchavo.categories` in `searchavo-shared.yaml` stays the one list
    ([0013](ADR-0013-discovery.md)). Search and the catalog read it through `CategoriesProperties`
    (platform, the one record that binds the list; the discovery collectors read the same record) into a `CategoryCatalog` (shared kernel): id, name, short name, family, words, require-keyword and the
    discovery type, in the configured order. The words are `CategoryWords` in the shared kernel. It is the class the
@@ -118,10 +118,10 @@ them assigned by code first, and measured on labelled items before a model is ev
    resources a batch, each batch its own transaction, on one replica (cluster lock `category-backfill`). It is
    idempotent. It writes the fingerprint of the category words and rules (`CategoryCatalog.fingerprint`) and the
    number of the last migration to `job_marker`. At startup it runs in the background when either changed
-   (`H2_CATEGORIES_BACKFILL_AT_STARTUP`, default true): the seeds (`R__`) write curated rows without the code, so
+   (`SA_CATEGORIES_BACKFILL_AT_STARTUP`, default true): the seeds (`R__`) write curated rows without the code, so
    a seed that ran again needs its rows matched. The seeds replace only their own labels, never `CATEGORY`. An admin can start it from the Scout runs page
    (`POST /api/v1/admin/category-backfill`, 202, audited as `BACKFILL_CATEGORIES`). The metric
-   `helper2.categories.backfill.resources{result=categorized|uncategorized}` counts what it found.
+   `searchavo.categories.backfill.resources{result=categorized|uncategorized}` counts what it found.
 17. **Live results too.** `ResultMerger` gets the matcher. A merged result's categories are what the catalog stored for
    its hits plus what the matcher reads in the merged result, in the configured order. So a Tavily or GitHub result
    seen for the first time can be filtered by category in the same search.
@@ -157,39 +157,39 @@ them assigned by code first, and measured on labelled items before a model is ev
     After the click the old picks stay on the page, dimmed and marked `aria-busy`, until the first event of the new
     answer arrives; an old answer with no picks gives way to the reading line at once.
 23. **Measured first.** `backend/apps/public/src/test/resources/eval/categories-labelled.csv` holds the labels a person gives (150
-    items, to do). `./gradlew evalTest --tests ai.helper2.eval.CategoryEvalTest` prints precision and recall per
+    items, to do). `./gradlew evalTest --tests ai.searchavo.eval.CategoryEvalTest` prints precision and recall per
     category and writes `build/eval/categories.md`. It is skipped while the file has no rows.
 
 ### Code
 
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/Filtering.kt` — filters, facets, sort, `UNKNOWN`.
-- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/DateFact.kt` — stated dates, plausibility, `earliest`, `latest`,
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/Filtering.kt` — filters, facets, sort, `UNKNOWN`.
+- `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/DateFact.kt` — stated dates, plausibility, `earliest`, `latest`,
   `lastChange`, conflict rule.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — which rule each date of a merged result uses.
-- `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java` — query parameters to `SearchFilters`.
-- `backend/libs/core/src/main/java/ai/helper2/search/web/CardMapper.java` — dates and event days on the card.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/ResultMerger.kt` — which rule each date of a merged result uses.
+- `backend/libs/core/src/main/java/ai/searchavo/search/web/SearchController.java` — query parameters to `SearchFilters`.
+- `backend/libs/core/src/main/java/ai/searchavo/search/web/CardMapper.java` — dates and event days on the card.
 - `frontend/src/lib/searchState.ts` — URL state, `toApiParams`, `TIMELINE_PAGE_SIZE`.
 - `frontend/src/lib/timeline.ts`, `frontend/src/features/search/ResultsTimeline.tsx` — grouping by creation month.
 - `frontend/src/features/search/FilterFacets.tsx`, `DateFactView.tsx` — facets and date display.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/Compatibility.kt` — tools, rules, flags.
-- `backend/libs/core/src/main/java/ai/helper2/search/web/CardMapper.java` — `compatibility`, and `compatibleWith` on each card.
-- `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideDtoMapper.java` — `compatibleWith` on each guide recommendation.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` — `replaceLabels`, `MAX_TAGS`.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/Compatibility.kt` — tools, rules, flags.
+- `backend/libs/core/src/main/java/ai/searchavo/search/web/CardMapper.java` — `compatibility`, and `compatibleWith` on each card.
+- `backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideDtoMapper.java` — `compatibleWith` on each guide recommendation.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcCatalogWriter.java` — `replaceLabels`, `MAX_TAGS`.
 - `api/common.yaml, api/public.yaml` — `CompatibilityFlag`, `ResultCard.compatibleWith`, `GuideRecommendation.compatibleWith`.
 - `frontend/src/features/resource/ResultFacts.tsx` — "Works with" in the Build facts of the preview and the resource page; the reason as tooltip and screen-reader text.
-- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Categories.kt` — `Category`, `CategoryCatalog`, `CategoryInput`,
+- `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/Categories.kt` — `Category`, `CategoryCatalog`, `CategoryInput`,
   `CategoryMatcher`; `CategoryWords.kt` — the words and their patterns.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/config/CategoriesProperties.java`, `platform/CategoryConfiguration.java`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCategoryLabels.java` (`of`, `replace`,
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/config/CategoriesProperties.java`, `platform/CategoryConfiguration.java`.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcCategoryLabels.java` (`of`, `replace`,
   `resourceIdsAfter`), `JdbcCatalogWriter.java` (`upsert`), `JdbcJobMarkers.java` (`marker`, `mark`),
   `CatalogSearchSource.java`; `catalog/ResourceCards.java`, `CategoryLabels.java`, `CategoryInputs.java`,
   `CategoryAssignments.java`, `JobMarkers.java`; `catalog/usecase/RefreshCategories.java`, `BackfillCategories.java`; `catalog/config/CatalogProperties.java`
-  (`categories.backfill-at-startup`); `backend/apps/backoffice/src/main/java/ai/helper2/catalog/schedule/CategoryBackfillAtStartup.java`.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt` (`categoriesOf`), `Filtering.kt` (the `category`
+  (`categories.backfill-at-startup`); `backend/apps/backoffice/src/main/java/ai/searchavo/catalog/schedule/CategoryBackfillAtStartup.java`.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/ResultMerger.kt` (`categoriesOf`), `Filtering.kt` (the `category`
   facet), `Model.kt` (`SourceHit.categories`, `MergedResult.categories`).
-- `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java` (`categoryFilter`), `CategoriesController.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/search/web/SearchController.java` (`categoryFilter`), `CategoriesController.java`,
   `CardMapper.java`; `admin/web/CategoryBackfillController.java`; `guide/web/GuideStreamController.java`;
-  `backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt`, `guide/steps/PickAnswer.kt`, `guide/steps/Question.kt`.
+  `backend/apps/public/src/main/kotlin/ai/searchavo/guide/usecase/AskGuide.kt`, `guide/steps/PickAnswer.kt`, `guide/steps/Question.kt`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`CATEGORY` labels, `job_marker`); the `R__` seeds keep `CATEGORY` labels.
 - `frontend/src/features/search/CategoryFacet.tsx`, `FilterFacets.tsx`, `FiltersPanel.tsx`, `ActiveFilters.tsx`,
   `features/resource/CategoryLinks.tsx`, `Resource.tsx`, `Results.tsx`, `hooks/useCategories.ts`,
@@ -201,7 +201,7 @@ them assigned by code first, and measured on labelled items before a model is ev
 ## Alternatives considered
 
 - Hide results with an unknown value when a filter is set — the user would lose results without knowing why.
-- Use the discovery date when the published date is missing — it states when Helper2.ai looked, not when the item was made.
+- Use the discovery date when the published date is missing — it states when Searchavo.ai looked, not when the item was made.
 - Filter in each source's application programming interface (API) — most sources have no such filters, and results would differ by source.
 - Timeline from the server — a second endpoint for the same data; the sort `NEWEST` already gives the order.
 - Ask a model per resource — guesses shown as facts, plus cost.
@@ -248,7 +248,7 @@ For the categories; the filters and the flags add no endpoint and keep no data.
 - **Repudiation:** the admin backfill is in the audit trail (`BACKFILL_CATEGORIES`).
 - **Information disclosure:** no personal data. Categories come from public source data; the filter values are
   category ids from a fixed list. The guide's category filter is part of the cache key as ids only, and the cached
-  answer keeps it for as long as the answer (`H2_GUIDE_CACHE_TTL`, 24 h), not linked to a person. The Privacy page
+  answer keeps it for as long as the answer (`SA_GUIDE_CACHE_TTL`, 24 h), not linked to a person. The Privacy page
   says so, next to what the guide receives and caches.
 - **Denial of service:** `category` has at most 40 values, each tag-shaped and at most 30 characters, checked against
   the list before the search runs. The facet is computed in memory over at most 30 hits per source. The backfill is
@@ -272,7 +272,7 @@ For the categories; the filters and the flags add no endpoint and keep no data.
 | 9 | Guardrails | Covered: ids checked against the list (400); require-keyword categories; no AI text read. |
 | 10 | Observability | Covered: backfill metric and log line; no user text logged. |
 | 11 | Evaluation | Gap until labelled: the harness exists, the 150 labels are the owner's to write. |
-| 12 | Deployment | Covered: one migration, one `H2_` variable with a safe default; rollback leaves unused labels. |
+| 12 | Deployment | Covered: one migration, one `SA_` variable with a safe default; rollback leaves unused labels. |
 | 13 | Security & Identity | Covered: admin action under the admin role and audited. |
 | 14 | Human-in-the-Loop | Covered: labels by a person decide whether code is enough; the admin starts a backfill. |
 | 15 | Cost & Reliability | Covered: no model or credit cost; one cached list; backfill off the request path. |
@@ -281,7 +281,7 @@ For the categories; the filters and the flags add no endpoint and keep no data.
 
 - Facets and filters see only the hits fetched for this query (at most 30 per source), not the whole catalog.
 - The timeline pages 50 results at a time, so a month can split across pages. A wrong early date from one source moves the result; the badge shows the dispute.
-- “Works with” tag lists are kept by hand; no tag means no flag (not “does not work”); index hits name `helper2-index`; the 20-tag limit can drop a tag.
+- “Works with” tag lists are kept by hand; no tag means no flag (not “does not work”); index hits name `searchavo-index`; the 20-tag limit can drop a tag.
 - Categories are as good as their words: a tool that uses none of a category's words has no category. Facet counts see only the hits of this query. A changed category filter on a page where the guide was asked asks the guide again (one more AI answer, unless cached). The guide's comparison and explanation subject searches ignore the filter on purpose.
 
 ## Diagrams

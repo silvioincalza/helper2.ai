@@ -26,7 +26,7 @@ describe('analytics (ADR 0042)', () => {
   });
 
   it('sends the path without the query string', () => {
-    expect(cleanLocation('https://helper2.ai', '/search')).toBe('https://helper2.ai/search');
+    expect(cleanLocation('https://searchavo.ai', '/search')).toBe('https://searchavo.ai/search');
   });
 
   it('never runs on the back office', () => {
@@ -79,8 +79,8 @@ describe('analytics (ADR 0042)', () => {
   });
 
   it('the referrer carries no query string', () => {
-    expect(cleanReferrer('https://helper2.ai/search?q=secret&ask=private+question')).toBe(
-      'https://helper2.ai/search',
+    expect(cleanReferrer('https://searchavo.ai/search?q=secret&ask=private+question')).toBe(
+      'https://searchavo.ai/search',
     );
     expect(cleanReferrer('')).toBe('');
     expect(cleanReferrer('not a url')).toBe('');
@@ -115,8 +115,8 @@ describe('analytics (ADR 0042)', () => {
   });
 
   it('removes cookies on the host and on every parent domain, never on the top-level domain', () => {
-    expect(cookieDomains('helper2.incalza.me')).toEqual(['helper2.incalza.me', 'incalza.me']);
-    expect(cookieDomains('helper2.ai')).toEqual(['helper2.ai']);
+    expect(cookieDomains('searchavo.incalza.me')).toEqual(['searchavo.incalza.me', 'incalza.me']);
+    expect(cookieDomains('searchavo.ai')).toEqual(['searchavo.ai']);
     expect(cookieDomains('localhost')).toEqual([]);
   });
 });

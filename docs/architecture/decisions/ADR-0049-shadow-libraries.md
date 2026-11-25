@@ -18,7 +18,7 @@ A live web search finds copies of books and papers on shadow libraries: sites th
 holder's permission (Z-Library, Library Genesis, Sci-Hub, Anna's Archive, PDF Drive). Staging held 14 copies of one
 RAG book, each on a language subdomain of `z-lib.fm`.
 
-helper2.ai does not show links to such copies. They are also bad results: the sites carry ads and redirects, and the
+searchavo.ai does not show links to such copies. They are also bad results: the sites carry ads and redirects, and the
 same book comes back once per mirror. The publisher's page is the result a person needs.
 
 The sites change names and mirrors often. A new mirror must be blocked the same day, without a release.
@@ -84,7 +84,7 @@ The sites change names and mirrors often. A new mirror must be blocked the same 
 
 - **A fixed list in code.** Simplest, tested, no table. A new mirror needs a code change and a release, and the mirrors
   change faster than our releases. Rejected.
-- **A list in configuration (`H2_SEARCH_SHADOW_LIBRARIES`).** No table and no screen. A change still needs a redeploy
+- **A list in configuration (`SA_SEARCH_SHADOW_LIBRARIES`).** No table and no screen. A change still needs a redeploy
   of both apps, and a list in an environment variable is not audited. A runtime setting
   ([0007](ADR-0007-configuration-secrets-runtime-settings.md)) is a number with a maximum, not a list.
   Rejected.

@@ -3,19 +3,19 @@
 # plain user, local bookmarks move to the account, and the user deletes the account. A session whose account row is
 # gone is ended and told to sign in again; only a sign-in writes the row.
 # Only possible where profile oauth-github is active (off unless set for the environment).
-# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/identity/security/BackOfficeSecurityConfiguration.java,
-#   BackOfficeEdge.java, backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java,
-#   backend/libs/core/src/main/java/ai/helper2/identity/config/WebSecurity.java (oauthUsers, roles), NoProviderTokens.java,
+# Source of truth: backend/apps/backoffice/src/main/java/ai/searchavo/identity/security/BackOfficeSecurityConfiguration.java,
+#   BackOfficeEdge.java, backend/apps/public/src/main/java/ai/searchavo/identity/security/PublicSecurityConfiguration.java,
+#   backend/libs/core/src/main/java/ai/searchavo/identity/config/WebSecurity.java (oauthUsers, roles), NoProviderTokens.java,
 #   identity/CurrentUser.java, identity/internal/SignedInUser.java, JdbcUsers.java, JdbcBookmarks.java, JdbcAuditLog.java,
 #   identity/config/KnownAccountOnly.java, identity/internal/SignInAgain.java,
 #   identity/usecase/MergeLocalBookmarks.java, DeleteMyAccount.java, PurgeExpiredAuditEntries.java,
-#   backend/apps/public/src/main/java/ai/helper2/identity/web/MeController.java, BookmarksController.java,
-#   backend/apps/backoffice/src/main/java/ai/helper2/identity/schedule/AuditRetentionSchedule.java,
-#   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java,
+#   backend/apps/public/src/main/java/ai/searchavo/identity/web/MeController.java, BookmarksController.java,
+#   backend/apps/backoffice/src/main/java/ai/searchavo/identity/schedule/AuditRetentionSchedule.java,
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/usecase/ResolveReviewItem.java,
 #   backend/libs/schema/src/main/resources/db/migration/V1__schema.sql (h2_audit_kept),
 #   frontend/src/ui/SignIn.tsx, frontend/src/context/MeContext.tsx, BookmarksContext.tsx,
 #   frontend/src/features/account/AccountPage.tsx, frontend/src/admin/,
-#   the platform repo (helper2-admin Ingress, whitelist-source-range), outside this repo.
+#   the platform repo (searchavo-admin Ingress, whitelist-source-range), outside this repo.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0036-identity-and-admin-host.d2 && d2 sequence-0036-identity-and-admin-host.d2 sequence-0036-identity-and-admin-host.svg
 
 ...@style
@@ -31,16 +31,16 @@ db: "PostgreSQL\n(app_user, bookmark,\nadmin_audit)" {class: data}
 redis: "Redis\n(sessions)" {class: data}
 
 adminhost: Admin host {
-  owner -> nginx: "GET admin.helper2.ai/admin" {class: hot}
+  owner -> nginx: "GET admin.searchavo.ai/admin" {class: hot}
   nginx -> abo: "private address: allowed" {class: hot}
   owner -> abo: "/oauth2/authorization/github"
-  abo -> owner: "302 to GitHub, callback pinned to\nH2_ADMIN_BASE_URL/login/oauth2/code/github"
+  abo -> owner: "302 to GitHub, callback pinned to\nSA_ADMIN_BASE_URL/login/oauth2/code/github"
   owner -> gh: "sign in"
   gh -> owner: "302 back with code"
   owner -> abo: "callback"
   abo -> gh: "code → access token; user info" {class: ai-call}
   gh -> abo: "id 1234567, login, name"
-  abo -> abo: "\"github:1234567\" in H2_ADMINS: ROLE_ADMIN;\nthe access token is dropped (NoProviderTokens)"
+  abo -> abo: "\"github:1234567\" in SA_ADMINS: ROLE_ADMIN;\nthe access token is dropped (NoProviderTokens)"
   abo -> db: "upsert app_user (last sign-in)"
   abo -> redis: "__Host-SESSION: the user and roles,\nno token (h2:v1:session:backoffice)"
   abo -> owner: "302 /admin"
@@ -52,7 +52,7 @@ adminhost: Admin host {
 }
 
 publichost: Public host {
-  owner -> apub: "GET helper2.ai/api/v1/admin/review-items"
+  owner -> apub: "GET searchavo.ai/api/v1/admin/review-items"
   apub -> owner: "404 (no back office here)"
   owner -> apub: "Sign in with GitHub (header or Saved)"
   apub -> gh: "code → access token; user info" {class: ai-call}

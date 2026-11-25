@@ -1,11 +1,11 @@
 # Context map: the 10 bounded contexts of the backlog and the direction of each dependency (A -> B: A uses B).
 # A context is drawn with the Spring Modulith modules that hold its code. An arrow between two contexts stands for
 # the module dependencies named on it; each one passes ApplicationModules.verify().
-# Source of truth: backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java (modules, named interfaces),
-#   backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java (the rules),
+# Source of truth: backend/{libs,apps}/*/src/main/java/ai/searchavo/*/package-info.java (modules, named interfaces),
+#   backend/apps/{public,backoffice}/src/test/java/ai/searchavo/architecture/ModularityTest.java (the rules),
 #   backend/libs/*/build.gradle.kts, backend/apps/*/build.gradle.kts (library and app dependencies),
-#   backend/architecture/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java (the directions inside libs/core),
-#   deploy/helm/helper2 (the three deployables).
+#   backend/architecture/src/test/java/ai/searchavo/architecture/SourceBoundariesTest.java (the directions inside libs/core),
+#   deploy/helm/searchavo (the three deployables).
 # Render: cd docs/architecture/diagrams && d2 fmt context-map.d2 && d2 context-map.d2 context-map.svg
 
 ...@style
@@ -20,7 +20,7 @@ direction: down
 
 operations: "Release and operations\nHelm chart, CI/CD, releases\n(no module: deploys the three deployables)" {class: ext}
 
-product: "helper2 · two apps over shared libraries" {
+product: "searchavo · two apps over shared libraries" {
   class: group
   direction: down
 

@@ -2,9 +2,9 @@
 # step with its model calls, the pool search for a question with no answer, the stored record read back for --intents,
 # and the report written at the end.
 # Source of truth: scripts/eval-guide.mjs, scripts/eval-lib.mjs (csrfToken, postJson, sleep),
-#   backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt, eval/guide-queries.json, eval/guide-qrels.tsv,
+#   backend/apps/public/src/main/kotlin/ai/searchavo/guide/usecase/AskGuide.kt, eval/guide-queries.json, eval/guide-qrels.tsv,
 #   .github/workflows/guide-eval.yml (the nightly run on staging),
-#   backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideJudge.java (the guide judge).
+#   backend/apps/public/src/main/java/ai/searchavo/guide/internal/SpringAiGuideJudge.java (the guide judge).
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0046-guide-evaluation.d2 && d2 sequence-0046-guide-evaluation.d2 sequence-0046-guide-evaluation.svg
 
 ...@style
@@ -14,7 +14,7 @@ shape: sequence_diagram
 gha: "GitHub Actions\nguide-eval.yml\n(GitHub-hosted, nightly)" {class: ext}
 script: "eval-guide.mjs\n(Node)" {class: person}
 files: "eval/*.json,\nguide-qrels.tsv" {class: data}
-api: "helper2 staging /api/v1\n(H2_GUIDE_CACHE_TTL=PT1S)" {class: app}
+api: "searchavo staging /api/v1\n(SA_GUIDE_CACHE_TTL=PT1S)" {class: app}
 guide: AskGuide {class: app}
 model: "Nemotron\n(Token Factory)" {class: ai}
 judge: "Judge model\n(another Nemotron)" {class: ai}
@@ -36,7 +36,7 @@ each: "Each question (7 s apart, below 10 per minute; --repeat n: the set n time
   guide -> model: "choose" {class: ai-call}
   guide -> model: "verify (reason check)" {class: ai-call}
   guide -> api: "GuideAnswer"
-  guide -> judge: "after the answer, in the background:\nfact + relevance per claim\n(own cap, meter helper2.guide.judge)" {class: ai-call}
+  guide -> judge: "after the answer, in the background:\nfact + relevance per claim\n(own cap, meter searchavo.guide.judge)" {class: ai-call}
   api -> script: "200 JSON: status, picks, notices,\nsources, searchQuery, generatedAt" {class: hot}
   script -> script: "log each source's status; count live\nGitHub calls; GUIDE_BUDGET_SPENT? stop, exit 3;\nGUIDE_NETWORK_QUOTA? stop, exit 4;\nGUIDE_DAILY_QUOTA or 3x LLM_UNAVAILABLE?\nstop, exit 1; report unchanged;\nolder generatedAt? mark cached"
   script -> api: "no answer: GET /api/v1/search\n?q=<searchQuery>&size=24 (pool)"

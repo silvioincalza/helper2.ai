@@ -9,9 +9,9 @@
 **Requirements:** NFR-001, NFR-005
 
 ## Context
-The same resource reaches Helper2 from many places: a GitHub repository, its npm package, a Hugging Face
-page, a news article. Helper2 must store it once, keep what each source said, and show only dates a source
-stated or Helper2 observed itself. Searches see thousands of results a day, and writing them must not slow
+The same resource reaches Searchavo from many places: a GitHub repository, its npm package, a Hugging Face
+page, a news article. Searchavo must store it once, keep what each source said, and show only dates a source
+stated or Searchavo observed itself. Searches see thousands of results a day, and writing them must not slow
 the search down.
 
 Two apps share the database: the public app and the back office. One SQL injection in either must not be able to
@@ -23,8 +23,8 @@ The schema is one file, and from the first release tag on that file must never c
 
 ## Decision
 1. **PostgreSQL is the system of record.** PostgreSQL 18.6 with pgvector 0.8.6 (own image,
-   `deploy/postgres/Dockerfile`). Connection: `H2_DATABASE_URL`, `H2_DATABASE_USER`, `H2_DATABASE_PASSWORD`;
-   pool size `H2_DATABASE_POOL_SIZE` (default 16), connection timeout 3000 ms.
+   `deploy/postgres/Dockerfile`). Connection: `SA_DATABASE_URL`, `SA_DATABASE_USER`, `SA_DATABASE_PASSWORD`;
+   pool size `SA_DATABASE_POOL_SIZE` (default 16), connection timeout 3000 ms.
 2. **Ids from canonical web addresses (URLs).** `ResourceId` is a universally unique identifier (UUID) version 5
    (RFC 9562) of a resource's canonical URL in a fixed namespace; Structured Query Language (SQL) computes the same
    id with `uuid_generate_v5`. Which address names a resource (the canonical URL, the git ref, a package and its
@@ -70,8 +70,8 @@ The schema is one file, and from the first release tag on that file must never c
    forgets a record waits for a search that is writing the same resource, then reads the records that search left:
    the row is never rebuilt from a view that is already stale. Per write, the facts cost three statements (the
    locked rows, the records, the update; two when nothing changed).
-   The older rule in SQL stays behind a temporary switch, `helper2.catalog.reconcile-by-projection`
-   (`H2_CATALOG_RECONCILE_BY_PROJECTION`, default `true`). With `false` the writer runs `SqlReconciliation`: two
+   The older rule in SQL stays behind a temporary switch, `searchavo.catalog.reconcile-by-projection`
+   (`SA_CATALOG_RECONCILE_BY_PROJECTION`, default `true`). With `false` the writer runs `SqlReconciliation`: two
    statements, `reconcileFacts` and `refreshEventDates`, with the same origin rule. It keeps the letter case of the
    stored licence and takes no lock. The switch exists to test the SQL rule on staging against the projection; then
    `SqlReconciliation` is removed, and the switch with it .
@@ -85,7 +85,7 @@ The schema is one file, and from the first release tag on that file must never c
    1995-01-01 or more than one day after retrieval becomes unknown. `CONFLICTING` means two sources state different
    days for the same date; the merge rules are in [0026](ADR-0026-filters-facets-categories.md). Date columns are nullable;
    `published_precision = 'UNKNOWN'` exactly when `published_at` is null (a table check).
-   `first_discovered_at` is Helper2's own observation, labeled as such.
+   `first_discovered_at` is Searchavo's own observation, labeled as such.
 5. **One schema migration, forward-only from the first release; repeatable seeds.** `V1__schema.sql` is the whole schema: the
    tables, checks, indexes, triggers, functions and app roles the code needs, and nothing it does not use.
    - **One section per context**, in an order that creates a table before the tables that point at it: foundation
@@ -134,12 +134,12 @@ The schema is one file, and from the first release tag on that file must never c
 6. **Catalog writes off the request path.** `SearchResources` reads first-discovery dates in one batched
    query (`ResultObserver.firstDiscovered`), then hands only the results fetched live in this search to
    `ResultObserver.record`. `CatalogResultObserver.record` queues the write in `ObservationQueue`: one thread
-   (`catalog-observations`), a bounded queue (`helper2.catalog.observation-queue`, 256). A full queue drops
-   the new write. Meters: `helper2.catalog.observations{outcome=written|dropped|failed}` and
-   `helper2.catalog.observations.queued`. The Scout writes synchronously (`IndexResources.index`).
+   (`catalog-observations`), a bounded queue (`searchavo.catalog.observation-queue`, 256). A full queue drops
+   the new write. Meters: `searchavo.catalog.observations{outcome=written|dropped|failed}` and
+   `searchavo.catalog.observations.queued`. The Scout writes synchronously (`IndexResources.index`).
 7. **The catalog owns its tables.** Other modules write through catalog ports: search through `ResultObserver`,
    the Scout through `IndexResources.index`, `ReviewQueue` and `EnrichmentResults` ([0014](ADR-0014-evidence-gated-enrichment.md)).
-   The catalog's use cases reach the database through ports in `ai.helper2.catalog` ([0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md)),
+   The catalog's use cases reach the database through ports in `ai.searchavo.catalog` ([0002](ADR-0002-modules-modular-monolith-hexagonal-where-the-rules-live.md)),
    each with one JDBC adapter in `catalog/internal`:
    - `CatalogWriter` (`JdbcCatalogWriter`): the sources, the upsert of resources, labels, event dates and records.
    - `IssueReports` (`JdbcIssueReports`): a user's report with its review item, in one transaction.
@@ -169,13 +169,13 @@ The schema is one file, and from the first release tag on that file must never c
    Each statement runs under the `db-cache` policy ([0006](ADR-0006-outbound-calls-and-resilience.md)) with a 1 s statement timeout:
    an error, a timeout, the open circuit or a full bulkhead is a miss and a write that does nothing, and the caller asks
    the model. The daily shared cache purge deletes expired rows ([0010](ADR-0010-data-retention.md)).
-   Meter `helper2.shared.cache{cache, result}` counts hits and misses ([0009](ADR-0009-observability.md)).
+   Meter `searchavo.shared.cache{cache, result}` counts hits and misses ([0009](ADR-0009-observability.md)).
 9. **A database role per app, with grants per table.** The last section of V1, after every `CREATE TABLE` (a grant
    `ON ALL TABLES` reaches only the tables that exist), creates `h2_public` and `h2_backoffice` without a login,
    when they are missing (roles are cluster-wide), and always resets them to no superuser, no CREATEDB, CREATEROLE,
    REPLICATION or BYPASSRLS, and NOINHERIT. Neither may create in the schema or make temporary tables (`CREATE` and
    `TEMPORARY` revoked from PUBLIC), and neither gets `TRUNCATE`, `REFERENCES` or `TRIGGER`. Both only read
-   `flyway_schema_history` (`${flyway:table}` in the migration). The owner stays the user Flyway runs as (`helper2`
+   `flyway_schema_history` (`${flyway:table}` in the migration). The owner stays the user Flyway runs as (`searchavo`
    in the chart).
    - `h2_public` reads every table but the Scout's and the enrichment's bookkeeping (`scout_run`, `scout_schedule`,
      `source_cursor`, `discovery_host`, `list_seed`, `list_seed_last_read`, `enrichment_queue_control`, `candidate_decision`) and the admin audit trail
@@ -189,7 +189,7 @@ The schema is one file, and from the first release tag on that file must never c
    - `h2_backoffice` reads and writes rows on every table, and uses the settings' identity sequence.
    - The public app has no right on `shedlock`. That table holds the back office's locks (`scout-run`, the indexer,
      its daily jobs), so the public app cannot hold or free them. Its own daily jobs lock in `public_app_lock`, the
-     same columns (`helper2.cluster-lock.table`, `ClusterLockProperties`: `shedlock` by default, `public_app_lock` in
+     same columns (`searchavo.cluster-lock.table`, `ClusterLockProperties`: `shedlock` by default, `public_app_lock` in
      the public app). The two apps share no lock name.
    - New tables (default privileges of the owner): the back office reads and writes them, the public app has no right
      on them. A new table the public app reads or writes needs its own `GRANT ... TO h2_public` in the migration that
@@ -202,25 +202,25 @@ The schema is one file, and from the first release tag on that file must never c
     a data source and Flyway: no web server, no Redis, no scheduler. It retries the connection (Postgres may restart in
     the same release), migrates as the owner, then gives both roles their login and password (`AppLogins`, hashed by
     the driver before they are sent) and their statement timeout, and exits. The timeout is a setting of the role
-    (`ALTER ROLE ... SET statement_timeout`, from `helper2.schema.statement-timeouts`): 5 s for `h2_public`, 60 s for
+    (`ALTER ROLE ... SET statement_timeout`, from `searchavo.schema.statement-timeouts`): 5 s for `h2_public`, 60 s for
     `h2_backoffice`. Postgres cancels a longer statement, so one slow query cannot hold a pooled connection while
     visitors wait. The owner has none: a migration may build an index for minutes. A role taken out of the setting
     gets the timeout reset. A new value reaches a connection only when it is opened. When the schema is unchanged the
     pods of a release do not wait for the Job (§11), so a connection they open before the Job ends keeps the old value
-    until the pool renews it, within Hikari's `max-lifetime` (30 min). The chart runs it as the Job `helper2-migrate-<release revision>`, the
+    until the pool renews it, within Hikari's `max-lifetime` (30 min). The chart runs it as the Job `searchavo-migrate-<release revision>`, the
     only workload with the owner's password besides Postgres and pg-backup. Each revision is a new Job (the template of
     a Job cannot change); a rollback runs the older image's step, which finds nothing to do.
 11. **The apps only check the schema, and wait.** Neither app migrates in a deployment. At startup each one validates
     as its own role (`SchemaCheck`). While migrations are only missing (a new versioned one, a new or changed seed) or
-    its login is refused (the Job opens it), it waits, checking every 5 s for up to 4 minutes (`H2_SCHEMA_WAIT`), inside
+    its login is refused (the Job opens it), it waits, checking every 5 s for up to 4 minutes (`SA_SCHEMA_WAIT`), inside
     the startup probe's 5 minutes. Anything else fails at once, e.g. a changed migration. The old pods keep serving
     meanwhile (`maxUnavailable: 0`). `make deploy` passes `--wait-for-jobs`: the release succeeds only once the Job
     has, and a failed Job rolls it back.
-12. **Local development migrates itself.** `H2_SCHEMA_MIGRATE=true` (the dev profile, and the compose `app` service)
+12. **Local development migrates itself.** `SA_SCHEMA_MIGRATE=true` (the dev profile, and the compose `app` service)
     migrates at startup, connected as the owner. The tests do what a deployment does: the shared containers migrate
     once as the owner and open the logins, and each app's tests connect as its role and its Redis user
-    (`helper2.test.client`), so a missing grant or Redis permission fails a test.
-13. **A Redis ACL user per app.** `deploy/helm/helper2/files/redis-users.acl` lists each app's keys and the exact
+    (`searchavo.test.client`), so a missing grant or Redis permission fails a test.
+13. **A Redis ACL user per app.** `deploy/helm/searchavo/files/redis-users.acl` lists each app's keys and the exact
     commands its code sends, scripts included (Redis checks the commands and keys inside `EVAL`). Both reach the shared
     rate limits, budgets, quotas, outbound limits and source caches; only the public app its setup fetches and its
     sessions, only the back office the Scout's page texts and its sessions. The default user stays the admin (probes,
@@ -230,55 +230,55 @@ The schema is one file, and from the first release tag on that file must never c
     `LinkedHashMap`, `HashMap`), never a subclass. A session that cannot be read is logged and served as anonymous.
     Namespaces `h2:v1:session:public` and `h2:v1:session:backoffice`.
 15. **The passwords in their own Secret.** `make env-secret` splits app.env: the eight passwords (the owner's, each
-    app role's and the monitor role's, Redis' default user's, each app user's and the monitor user's) go to `helper2-credentials`, every other key to
-    `helper2-app-env`. Both apps still load `helper2-app-env` whole; no workload loads `helper2-credentials` whole. Each
+    app role's and the monitor role's, Redis' default user's, each app user's and the monitor user's) go to `searchavo-credentials`, every other key to
+    `searchavo-app-env`. Both apps still load `searchavo-app-env` whole; no workload loads `searchavo-credentials` whole. Each
     names only its own keys. `check-app-env.sh` requires all eight and refuses two that are the same. For the first
-    release only, the owner's and Redis' default password also stay in `helper2-app-env`, so a rollback to the old
+    release only, the owner's and Redis' default password also stay in `searchavo-app-env`, so a rollback to the old
     chart still starts Postgres and Redis; both apps set those two names under `env:`, which wins over `envFrom`, so no
     app process sees them.
 
 ### Code
-- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt`, `ResourceId.kt`, `DateFact.kt` — identity and dates.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/CatalogWriter.java`, `IssueReports.java`, `Resources.java`, `ReviewQueue.java`,
-  `JobMarkers.java` and the other ports of `ai.helper2.catalog`; `catalog/config/CatalogUseCaseConfiguration.java` (both apps),
+- `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/CanonicalUrl.kt`, `ResourceId.kt`, `DateFact.kt` — identity and dates.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/CatalogWriter.java`, `IssueReports.java`, `Resources.java`, `ReviewQueue.java`,
+  `JobMarkers.java` and the other ports of `ai.searchavo.catalog`; `catalog/config/CatalogUseCaseConfiguration.java` (both apps),
   `catalog/config/EnableCatalogBackOfficeAdapters.java` and `catalog/internal/CatalogBackOfficeAdapters.java` (the
-  back office only); `backend/apps/backoffice/src/main/java/ai/helper2/catalog/config/CatalogBackOfficeConfiguration.java`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexResources.java` — `index`, the Scout's write.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/ObservationQueue.java` — background writer.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` — upserts, origin rank, labels, moved
+  back office only); `backend/apps/backoffice/src/main/java/ai/searchavo/catalog/config/CatalogBackOfficeConfiguration.java`.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/CatalogResultObserver.java` — `ResultObserver`.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/usecase/IndexResources.java` — `index`, the Scout's write.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/ObservationQueue.java` — background writer.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcCatalogWriter.java` — upserts, origin rank, labels, moved
   reports, orphan deletion.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/Reconciliation.java`, `ProjectedReconciliation.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/Reconciliation.java`, `ProjectedReconciliation.java`,
   `SqlReconciliation.java`, `CatalogConfiguration.java` (`reconciliation`) — the reconciled facts of the row, and the
   temporary switch between the two paths (`CatalogProperties.reconcileByProjection`).
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentResults.java`, `JdbcResourceDetailReads.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcEnrichmentResults.java`, `JdbcResourceDetailReads.java`,
   `JdbcIssueReports.java` (`report`), `JdbcReviewQueue.java`, `JdbcReviewDecisions.java`, `JdbcJobMarkers.java` — enrichment
   results, their reads for the detail page, user reports, the review
   queue and its decisions, job markers.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — read dates, then `record`.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SearchResources.kt` — read dates, then `record`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql`, `R__*.sql` — schema, app roles and seeds.
-- `backend/libs/schema/src/main/java/ai/helper2/platform/schema/MigrateStep.java`, `AppLogins.java`, `MonitorLogin.java`,
+- `backend/libs/schema/src/main/java/ai/searchavo/platform/schema/MigrateStep.java`, `AppLogins.java`, `MonitorLogin.java`,
   `SchemaCheck.java` — the migrate step, the logins, the exporter's monitor login, the apps' schema check.
 - `.github/scripts/released-migrations.sh` — CI: V1 only before the first release, no released migration changes after.
-- `backend/apps/backoffice/src/test/java/ai/helper2/SchemaContractTest.java` — the schema contract;
-  `backend/architecture/src/test/java/ai/helper2/architecture/SchemaUseTest.java` — no unused table or column.
-- `backend/apps/public/src/test/java/ai/helper2/AppRolesGrantsIT.java`, `MigrateStepIT.java` — the grants per table, the
+- `backend/apps/backoffice/src/test/java/ai/searchavo/SchemaContractTest.java` — the schema contract;
+  `backend/architecture/src/test/java/ai/searchavo/architecture/SchemaUseTest.java` — no unused table or column.
+- `backend/apps/public/src/test/java/ai/searchavo/AppRolesGrantsIT.java`, `MigrateStepIT.java` — the grants per table, the
   migrate step.
-- `backend/apps/public/src/test/java/ai/helper2/catalog/internal/IndexHitAndCardParityIT.java`,
+- `backend/apps/public/src/test/java/ai/searchavo/catalog/internal/IndexHitAndCardParityIT.java`,
   `IndexHitAndCardParityWithSqlReconciliationIT.java` — the row and the page say the same about a resource, except
   for the listed gaps.
-- `backend/apps/public/src/test/java/ai/helper2/catalog/internal/JdbcCatalogWriterIT.java`,
+- `backend/apps/public/src/test/java/ai/searchavo/catalog/internal/JdbcCatalogWriterIT.java`,
   `JdbcCatalogWriterWithSqlReconciliationIT.java`, `ProjectedReconciliationIT.java`;
-  `backend/apps/backoffice/src/test/java/ai/helper2/catalog/internal/ForgettingWhileWritingIT.java` — the writer on
+  `backend/apps/backoffice/src/test/java/ai/searchavo/catalog/internal/ForgettingWhileWritingIT.java` — the writer on
   both paths, concurrent writes, the rollback.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/ResourceCards.java`, `RecordRow.java` — the card of the
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/ResourceCards.java`, `RecordRow.java` — the card of the
   resource page; the records that count for its type, licence, pricing and open-source flag
-  (`backend/libs/core/src/test/java/ai/helper2/catalog/ResourceCardsTest.java`).
-- `backend/libs/platform/src/testFixtures/java/ai/helper2/TestcontainersConfiguration.java` — the shared containers,
+  (`backend/libs/core/src/test/java/ai/searchavo/catalog/ResourceCardsTest.java`).
+- `backend/libs/platform/src/testFixtures/java/ai/searchavo/TestcontainersConfiguration.java` — the shared containers,
   the locale, the logins.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCache.java`, `SharedCaches.java`, `JdbcSharedCache.java`,
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/cache/SharedCache.java`, `SharedCaches.java`, `JdbcSharedCache.java`,
   `SharedCacheRetention.java`, `SharedCacheConfiguration.java` — the shared caches and their purge.
-- `deploy/helm/helper2/templates/postgres.yaml` (`POSTGRES_INITDB_ARGS`), `migrate.yaml`, `files/redis-users.acl`;
+- `deploy/helm/searchavo/templates/postgres.yaml` (`POSTGRES_INITDB_ARGS`), `migrate.yaml`, `files/redis-users.acl`;
   `deploy/k8s/check-app-env.sh`; `compose.yaml`.
 - `deploy/postgres/Dockerfile` — PostgreSQL with pgvector, pinned by commit and checksum.
 
@@ -361,7 +361,7 @@ The schema is one file, and from the first release tag on that file must never c
 - A deploy runs one more pod, the Job, for a few seconds. A new password for a role takes effect when the Job runs, a
   moment before the app pods restart: an old pod opening a new connection in between is refused until it is replaced.
 - app.env in OpenBao holds the eight passwords (`openssl rand -hex 32`), and the deployer may `create`/`delete` Jobs and
-  `patch` the Secret `helper2-credentials` (the platform repo owns that RBAC; `make credentials` checks it).
+  `patch` the Secret `searchavo-credentials` (the platform repo owns that RBAC; `make credentials` checks it).
 - Accepted: `+eval` lets an app run a Lua script that blocks Redis until the default user kills it (`SCRIPT KILL`);
   and both apps share the rate-limit, budget, quota and source-cache keys, so a compromised public pod could reset a
   spend cap or poison the source cache. Both need code running in a pod.

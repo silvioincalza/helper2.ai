@@ -1,6 +1,6 @@
 # Data processing: recipients and transfers
 
-Who receives data from helper2.ai, where they are, and what a transfer outside Switzerland and the EU rests on
+Who receives data from searchavo.ai, where they are, and what a transfer outside Switzerland and the EU rests on
 ([C-016](../requirements.md)). The [Privacy page](../../frontend/src/i18n/locales/en.legal.json) ("Who receives data") is what
 visitors read; this page is its evidence, and the two change in the same pull request. The sources themselves are in
 [sources.md](sources.md), the retention periods in [ADR 0010](decisions/ADR-0010-data-retention.md).

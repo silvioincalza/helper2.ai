@@ -22,7 +22,7 @@ query per search that is not in the 7-day query vector cache.
 
 ## Decision
 
-1. **One pod for production and staging.** `helper2-embedder` is one more deployable of the Helm chart
+1. **One pod for production and staging.** `searchavo-embedder` is one more deployable of the Helm chart
    (`templates/embedder.yaml`). The production release runs it (`embedder.enabled`), and staging runs none: its
    apps call production's (`embedder.url`, `embedder.namespace`). No release calls NVIDIA's hosted endpoint.
    The pod holds the model in memory and answers `POST /v1/embeddings` with the body NVIDIA's endpoint takes:
@@ -36,8 +36,8 @@ query per search that is not in the 7-day query vector cache.
    the embedder Service of `embedder.namespace`: any other address fails the render. `make chart-check` fails a
    render that exposes the embedder or lets another caller in.
 3. **The chart points the apps at it.** A release that runs or calls the embedder sets, on the public app and the
-   back office, `H2_NVIDIA_EMBEDDING_BASE_URL`, `H2_NVIDIA_EMBEDDING_MODEL`, `H2_NVIDIA_API_KEY=in-cluster` and
-   `H2_EMBEDDING_EVERY` (`embedder.indexEvery`: 3 s in production, 1 minute in staging, which shares production's pod),
+   back office, `SA_NVIDIA_EMBEDDING_BASE_URL`, `SA_NVIDIA_EMBEDDING_MODEL`, `SA_NVIDIA_API_KEY=in-cluster` and
+   `SA_EMBEDDING_EVERY` (`embedder.indexEvery`: 3 s in production, 1 minute in staging, which shares production's pod),
    which override the values of the env Secret. The key only
    switches vector search on ([0024](ADR-0024-vector-search.md) §3): the embedder reads no credential, the
    network policy is what keeps others out. Production's indexer embeds one text every 3 s and staging's one a
@@ -74,7 +74,7 @@ query per search that is not in the 7-day query vector cache.
 - `deploy/embedder/embedding_api.py`, `server.py`, `test_embedding_api.py` — the server and its tests.
 - `deploy/embedder/Dockerfile`, `requirements.in`, `requirements.txt` — the image; `requirements.txt` is written by
   `uv pip compile` with hashes for Linux x86-64 and the CPU build of PyTorch.
-- `deploy/helm/helper2/templates/embedder.yaml`, `_helpers.tpl` (`helper2.embedderImage`, `helper2.embedderEnv`),
+- `deploy/helm/searchavo/templates/embedder.yaml`, `_helpers.tpl` (`searchavo.embedderImage`, `searchavo.embedderEnv`),
   `networkpolicy.yaml` and `canary.yaml` (the apps' way to it) — the chart.
 - `deploy/k8s/Makefile` — `embedder-image`, `embedder-sbom`, `sign`, `verify-images`, `chart-check`.
 - `.github/workflows/cd.yml`, `ci.yml`, `deploy.yml`, `release.yml`, `.github/scripts/changes.sh`, `ci-ok.sh`.

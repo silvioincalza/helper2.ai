@@ -159,15 +159,15 @@ describe('results: one column, a row opens the resource page', () => {
     mockApi({ 'GET /search': () => ({ ...search(), total: 104 }) });
     renderApp('/search?q=postgres');
     const h = await screen.findByRole('heading', { level: 2, name: /^Results/ });
-    expect(h).toHaveTextContent('Results $ helper2 search · 104');
-    expect(h.querySelector('[aria-hidden="true"]')).toHaveTextContent('$ helper2 search ·');
+    expect(h).toHaveTextContent('Results $ searchavo search · 104');
+    expect(h.querySelector('[aria-hidden="true"]')).toHaveTextContent('$ searchavo search ·');
   });
 
   it('the timeline heading names its own command', async () => {
     mockApi({ 'GET /search': () => search() });
     renderApp('/search?q=postgres&view=timeline');
     expect(await screen.findByRole('heading', { level: 2, name: /^Results/ })).toHaveTextContent(
-      '$ helper2 search --timeline · 2',
+      '$ searchavo search --timeline · 2',
     );
   });
 

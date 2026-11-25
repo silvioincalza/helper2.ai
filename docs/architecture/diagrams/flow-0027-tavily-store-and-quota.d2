@@ -3,12 +3,12 @@
 # (the credits of the day, capped only when set) and gives it back when the source-live-web policy refuses the call;
 # a web search with no live answer (failed, timed out, refused) gives the asker's own web search back;
 # a live answer replaces the stored set.
-# Source of truth: backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt (Run.start, Run.quotaAllows, Run.settleWebSearches, Run.save, stale),
-#   backend/libs/core/src/main/kotlin/ai/helper2/search/WebSearch.kt (IntentClass, WebFreshness, WebSearchQuota, refund, giveBack, answered, creditsToday),
-#   backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt (webCredits),
-#   backend/libs/core/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java, catalog/internal/CatalogResultObserver.java (recordedHits),
-#   backend/libs/platform/src/main/java/ai/helper2/platform/quota/RedisQuotaCounter.java, QuotaKeys.java,
-#   backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (find, forAsker), guide/GuideCost.kt (GuideAnswerCache.ttlOf).
+# Source of truth: backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SourceFanOut.kt (Run.start, Run.quotaAllows, Run.settleWebSearches, Run.save, stale),
+#   backend/libs/core/src/main/kotlin/ai/searchavo/search/WebSearch.kt (IntentClass, WebFreshness, WebSearchQuota, refund, giveBack, answered, creditsToday),
+#   backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/ListSources.kt (webCredits),
+#   backend/libs/core/src/main/java/ai/searchavo/search/internal/JdbcWebResultStore.java, catalog/internal/CatalogResultObserver.java (recordedHits),
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/quota/RedisQuotaCounter.java, QuotaKeys.java,
+#   backend/apps/public/src/main/kotlin/ai/searchavo/guide/usecase/AskGuide.kt (find, forAsker), guide/GuideCost.kt (GuideAnswerCache.ttlOf).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0027-tavily-store-and-quota.d2 && d2 flow-0027-tavily-store-and-quota.d2 flow-0027-tavily-store-and-quota.svg
 
 ...@style
@@ -23,12 +23,12 @@ served: "SUCCEEDED, served CACHE\nno live call, no quota used" {class: end}
 asked: "This action already took\nits web search?" {class: decision}
 quota: "Redis Lua, one step:\nown counter < 3 (every visitor,\nby client address) and global\ncounter < cap (none if unset)?\n→ both +1" {class: decision}
 down: "Redis down or\nredis circuit open" {class: fail}
-gcheck: "Global counter < cap?\n(H2_LIVE_WEB_DAILY_CREDITS;\nnone if unset) → +1" {class: decision}
+gcheck: "Global counter < cap?\n(SA_LIVE_WEB_DAILY_CREDITS;\nnone if unset) → +1" {class: decision}
 skip: "SKIPPED: DAILY_LIMIT or\nQUOTA_UNAVAILABLE" {class: fail}
 stale: "Stored set younger\nthan 7 days?" {class: decision}
 stalehit: "served STALE_CACHE" {class: end}
 nothing: "served NONE; the other\nsources still answer" {class: fail}
-live: "source-live-web policy → live call\nhelper2.live-web.credits{feature} +1" {class: ext}
+live: "source-live-web policy → live call\nsearchavo.live-web.credits{feature} +1" {class: ext}
 ok: "SUCCEEDED, LIVE: replace the\nstored set (one row per query, upsert);\nhits go to the catalog\nin the background" {class: end}
 failed: "FAILED / TIMED_OUT / RATE_LIMITED\nthe call left: the global\ncounter keeps its credit" {class: fail}
 refused: "SKIPPED: CIRCUIT_OPEN or BUSY\nthe call never left:\nglobal counter -1 (refund)" {class: fail}

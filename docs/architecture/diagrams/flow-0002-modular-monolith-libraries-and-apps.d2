@@ -3,14 +3,14 @@
 # build, in the order a dependency meets them, then the same boundaries SourceBoundariesTest reads from the source
 # files, and the module dependencies that pass them today (open modules left out: everyone may use them).
 # Source of truth: backend/settings.gradle.kts, backend/build.gradle.kts (checkNoRootSources),
-#   backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts, helper2.spring-app.gradle.kts,
+#   backend/build-logic/src/main/kotlin/searchavo.kotlin-library.gradle.kts, searchavo.spring-app.gradle.kts,
 #   backend/libs/*/build.gradle.kts (kernel, platform, schema, core), backend/apps/{public,backoffice}/build.gradle.kts,
-#   backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java,
-#   backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ModularityRules.java,
-#   backend/architecture/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java,
-#   backend/libs/core/src/test/java/ai/helper2/identity/architecture/IdentityArchitectureTest.java,
-#   backend/libs/core/src/test/java/ai/helper2/api/architecture/WebContractArchitectureTest.java,
-#   backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java, .../search/usecase/package-info.java,
+#   backend/apps/{public,backoffice}/src/test/java/ai/searchavo/architecture/ModularityTest.java,
+#   backend/libs/platform/src/testFixtures/java/ai/searchavo/testing/architecture/ModularityRules.java,
+#   backend/architecture/src/test/java/ai/searchavo/architecture/SourceBoundariesTest.java,
+#   backend/libs/core/src/test/java/ai/searchavo/identity/architecture/IdentityArchitectureTest.java,
+#   backend/libs/core/src/test/java/ai/searchavo/api/architecture/WebContractArchitectureTest.java,
+#   backend/{libs,apps}/*/src/main/java/ai/searchavo/*/package-info.java, .../search/usecase/package-info.java,
 #   .../catalog/usecase/package-info.java, .../search/web/CardMapper.java (@NamedInterface("cards")).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0002-modular-monolith-libraries-and-apps.d2 && d2 flow-0002-modular-monolith-libraries-and-apps.d2 flow-0002-modular-monolith-libraries-and-apps.svg
 
@@ -128,7 +128,7 @@ today: "Module dependencies that pass today" {
   site -> search: "SearchPolicy, cards"
 }
 
-source: "File A names ai.helper2.B: SourceBoundariesTest\n(reads the source, so a constant the compiler\ncopies into A is seen too)" {
+source: "File A names ai.searchavo.B: SourceBoundariesTest\n(reads the source, so a constant the compiler\ncopies into A is seen too)" {
   class: group
   direction: down
   name: "A names B" {class: end}

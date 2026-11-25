@@ -1,5 +1,5 @@
 # Sequence: a deploy with a new migration, from app.env to the apps serving as their own roles (ADR 0004).
-# Source of truth: deploy/k8s/Makefile (env-secret, deploy), deploy/helm/helper2/templates/ (migrate.yaml, app.yaml,
+# Source of truth: deploy/k8s/Makefile (env-secret, deploy), deploy/helm/searchavo/templates/ (migrate.yaml, app.yaml,
 #   backoffice.yaml, redis.yaml), backend/libs/schema (MigrateStep, AppLogins, SchemaCheck),
 #   backend/libs/identity (SessionConfiguration).
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0004-app-roles.d2 && d2 sequence-0004-app-roles.d2 sequence-0004-app-roles.svg
@@ -17,11 +17,11 @@ db: Postgres {class: data}
 redis: Redis {class: data}
 
 secrets: Secrets {
-  make -> k8s: "check-app-env.sh; helper2-credentials (8 passwords)\nand helper2-app-env (the rest)"
+  make -> k8s: "check-app-env.sh; searchavo-credentials (8 passwords)\nand searchavo-app-env (the rest)"
 }
 
 release: helm upgrade --wait --wait-for-jobs {
-  make -> k8s: "Job helper2-migrate-<revision>, new app pods"
+  make -> k8s: "Job searchavo-migrate-<revision>, new app pods"
   k8s -> job: "start: owner password, both role passwords"
   k8s -> public: "start a new pod (old pods keep serving)"
   k8s -> bo: "start a new pod"

@@ -50,7 +50,7 @@ read as a fix of that release. What a release branch gained must reach `main` ag
      release (`next`) and the next patch of a release (`next-patch YYYY.N`), and tests itself on fixed cases
      (`--self-test`, run by the CI job `changes` on every pull request).
 2. **One version, seven files.** `backend/build.gradle.kts` (`version`), `frontend/package.json` and the two
-   `version` lines of `frontend/package-lock.json`, `deploy/helm/helper2/Chart.yaml` (`version`) and
+   `version` lines of `frontend/package-lock.json`, `deploy/helm/searchavo/Chart.yaml` (`version`) and
    `api/public.yaml`, `api/admin.yaml`, `api/common.yaml` (`info.version`) change together, in the version commit
    on the release branch (`.github/scripts/bump-version.sh bump`). `main` gets the version with the release's pull
    request back (§10), and keeps the higher one when a patch of an older release comes back. The chart has no
@@ -96,14 +96,14 @@ read as a fix of that release. What a release branch gained must reach `main` ag
    `deploy.yml` with the commit, the version and the commit the checks passed. It waits for the approval on the
    `prod` environment; the canary, the rollout and the version tag in Harbor all come after
    that one approval.
-6. **Canary and smoke test.** After the approval `deploy.yml` installs the Helm release `helper2-canary` in the prod
+6. **Canary and smoke test.** After the approval `deploy.yml` installs the Helm release `searchavo-canary` in the prod
    namespace: the same chart with `canary.only=true`, the images of the commit, by digest.
-   - It holds its own migrate Job (`helper2-canary-migrate-N`), one public app pod and one web pod
-     (`helper2-canary`, `helper2-web-canary`, their Services) and the NetworkPolicies they need, under names of their
-     own. Postgres, Redis, the back office, the backup and the PrometheusRule belong to the release `helper2` and are
+   - It holds its own migrate Job (`searchavo-canary-migrate-N`), one public app pod and one web pod
+     (`searchavo-canary`, `searchavo-web-canary`, their Services) and the NetworkPolicies they need, under names of their
+     own. Postgres, Redis, the back office, the backup and the PrometheusRule belong to the release `searchavo` and are
      not in it.
    - An Ingress with the ingress-nginx canary annotations routes the public host to it, only for requests with the
-     header `X-Helper2-Canary` set to a token made for this run (32 hex characters, masked in the log). No weight: no
+     header `X-Searchavo-Canary` set to a token made for this run (32 hex characters, masked in the log). No weight: no
      user reaches the canary. The canary Ingress names two plain paths, `/api/` for the public app and `/assets/` for
      the web image (`canary.appPaths`, `canary.webPaths`). ingress-nginx attaches each one to the Service behind the
      path of the public Ingress with the same text and the same path type
@@ -168,7 +168,7 @@ read as a fix of that release. What a release branch gained must reach `main` ag
 12. **Tags are immutable.** A release tag is never moved or deleted; a fix is a new patch. A GitHub tag ruleset on
     `refs/tags/v*` blocks moving and deleting release tags, with no bypass. Images are never rebuilt for a version:
     the version tag goes on the images of the release commit. `make image` skips a tag that Harbor already has, and a
-    Harbor tag-immutability rule on the `helper2` project refuses to overwrite or delete any tag. A `used/vYYYY.N.P`
+    Harbor tag-immutability rule on the `searchavo` project refuses to overwrite or delete any tag. A `used/vYYYY.N.P`
     tag is not a release: it records a version that Harbor keeps on a commit prod could not run (§8).
 13. **Image tags.** CD tags every image with its commit (12 characters), on `main` and on a release branch. The
     version commit builds new images, since the version is built into the jar and the web bundle: the canary is the
@@ -219,12 +219,12 @@ read as a fix of that release. What a release branch gained must reach `main` ag
 - `.github/scripts/release-notes.sh` — GitHub's notes without the pull requests of the release itself, `--self-test`.
 - `deploy/k8s/database.sh` (`make release-dump`, `make restore`) — the release's dump and the restore of a named
   dump, `--self-test`; `templates/backup.yaml` names each dump in its log.
-- `deploy/helm/helper2` (`canary.*` values, `templates/canary.yaml`, the canary names in `_helpers.tpl`) — the
+- `deploy/helm/searchavo` (`canary.*` values, `templates/canary.yaml`, the canary names in `_helpers.tpl`) — the
   canary-only release.
 - `deploy/k8s/Makefile` (`canary`, `canary-smoke`, `uncanary`, `retag`, the canary part of `chart-check`) and
   `deploy/k8s/check-release.sh` (`smoke`) — the canary and its smoke test.
 - `.github/workflows/cd.yml` — `release/**` pushes, staging on `main` only.
-- `backend/build.gradle.kts`, `frontend/package.json`, `frontend/package-lock.json`, `deploy/helm/helper2/Chart.yaml`,
+- `backend/build.gradle.kts`, `frontend/package.json`, `frontend/package-lock.json`, `deploy/helm/searchavo/Chart.yaml`,
   `api/public.yaml`, `api/admin.yaml`, `api/common.yaml` (`info.version`) — the version.
 - `frontend/vite.config.ts`, `frontend/src/shell/Layout.tsx` — version in the footer.
 - `deploy/k8s/CI.md` — how to release, and how to patch a release.
@@ -290,7 +290,7 @@ read as a fix of that release. What a release branch gained must reach `main` ag
   deploy of `main` after it is not ordered against it (`deploy.yml` orders staging only against a commit of `main`).
 - A release waits for one more deploy (staging) before the approval: a few minutes.
 - A manual run (staging or prod, a rollback) deploys a version only once its release has tagged it.
-- The guide-answer cache is kept per build (`H2_BUILD_VERSION`, the image tag): the canary and the release by
+- The guide-answer cache is kept per build (`SA_BUILD_VERSION`, the image tag): the canary and the release by
   version each start with an empty cache, once.
 - The prod deployer can read the Harbor robot: it can push images, after the approval only.
 - The canary deepens the use of ingress-nginx (its canary annotations), which upstream has retired. A move to another

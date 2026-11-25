@@ -1,11 +1,11 @@
 # Flowchart: one fresh guide question for a pick intent (AskGuide.answer → PickAnswer.picks), from the request to the final status.
 # Shows plan → retrieve → choose → GuideValidator, every degraded exit, and the stream events sent on the way.
 # The cost guard in front of it (cache, single-flight, quota) is in flow-0032-guide-cost-guard; the reason check in flow-0031-guide-reason-check.
-# Source of truth: backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.answer), guide/steps/QuestionReader.kt (read),
-#   PickAnswer.kt (picks), guide/Guide.kt (GuideValidator), guide/EvidenceGate.kt (EvidenceGate.claimProblem), backend/libs/kernel/src/main/kotlin/ai/helper2/shared/LinkText.kt,
+# Source of truth: backend/apps/public/src/main/kotlin/ai/searchavo/guide/usecase/AskGuide.kt (AskGuide.answer), guide/steps/QuestionReader.kt (read),
+#   PickAnswer.kt (picks), guide/Guide.kt (GuideValidator), guide/EvidenceGate.kt (EvidenceGate.claimProblem), backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/LinkText.kt,
 #   guide/QuoteOrigins.kt (QuoteOrigins.of), guide/QuoteRecords.kt, AskGuide.withQuoteOrigins,
 #   backend/apps/public/src/main/resources/prompts/guide/choose.txt, security.txt, need-input.txt, quote-rule.txt (picks only, the shared SECURITY block),
-#   backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java (event names).
+#   backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideStreamController.java (event names).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0031-ai-guide-evidence-gate.d2 && d2 flow-0031-ai-guide-evidence-gate.d2 flow-0031-ai-guide-evidence-gate.svg
 
 ...@style

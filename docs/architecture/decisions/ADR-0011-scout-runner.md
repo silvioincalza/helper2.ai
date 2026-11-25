@@ -10,16 +10,16 @@
 
 ## Context
 Live search only shows what sources return for one query. To answer from its own index (keyword and vector search,
-"Today", "Next events") Helper2 must collect resources in the background. Sources differ: some must be
+"Today", "Next events") Searchavo must collect resources in the background. Sources differ: some must be
 polled hourly, some cost credits per call, some are large and must be read in pages over several runs. A failing
 source must not stop the others, a crash must not lose or skip items, and two runs must never work on the same items
 at the same time. Prod runs 3 replicas ([0043](ADR-0043-runtime-topology-helm-chart-three-deployables.md)), each with its own timer.
 
 ## Decision
-1. **Schedule.** `ScoutSchedule` exists only when `H2_SCOUT_ENABLED=true` (default false; the `demo` profile forces
-   false). The Scout runs once a day at a fixed time: `H2_SCOUT_CRON` (Spring cron, UTC; default and Helm chart
-   `0 7 3 * * *`, 03:07). Each replica checks the schedule (a tick): first `H2_SCOUT_INITIAL_DELAY` (20 s) after
-   startup, then every `H2_SCOUT_TICK` (10 min; fixed delay). A tick calls `RunScout.tryRunScheduled` with a
+1. **Schedule.** `ScoutSchedule` exists only when `SA_SCOUT_ENABLED=true` (default false; the `demo` profile forces
+   false). The Scout runs once a day at a fixed time: `SA_SCOUT_CRON` (Spring cron, UTC; default and Helm chart
+   `0 7 3 * * *`, 03:07). Each replica checks the schedule (a tick): first `SA_SCOUT_INITIAL_DELAY` (20 s) after
+   startup, then every `SA_SCOUT_TICK` (10 min; fixed delay). A tick calls `RunScout.tryRunScheduled` with a
    `RunCalendar` (`CronRunCalendar`). The Scout runs when the cron time after the end of the last scheduled run has
    passed, or when no scheduled run ever ended. The end time is one row
    in the PostgreSQL table `scout_schedule` (port `ScheduledRunStore`, adapter `JdbcScoutStore`), so every replica
@@ -60,7 +60,7 @@ at the same time. Prod runs 3 replicas ([0043](ADR-0043-runtime-topology-helm-ch
      port `CandidateReview.propose(sourceId, candidates)`; the adapter `ReviewQueueCandidateReview` opens one
      `COURSE_CANDIDATE` review item per page not proposed before. Collectors never call the review list themselves.
      A candidate the vitality rule refuses on what its source states (archived, an idle fork) is not proposed and is
-     counted in `helper2.source.items.dropped` ([0020](ADR-0020-resource-vitality.md) §3);
+     counted in `searchavo.source.items.dropped` ([0020](ADR-0020-resource-vitality.md) §3);
    - a pass that is due but cannot run now (`CollectedBatch.deferred`: the discovery's daily credit cap) → `SKIPPED`
      with its reason, and the pass stays open (point 4);
    - any exception, including a failing review list → `FAILED` "Collection failed: <class>", the checkpoint is not
@@ -94,18 +94,18 @@ at the same time. Prod runs 3 replicas ([0043](ADR-0043-runtime-topology-helm-ch
    MCP Registry would not send an unchanged deletion after its checkpoint. Indexing the same hits again is an
    idempotent upsert. A removal that keeps failing holds that source at its cursor until it works. Only the back office deletes records
    directly (database role `h2_backoffice`).
-5. **Intervals per collector** (`RunInterval`): Model Context Protocol (MCP) Registry `H2_SCOUT_MCP_INTERVAL` (1 h), Hugging Face trending
-   `H2_SCOUT_HF_INTERVAL` (1 day), Hugging Face provider orgs `H2_SCOUT_HF_ORGS_INTERVAL` (1 day), awesome lists
-   `H2_SCOUT_AWESOME_INTERVAL` (1 day), ai-deadlines `H2_SCOUT_AI_DEADLINES_INTERVAL` (1 day), Tavily
-   `H2_SCOUT_LIVE_WEB_INTERVAL` (5 days), each Tavily discovery category `H2_SCOUT_DISCOVERY_INTERVAL` (7 days,
+5. **Intervals per collector** (`RunInterval`): Model Context Protocol (MCP) Registry `SA_SCOUT_MCP_INTERVAL` (1 h), Hugging Face trending
+   `SA_SCOUT_HF_INTERVAL` (1 day), Hugging Face provider orgs `SA_SCOUT_HF_ORGS_INTERVAL` (1 day), awesome lists
+   `SA_SCOUT_AWESOME_INTERVAL` (1 day), ai-deadlines `SA_SCOUT_AI_DEADLINES_INTERVAL` (1 day), Tavily
+   `SA_SCOUT_LIVE_WEB_INTERVAL` (5 days), each Tavily discovery category `SA_SCOUT_DISCOVERY_INTERVAL` (7 days,
    staggered over the week, [0013](ADR-0013-discovery.md)), courses
-   `H2_SCOUT_COURSES_INTERVAL` (7 days). An interval only makes a collector run less often than the cron: with a
+   `SA_SCOUT_COURSES_INTERVAL` (7 days). An interval only makes a collector run less often than the cron: with a
    daily cron, the MCP Registry is read once a day. An interval of whole days counts calendar days in UTC
    (`RunInterval`): a 1-day collector is due on any day after its last pass, whatever the time. The run starts at
    the first check after the cron time, so one day's start can be a few minutes earlier than the day before, and a
    catch-up run can start late in the day; counting hours would make a daily collector skip the next day. Details in
    [0012](ADR-0012-scout-collectors-and-events.md).
-6. **Enrichment budget per run.** One `EnrichmentBudget` of `H2_SCOUT_MAX_ENRICHMENTS` (20; Helm chart 200) is
+6. **Enrichment budget per run.** One `EnrichmentBudget` of `SA_SCOUT_MAX_ENRICHMENTS` (20; Helm chart 200) is
    shared by all collectors and the backlog. It counts resources: a gap round
    ([0014](ADR-0014-evidence-gated-enrichment.md)) makes a second call for the same resource without a second slot, so a run
    makes at most twice as many calls. The hard cap on calls is per UTC day. Changed resources with a source description of at least 40 characters are enriched
@@ -132,7 +132,7 @@ at the same time. Prod runs 3 replicas ([0043](ADR-0043-runtime-topology-helm-ch
    - `UNCHANGED` and `LLM_UNAVAILABLE` are not counted: no answer was judged.
 
    An enrichment error never turns a collected run into `FAILED`. The backlog's own enrichments (§7) belong to no
-   collector, so no run counts them; `helper2.scout.enrichment` counts every attempt by outcome.
+   collector, so no run counts them; `searchavo.scout.enrichment` counts every attempt by outcome.
 7. **Backlog.** After the collectors, the rest of the budget goes to `EnrichmentBacklog.pending`: resources never
    enriched, enriched while no model was available, or whose last attempt failed (fewer than 3 failures). The most
    popular first (`resource.popularity`, [0025](ADR-0025-ranking.md) §3), and among equally popular ones the
@@ -143,38 +143,38 @@ at the same time. Prod runs 3 replicas ([0043](ADR-0043-runtime-topology-helm-ch
    ([0014](ADR-0014-evidence-gated-enrichment.md) §9, `KnownTargets`): no model call, and a failure is logged and never
    fails the run.
 8. **Records and metrics.** Each run is a `scout_run` row (`GET /api/v1/admin/scout-runs` lists the last 50); a store
-   failure is logged and does not stop collection. Meters: `helper2.scout.cycle`, `helper2.scout.run` (source, status),
-   `helper2.scout.items` by `kind` (seen, changed, queued, failed, rejected, withdrawn: the numbers of the run
-   summary), gauges `helper2.scout.last.success` (the newest
-   SUCCEEDED run in `scout_run`, cached 30 s, `LastSuccessGauges`) and `helper2.scout.interval` (every collector's run
-   interval), both registered at start-up, counter `helper2.scout.enrichment`.
+   failure is logged and does not stop collection. Meters: `searchavo.scout.cycle`, `searchavo.scout.run` (source, status),
+   `searchavo.scout.items` by `kind` (seen, changed, queued, failed, rejected, withdrawn: the numbers of the run
+   summary), gauges `searchavo.scout.last.success` (the newest
+   SUCCEEDED run in `scout_run`, cached 30 s, `LastSuccessGauges`) and `searchavo.scout.interval` (every collector's run
+   interval), both registered at start-up, counter `searchavo.scout.enrichment`.
 
 **The gap round and the budget.** A gap call is part of its resource's attempt: the per-run budget counts resources,
 the daily gap cap counts gap calls ([0014](ADR-0014-evidence-gated-enrichment.md)).
 
 ### Code
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` — `RunScout` (`tryStart`, `tryRunScheduled`,
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/RunScout.kt` — `RunScout` (`tryStart`, `tryRunScheduled`,
   `closeInterruptedRuns`), `EnrichmentBudget`,
   `ScoutCursor`, `ScheduledRun`, ports (`ScheduledRunStore`, `RunCalendar` in `Scout.kt`).
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Ports.kt` — `Collector`, `CollectedBatch` (hits and candidates), `CandidateReview`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java` — candidates as review items.
-- `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java` — `ScoutSchedule`, `CronRunCalendar`, `scoutRunLock`, `ClusterRunLock`,
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/Ports.kt` — `Collector`, `CollectedBatch` (hits and candidates), `CandidateReview`.
+- `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/ReviewQueueCandidateReview.java` — candidates as review items.
+- `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/ScoutConfiguration.java` — `ScoutSchedule`, `CronRunCalendar`, `scoutRunLock`, `ClusterRunLock`,
   `RUN_THREADS`, `startScout`.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/ClusterLock.java`, `ClusterLocks.java`, `ClusterLockConfiguration.java`; tables `shedlock` and
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/ClusterLock.java`, `ClusterLocks.java`, `ClusterLockConfiguration.java`; tables `shedlock` and
   `scout_schedule` in `V1__schema.sql`.
-- `backend/apps/backoffice/src/test/kotlin/ai/helper2/scout/internal/ScoutRunLockIT.kt` — two replicas, one run; one scheduled run per
+- `backend/apps/backoffice/src/test/kotlin/ai/searchavo/scout/internal/ScoutRunLockIT.kt` — two replicas, one run; one scheduled run per
   period; a tick that meets an admin run runs at the next tick; the lease is renewed while a run lives; runs left
   `RUNNING` are closed at startup.
-- `backend/apps/backoffice/src/test/kotlin/ai/helper2/scout/usecase/CappedReview.kt` — a run the review cap held back, then
+- `backend/apps/backoffice/src/test/kotlin/ai/searchavo/scout/usecase/CappedReview.kt` — a run the review cap held back, then
   the next one, through `RunScout`; the tests of the four capped collectors (PyPI, SDKs, awesome lists, topic leaders)
   use it to show that the next run proposes the held candidates.
-- `backend/apps/backoffice/src/test/java/ai/helper2/scout/internal/CronRunCalendarTest.java` — fixed start time, UTC, no drift.
-- `backend/apps/backoffice/src/test/java/ai/helper2/scout/ScoutPipelineIT.java` — 202 with the `RUNNING` row, polled to its end; 409
+- `backend/apps/backoffice/src/test/java/ai/searchavo/scout/internal/CronRunCalendarTest.java` — fixed start time, UTC, no drift.
+- `backend/apps/backoffice/src/test/java/ai/searchavo/scout/ScoutPipelineIT.java` — 202 with the `RUNNING` row, polled to its end; 409
   while another replica holds the lock.
 - `frontend/src/admin/ScoutRunsPage.tsx` — "Run now", polling of the run listing.
-- `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/JdbcScoutStore.java` — `source_cursor`, `scout_run`, `scout_schedule`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ScoutRunsController.java` — `startScoutRun`, `listScoutRuns`.
-- `backend/libs/core/src/main/java/ai/helper2/sources/support/RunInterval.java`.
+- `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/JdbcScoutStore.java` — `source_cursor`, `scout_run`, `scout_schedule`.
+- `backend/apps/backoffice/src/main/java/ai/searchavo/admin/web/ScoutRunsController.java` — `startScoutRun`, `listScoutRuns`.
+- `backend/libs/core/src/main/java/ai/searchavo/sources/support/RunInterval.java`.
 
 ## Alternatives considered
 - Spring Batch or a job framework — far more setup than a loop over a few collectors.
@@ -221,7 +221,7 @@ the daily gap cap counts gap calls ([0014](ADR-0014-evidence-gated-enrichment.md
   or the next run begins; its end time is not recorded, so the next tick runs the Scout again.
 
 ### Known limits
-- A scheduled run can start up to one `H2_SCOUT_TICK` (10 min) after its cron time.
+- A scheduled run can start up to one `SA_SCOUT_TICK` (10 min) after its cron time.
 - A renewal-thread pause longer than one lease lets another replica start a second run.
 - A catch-up run that ends just before the cron time is followed by the cron's run a few minutes later.
 - A run does not tell a rejected answer from a resource with no material left: both count as rejected, and the second
@@ -229,7 +229,7 @@ the daily gap cap counts gap calls ([0014](ADR-0014-evidence-gated-enrichment.md
 - "The backlog retries them" is also said of a third failure, which the backlog does not retry: it shows under "out of
   retries" in the enrichment queue ([0038](ADR-0038-back-office-and-review.md)).
 - `scout_run` and the API hold `enrichmentsQueued` only; the failed, rejected and waiting counts are in the message
-  and, but for the waiting ones, in `helper2.scout.items`.
+  and, but for the waiting ones, in `searchavo.scout.items`.
 
 ## Diagrams
 [flow](../diagrams/flow-0011-scout-runner.svg) · [sequence](../diagrams/sequence-0011-scout-runner.svg)

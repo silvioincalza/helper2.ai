@@ -25,7 +25,7 @@
 4. The system checks that the field can be set and that the value is one the field takes.
 5. The system writes the value to the resource, marks the field as curated and rejects the AI's values of that field.
 6. The system records in the audit trail the field, the value before and the value after.
-7. The system shows the evidence again, with the field "Curated by Helper2".
+7. The system shows the evidence again, with the field "Curated by Searchavo".
 
 ## Alternative Flows
 

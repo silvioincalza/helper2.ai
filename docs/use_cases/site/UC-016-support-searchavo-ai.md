@@ -1,17 +1,17 @@
-# Use Case: Support helper2.ai
+# Use Case: Support searchavo.ai
 
 ## Overview
 
 **Use Case ID:** UC-016  
-**Use Case Name:** Support helper2.ai  
+**Use Case Name:** Support searchavo.ai  
 **Primary Actor:** Visitor  
 **Secondary Actors:** Payment Provider  
-**Goal:** Give money to help run helper2.ai through a payment provider's own page, while the site shows support, analytics and ads only where they are switched on  
+**Goal:** Give money to help run searchavo.ai through a payment provider's own page, while the site shows support, analytics and ads only where they are switched on  
 **Trigger:** The visitor opens the support page from the footer  
 **Status:** Approved  
 
 **Requirements:** [FR-022, FR-023, C-007](../../requirements.md)  
-**Mockup:** [Screens and states](../../mockups/uc-016-support-helper2-ai.md)  
+**Mockup:** [Screens and states](../../mockups/uc-016-support-searchavo-ai.md)  
 **API:** [getSite](../../../api/public.yaml#getSite)
 
 ## Preconditions
@@ -21,10 +21,10 @@
 ## Main Success Scenario
 
 1. Visitor opens the support page.
-2. System reads the site-wide settings and shows what running helper2.ai costs and the ways to give that are set up: sponsoring on GitHub and giving by card.
+2. System reads the site-wide settings and shows what running searchavo.ai costs and the ways to give that are set up: sponsoring on GitHub and giving by card.
 3. Visitor chooses a way to give.
 4. Payment Provider takes the gift on its own page.
-5. Payment Provider returns the visitor who gave by card to the thank-you page of helper2.ai.
+5. Payment Provider returns the visitor who gave by card to the thank-you page of searchavo.ai.
 6. System thanks the visitor and links back to search.
 
 ## Alternative Flows
@@ -42,7 +42,7 @@
 **Trigger:** The visitor chooses to sponsor on GitHub (step 3)  
 **Flow:**
 
-1. System opens the GitHub sponsoring page in a new tab, and the visitor stays on helper2.ai.
+1. System opens the GitHub sponsoring page in a new tab, and the visitor stays on searchavo.ai.
 2. Use case ends.
 
 ### A3: The Site-Wide Settings Cannot Be Read
@@ -57,21 +57,21 @@
 
 ### Success Postconditions
 
-- The gift is taken by the payment provider; helper2.ai stores nothing about it.
+- The gift is taken by the payment provider; searchavo.ai stores nothing about it.
 
 ### Failure Postconditions
 
-- Nothing changes on helper2.ai.
+- Nothing changes on searchavo.ai.
 
 ## Business Rules
 
 ### BR-001: Ways to Give
 
-A way to give is offered only when its address is configured: a GitHub Sponsors page (`H2_SUPPORT_GITHUB_SPONSORS_URL`) or a Stripe payment page (`H2_SUPPORT_STRIPE_PAYMENT_URL`). Both go to the provider's own page, GitHub in a new tab and Stripe in the same tab, and giving changes nothing on helper2.ai.
+A way to give is offered only when its address is configured: a GitHub Sponsors page (`SA_SUPPORT_GITHUB_SPONSORS_URL`) or a Stripe payment page (`SA_SUPPORT_STRIPE_PAYMENT_URL`). Both go to the provider's own page, GitHub in a new tab and Stripe in the same tab, and giving changes nothing on searchavo.ai.
 
 ### BR-002: Analytics Question
 
-The site asks whether a visit may be counted with Google Analytics only when a measurement identifier is configured (`H2_ANALYTICS_GA4_MEASUREMENT_ID`). While Google's consent tool does not ask in its place (BR-003, BR-005), it asks every visitor, on every page of the public site, and counts a visit only after the visitor accepts; the site works the same before an answer and after a rejection. The answer is kept in the browser and can be changed from the footer. A rejection, or an acceptance taken back, stops the counting and removes the analytics cookies.
+The site asks whether a visit may be counted with Google Analytics only when a measurement identifier is configured (`SA_ANALYTICS_GA4_MEASUREMENT_ID`). While Google's consent tool does not ask in its place (BR-003, BR-005), it asks every visitor, on every page of the public site, and counts a visit only after the visitor accepts; the site works the same before an answer and after a rejection. The answer is kept in the browser and can be changed from the footer. A rejection, or an acceptance taken back, stops the counting and removes the analytics cookies.
 
 ### BR-003: Ads
 

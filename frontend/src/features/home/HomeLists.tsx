@@ -37,7 +37,7 @@ function NewsList({ feed }: { feed: Feed<NewsRow> }) {
     <TermList
       id="news"
       title={t('board.news.title')}
-      command="helper2 new"
+      command="searchavo new"
       feed={feed}
       errorText={t('radar.error')}
       emptyText={t('radar.empty')}
@@ -52,7 +52,7 @@ function EventsList({ feed }: { feed: Feed<EventRow> }) {
     <TermList
       id="events"
       title={t('board.events.title')}
-      command="helper2 events"
+      command="searchavo events"
       feed={feed}
       errorText={t('events.error')}
       emptyText={t('events.empty')}

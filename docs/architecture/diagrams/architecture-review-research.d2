@@ -1,7 +1,7 @@
 # Software architecture: the review research assistant in the back office app (ADR 0048).
 # The research module owns its ports; the source connectors and the catalog implement them, as for the AI check.
-# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/research (module, ports, use cases, internal),
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/research (tools), admin/web/ReviewResearch*Controller.java.
+# Source of truth: backend/apps/backoffice/src/main/java/ai/searchavo/research (module, ports, use cases, internal),
+#   backend/apps/backoffice/src/main/java/ai/searchavo/sources/research (tools), admin/web/ReviewResearch*Controller.java.
 # Render: cd docs/architecture/diagrams && d2 fmt architecture-review-research.d2 && d2 architecture-review-research.d2 architecture-review-research.svg
 
 ...@style
@@ -17,7 +17,7 @@ backoffice: "Back office app" {
     ports: "Ports: ResearchModel · ResearchTool\nResearchRuns · ResearchItems" {class: app}
     usecase -> ports
   }
-  workers: "ResearchWorkers\n(virtual threads,\nH2_RESEARCH_CONCURRENCY;\nno claim while the budget is spent)" {class: app}
+  workers: "ResearchWorkers\n(virtual threads,\nSA_RESEARCH_CONCURRENCY;\nno claim while the budget is spent)" {class: app}
   adapters: "Adapters\nSpring AI (tool calls, no internal execution)\nLiveWebPageReader · TavilySource · deps.dev\nGitHub · Hugging Face · catalog lookup\ncheck_url (https, the checked address only)" {class: app}
   validator: "EvidenceValidator\n(shared with enrichment, 0014)" {class: app}
   review: "Review queue and accept path\n(0038)" {class: app}

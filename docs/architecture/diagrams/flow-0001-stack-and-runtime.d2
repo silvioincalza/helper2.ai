@@ -1,9 +1,9 @@
 # Flowchart: one image per deployable, from the image builds to how the running site answers one request.
 # Shows the Dockerfile stages, the JVM flags, the web image's rules, and the public app's shell for every client route.
 # Source of truth: deploy/web.Dockerfile, deploy/web/nginx.conf, deploy/Dockerfile,
-#   backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java, backend/libs/platform/.../ClientRoutes.java,
-#   backend/libs/platform/src/main/resources/helper2-shared.yaml (spring.threads.virtual, spring.web.resources.add-mappings,
-#   helper2.pages.template).
+#   backend/apps/public/src/main/java/ai/searchavo/site/pages/web/PageRoutes.java, backend/libs/platform/.../ClientRoutes.java,
+#   backend/libs/platform/src/main/resources/searchavo-shared.yaml (spring.threads.virtual, spring.web.resources.add-mappings,
+#   searchavo.pages.template).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0001-stack-and-runtime.d2 && d2 flow-0001-stack-and-runtime.d2 flow-0001-stack-and-runtime.svg
 
 ...@style

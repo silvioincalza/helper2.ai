@@ -4,7 +4,7 @@ description: Runs the checks on a finished change and reports what passed and wh
 tools: Read, Grep, Glob, Bash
 model: haiku
 ---
-You verify a change on helper2.ai. You do not fix, edit, commit or push: you run and report.
+You verify a change on searchavo.ai. You do not fix, edit, commit or push: you run and report.
 Inputs (AI Unified Process): the `UC-*.md` the change names, in `docs/use_cases/<module>/`, for its main scenario and
 its alternative flows; `docs/architecture/stack.md` for the test layers and the commands. Name the `UC-*` IDs in
 every finding.

@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="3920" height="4572" viewBox="0 0 3920 4572" font-family="Inter, DejaVu Sans, sans-serif">
 <style>.n{rx:2}.sh{fill:#000;opacity:.06}.t{font-size:12px;text-anchor:middle;dominant-baseline:central}.s{font-size:11px}.l{stroke:#555;stroke-width:2;marker-end:url(#a)}.po{fill:#D0A8F5}.ev{fill:#FFA94D}.ex{fill:#F7A8C8}.cm{fill:#74C0FC}.ag{fill:#FFE8A3}.rm{fill:#A5E5A0}.ac{fill:#FFF176}.hs{fill:#E64980}.fpo{fill:#2a1145}.fev{fill:#3b1d00}.fex{fill:#4b1528}.fcm{fill:#062a45}.fag{fill:#4a3300}.frm{fill:#173404}.fac{fill:#3a3300}.fhs{fill:#ffffff}</style><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#555"/></marker></defs>
 <rect width="3920" height="4572" fill="#f1eee6"/>
-<text x="16" y="52" font-size="40" font-weight="700" fill="#1b1a17">helper2.ai — Big Picture Event Storming</text>
+<text x="16" y="52" font-size="40" font-weight="700" fill="#1b1a17">searchavo.ai — Big Picture Event Storming</text>
 <text x="16" y="88" font-size="20" fill="#4a4842">Seven app contexts: the public app, the web site and the back office. 18 November 2026, after v2026.11.5. Read each lane left to right; arrows mean "triggers".</text>
 <rect class="n ac" x="16" y="104" width="64" height="28"/><text x="48" y="118" font-size="13" fill="#3a3300" text-anchor="middle" dominant-baseline="central">Actor</text>
 <rect class="n cm" x="90" y="104" width="80" height="28"/><text x="130" y="118" font-size="13" fill="#062a45" text-anchor="middle" dominant-baseline="central">Command</text>

@@ -46,7 +46,7 @@ ui-design agent description and the design system ADR.
 **Status:** Open  
 **Assumed:** the DSA applies as a whole, with no article named.  
 
-The repository names the DSA but no article. A qualified lawyer should name the duties that apply to helper2.ai.
+The repository names the DSA but no article. A qualified lawyer should name the duties that apply to searchavo.ai.
 
 ## OQ-005: Are the priorities of the functional requirements right?
 
@@ -352,7 +352,7 @@ Google's consent tool, each only when it is configured, and ads and the consent 
 switch is on (UC-028 BR-001). [ADR 0042](architecture/decisions/ADR-0042-monetisation.md) decides this setup. The
 **Secondary Actors:** line names only the Payment Provider, the use case diagram of `site` has no actor for the
 Google tools, and the External systems table of `docs/architecture/stack.md` has no row for them. The settings live
-in `ai.helper2.site.monetisation` in `backend/apps/public` (`ga4MeasurementId`, `adsenseClient`, `adsenseSlot`,
+in `ai.searchavo.site.monetisation` in `backend/apps/public` (`ga4MeasurementId`, `adsenseClient`, `adsenseSlot`,
 `adsenseSlotSearch`, `adsenseSlotGuide`, `adsEnabled`). The browser loads the scripts: Google Analytics in
 `frontend/src/lib/analytics.ts`, the consent tool in `frontend/src/lib/googleConsent.ts`, the ads in
 `frontend/src/features/monetisation/AdSenseSlot.tsx`.

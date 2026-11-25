@@ -1,12 +1,12 @@
 # Flowchart: what a use case answers when it refuses, what its transaction does, and how the build keeps HTTP out of
 #   the use cases (ADR 0051).
-# Source of truth: backend/libs/core/src/main/java/ai/helper2/identity/usecase/AddBookmark.java (Outcome),
+# Source of truth: backend/libs/core/src/main/java/ai/searchavo/identity/usecase/AddBookmark.java (Outcome),
 #   MergeLocalBookmarks.java, ChangePreferences.java, BookmarkRules.java,
-#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Refused.kt, UnitOfWork.kt,
-#   backend/libs/platform/src/main/java/ai/helper2/platform/TransactionalUnitOfWork.java (undoWhenRefused),
-#   backend/apps/public/src/main/java/ai/helper2/identity/web/BookmarksController.java, PreferencesController.java,
-#   backend/libs/platform/src/main/java/ai/helper2/platform/ApiExceptionHandler.java,
-#   backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ModularityRules.java
+#   backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/Refused.kt, UnitOfWork.kt,
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/TransactionalUnitOfWork.java (undoWhenRefused),
+#   backend/apps/public/src/main/java/ai/searchavo/identity/web/BookmarksController.java, PreferencesController.java,
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/ApiExceptionHandler.java,
+#   backend/libs/platform/src/testFixtures/java/ai/searchavo/testing/architecture/ModularityRules.java
 #   (useCasesDoNotSpeakHttp).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0051-use-cases-return-outcomes.d2 && d2 flow-0051-use-cases-return-outcomes.d2 flow-0051-use-cases-return-outcomes.svg
 

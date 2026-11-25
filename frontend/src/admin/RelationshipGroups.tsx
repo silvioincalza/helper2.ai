@@ -18,7 +18,7 @@ import { ExistingPicker } from './RelationshipTarget';
 
 const GROUP_PAGE_SIZE = 50;
 const DETAIL_ID = 'rg-detail';
-const COMMAND = 'helper2 review --open --by-target';
+const COMMAND = 'searchavo review --open --by-target';
 
 function errorOf(e: unknown, t: (k: string) => string): string {
   return problemDetail(e, { status: [400, 404, 409] }) ?? t('admin.groups.failed');

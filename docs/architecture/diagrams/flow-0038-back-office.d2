@@ -1,13 +1,13 @@
 # Flowchart: how the back office overview is answered (ADR 0038).
-# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetOverview.java, ListEnrichmentQueue.java,
+# Source of truth: backend/apps/backoffice/src/main/java/ai/searchavo/admin/usecase/GetOverview.java, ListEnrichmentQueue.java,
 #   catalog/internal/JdbcEnrichmentCandidates.java (backlog), admin/web/OverviewController.java,
 #   catalog/internal/JdbcValidationIssues.java (validation issues), platform/llm/BudgetLedger.java, internal/RedisCallCounter.java, examples/usecase/CountHomeExamples.java,
-#   backend/libs/core/src/main/kotlin/ai/helper2/examples/PoolCounts.kt, frontend/src/admin/AdminOverview.tsx,
+#   backend/libs/core/src/main/kotlin/ai/searchavo/examples/PoolCounts.kt, frontend/src/admin/AdminOverview.tsx,
 #   admin/usecase/GetReviewEvidence.java, admin/web/ReviewController.java, catalog/internal/JdbcReviewEvidence.java,
 #   catalog/internal/BacklogRule.java, scout/EnrichmentQueue.kt (QueuePlace),
 #   scout/usecase/RequeueEnrichment.kt, SkipEnrichment.kt, PrioritiseEnrichment.kt, admin/web/EnrichmentQueueController.java,
 #   admin/usecase/ResolveReviewItems.java, admin/usecase/CheckAiWords.java, catalog/internal/JdbcAiCheckReport.java, admin/BulkDecisionRule.java, admin/usecase/ResearchedAcceptance.java, admin/web/ReviewItemMapper.java,
-#   backend/libs/core/src/main/java/ai/helper2/examples/usecase/ReadExampleDraft.java,
+#   backend/libs/core/src/main/java/ai/searchavo/examples/usecase/ReadExampleDraft.java,
 #   admin/web/ReviewController.java (marker).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0038-back-office.d2 && d2 flow-0038-back-office.d2 flow-0038-back-office.svg
 
@@ -57,7 +57,7 @@ start: "The back office starts" {class: end}
 grafana: "OverviewController.grafanaLink" {
   class: group
   direction: down
-  set: "H2_ADMIN_GRAFANA_URL set?" {class: decision}
+  set: "SA_ADMIN_GRAFANA_URL set?" {class: decision}
   none: "No link in the overview" {class: end}
   plain: "An http(s) URL with a host\nand a path only: no user info,\nno query, no fragment?" {class: decision}
   kept: "The link every overview carries" {class: end}
