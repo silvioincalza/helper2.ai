@@ -89,7 +89,7 @@ class GuideModelStreamApiIT extends ApiTestBase {
   }
 
   private static List<String> eventsWithData(String stream, String event) {
-    Matcher m = Pattern.compile("event:" + event + "\\ndata:(.*)\\n").matcher(stream);
+    Matcher m = Pattern.compile("event:" + event + "\\ndata: (.*)\\n").matcher(stream);
     return m.results().map(r -> r.group(1)).toList();
   }
 

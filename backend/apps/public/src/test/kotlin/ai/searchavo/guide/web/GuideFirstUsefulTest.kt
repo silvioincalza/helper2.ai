@@ -164,8 +164,8 @@ class GuideFirstUsefulTest {
   fun `a model call that reasons and writes sends the step and nothing else, before the event of its step`() {
     val events = stream(GuideSearchPlan("speech to text", intent = GuideIntent.SUGGEST))
 
-    val reasoning = events.indexOf("event:reasoning\ndata:{\"step\":\"plan\"}")
-    val writing = events.indexOf("event:writing\ndata:{\"step\":\"plan\"}")
+    val reasoning = events.indexOf("event:reasoning\ndata: {\"step\":\"plan\"}")
+    val writing = events.indexOf("event:writing\ndata: {\"step\":\"plan\"}")
     assertTrue(reasoning >= 0 && reasoning < writing, events)
     assertTrue(writing < events.indexOf("event:planned"), events)
   }

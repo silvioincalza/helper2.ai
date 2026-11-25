@@ -1,6 +1,6 @@
 plugins {
   java
-  id("io.gatling.gradle") version "3.16.0"
+  id("io.gatling.gradle") version "3.16.1"
   id("searchavo.format")
 }
 

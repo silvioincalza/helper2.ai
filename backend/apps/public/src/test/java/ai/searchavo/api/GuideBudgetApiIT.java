@@ -91,7 +91,7 @@ class GuideBudgetApiIT extends ApiTestBase {
     result.getAsyncResult(15_000);
     mvc.perform(asyncDispatch(result)).andExpect(status().isOk());
     String stream = result.getResponse().getContentAsString();
-    Matcher m = Pattern.compile("event:answer\\ndata:(.*)\\n").matcher(stream);
+    Matcher m = Pattern.compile("event:answer\\ndata: (.*)\\n").matcher(stream);
     assertThat(m.find()).as("event answer in " + stream).isTrue();
     return m.group(1);
   }
