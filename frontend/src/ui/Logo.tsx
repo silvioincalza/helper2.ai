@@ -10,6 +10,7 @@ const RINGS = [10, 20, SCOPE];
 const BEAM = (-15 * Math.PI) / 180; // half past two on a clock face
 const TRAIL = (45 * Math.PI) / 180;
 const TRAIL_SLICES = 12;
+const TRAIL_STEP = TRAIL / TRAIL_SLICES;
 
 function onScope(angle: number) {
   return `${(CENTRE + SCOPE * Math.cos(angle)).toFixed(2)} ${(CENTRE + SCOPE * Math.sin(angle)).toFixed(2)}`;
@@ -17,9 +18,8 @@ function onScope(angle: number) {
 
 /** The trail the beam leaves behind it: 45° back to one o'clock, fading, drawn as slices of the scope. */
 const TRAIL_PATHS = Array.from({ length: TRAIL_SLICES }, (_, i) => {
-  const step = TRAIL / TRAIL_SLICES;
   return {
-    d: `M${CENTRE} ${CENTRE}L${onScope(BEAM - step * i)}A${SCOPE} ${SCOPE} 0 0 0 ${onScope(BEAM - step * (i + 1))}Z`,
+    d: `M${CENTRE} ${CENTRE}L${onScope(BEAM - TRAIL_STEP * i)}A${SCOPE} ${SCOPE} 0 0 0 ${onScope(BEAM - TRAIL_STEP * (i + 1))}Z`,
     opacity: (0.5 * (1 - i / TRAIL_SLICES)).toFixed(2),
   };
 });
