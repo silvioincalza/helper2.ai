@@ -189,7 +189,7 @@ database connections. A change to the web app would rebuild and redeploy the bac
 13. **The `web` image serves the public web app's files; the public app writes the pages.** nginx
     (`nginx-unprivileged`, alpine-slim, user 101, read-only root) serves GET and HEAD only:
     - `/assets/<file>`: Vite's content-hashed files (scripts, styles, fonts) and the link preview image
-      (`frontend/public/assets/og-2.png`, whose name changes with its content,
+      (`frontend/public/assets/og-3.png`, whose name changes with its content,
       [0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md) §3), `public, max-age=31536000, immutable`;
     - `/theme.js`, `/favicon.svg` and `/favicon.ico`, the root files of `frontend/public`: `public, max-age=300,
       must-revalidate`;

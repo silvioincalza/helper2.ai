@@ -119,17 +119,17 @@ Type is a word, not a coloured badge. In lists and on resource pages it is the f
 
 ## Logo
 
-The mark is a 40px `ink` tile with 12px corners (19 of its 64 units): the "s" drawn in `bg` as one search path from the bottom up, its route dashed in `accent` with a dot where it starts and where it ends, two faint rings in `bg`, and the four-point AI spark in `accent` where the path ends (`assets/Logos/searchavo-mark.svg`; `searchavo-mark-dark.svg` is the dark theme's, where `ink` and `bg` change places). It sits 14px left of the wordmark "search**avo**" in Geist Mono 20px, weight 600, with "avo" in `accent-ink`, followed by a cursor: an `accent` bar 0.53em wide and 0.14em high on the baseline. Under it, 4px below, the tagline **AI ON YOUR RADAR**: Geist Mono 12px, weight 600, uppercase, 0.1em tracking, in `muted`. Below 420px the tagline hides and the wordmark is 18px. The favicon (`frontend/public/favicon.svg`) is the same mark with a thicker path, and follows the system's light or dark setting. Never recolor the mark, add effects, or drop the wordmark in the header.
+The mark is a 40px `ink` tile with 12px corners (19 of its 64 units) with a radar scope behind the "s": three faint rings and a crosshair in `bg`, a thin `accent` beam at half past two that stops on the outer ring, and its trail, an `accent` sector of 45° that fades back to one o'clock. The four-point AI spark in `accent` sits at two o'clock, inside the trail. The "s" is drawn in `bg` as one search path from the bottom up, its route thinly dashed in `accent` with a small dot where it starts and where it ends (`assets/Logos/searchavo-mark.svg`; `searchavo-mark-dark.svg` is the dark theme's, where `ink` and `bg` change places). It sits 14px left of the wordmark "search**avo**" in Geist Mono 20px, weight 600, with "avo" in `accent-ink`, followed by a cursor: an `accent` bar 0.53em wide and 0.14em high on the baseline. Under it, 4px below, the tagline **AI ON YOUR RADAR**: Geist Mono 12px, weight 600, uppercase, 0.1em tracking, in `muted`. Below 420px the tagline hides and the wordmark is 18px. The favicon (`frontend/public/favicon.svg`, and `favicon.ico` at 16, 32 and 48px) is the same mark drawn for small sizes: a thicker path and dashes, two rings, no crosshair, a larger spark. It follows the system's light or dark setting. Never recolor the mark, add effects, or drop the wordmark in the header.
 
 ### Link preview image
 
-The image a shared link shows (`og:image`, 1200×630) is the mark and the wordmark, the home title in Geist, one line on what the search covers, and the search box with its **Search** button, on `bg`. Its source is `assets/social/og-2.html`; the file the site serves is `frontend/public/assets/og-2.png`. To render it, from the repository root after `npm ci` in `frontend`:
+The image a shared link shows (`og:image`, 1200×630) is the mark and the wordmark, the home title in Geist, one line on what the search covers, and the search box with its **Search** button, on `bg`. Its source is `assets/social/og-3.html`; the file the site serves is `frontend/public/assets/og-3.png`. To render it, from the repository root after `npm ci` in `frontend`:
 
 ```
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --allow-file-access-from-files --screenshot="$PWD/frontend/public/assets/og-2.png" "file://$PWD/frontend/design/assets/social/og-2.html"
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=1200,630 --allow-file-access-from-files --screenshot="$PWD/frontend/public/assets/og-3.png" "file://$PWD/frontend/design/assets/social/og-3.html"
 ```
 
-A changed image gets a new file name (`og-2.png`), because the site caches the file for a year (ADR 0041 §3).
+A changed image gets a new file name (`og-3.png`), because the site caches the file for a year (ADR 0041 §3).
 
 ## Iconography
 
