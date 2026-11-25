@@ -1,10 +1,10 @@
 # Architecture, the whole system on one page: the people, the edge, the two web apps, the two Java apps with every
 # module, the shared libraries, the stores, the models, the public sources, delivery and operations.
 # One line per relation and no detail: each group names the view that holds its detail.
-# Source of truth: backend/settings.gradle.kts, backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java (modules),
+# Source of truth: backend/settings.gradle.kts, backend/{libs,apps}/*/src/main/java/ai/searchavo/*/package-info.java (modules),
 #   frontend/src (features, shell, admin, shared code), frontend/eslint.config.js,
-#   deploy/helm/helper2 (values*.yaml, templates/*.yaml), .github/workflows/cd.yml, deploy.yml,
-#   backend/libs/platform/src/main/resources/helper2-shared.yaml (models, sources, embedding).
+#   deploy/helm/searchavo (values*.yaml, templates/*.yaml), .github/workflows/cd.yml, deploy.yml,
+#   backend/libs/platform/src/main/resources/searchavo-shared.yaml (models, sources, embedding).
 # Render: cd docs/architecture/diagrams && d2 fmt architecture-full.d2 && d2 architecture-full.d2 architecture-full.svg
 
 ...@style
@@ -42,16 +42,16 @@ edge: "EDGE · view: infrastructure" {
 cluster: "KUBERNETES · production's namespace; staging: the same chart, production's embedder · views: architecture-containers, infrastructure-workloads" {
   class: group
 
-  web: "helper2-web · nginx\nthe public web app's files" {class: app}
+  web: "searchavo-web · nginx\nthe public web app's files" {class: app}
 
-  public: "PUBLIC APP · helper2 · /api/v1 (public.yaml)" {
+  public: "PUBLIC APP · searchavo · /api/v1 (public.yaml)" {
     class: group
     guide: "guide\nAI guide, evidence gate\nview: architecture-guide" {class: app}
     setup: "setup\nSet it up, tool guide\nview: architecture-setup" {class: app}
     site: "site\npages for crawlers, policy,\nmonetisation settings, CSP" {class: app}
   }
 
-  bo: "BACK OFFICE APP · helper2-backoffice · /api/v1/admin (admin.yaml)" {
+  bo: "BACK OFFICE APP · searchavo-backoffice · /api/v1/admin (admin.yaml)" {
     class: group
     backoffice: "admin\nreview, runs, overview,\nsettings, the admin web app" {class: app}
     scout: "scout\nindex growth, enrichment\nview: architecture-index" {class: app}
@@ -90,8 +90,8 @@ cluster: "KUBERNETES · production's namespace; staging: the same chart, product
     }
   }
 
-  embedder: "helper2-embedder\nNVIDIA embedding model on CPU,\nfor production and staging\n(ADR 0054)" {class: ai}
-  migrate: "helper2-migrate Job\nFlyway, once per release" {class: app}
+  embedder: "searchavo-embedder\nNVIDIA embedding model on CPU,\nfor production and staging\n(ADR 0054)" {class: ai}
+  migrate: "searchavo-migrate Job\nFlyway, once per release" {class: app}
 
   public.guide -> libs.search: "retrieve candidates" {class: hot}
   public.guide -> libs.platform: "model calls" {class: ai-call}

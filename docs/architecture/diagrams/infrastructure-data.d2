@@ -1,7 +1,7 @@
 # Infrastructure, backups and monitoring: the nightly dump of production with its encrypted off-site copy and
 # the weekly restore check (ADR 0043), and the way metrics and traces leave the namespace (ADR 0009).
-# Source of truth: deploy/helm/helper2/templates/backup.yaml, exporters.yaml, prometheusrule.yaml, values-prod.yaml,
-#   backend/libs/platform/src/main/resources/helper2-shared.yaml (management, tracing), deploy/grafana.
+# Source of truth: deploy/helm/searchavo/templates/backup.yaml, exporters.yaml, prometheusrule.yaml, values-prod.yaml,
+#   backend/libs/platform/src/main/resources/searchavo-shared.yaml (management, tracing), deploy/grafana.
 # Render: cd docs/architecture/diagrams && d2 fmt infrastructure-data.d2 && d2 infrastructure-data.d2 infrastructure-data.svg
 
 ...@style
@@ -14,7 +14,7 @@ vars: {
 
 direction: right
 
-prod: "ns helper2-prod" {
+prod: "ns searchavo-prod" {
   class: group
 
   backups: "BACKUP (on for prod)" {
@@ -36,8 +36,8 @@ prod: "ns helper2-prod" {
 
   observed: "OBSERVED" {
     class: group
-    app: "helper2 (public app)\n:8081 Actuator" {class: app}
-    bo: "helper2-backoffice\n:8081 Actuator" {class: app}
+    app: "searchavo (public app)\n:8081 Actuator" {class: app}
+    bo: "searchavo-backoffice\n:8081 Actuator" {class: app}
     pgexp: "postgres-exporter · 1 pod\n:9187, role h2_monitor" {class: app}
     redisexp: "redis-exporter · 1 pod\n:9121, Redis user h2_monitor" {class: app}
   }
@@ -51,7 +51,7 @@ monitoring: MONITORING {
   class: group
   prometheus: Prometheus {class: data}
   tempo: Tempo {class: data}
-  grafana: "Grafana\ndashboards helper2.json,\nhelper2-backoffice.json" {class: app}
+  grafana: "Grafana\ndashboards searchavo.json,\nsearchavo-backoffice.json" {class: app}
   prometheus -> grafana
   tempo -> grafana
 }

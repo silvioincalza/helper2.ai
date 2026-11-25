@@ -1,5 +1,5 @@
 # Sequence: a visitor opens the Privacy page, the page reads the numbers from the API (ADR 0041).
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/policy/web/PolicyController.java,
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/site/policy/web/PolicyController.java,
 #   platform/RateLimitInterceptor.java, identity/security/PublicSecurityConfiguration.java,
 #   search/config/SearchConfiguration.java, guide/internal/GuideConfiguration.java,
 #   identity/config/IdentityPolicyConfiguration.java, catalog/internal/CatalogConfiguration.java,
@@ -13,7 +13,7 @@ shape: sequence_diagram
 
 visitor: "Visitor\n(Mission, Privacy, Terms)" {class: person}
 edge: "Cloudflare,\ningress-nginx" {class: ext}
-api: "helper2 public app\n(site.policy)" {class: app}
+api: "searchavo public app\n(site.policy)" {class: app}
 redis: Redis {class: data}
 modules: "search, guide, identity,\ncatalog, scout, platform\n(config at startup)" {class: config}
 

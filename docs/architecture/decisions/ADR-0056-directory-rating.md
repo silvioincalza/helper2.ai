@@ -57,10 +57,10 @@ recognises are written from how such pages commonly print a rating, and are not 
    redirect ([0013](ADR-0013-discovery.md) point 17).
 8. **A visit never starts a read.** The figures are read in the pass of the awesome-list collector and nowhere else.
 9. **A budget of its own.** At most `web-pages.item-page-reads-per-day` pages of an item a UTC day
-   (`H2_SCOUT_AWESOME_WEB_PAGES_ITEM_PAGE_READS_PER_DAY`, 100), apart from the cap of list reads. Every try counts,
+   (`SA_SCOUT_AWESOME_WEB_PAGES_ITEM_PAGE_READS_PER_DAY`, 100), apart from the cap of list reads. Every try counts,
    whatever it gives: the try is written before the read (`DirectoryRatingIndex.tried`) and the tries of the day are
    counted in PostgreSQL. A read costs one credit of the Scout's daily cap; when that cap is spent, the pages wait.
-10. **No more often than its list.** A page of an item is tried again after `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`
+10. **No more often than its list.** A page of an item is tried again after `SA_SCOUT_AWESOME_WEB_PAGES_EVERY`
     (7 days), read or failed. A failed read keeps the figures of the last read.
 
 ### What is kept
@@ -97,7 +97,7 @@ recognises are written from how such pages commonly print a rating, and are not 
     states figures (NFR-005: no invented figure). The names and addresses of the directories are never given.
 19. **The page for crawlers.** `PageHtml` gives the same values as a fact: "Rating: 4.7 out of 5, from 2
     directories" or "Rating: Not rated yet" ([0041](ADR-0041-site-pages-for-crawlers-policy-endpoint.md)). No
-    `AggregateRating` is written into the page's own structured data: the votes are not votes of helper2.ai's
+    `AggregateRating` is written into the page's own structured data: the votes are not votes of searchavo.ai's
     visitors.
 20. **The back office names them.** `GET /api/v1/admin/review-items/{id}/evidence`: `directoryRatings`, each with
     the host, the page, the average, the scale, the votes and the time of the read. The review page links each page
@@ -109,7 +109,7 @@ recognises are written from how such pages commonly print a rating, and are not 
 ### Ranking
 22. **In the formula, with weight 0.** `Ranking.score` adds `weight × (rating − 3) / 2`: from `−weight` (rated 1) to
     `+weight` (rated 5). A result that is not rated yet counts as 3, so it adds 0 and is not ranked lower for it.
-    The weight is `helper2.search.ranking.rating-weight` (`H2_SEARCH_RANKING_RATING_WEIGHT`), 0 by default and at
+    The weight is `searchavo.search.ranking.rating-weight` (`SA_SEARCH_RANKING_RATING_WEIGHT`), 0 by default and at
     most 0.008, the weight of the popularity ([0025](ADR-0025-ranking.md) point 6). With the weight 0 the ratings
     are not read at all (`ResultRatings`).
 23. **Why 0, and why a setting.** The evaluation set (`eval/`) has no rated resource: no directory is read yet. A
@@ -122,32 +122,32 @@ recognises are written from how such pages commonly print a rating, and are not 
     "Ranking".
 
 ### Metrics and the measurement of the patterns
-24. `helper2.scout.ratings.pages{host,page}` counts the pages read (`page` is `list` or `item`) and
-    `helper2.scout.ratings.found{host,page}` the ratings they stated. `helper2.scout.ratings.skips{reason}` counts
+24. `searchavo.scout.ratings.pages{host,page}` counts the pages read (`page` is `list` or `item`) and
+    `searchavo.scout.ratings.found{host,page}` the ratings they stated. `searchavo.scout.ratings.skips{reason}` counts
     what waited (`item-daily-cap`, `item-credit-cap`, `item-unavailable`). A read counts on
-    `helper2.live-web.credits{feature="scout-item-pages"}`.
+    `searchavo.live-web.credits{feature="scout-item-pages"}`.
 25. **Runbook.** After an administrator turns a host on and a pass has run, compare
-    `sum by (host, page) (increase(helper2_scout_ratings_found_total[7d]))` with
-    `sum by (host, page) (increase(helper2_scout_ratings_pages_total[7d]))`. A host with pages read and nothing
+    `sum by (host, page) (increase(searchavo_scout_ratings_found_total[7d]))` with
+    `sum by (host, page) (increase(searchavo_scout_ratings_pages_total[7d]))`. A host with pages read and nothing
     found prints its rating in a phrasing the patterns do not know, or prints none: open one of its pages and
     compare. The patterns are extended only from such a measurement, each with a test that quotes the phrasing.
 
 ### Code
 - `backend/libs/schema/src/main/resources/db/migration/V2026.11.9.3__directory_rating.sql`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/StatedFigures.java`, `DirectoryRating.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/StatedFigures.java`, `DirectoryRating.java`,
   `DirectoryRatingIndex.java`, `ResourceRatings.java`, `ResourceDetail.java`;
   `catalog/internal/JdbcDirectoryRatingIndex.java`, `JdbcResourceRatings.java`, `CatalogResultRatings.java`;
   `catalog/usecase/GetResourceDetail.java`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/StatedRatings.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/github/scout/StatedRatings.java`,
   `DirectoryRatingReader.java`, `ListEntryLinks.java` (`directoryItemPage`), `GitHubAwesomeCollector.java`
   (`ratedEntries`), `WebPageLists.java`; `scout/internal/ScoutConfiguration.java` (`listIndex`);
-  `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorProperties.java` (`WebPages`).
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/Ranking.kt` (`ResultRatings`, `ratingSignal`),
+  `backend/libs/core/src/main/java/ai/searchavo/sources/config/CollectorProperties.java` (`WebPages`).
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/Ranking.kt` (`ResultRatings`, `ratingSignal`),
   `search/config/SearchProperties.java` (`RankingSignals`), `SearchConfiguration.java`,
   `search/internal/RankingSettingsConfiguration.java`.
-- `backend/apps/public/src/main/java/ai/helper2/catalog/web/ResourceDetailController.java`,
+- `backend/apps/public/src/main/java/ai/searchavo/catalog/web/ResourceDetailController.java`,
   `site/pages/Pages.kt` (`facts`), `site/pages/usecase/RenderPage.java`;
-  `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetReviewEvidence.java`,
+  `backend/apps/backoffice/src/main/java/ai/searchavo/admin/usecase/GetReviewEvidence.java`,
   `admin/web/ReviewController.java`; `api/public.yaml`, `api/admin.yaml`.
 - `frontend/src/features/resource/DirectoryRating.tsx`, `ResourcePage.tsx`, `ReportForm.tsx`,
   `frontend/src/admin/ReviewEvidence.tsx`, `frontend/src/i18n/locales/en.json`, `en.admin.json`, `en.legal.json`.

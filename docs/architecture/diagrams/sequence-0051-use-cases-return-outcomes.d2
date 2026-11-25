@@ -1,11 +1,11 @@
 # Sequence: a signed-in user saves bookmark number 501: the use case answers OverLimit, its unit of work rolls the
 #   row back, and the controller turns the outcome into the 400 problem (ADR 0051).
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/identity/web/BookmarksController.java (addBookmark),
-#   backend/libs/core/src/main/java/ai/helper2/identity/usecase/AddBookmark.java, BookmarkRules.java,
-#   backend/libs/kernel/src/main/kotlin/ai/helper2/shared/UnitOfWork.kt, Refused.kt,
-#   backend/libs/platform/src/main/java/ai/helper2/platform/TransactionalUnitOfWork.java,
-#   backend/libs/core/src/main/java/ai/helper2/identity/internal/JdbcBookmarks.java,
-#   backend/libs/platform/src/main/java/ai/helper2/platform/ApiExceptionHandler.java, BadRequestException.java.
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/identity/web/BookmarksController.java (addBookmark),
+#   backend/libs/core/src/main/java/ai/searchavo/identity/usecase/AddBookmark.java, BookmarkRules.java,
+#   backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/UnitOfWork.kt, Refused.kt,
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/TransactionalUnitOfWork.java,
+#   backend/libs/core/src/main/java/ai/searchavo/identity/internal/JdbcBookmarks.java,
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/ApiExceptionHandler.java, BadRequestException.java.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0051-use-cases-return-outcomes.d2 && d2 sequence-0051-use-cases-return-outcomes.d2 sequence-0051-use-cases-return-outcomes.svg
 
 ...@style

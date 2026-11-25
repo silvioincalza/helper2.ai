@@ -43,10 +43,10 @@ reaches the cluster with an address from the platform's private ranges.
      (`GET /api/v1/search|sources|categories`, ADMIN only), the sign-in and `POST /logout`. Anything else is a plain
      404 (`BackOfficeEdge`).
 3. **Sign-in on both hosts, each with its own callback.** OAuth2 login exists only when a client registration
-   exists: Spring profile `oauth-github` with `H2_GITHUB_OAUTH_CLIENT_ID` and `H2_GITHUB_OAUTH_CLIENT_SECRET`, scope
+   exists: Spring profile `oauth-github` with `SA_GITHUB_OAUTH_CLIENT_ID` and `SA_GITHUB_OAUTH_CLIENT_SECRET`, scope
    `read:user`. The public app's redirect URI is `{baseUrl}/login/oauth2/code/github`. The back office pins its own:
-   `H2_ADMIN_BASE_URL/login/oauth2/code/github`, never built from a forwarded Host. The GitHub app lists both. After
-   sign-in the admin host returns to the relative `/admin`, the public host to `<H2_FRONTEND_URL>/`; a failed sign-in
+   `SA_ADMIN_BASE_URL/login/oauth2/code/github`, never built from a forwarded Host. The GitHub app lists both. After
+   sign-in the admin host returns to the relative `/admin`, the public host to `<SA_FRONTEND_URL>/`; a failed sign-in
    returns to the same place with `?signin=failed`. On the public site, "Sign in with GitHub" sits in the header and
    on the Saved page, only when the server offers a provider; the page the visitor was on waits in sessionStorage
    (`h2.signInReturn`, a path on this site only) and is opened again after the return.
@@ -57,11 +57,11 @@ reaches the cluster with an address from the platform's private ranges.
    it the one bean, so Spring Boot's default store is not created). The session holds the user and the roles, never
    the token. Of GitHub's user reply it keeps only the id and a name to show (`name`, or the login when there is none;
    `WebSecurity.keptAttributes`): a public e-mail, bio, location or company in the reply is dropped at sign-in.
-5. **ADMIN by immutable id, only on the back office.** `H2_ADMINS` is a comma-separated list of
+5. **ADMIN by immutable id, only on the back office.** `SA_ADMINS` is a comma-separated list of
    `registrationId:subject`. For GitHub the subject is the numeric user id, never the login. An OpenID Connect
    provider may also use `registrationId:email` when `email_verified` is true. Only the back office gives the role:
    an admin who signs in on the public site is a plain user there, and a stolen public session never carries ADMIN.
-   Roles are set at sign-in; a change to `H2_ADMINS` needs a new sign-in.
+   Roles are set at sign-in; a change to `SA_ADMINS` needs a new sign-in.
 6. **User row on sign-in.** `SignedInUser.signedIn` (on `InteractiveAuthenticationSuccessEvent`, the event the
    sign-in filter publishes with the session's token) calls `Users.signedIn`, an upsert of `app_user`: provider,
    subject, display name, `last_signed_in_at` and one display setting, `radar_motion` (default true), nothing else
@@ -136,7 +136,7 @@ reaches the cluster with an address from the platform's private ranges.
      refusal would fail the whole `DELETE`, so the purge itself never asks for such a row: `JdbcAuditLog` also bounds
      its delete by the database's own clock (`at < now() - 729 days`);
    - only the back office deletes rows: its daily purge (`PurgeExpiredAuditEntries`, `AuditRetentionSchedule`)
-     deletes the rows older than `H2_RETENTION_ADMIN_AUDIT` (default 730 days). Both apps refuse to start with a
+     deletes the rows older than `SA_RETENTION_ADMIN_AUDIT` (default 730 days). Both apps refuse to start with a
      shorter period, so the purge never meets the trigger;
    - the public app has no right on `admin_audit` at all (`h2_public`: no `SELECT`, `INSERT`, `UPDATE` or `DELETE`).
      No public use case writes or reads the trail; account deletion writes no audit row. The administrators'
@@ -154,19 +154,19 @@ reaches the cluster with an address from the platform's private ranges.
     `h2:v1:session:public`. The back office uses `__Host-SESSION` and `__Host-XSRF-TOKEN` (Secure, `Path=/`, no
     `Domain`, so no sibling host can set them), sessions under their own namespace `h2:v1:session:backoffice`, so a
     public session id is never one there. A session ends 30 minutes after its last request, or at sign-out, in
-    both apps: `server.servlet.session.timeout: 30m` in `helper2-shared.yaml`, set, not Spring's default, because
+    both apps: `server.servlet.session.timeout: 30m` in `searchavo-shared.yaml`, set, not Spring's default, because
     the Privacy page states it (`SessionTimeoutBindingTest`). While Redis is down (`SessionConfiguration`): a request with a session
     cookie is served as anonymous (session reads run under the `redis` policy,
     [0006](ADR-0006-outbound-calls-and-resilience.md)), sign-in returns to its page with `?signin=failed`,
     and any other request that fails on the session store gets 503.
-12. **The edge decides who reaches the admin host.** The chart ships the Service `helper2-admin` (port 80 → the back
-    office pods). The platform repo (outside this repo) routes the admin host to it with the Ingress `helper2-admin`
+12. **The edge decides who reaches the admin host.** The chart ships the Service `searchavo-admin` (port 80 → the back
+    office pods). The platform repo (outside this repo) routes the admin host to it with the Ingress `searchavo-admin`
     on ingress-nginx: an allow-list of the private ranges, a DNS-only record to the ingress IP and a DNS-01
-    certificate. The public names go through Cloudflare to the Ingress `helper2-public`, which routes only to the
-    Service `helper2`. No public name reaches the back office. Only the ingress controller's pods
+    certificate. The public names go through Cloudflare to the Ingress `searchavo-public`, which routes only to the
+    Service `searchavo`. No public name reaches the back office. Only the ingress controller's pods
     (`networkPolicy.ingressController`) may reach either app.
 13. **A write on the admin host comes from the admin host.** The public site and the admin host are the same site for
-    the browser (`helper2.ai`, `admin.helper2.ai`), so a `SameSite` cookie does not keep them apart, and a page of the
+    the browser (`searchavo.ai`, `admin.searchavo.ai`), so a `SameSite` cookie does not keep them apart, and a page of the
     public site could plant a CSRF cookie for the whole domain. Two checks close that:
     - On the back office, a POST, PUT, PATCH or DELETE must carry an `Origin` that names the host the request went to
       (`SameOriginWrites`, before the CSRF check). No Origin, `null` or another host: 403 problem.
@@ -187,8 +187,8 @@ reaches the cluster with an address from the platform's private ranges.
 
 | Host                                                  | App         | Back office | Sign-in                  | ADMIN            |
 |-------------------------------------------------------|-------------|-------------|--------------------------|------------------|
-| helper2.ai, `<staging host>` (public)                 | public      | 404         | yes, returns to `/`      | never            |
-| admin.helper2.ai, `<staging admin host>` (VPN only)   | back office | yes         | yes, returns to `/admin` | allow-listed ids |
+| searchavo.ai, `<staging host>` (public)                 | public      | 404         | yes, returns to `/`      | never            |
+| admin.searchavo.ai, `<staging admin host>` (VPN only)   | back office | yes         | yes, returns to `/admin` | allow-listed ids |
 
 ### Code
 
@@ -203,34 +203,34 @@ reaches the cluster with an address from the platform's private ranges.
   Shared setup: `identity/config/WebSecurity.java`, `SameOriginWrites.java`, `KnownAccountOnly.java`, `SignInPages.java`,
   `SessionConfiguration.java`, `NoProviderTokens.java`, `SignInConfiguration.java`, `IdentityUseCaseConfiguration.java`,
   `IdentityRetentionProperties.java` (the 730-day floor).
-- `backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java` — the public
+- `backend/apps/public/src/main/java/ai/searchavo/identity/security/PublicSecurityConfiguration.java` — the public
   chain, never ADMIN, `NoBackOfficeHere`; `identity/web/MeController.java` — `/api/v1/me`, account deletion;
   `BookmarksController.java`, `PreferencesController.java`, `RequireSignIn.java`; `identity/schedule/AccountRetentionSchedule.java` — the daily account purge.
-- `backend/apps/backoffice/src/main/java/ai/helper2/identity/security/BackOfficeSecurityConfiguration.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/identity/security/BackOfficeSecurityConfiguration.java`,
   `BackOfficeEdge.java` — the back office chain, ADMIN for the allow-list, `__Host-` cookies, route allow-list,
   headers; `identity/web/AuditController.java` — `/api/v1/admin/audit`;
   `identity/schedule/AuditRetentionSchedule.java` — the daily audit purge.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `admin_audit` and its three triggers
   (`h2_append_only`, `h2_audit_kept`), `issue_report` without a reporter, the `h2_public` grants.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/ResolveReviewItem.java`,
-  `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/StartScoutRun.kt` — admin use cases that write the
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/usecase/ResolveReviewItem.java`,
+  `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/StartScoutRun.kt` — admin use cases that write the
   trail.
-- Tests: `backend/libs/core/src/test/java/ai/helper2/identity/` (`architecture/IdentityArchitectureTest.java`,
+- Tests: `backend/libs/core/src/test/java/ai/searchavo/identity/` (`architecture/IdentityArchitectureTest.java`,
   `usecase/PurgeInactiveAccountsTest.java`, `PurgeExpiredAuditEntriesTest.java`, `config/AdminAllowListTest.java`,
   `internal/SignedInUserTest.java`, `config/KnownAccountOnlyTest.java`);
-  `backend/apps/*/src/test/java/ai/helper2/identity/security/SessionWithoutAccountIT.java` (a real sign-in, the row
+  `backend/apps/*/src/test/java/ai/searchavo/identity/security/SessionWithoutAccountIT.java` (a real sign-in, the row
   deleted: 401 `sign-in-again`, the session gone, the next call a visitor's, nothing audited);
-  `backend/apps/*/src/test/java/ai/helper2/identity/security/SignInKeepsNoTokenIT.java` (a real sign-in against
-  `FakeSignInProvider` leaves no token in the session or in memory); `backend/apps/public/src/test/java/ai/helper2/AdminAuditKeptIT.java`
+  `backend/apps/*/src/test/java/ai/searchavo/identity/security/SignInKeepsNoTokenIT.java` (a real sign-in against
+  `FakeSignInProvider` leaves no token in the session or in memory); `backend/apps/public/src/test/java/ai/searchavo/AdminAuditKeptIT.java`
   (the triggers), `AppRolesGrantsIT.java`, `identity/schedule/AccountRetentionIT.java`, `api/AccountApiIT.java`,
   `api/HttpEdgeIT.java`, `api/RedisDownIT.java`, `identity/security/SignInEventIT.java`;
-  `backend/apps/backoffice/src/test/java/ai/helper2/identity/schedule/AuditRetentionIT.java`, `api/AdminAuditApiIT.java`,
+  `backend/apps/backoffice/src/test/java/ai/searchavo/identity/schedule/AuditRetentionIT.java`, `api/AdminAuditApiIT.java`,
   `api/BackOfficeEdgeIT.java`.
 - `frontend/src/context/MeContext.tsx`, `BookmarksContext.tsx`, `frontend/src/ui/SignIn.tsx`,
   `frontend/src/features/account/AccountPage.tsx`, `frontend/src/admin/`.
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml`, `backend/apps/*/src/main/resources/application.yaml` — profile `oauth-github`, `helper2.identity.admins`,
-  `helper2.retention.admin-audit`; `deploy/helm/helper2/templates/backoffice.yaml` (Deployment `helper2-backoffice`,
-  Service `helper2-admin`), `networkpolicy.yaml`, `values*.yaml`.
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml`, `backend/apps/*/src/main/resources/application.yaml` — profile `oauth-github`, `searchavo.identity.admins`,
+  `searchavo.retention.admin-audit`; `deploy/helm/searchavo/templates/backoffice.yaml` (Deployment `searchavo-backoffice`,
+  Service `searchavo-admin`), `networkpolicy.yaml`, `values*.yaml`.
 
 ## Alternatives considered
 

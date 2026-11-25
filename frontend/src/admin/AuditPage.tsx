@@ -13,7 +13,7 @@ import { Excerpt } from './Excerpt';
 import { TableSkeleton } from '@/ui/Skeleton';
 
 const PAGE_SIZE = 20;
-const COMMAND = 'helper2 audit';
+const COMMAND = 'searchavo audit';
 // UC-013 BR-004: the actor of an action no administrator took.
 const SYSTEM = 'system';
 

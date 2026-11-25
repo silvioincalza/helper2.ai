@@ -1,10 +1,10 @@
 # Flowchart: a change to the contract, from api/public.yaml, admin.yaml or common.yaml to a green build: the generated server interfaces and
 # DTOs, the generated TypeScript types, and the response checks in the API integration tests.
-# Source of truth: api/*.yaml, backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts (bundleContract, openApiGenerate, compileJava/compileKotlin dependsOn,
-#   Test systemProperty openapi.spec), backend/build-logic/src/main/kotlin/ai/helper2/buildlogic/SpringContract.kt,
+# Source of truth: api/*.yaml, backend/build-logic/src/main/kotlin/searchavo.spring-app.gradle.kts (bundleContract, openApiGenerate, compileJava/compileKotlin dependsOn,
+#   Test systemProperty openapi.spec), backend/build-logic/src/main/kotlin/ai/searchavo/buildlogic/SpringContract.kt,
 #   BundleContract.kt (bundle, generation), backend/libs/core/build.gradle.kts, frontend/package.json (gen:api, prebuild, pretypecheck, prelint, pretest),
-#   backend/apps/public/src/test/java/ai/helper2/api/ContractValidator.java, GuideApiIT.java,
-#   backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java.
+#   backend/apps/public/src/test/java/ai/searchavo/api/ContractValidator.java, GuideApiIT.java,
+#   backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideStreamController.java.
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0003-contract-first-rest-api.d2 && d2 flow-0003-contract-first-rest-api.d2 flow-0003-contract-first-rest-api.svg
 
 ...@style
@@ -17,12 +17,12 @@ backend: Backend (Gradle) {
   class: group
   direction: down
   shared: "libs/core: openApiGenerate\non common.yaml alone, once" {class: app}
-  stypes: "ai.helper2.api.common (SearchApi …)\nai.helper2.api.common.model (*Dto)" {class: data}
+  stypes: "ai.searchavo.api.common (SearchApi …)\nai.searchavo.api.common.model (*Dto)" {class: data}
   bundle: "bundleContract (each app): one file,\none meaning per name?" {class: decision}
   e_bundle: "Build stops:\nsame name, two meanings" {class: fail}
   files: "contract.yaml: the whole contract (tests)\ngeneration.yaml: without the\npaths of common.yaml" {class: data}
   gen: "openApiGenerate on generation.yaml\n(spring, interfaceOnly, useSpringBoot4,\nuseJackson3, useTags); every schema\nof common.yaml mapped to its\nlibrary class, nested ones included" {class: app}
-  types: "The app's own types: ai.helper2.api.generated,\nai.helper2.api.generated.model (*Dto)" {class: data}
+  types: "The app's own types: ai.searchavo.api.generated,\nai.searchavo.api.generated.model (*Dto)" {class: data}
   compile: "compileJava / compileKotlin:\ncontrollers implement the interfaces?" {class: decision}
   e_compile: "Compile error\n(same pull request)" {class: fail}
   shared -> stypes

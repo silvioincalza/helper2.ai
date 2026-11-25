@@ -17,7 +17,7 @@ import { TableSkeleton } from '@/ui/Skeleton';
 import { CHECK_OUTCOMES, CHECK_TONE, oneOf, PATHS, SHOWN_PER_PATH } from './adminModel';
 import { EXPECTED_MAX } from './limits';
 
-const COMMAND = 'helper2 examples';
+const COMMAND = 'searchavo examples';
 
 interface Expected {
   id: string;

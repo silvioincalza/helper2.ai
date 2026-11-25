@@ -1,6 +1,6 @@
 # Sequence: Google checks the site; a visitor in Europe opens Home, searches, then opens a resource, with AdSense on (ADR 0042):
 #   the publisher and an ad unit set, and the back office switch "Google ads" true.
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/monetisation/CurrentMonetisation.java (ads switch
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/site/monetisation/CurrentMonetisation.java (ads switch
 #   true; read on every request), site/pages/internal/PageHtml.java, site/pages/web/CrawlerFiles.java,
 #   site/csp/CspHeaderWriter.java, frontend/src/lib/googleConsent.ts, features/monetisation/AnalyticsConsent.tsx,
 #   features/monetisation/AdSenseSlot.tsx, features/search/Results.tsx.
@@ -12,7 +12,7 @@ shape: sequence_diagram
 
 google: "Google AdSense\ncrawler" {class: person}
 person: "Visitor\n(browser)" {class: person}
-api: "helper2 public app\n(site, identity)" {class: app}
+api: "searchavo public app\n(site, identity)" {class: app}
 fc: "Google consent tool" {class: data}
 ads: "Google AdSense" {class: data}
 

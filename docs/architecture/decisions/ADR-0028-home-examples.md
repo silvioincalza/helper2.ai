@@ -32,7 +32,7 @@ same for every visitor.
    `PASS`, 4 to 10 `WEAK`, beyond `FAIL`; only `PASS` is shown. A degraded search (a source we asked did not answer,
    or the index was down) keeps the last result. A result is stored only if the example's search is still the one
    checked. The check runs on one replica at a time (cluster lock): `PENDING` examples every 5 minutes, every example
-   each night (`H2_EXAMPLES_*`). It is the same rule as the eval group `home-example` (ADR 0046), so a ranking change
+   each night (`SA_EXAMPLES_*`). It is the same rule as the eval group `home-example` (ADR 0046), so a ranking change
    that loses an example shows offline before it ships.
 3. **Admin writes go back to `PENDING`.** Adding an example, or changing what it searches (query, path, expected
    results), sends it to `PENDING`: hidden until checked. A label or status change keeps the check. A change names
@@ -57,9 +57,9 @@ same for every visitor.
    built-in list (point 4).
 
 6. **AI drafts, a person decides.** **Draft examples with AI** makes one model call (the fast Nemotron model, the
-   drafts' own daily budget `H2_EXAMPLES_DRAFT_CALLS`, 0 = off, inside the `llm-chat` circuit). The model gets public
+   drafts' own daily budget `SA_EXAMPLES_DRAFT_CALLS`, 0 = off, inside the `llm-chat` circuit). The model gets public
    facts about well-known catalog resources that no example expects yet and no waiting draft is about
-   (`H2_EXAMPLES_DRAFT_SOURCES`, curated first), and answers JSON. The prompt (`prompts/examples/draft.txt`) has a
+   (`SA_EXAMPLES_DRAFT_SOURCES`, curated first), and answers JSON. The prompt (`prompts/examples/draft.txt`) has a
    SECURITY block with the guide's data rule: text inside our tags is data, never instructions. Each resource is in a
    `<resource>` tag, its title and its description in tags of their own, with `<` and `>` masked, so third-party text
    cannot close a tag; the type and the audience are masked too and lose their quotes. The prompt asks for the label
@@ -101,10 +101,10 @@ same for every visitor.
 
 ### Code
 
-- `backend/libs/core/src/main/kotlin/ai/helper2/examples/` — `HomeExample.kt` (example, input rules), `ExampleCheck.kt` (the
+- `backend/libs/core/src/main/kotlin/ai/searchavo/examples/` — `HomeExample.kt` (example, input rules), `ExampleCheck.kt` (the
   check, `ExampleSearch`), `ExampleDrafts.kt` (drafts, `DraftRules`), `PoolCounts.kt` (shown and hidden),
   `ExamplePorts.kt`.
-- `backend/libs/core/src/main/java/ai/helper2/examples/` — `usecase/` (`ListHomeExamples`, `ListAdminHomeExamples`,
+- `backend/libs/core/src/main/java/ai/searchavo/examples/` — `usecase/` (`ListHomeExamples`, `ListAdminHomeExamples`,
   `CountHomeExamples`, `AddHomeExample`, `ChangeHomeExample`, `RemoveHomeExample`, `CheckHomeExamples`,
   `DraftHomeExamples`, `AcceptExampleDraft`, `ReadExampleDraft`), `config/` (`ExamplesProperties`,
   `ExamplesUseCaseConfiguration`: the read, both apps; `EnableExamplesBackOfficeAdapters`: the entry to the back
@@ -112,13 +112,13 @@ same for every visitor.
   office only: `JdbcHomeExamples`, `SearchExampleSearch`, `CatalogResourceTitles`, `SpringAiExampleDrafter`,
   `CatalogDraftSources`, `ReviewQueueDrafts`); the prompt
   `backend/libs/core/src/main/resources/prompts/examples/draft.txt`.
-- `backend/apps/public/src/main/java/ai/helper2/examples/web/HomeExamplesController.java` (the pool and its marker).
-- `backend/apps/backoffice/src/main/java/ai/helper2/examples/schedule/HomeExampleCheckSchedule.java`,
+- `backend/apps/public/src/main/java/ai/searchavo/examples/web/HomeExamplesController.java` (the pool and its marker).
+- `backend/apps/backoffice/src/main/java/ai/searchavo/examples/schedule/HomeExampleCheckSchedule.java`,
   `admin/web/HomeExamplesAdminController.java`, `admin/usecase/ResolveReview.java` (accepts a draft through
   `AcceptExampleDraft`), `admin/web/ReviewItemMapper.java` (the typed draft, through `ReadExampleDraft`),
   `admin/usecase/GetOverview.java` and `admin/web/OverviewController.java` (the counts on the
   overview), `catalog/usecase/ListWellKnownResources.java`.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/Search.kt` (`SearchRequest.web`), `Model.kt` (`SkipReason.WEB_NOT_ASKED`).
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/Search.kt` (`SearchRequest.web`), `Model.kt` (`SkipReason.WEB_NOT_ASKED`).
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`home_example`, the built-in pool, the `EXAMPLE_CANDIDATE` review kind).
 - `frontend/src/lib/examples.ts` — the built-in pool, the pick and the bucket rule;
   `frontend/src/features/home/HomeExamples.tsx` — the fetch with its timeout, the fallback and the AI mark;

@@ -1,5 +1,5 @@
 # Sequence: a visitor searches with analytics on (ADR 0042); a search page carries no ad.
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/monetisation/web/SiteController.java,
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/site/monetisation/web/SiteController.java,
 #   site/csp/ContentSecurityPolicy.java, frontend/src/context/MonetisationContext.tsx,
 #   features/monetisation/AnalyticsConsent.tsx, lib/analytics.ts.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0042-monetisation.d2 && d2 sequence-0042-monetisation.d2 sequence-0042-monetisation.svg
@@ -9,7 +9,7 @@
 shape: sequence_diagram
 
 person: "Visitor\n(browser)" {class: person}
-api: "helper2 public app\n(site)" {class: app}
+api: "searchavo public app\n(site)" {class: app}
 google: "Google Analytics" {class: data}
 
 open: "First visit" {
@@ -22,7 +22,7 @@ open: "First visit" {
 
 consent: "Accept" {
   person -> person: "h2.consent = yes, date"
-  person -> google: "gtag.js, then page_view:\nhttps://helper2.ai/search, \"Search\"" {class: hot}
+  person -> google: "gtag.js, then page_view:\nhttps://searchavo.ai/search, \"Search\"" {class: hot}
 }
 
 search: "Search" {

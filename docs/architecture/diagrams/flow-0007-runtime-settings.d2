@@ -1,5 +1,5 @@
 # Flowchart: how a runtime setting is changed and applied (ADR 0007).
-# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ChangeRuntimeSetting.java, ResetRuntimeSetting.java,
+# Source of truth: backend/apps/backoffice/src/main/java/ai/searchavo/admin/usecase/ChangeRuntimeSetting.java, ResetRuntimeSetting.java,
 #   admin/web/RuntimeSettingsController.java, admin/config/SettingsReloadAfterCommit.java,
 #   platform/settings/RuntimeSetting.java, RuntimeSettings.java,
 #   JdbcRuntimeSettingStore.java, RuntimeSettingsConfiguration.java, platform/llm/DailyBudget.java,
@@ -63,7 +63,7 @@ use: "Hot path (guide, translation, Tavily, enrichment)" {
   direction: down
   limit: "Supplier: override in snapshot?" {class: decision}
   override: "Override" {class: end}
-  default: "H2_ default\n(an empty cap: the code max)" {class: end}
+  default: "SA_ default\n(an empty cap: the code max)" {class: end}
   limit -> override: yes
   limit -> default: no
 }

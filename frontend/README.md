@@ -1,4 +1,4 @@
-# Helper2.ai frontend
+# Searchavo.ai frontend
 
 Vite + React 19 + TypeScript 6 (strict) + React Router 8 (data mode, `createBrowserRouter`), SPA.
 Hand-written CSS with design tokens (`src/styles/tokens.css`). i18n: i18next (English).

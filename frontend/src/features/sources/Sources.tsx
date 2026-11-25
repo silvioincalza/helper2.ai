@@ -80,7 +80,7 @@ export function Sources() {
           <h2 id="all-h" ref={focusRef} tabIndex={-1}>
             {t('sources.all')}
           </h2>
-          <TermCommand command="helper2 sources --all" total={list ? all.length : null} />
+          <TermCommand command="searchavo sources --all" total={list ? all.length : null} />
         </div>
         {q.loading && !list && <TableSkeleton rows={8} />}
         {!q.loading && q.error !== undefined && !list && (

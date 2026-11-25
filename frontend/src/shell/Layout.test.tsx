@@ -126,7 +126,7 @@ describe('layout', () => {
     expect(footer).toHaveTextContent(`© ${new Date().getFullYear()} Silvio Incalza`);
     const repo = within(footer).getByRole('link', { name: /GitHub/ });
     expect(repo).toHaveAttribute('href', 'https://github.com/silvioincalza/helper2.ai');
-    expect(repo).toHaveAccessibleName('Source code of helper2.ai on GitHub (opens in a new tab)');
+    expect(repo).toHaveAccessibleName('Source code of searchavo.ai on GitHub (opens in a new tab)');
     const license = within(footer).getByRole('link', { name: /Apache-2.0/ });
     expect(license).toHaveAttribute(
       'href',
@@ -218,7 +218,7 @@ describe('layout', () => {
     await userEvent.tab();
     expect(screen.getByRole('button', { name: 'Accept' })).toHaveFocus();
     await userEvent.tab();
-    expect(screen.getAllByRole('link', { name: 'helper2.ai home' })[0]).toHaveFocus();
+    expect(screen.getAllByRole('link', { name: 'searchavo.ai home' })[0]).toHaveFocus();
     await settle();
   });
 

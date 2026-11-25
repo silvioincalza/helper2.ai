@@ -22,7 +22,7 @@ Two kinds of source need more care:
   more than any other source: a post has an author, and the author's name is in the title and in the URL.
 - **Events.** The home page lists the next AI events: research conferences, industry events and community events
   (hackathons, meetups, talks, workshops). A wrong date is worse than no date: a visitor may plan a trip around it.
-  Event dates are days in the future, not instants in the past. Helper2 never invents a date
+  Event dates are days in the future, not instants in the past. Searchavo never invents a date
   ([0004](ADR-0004-persistence-and-the-schema.md)). Search results mention many events but rarely
   state their days in a form code can read.
 
@@ -32,11 +32,11 @@ Two kinds of source need more care:
    sources module: `sources.<provider>.scout` next to a library provider (`github`, `huggingface`, `tavily`), and
    `sources.mcp`, `sources.aideadlines`, `sources.events`. All use `RunInterval`, the shared HTTP clients
    ([0006](ADR-0006-outbound-calls-and-resilience.md)) and the item limit of the run (`max-items-per-run`,
-   1000). Each collector's settings bind from `helper2.scout.<collector>` to a validated record
+   1000). Each collector's settings bind from `searchavo.scout.<collector>` to a validated record
    (`CollectorProperties`): an invalid value stops startup. A collector returns hits, which the runner indexes, and
    candidates, which the runner sends to the review list ([0011](ADR-0011-scout-runner.md)). No collector calls another
    module itself.
-2. **Official MCP Registry** (`mcp-registry`, every `H2_SCOUT_MCP_INTERVAL`, 1 h, as the registry asks of
+2. **Official MCP Registry** (`mcp-registry`, every `SA_SCOUT_MCP_INTERVAL`, 1 h, as the registry asks of
    aggregators). `GET /v0.1/servers?limit=100&updated_since=<checkpoint>&cursor=…`, only entries marked latest, up to
    100 pages. Link: the repository, else the website, else the registry entry. A server published from a
    sub-folder of a repository (`repository.subfolder`) is linked at that folder (`/tree/HEAD/{folder}`), so the
@@ -58,12 +58,12 @@ Two kinds of source need more care:
    `stabilityai`, `black-forest-labs`, `Lightricks`, `Wan-AI`, `kyutai`. The org is a tag. An org that fails is
    logged and skipped; the others' models are kept, and the checkpoint stays so the next run asks again. The pass fails
    only when every org fails.
-5. **Tavily news** (`live-web-scout`, every `H2_SCOUT_LIVE_WEB_INTERVAL`, 5 days). 7 fixed news queries ("new AI tool
+5. **Tavily news** (`live-web-scout`, every `SA_SCOUT_LIVE_WEB_INTERVAL`, 5 days). 7 fixed news queries ("new AI tool
    launched", "new MCP server released" …), `search_depth basic`, up to 20 results each, published since the day of the
    last complete pass (the last week on the first). One credit a query: about 42 credits a month, counted on the Scout's
    daily cap like every other live web collector (point 18, feature `scout-news`). Stored as NEWS,
-   ARTICLE or EVENT with Tavily's excerpt as description. Off without `H2_LIVE_WEB_API_KEY`.
-6. **GitHub awesome lists** (`github-awesome`, 1 day). Off without `H2_GITHUB_TOKEN` (GraphQL refuses anonymous calls).
+   ARTICLE or EVENT with Tavily's excerpt as description. Off without `SA_LIVE_WEB_API_KEY`.
+6. **GitHub awesome lists** (`github-awesome`, 1 day). Off without `SA_GITHUB_TOKEN` (GraphQL refuses anonymous calls).
    - A topic search with 6 topic pairs; only repositories named "awesome…" with at least 1000 stars; the top 10 lists.
      The lists they link to are read too ([0013](ADR-0013-discovery.md), deep search).
    - **Lists an administrator adds.** On `/admin/settings`, "Lists to read": a GitHub repository, as `owner/name` or
@@ -73,7 +73,7 @@ Two kinds of source need more care:
      budget goes to them first. The star floor, the name rule and the AI words do not apply to an added list: a
      person chose it. Its facts come from `GET /repos/{owner}/{repo}`; a list the search also found costs no extra
      call. An archived list and one GitHub does not find are skipped
-     (`helper2.scout.awesome.skips{reason="added-archived"|"added-unavailable"}`) and stay added; a renamed one is
+     (`searchavo.scout.awesome.skips{reason="added-archived"|"added-unavailable"}`) and stay added; a renamed one is
      read under its new name. From there an added list is a seed like the others: its nested lists, its entries, its
      links and its type follow the same rules. Removing it stops the reading; the list and what was found in it stay
      in the catalog. API: `GET` and `POST /api/v1/admin/list-seeds`, `POST /api/v1/admin/list-seeds/{id}/remove`,
@@ -102,22 +102,22 @@ Two kinds of source need more care:
        record. It has no switch of its own: it is on when `github-awesome` is on. Its type is `AWESOME_LIST` when it passes the counts of the README rule
        below (`AwesomeLists.readsAsList`: at least 20 linked items that are at least half of the text lines), and
        ARTICLE otherwise. The name part of the rule does not apply: a person added the page.
-     - **One read in `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`** (7 days; at least 1 day). `list_seed.read_tried_at` holds the last try,
+     - **One read in `SA_SCOUT_AWESOME_WEB_PAGES_EVERY`** (7 days; at least 1 day). `list_seed.read_tried_at` holds the last try,
        whatever its result, and `list_seed.read_failures` the tries in a row that gave no list. A try that gives
        no list (no text, another host, the reader down, a stop in the middle) is tried again after
-       `H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER` (1 hour, so at the next pass, at most `every`); after 3 such tries
+       `SA_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER` (1 hour, so at the next pass, at most `every`); after 3 such tries
        in a row the page waits the full `every`. A read that gives a list sets the count back to 0. Between two
        reads each pass uses what the last read gave, kept in `list_seed_last_read` (one row per added web page,
        replaced at each read that gives a list, deleted with its list): the headings, the entries, the links and
        the two counts of the list rule, never the page text. A restart changes nothing; nothing of a page is
        withdrawn.
      - **Each read is one live web credit** on the Scout's daily cap (`ScoutLiveWebCredits`,
-       `helper2.live-web.credits{feature="scout-list-pages"}`), a failed read too. Past the cap, without a page
+       `searchavo.live-web.credits{feature="scout-list-pages"}`), a failed read too. Past the cap, without a page
        reader, or when the pass has spent its time or size budget, the page waits for the next pass
-       (`helper2.scout.awesome.skips{reason="page-credit-cap"|"page-reader-off"|"time-budget"|"size-budget"}`);
+       (`searchavo.scout.awesome.skips{reason="page-credit-cap"|"page-reader-off"|"time-budget"|"size-budget"}`);
        its `read_tried_at` does not change and nothing is withdrawn. The pages tried longest ago are read first.
-     - **Hosts never read.** `helper2.scout.github-awesome.web-pages.never-read`
-       (`H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ`): entries `host=reason`, default `coursera.org` (its terms forbid
+     - **Hosts never read.** `searchavo.scout.github-awesome.web-pages.never-read`
+       (`SA_SCOUT_AWESOME_WEB_PAGES_NEVER_READ`): entries `host=reason`, default `coursera.org` (its terms forbid
        automated reading without written consent). A subdomain matches. A page on such a host is refused when it is
        added (400 with the host and the reason, nothing written) and again before every read
        (`skips{reason="page-never-read"}`), so a host added to the setting later stops the pages already added.
@@ -131,19 +131,19 @@ Two kinds of source need more care:
      platform (point 7) to review as a `COURSE_CANDIDATE`; any other link to review as a `RESOURCE_CANDIDATE`.
      Nothing a source cannot confirm is indexed without a person.
    - Each README (up to 5 MB) is parsed into linked repositories (`AwesomeListParser`): at most 1000 per pass and
-     `H2_SCOUT_AWESOME_PER_RUN` (1000) per run, so a pass ends in one daily run; a pass cut short by
+     `SA_SCOUT_AWESOME_PER_RUN` (1000) per run, so a pass ends in one daily run; a pass cut short by
      `max-items-per-run` resumes after the last repository name it handled (entries sorted by name), so a list that
      changed between runs cannot make the pass skip or repeat entries. A repository GitHub does not find, an archived
      one and the old name of a renamed one are withdrawn ([0011](ADR-0011-scout-runner.md) §4).
    - Facts come through GraphQL, 50 repositories a call. A repository under 50 stars is not collected: that is the
      collection scope (`min-repo-stars`). The collector states `archived` and `fork` on each hit and drops neither
      itself: the vitality rule of the Scout decides ([0020](ADR-0020-resource-vitality.md)). An archived
-     repository is refused and counted in `helper2.source.items.dropped{reason="archived"}`; a fork with stars or a
+     repository is refused and counted in `searchavo.source.items.dropped{reason="archived"}`; a fork with stars or a
      recent push is indexed.
    - **The classifier.** The fast model (`SpringAiRepoClassifier`, `prompts/sources/classify-repos.txt`, thinking off)
      answers `ai` true or false and one allowed type, in batches of 25. The schema is in the prompt, not sent as
-     `response_format`. Its own daily cap `H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS` (300), gauge
-     `helper2.scout.classifier.budget.remaining`; calls are timed and their tokens counted with step `classify`. An id
+     `response_format`. Its own daily cap `SA_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS` (300), gauge
+     `searchavo.scout.classifier.budget.remaining`; calls are timed and their tokens counted with step `classify`. An id
      the model did not answer (error, spent budget, missing id), and every id in a run without a model, goes to
      keyword rules (`RepoClassifier.Heuristic`). The allowed types include `AWESOME_LIST`: a linked repository whose
      description calls it a curated list of AI links is `ai` true, type `AWESOME_LIST`; the name alone is not enough.
@@ -188,20 +188,20 @@ Two kinds of source need more care:
    - Enrichment proposes a type only for a resource typed OTHER ([0014](ADR-0014-evidence-gated-enrichment.md) §4); its
      excerpt states `AWESOME_LIST` with "awesome list", "curated list of" or "a list of awesome". A mis-typed list
      (LIBRARY, MCP_SERVER…) is fixed by the rule and the backfill, a new one by the collector.
-7. **Courses** (`course-scout`, every `H2_SCOUT_COURSES_INTERVAL`, 7 days; [0031](ADR-0031-guide-pipeline.md)).
-   One Tavily search per learning platform (`helper2.scout.courses.platforms`, 10 platforms), restricted to its domain
+7. **Courses** (`course-scout`, every `SA_SCOUT_COURSES_INTERVAL`, 7 days; [0031](ADR-0031-guide-pipeline.md)).
+   One Tavily search per learning platform (`searchavo.scout.courses.platforms`, 10 platforms), restricted to its domain
    with `include_domains`, `search_depth basic`, published since the last complete pass (the last month on the first).
    One credit per platform and pass, about 43 credits a month, counted on the Scout's daily cap (point 18, feature
    `scout-courses`). A result is kept only when it is on the platform's host
    and path, about AI, and reads like a course or certification page. Kept pages are **candidates**, not hits: each
    becomes a `COURSE_CANDIDATE` review item, and nothing reaches the catalog until an admin accepts it. Off without
-   `H2_LIVE_WEB_API_KEY`. The rule that says a page is a course is in one place, `CoursePages`: the awesome-list
+   `SA_LIVE_WEB_API_KEY`. The rule that says a page is a course is in one place, `CoursePages`: the awesome-list
    collector asks it for the links of its lists (point 6).
 8. **ai-deadlines** (`ai-deadlines`, 1 day). One GitHub contents call lists the conference YAML files of
    `huggingface/ai-deadlines` (MIT). Each file is read only from `raw.githubusercontent.com`, without the GitHub token
    and without following redirects (`HttpClients.getWithoutRedirect`): a redirect fails the file.
    One EVENT per conference: its next edition (point 22). A file that cannot be read or parsed, or whose download URL
-   is on another host, is logged, skipped and counted in `helper2.source.items.dropped{source=ai-deadlines, reason}`
+   is on another host, is logged, skipped and counted in `searchavo.source.items.dropped{source=ai-deadlines, reason}`
    (the exception type, or `ForeignDownloadUrl`). A conference with no upcoming edition is not counted. When the
    circuit breaker refuses a file, the pass ends there: the run fails and the next run tries again.
 8a. **confs.tech** (`confs-tech`, 1 day). The crowd-sourced conference list of confs.tech,
@@ -213,18 +213,18 @@ Two kinds of source need more care:
    the AI check (`Classification.isAiRelated`) and it has not ended; a conference listed under several topics is kept
    once, by canonical URL. Its days, city and country are the file's own (DAY precision); `online` with a city is
    HYBRID, without one ONLINE. A year with no folder yet gives nothing; an unreadable file is logged, skipped and
-   counted in `helper2.source.items.dropped{source=confs-tech, reason}`.
+   counted in `searchavo.source.items.dropped{source=confs-tech, reason}`.
 9. **Tavily discovery** (`discovery-<category>`): one collector per category of the AI world, 34 categories in 7
    families, list pages indexed, products reviewed ([0013](ADR-0013-discovery.md)).
 
 ### LinkedIn
 10. **The collector `linkedin-scout`** (`LinkedInCollector`, "LinkedIn" in the product). We never call LinkedIn. One
-    Tavily search per fixed query, every 7 days (`H2_SCOUT_LINKEDIN_INTERVAL`), with
+    Tavily search per fixed query, every 7 days (`SA_SCOUT_LINKEDIN_INTERVAL`), with
     `include_domains: ["linkedin.com"]`, `topic: general`, `search_depth: basic` (1 credit), `max_results: 10`,
     `include_usage`; no raw content, no images, no answer; only new pages: `start_date` = the previous complete pass,
     or `time_range: month` on the first. It is built as the discovery collectors are ([0013](ADR-0013-discovery.md)): a
     skipped pass says why ("Not due yet: next pass on …", or the credit cap). The 20 queries are config
-    (`helper2.scout.linkedin.queries`): launches of models, tools and MCP servers, company announcements, events.
+    (`searchavo.scout.linkedin.queries`): launches of models, tools and MCP servers, company announcements, events.
 11. **The URL path decides what a page is** (code, no model). The query string is tracking and is dropped.
 
     | Path | Becomes | Review label |
@@ -267,8 +267,8 @@ Two kinds of source need more care:
     the same rules.
 18. **Credits are counted and capped with discovery's.** Every search adds its credits (Tavily's `usage.credits`, or
     1) to the day's global credit counter and to the Scout's own counter (`ScoutLiveWebCredits`,
-    [0013](ADR-0013-discovery.md) §10), with the metric `helper2.live-web.credits{feature="scout-linkedin"}`. Past the
-    Scout's daily cap (`H2_SCOUT_DAILY_CREDITS`, shared with the discovery categories) the pass is left open
+    [0013](ADR-0013-discovery.md) §10), with the metric `searchavo.live-web.credits{feature="scout-linkedin"}`. Past the
+    Scout's daily cap (`SA_SCOUT_DAILY_CREDITS`, shared with the discovery categories) the pass is left open
     ("Daily live web credit cap of the Scout reached") and tried again the next day. The same holds for the news
     (`scout-news`), the courses (`scout-courses`) and the events: no live web collector of the Scout spends a credit
     outside the cap. News and courses stopped by the cap between two searches keep what they found and leave the pass
@@ -278,7 +278,7 @@ Two kinds of source need more care:
     and the courses (10) both run, discovery has 23 of the 40 left and finishes its categories the day after.
 19. **Retention and titles.** `linkedin-scout` is a web source (`WebSources`, [0013](ADR-0013-discovery.md) §12): its titles
     are cleaned as page titles, and its NEWS and ARTICLE records go with the web retention.
-20. **Alert.** `Helper2ScoutCollectorStale` fires when `linkedin-scout` has had no success for its run interval plus a
+20. **Alert.** `SearchavoScoutCollectorStale` fires when `linkedin-scout` has had no success for its run interval plus a
     day (8 days at the default 7), as for every collector ([0009](ADR-0009-observability.md)).
 
 ### Events
@@ -343,20 +343,20 @@ Two kinds of source need more care:
     never listed.
 26. **The live web events scout** (`live-web-events-scout`, "Upcoming AI events"): a model reads an event page's days,
     and code checks them against the page.
-    - Weekly (`H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL`, P7D). One Tavily search per query (`general`, `basic`, 10 results):
+    - Weekly (`SA_SCOUT_LIVE_WEB_EVENTS_INTERVAL`, P7D). One Tavily search per query (`general`, `basic`, 10 results):
       upcoming AI hackathons, meetups and talks, conferences and summits, workshops. A result is kept when it is about
       AI and its link passes the Scout's host check (`PageScope.plainUrlProblem`, which is `WebAddresses`). At most 20 pages a pass
-      (`H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES`).
-    - **On by default, one switch.** `H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_ENABLED` is true; `false` switches it off.
-      It runs only with `H2_LIVE_WEB_API_KEY` and an AI model. Tavily's written OK for scheduled searches whose
+      (`SA_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES`).
+    - **On by default, one switch.** `SA_SOURCE_LIVE_WEB_EVENTS_SCOUT_ENABLED` is true; `false` switches it off.
+      It runs only with `SA_LIVE_WEB_API_KEY` and an AI model. Tavily's written OK for scheduled searches whose
       pages we list is still to confirm (as for discovery and LinkedIn).
     - **The page is read with Tavily Extract** (basic, markdown, 4 pages a call). Search and Extract credits count on
-      the Scout's daily cap (`H2_SCOUT_DAILY_CREDITS`, [0013](ADR-0013-discovery.md) §10). The cap is checked before the
+      the Scout's daily cap (`SA_SCOUT_DAILY_CREDITS`, [0013](ADR-0013-discovery.md) §10). The cap is checked before the
       pass and before each Extract call; past it the pass keeps what it read, and its queries are not marked done:
       the pages left unread are found and read on the next run (their searches are paid again).
     - **Undated catalog events are read too.** Each pass also reads the page of every catalog EVENT with no start
       day first discovered since the last pass (the first pass: the last 30 days), oldest first
-      (`Resources.undatedEvents`), with its own budget of `H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES` pages next to the
+      (`Resources.undatedEvents`), with its own budget of `SA_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES` pages next to the
       search pages. A full batch keeps the pass open: the cursor holds the last event read
       (`catalog:undated-events@<discovered at>/<id>`), and the next call reads on from there. The pass is complete
       only when the searches are done and a batch comes back short. Such a page goes through the same reader and gate;
@@ -377,7 +377,7 @@ Two kinds of source need more care:
       untrusted data: the title is flattened, cut to 200 characters and escaped (`UntrustedText`), the page is cut to
       12,000 characters and cannot close its block, and the prompt says to ignore instructions in both. The prompt
       states the rules `EventQuoteGate` applies (point 27), so the model gives the days the page states. The
-      prompt's version is a hash of its rendered text. One call per page, at most `H2_SCOUT_EVENT_READER_DAILY_CALLS`
+      prompt's version is a hash of its rendered text. One call per page, at most `SA_SCOUT_EVENT_READER_DAILY_CALLS`
       (40) a UTC day, inside the `llm-chat` circuit. When no model can be called (cap, circuit), the pass keeps what
       it read and stays open, so the next Scout run tries again.
 27. **Code decides, not the model** (`EventQuoteGate`). An event is kept only when:
@@ -414,7 +414,7 @@ Two kinds of source need more care:
 the fields it asserts ([0038](ADR-0038-back-office-and-review.md)).
 
 ### Code
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/` — the collectors: `mcp/McpRegistryCollector.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/` — the collectors: `mcp/McpRegistryCollector.java`,
   `huggingface/scout/HuggingFaceTrendingCollector.java`, `HuggingFaceProviderOrgsCollector.java`,
   `tavily/scout/LiveWebNewsCollector.java`, `CourseCollector.java`, `LinkedInCollector.java`, `LiveWebEventsCollector.java`,
   `ScoutLiveWebCredits.java`, `ScoutLiveWebSearch.java`, `QueryProgress.java`,
@@ -422,28 +422,28 @@ the fields it asserts ([0038](ADR-0038-back-office-and-review.md)).
   `GitHubReadmeReader.java`, `WebPageReader.java`, `WebPageLists.java`,
   `aideadlines/AiDeadlinesCollector.java` (`nextEdition`, `toHit`); `classifier/RepoClassifier.java`,
   `SpringAiRepoClassifier.java`; `config/scout/CollectorsConfiguration.java` (beans).
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/events/EventQuoteGate.java`, `QuotedDays.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/events/EventQuoteGate.java`, `QuotedDays.java`,
   `PageText.java`, `EventReading.java`, `EventReader.java`, `SpringAiEventReader.java`;
   `backend/apps/backoffice/src/main/resources/prompts/sources/read-event.txt`, `classify-repos.txt`.
-- `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorProperties.java` — each collector's validated
+- `backend/libs/core/src/main/java/ai/searchavo/sources/config/CollectorProperties.java` — each collector's validated
   settings; `support/RunInterval.java`, `support/HttpClients.java` — shared by every collector.
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt` — the type check per
-  finder; `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java` reads the finders.
-- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/WebSources.kt` — `FIXED`, `EVENTS_SCOUT`,
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/IndexAcceptedCandidate.kt` — the type check per
+  finder; `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/ResourceCandidateJson.java` reads the finders.
+- `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/WebSources.kt` — `FIXED`, `EVENTS_SCOUT`,
   `eventDaysReadByAi`; `DateFact.kt` — `scheduledDay`; `Vocabulary.kt` — `EventKind`, `EventFormat`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/ProjectedReconciliation.java` — the stored event days;
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/ProjectedReconciliation.java` — the stored event days;
   `JdbcResources.java` — `upcomingEvents`; `catalog/usecase/ListUpcomingEvents.java`,
   `catalog/web/HomeListsController.java` — `listUpcomingEvents`.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — `eventSources`, `statedFirst`;
-  `backend/libs/core/src/main/java/ai/helper2/search/web/CardMapper.java` — `eventOrigin`;
-  `backend/apps/public/src/main/java/ai/helper2/site/pages/usecase/RenderPage.java` — `view`: AI-read days off server pages.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/ResultMerger.kt` — `eventSources`, `statedFirst`;
+  `backend/libs/core/src/main/java/ai/searchavo/search/web/CardMapper.java` — `eventOrigin`;
+  `backend/apps/public/src/main/java/ai/searchavo/site/pages/usecase/RenderPage.java` — `view`: AI-read days off server pages.
 - `scripts/industry-events-seed.mjs`, `scripts/industry-events-seed.test.mjs`,
   `scripts/industry-events-2026-11-12.json`,
   `backend/libs/schema/src/main/resources/db/migration/R__industry_events.sql`.
 - `frontend/src/features/home/HomeLists.tsx`, `TermList.tsx`, `frontend/src/features/feeds/feeds.ts`, `feedCells.tsx`, `EventsPage.tsx`,
   `frontend/src/features/resource/DateTimeline.tsx`, `DateFactView.tsx` — the AI label.
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml`, `backend/apps/backoffice/src/main/resources/application.yaml` — `helper2.scout.*`, `helper2.sources.*`;
-  `deploy/monitoring/helper2-rules.yaml` — `Helper2ScoutCollectorStale`, `Helper2LiveWebCreditsHigh`.
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml`, `backend/apps/backoffice/src/main/resources/application.yaml` — `searchavo.scout.*`, `searchavo.sources.*`;
+  `deploy/monitoring/searchavo-rules.yaml` — `SearchavoScoutCollectorStale`, `SearchavoLiveWebCreditsHigh`.
 - Tests: `LinkedInCollectorTest`, `LiveWebEventsCollectorTest`, `EventQuoteGateTest`, `QuotedDaysTest`,
   `SpringAiEventReaderTest`, `IndexAcceptedCandidateTest`, `ResourceCandidateJsonTest`, `SourcesPropertiesBindingTest`,
   `CatalogPurgeExpiredDataIT`, the rule tests.
@@ -489,7 +489,7 @@ the fields it asserts ([0038](ADR-0038-back-office-and-review.md)).
   research file: their curated assertions, evidence and source record, and the resource when no other record points
   to it.
 - Retention ([0010](ADR-0010-data-retention.md)): LinkedIn articles and posts are deleted 180 days after
-  `retrieved_at` (`H2_RETENTION_WEB_NEWS`), like other web news; an accepted company page stays as long as it is
+  `retrieved_at` (`SA_RETENTION_WEB_NEWS`), like other web news; an accepted company page stays as long as it is
   listed; events are deleted ten years after they end (`past-events`), with their quote, curated ones included; a
   review item stays until it is decided, then 180 days.
 - The Privacy page names LinkedIn pages as a source of public data, says that titles and excerpts can name people,

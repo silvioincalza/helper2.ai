@@ -12,7 +12,7 @@
 
 The box, the URL state and the guide stream are in [0039](ADR-0039-frontend-one-box-state-in-the-url.md). This record decides the pages
 around them and the rules every page follows. What matters for a user:
-- Everyone must understand at once what helper2.ai helps with.
+- Everyone must understand at once what searchavo.ai helps with.
 - The guide answer arrives after several seconds. Results are ready much sooner, and the user starts reading them.
   Anything that moves the list at that moment makes them lose their place.
 - On a phone, the home lists and the results must not compete for the same narrow column.
@@ -38,7 +38,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
 2. **Seven breakpoints.** 420, 520, 720, 768, 860, 920 and 1100 px. A media query is "up to W" (`max-width: W`),
    "above W" (`min-width: W + 1px`) or "from W" (`min-width: W`). What changes at each is in the design system README.
 3. **Two fonts with clear jobs.** Geist Mono shows what a machine says: the logo, meta lines, counts, dates, types,
-   `$ helper2` commands, key hints and table cells. Geist is for what a person reads or presses: running text, titles,
+   `$ searchavo` commands, key hints and table cells. Geist is for what a person reads or presses: running text, titles,
    headings, buttons, chips, tabs, links and fields; a name in a table is a title, so it is Geist too. Both are the
    variable fonts from `@fontsource-variable/geist` and `@fontsource-variable/geist-mono` (SIL Open Font License),
    bundled by Vite and served from our own origin: no third-party request, and the CSP stays `font-src 'self'`. One
@@ -54,7 +54,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
    The footer: the logo, one row of links (Mission, Sources, Privacy, Terms, GitHub ↗, the licence ↗, the release ↗,
    the theme switch), a second row "Browse by type" with the ten hub pages ([0052](ADR-0052-hub-pages-per-resource-type.md)),
    then one line: what is searched, who and where. It makes no claim about ads ([0042](ADR-0042-monetisation.md)).
-6. **Home: the title, the radar, a pinned search box, two lists.** The title is one `h1` on two lines: "helper2.ai",
+6. **Home: the title, the radar, a pinned search box, two lists.** The title is one `h1` on two lines: "searchavo.ai",
    then "The metasearch for the AI ecosystem.", with one line under it. Behind it rises a radar that works like a
    navigation radar: a half dome from the bottom middle of the title block, range rings, dotted bearing lines every
    30°, ticks every 5° on the outer ring of the arc it shows, a glowing origin, and a sweep that turns once every 5 s: a bright leading
@@ -92,14 +92,14 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
 
    The box, its hint, the "Try:" examples and the legend stay pinned under the header while the page scrolls; once
    pinned, the hint, the examples and the legend fold away. Up to 720 px the title and the radar fold away after
-   24 px of scroll and open again at the top. **What helper2 does** follows the lists as a quiet strip of three steps.
+   24 px of scroll and open again at the top. **What searchavo does** follows the lists as a quiet strip of three steps.
 7. **New in the catalog and Coming up: one list component** (`TermList`). A terminal style without terminal windows: a
-   `$ helper2 new · N` line (N = `total` from the API) and log rows with dashed rules: the date and `[type]` in a fixed
+   `$ searchavo new · N` line (N = `total` from the API) and log rows with dashed rules: the date and `[type]` in a fixed
    monospace column, the title with its source, or when and where, under it. Above 768 px the two lists side by side
    (stacked up to 920 px), a running event "on now". Up to 768 px one panel with two tabs, `> new in the catalog N |
    coming up N` (real tabs: `role="tab"`, arrow keys, Home, End), and the same log rows. (Changed on 23 Nov 2026: the
    wide screen had two `ls -l` tables; the log rows read faster and phones and wide screens now share one row.) New in the catalog is tools and research from our own index (`GET /recent`, the last 7 days); Coming up asks
-   `GET /events/upcoming?days=90`. Six rows show; `$ helper2 new --all · show all N` opens the rest in place, and
+   `GET /events/upcoming?days=90`. Six rows show; `$ searchavo new --all · show all N` opens the rest in place, and
    Coming up ends with **All events ›**, to the Events page. While a list scrolls by, its head stays under the pinned
    box until the list ends. Loading, empty and error (with Retry) are the same in both.
 8. **The lists move like a news ticker** (`features/home/ticker.ts`). When a list has more rows than it shows, one
@@ -116,7 +116,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
     shows the same page. Both say `noindex, follow`. The results view loads on demand (`HomeOrResultsPage`); the
     page's `h1`, the box and a skeleton of the list's shape are in the first download, so nothing mounts twice or
     moves while the chunk loads.
-    - **The heading.** "Results" over `$ helper2 search · N`, List / Timeline (links with `aria-current`: the view is
+    - **The heading.** "Results" over `$ searchavo search · N`, List / Timeline (links with `aria-current`: the view is
       in the URL), then Filters ("· 2 on") and the sort. Under it the type tabs: All, the four types with most results
       (two on a phone), More with the rest. Filters open in place on a wide screen and as a drawer (a modal `dialog`)
       up to 720 px, with Close and "Show N results" ("Searching…" while a filter change loads).
@@ -148,7 +148,7 @@ Events") set the font rule for every page, the ticker's hold (no Pause button) a
     history state, so a resource opened from the results shows the title, Open and Save at once while its details load.
     A pick chip does the same when its result is among the results the page holds (on the timeline); a pick that is
     not among them shows the loading line until the details arrive.
-12. **Sources, Saved and the back office in the terminal style.** Each list page has a `$ helper2 … · N` line next to
+12. **Sources, Saved and the back office in the terminal style.** Each list page has a `$ searchavo … · N` line next to
     its heading, with N from the API (`TermCommand`). Tables are `h2-table`: Geist Mono, UPPERCASE headers, dashed
     rules, names that are titles in Geist. A wide table scrolls inside its own box (`ScrollBox`, a named region a
     keyboard can reach); the page never scrolls sideways. A status is a coloured word with a glyph (✓ ! × ○); the

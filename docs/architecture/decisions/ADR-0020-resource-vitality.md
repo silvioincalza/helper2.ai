@@ -9,7 +9,7 @@
 **Requirements:** NFR-005
 
 ## Context
-Helper2.ai is a helper: a result must be something the user can use or build with today. On 11 Nov 2026 most
+Searchavo.ai is a helper: a result must be something the user can use or build with today. On 11 Nov 2026 most
 Hugging Face Spaces in the results did not run. The rules that say "this resource is alive" were in eight places,
 each with its own numbers: the GitHub query (`fork:false archived:false`), the Spaces adapter (stage and likes), the
 trending collector (20 likes), the topic leaders (3,000 stars), the SDK plan (stars per language), the awesome
@@ -28,25 +28,25 @@ the product: the next source does not get it.
      | `archived` is true | `archived` |
      | `deprecated` is true | `deprecated` |
      | `running` is false (a hosted app whose state is known) | `not-running` |
-     | `running` is true and fewer likes than `H2_SOURCE_HF_SPACES_MIN_LIKES` (3) | `too-few-likes` |
-     | `fork` is true, fewer stars than `H2_VITALITY_FORK_MIN_STARS` (10) and no update inside `H2_VITALITY_MAINTAINED_WITHIN` (1,095 days) | `idle-fork` |
+     | `running` is true and fewer likes than `SA_SOURCE_HF_SPACES_MIN_LIKES` (3) | `too-few-likes` |
+     | `fork` is true, fewer stars than `SA_VITALITY_FORK_MIN_STARS` (10) and no update inside `SA_VITALITY_MAINTAINED_WITHIN` (1,095 days) | `idle-fork` |
 
      A fork with stars, or a maintained fork, is a result: sometimes the fork is the living project.
    - **Unmaintained: a result that ranks lower.** An MCP server, library, skill or agent whose last update is
-     older than `H2_VITALITY_MAINTAINED_WITHIN`. An unknown date says nothing. A paper, news, a product or a
-     dataset is never unmaintained, and neither is a model: its weights are finished work (§8). Neither is a repository with `H2_VITALITY_ESTABLISHED_STARS` (10,000) stars or
+     older than `SA_VITALITY_MAINTAINED_WITHIN`. An unknown date says nothing. A paper, news, a product or a
+     dataset is never unmaintained, and neither is a model: its weights are finished work (§8). Neither is a repository with `SA_VITALITY_ESTABLISHED_STARS` (10,000) stars or
      more: a work that many people starred and nobody needs to change is finished, not dead.
    Few stars or few downloads refuse nothing: a new, good project has few. They already count in the popularity
    term of [0025](ADR-0025-ranking.md) §6.
 3. **The rule runs where hits come in.**
    - Live search: `SearchResources` applies it to each source's answer, before the cache and before the limit
-     (`H2_SEARCH_PER_SOURCE_LIMIT`). The admitted hits get consecutive ranks, so a refused hit does not push the
+     (`SA_SEARCH_PER_SOURCE_LIMIT`). The admitted hits get consecutive ranks, so a refused hit does not push the
      others down. A source may answer with more hits than the limit.
    - Scout: `RunScout` asks the admission rule (§11), which asks this rule first, for each hit of a collector's
      batch before the catalog, and for each candidate before the review list. A candidate states what its source says about it as `CandidateSignals` (stars, last push,
      archived, fork; each known or not). A refused candidate is not proposed: a person does not review a dead
      repository. A candidate that states nothing is proposed.
-   - Each refusal is counted in `helper2.source.items.dropped{source,reason}`.
+   - Each refusal is counted in `searchavo.source.items.dropped{source,reason}`.
 4. **Rank penalty** ([0025](ADR-0025-ranking.md)). An unmaintained result loses 0.008 (`RankingWeights.unmaintained`):
    as much as the strongest popularity, about half a first-place vote. It stays above a result that one source
    fewer found.
@@ -76,7 +76,7 @@ the product: the next source does not get it.
      takes its place, and `checkedAt` goes. A statement that says nothing of `archived` keeps the check. The visit
      follows the same rule: it does not overwrite an `archived` a source stated after it, and it keeps the other
      facts (`JdbcEnrichmentCandidates.recordArchived`).
-   - `helper2-index` and `helper2-semantic` read the stored facts of their rows in one query and state them on
+   - `searchavo-index` and `searchavo-semantic` read the stored facts of their rows in one query and state them on
      their hits; the rule of §2 then refuses an archived, deprecated or not running resource, a Space with too few
      likes and an idle fork, like any other hit. A resource of several records is archived, a fork or deprecated
      when one record states it, and running only when every record that states it says so.
@@ -84,7 +84,7 @@ the product: the next source does not get it.
      that links a famous repository would borrow its stars.
    - A repository that is no longer archived is admitted again at the next visit.
    - **The sweep visits every record, not only the ones the Scout enriches** (`SweepRepositories`). Every
-     `H2_SCOUT_REPOSITORY_SWEEP_EVERY` (10 minutes) it takes the `H2_SCOUT_REPOSITORY_SWEEP_BATCH` (50) records
+     `SA_SCOUT_REPOSITORY_SWEEP_EVERY` (10 minutes) it takes the `SA_SCOUT_REPOSITORY_SWEEP_BATCH` (50) records
      visited longest ago, never visited first (`JdbcRepositoryVisits.due`): a record that links a GitHub repository
      (`repository_url`), and a record that is one (its own address is `github.com/owner/name`). One GitHub GraphQL
      call answers for the whole batch (`GitHubRepositoryStates`); two records of one repository cost one question.
@@ -117,7 +117,7 @@ the product: the next source does not get it.
      Each "not found" also adds one to `notFoundVisits`, the visits in a row that did not find the repository,
      removed with `notFoundAt`. The sweep hands the records of a batch that were not found to `ForgetGoneLists`: a
      curated list whose repository is `gone` and was not found on
-     `H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS` (3) visits in a row no longer names its resources
+     `SA_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS` (3) visits in a row no longer names its resources
      ([0023](ADR-0023-catalog-full-text-index.md) point 17). The record of a curated web page gets the same mark
      `gone` when its site says the page is gone (0023 point 17, `JdbcGoneWebLists`): no visit of the sweep sets it,
      and the read that gives the page again states it and removes the mark.
@@ -128,7 +128,7 @@ the product: the next source does not get it.
    - A repository that gives no answer and no "not found" (blocked, or an error for that one name) gets only
      `visitedAt`, so it does not stay first in line. A rate limit or an answer without data stores nothing: the
      same records are due at the next tick.
-   - The sweep counts `helper2.scout.repository_sweep{outcome}` per record: `found`, `archived`, `not_found`,
+   - The sweep counts `searchavo.scout.repository_sweep{outcome}` per record: `found`, `archived`, `not_found`,
      `unanswered`; and `failed` once for a batch that stored nothing.
 
 8. **The numbers, measured on 11 Nov 2026.**
@@ -167,22 +167,22 @@ the product: the next source does not get it.
     in the catalog until the sweep of [S2.11.4](https://github.com/silvioincalza/helper2.ai/issues/216).
 
 11. **Admission: one rule says what the Scout indexes without a person** (`AdmissionPolicy`, package
-    `ai.helper2.scout.admission`, pure domain code). A collector states what it found; it does not decide what enters
+    `ai.searchavo.scout.admission`, pure domain code). A collector states what it found; it does not decide what enters
     the catalog. For a hit of a collector the rule gives one of three outcomes:
 
     | Outcome | When | What the Scout does |
     |---|---|---|
-    | **Refuse** (with the reason) | Only on a fact the source states: the rule asks `VitalityPolicy.refusalOf` (§2) | Not indexed, not proposed, counted in `helper2.source.items.dropped{source,reason}` |
+    | **Refuse** (with the reason) | Only on a fact the source states: the rule asks `VitalityPolicy.refusalOf` (§2) | Not indexed, not proposed, counted in `searchavo.source.items.dropped{source,reason}` |
     | **Review** (with the reason) | The hit is under the index floor of its collector | Not indexed without a person. It reaches the review list only as a candidate its collector proposes |
     | **Index** | Everything else | Indexed |
 
     - **The floors are per collector profile, in one place** (`AdmissionRules`, one `IndexFloor` per source id; the
-      numbers in `helper2.scout.admission`, record `ScoutAdmissionProperties`). A repository of a curated list needs
+      numbers in `searchavo.scout.admission`, record `ScoutAdmissionProperties`). A repository of a curated list needs
       fewer stars than a repository of a topic search, so the numbers are not per resource type.
 
       | Collector | Floor to be indexed without a person | Reason to review |
       |---|---|---|
-      | `github-topic-leaders` | `H2_SCOUT_TOPIC_LEADERS_INDEX_MIN_STARS` (1,000) stars and a push inside `H2_SCOUT_TOPIC_LEADERS_INDEX_PUSHED_WITHIN` (90 days); an unknown push date is not a push | `few-stars`, `not-active` |
+      | `github-topic-leaders` | `SA_SCOUT_TOPIC_LEADERS_INDEX_MIN_STARS` (1,000) stars and a push inside `SA_SCOUT_TOPIC_LEADERS_INDEX_PUSHED_WITHIN` (90 days); an unknown push date is not a push | `few-stars`, `not-active` |
       | `hf-trending` | 20 likes (`index-min-likes`) | `few-likes` |
       | `pypi` | a GitHub repository and a summary | `no-repository`, `no-description` |
       | `github-awesome`, for a Hugging Face model a list links ([0013](ADR-0013-discovery.md) §17) | 10 likes (`links.model-index-min-likes`); its repositories have no floor | `few-likes` |
@@ -200,21 +200,21 @@ the product: the next source does not get it.
       the 30-day window of the PyPI candidates, the per-topic and per-day limits.
 
 ### Code
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/Vitality.kt` — `Vitality`, `VitalityRules`, `Refusal`, `VitalityPolicy`.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — `admitted`.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/Ranking.kt` — `RankingWeights.unmaintained`.
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/admission/Admission.kt` — `AdmissionPolicy`, `Admission`
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/Vitality.kt` — `Vitality`, `VitalityRules`, `Refusal`, `VitalityPolicy`.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SearchResources.kt` — `admitted`.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/Ranking.kt` — `RankingWeights.unmaintained`.
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/admission/Admission.kt` — `AdmissionPolicy`, `Admission`
   (`Index`, `Review`, `Refuse`), `AdmissionRules`, `IndexFloor`, `ResourceSignals`, `ReviewReason`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/scout/config/ScoutAdmissionProperties.java` — `helper2.scout.admission`;
+- `backend/apps/backoffice/src/main/java/ai/searchavo/scout/config/ScoutAdmissionProperties.java` — `searchavo.scout.admission`;
   `scout/internal/ScoutConfiguration.java` — `admissionRules`, `admissionPolicy`.
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` — `indexable`, `proposable`.
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Ports.kt` — `CandidateSignals.statedOn`;
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/RunScout.kt` — `indexable`, `proposable`.
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/Ports.kt` — `CandidateSignals.statedOn`;
   `sources/github/scout/RepositorySignals.java` — what GitHub states about a candidate.
-- `backend/libs/core/src/main/java/ai/helper2/search/config/VitalityConfiguration.java`, `VitalityProperties.java` — `helper2.vitality`.
-- `backend/libs/core/src/main/java/ai/helper2/sources/huggingface/HuggingFaceSpacesSource.java`, `github/GitHubSource.java` — the facts.
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/GapRound.kt` (`GapTargets.select`, `namesPackage`),
+- `backend/libs/core/src/main/java/ai/searchavo/search/config/VitalityConfiguration.java`, `VitalityProperties.java` — `searchavo.vitality`.
+- `backend/libs/core/src/main/java/ai/searchavo/sources/huggingface/HuggingFaceSpacesSource.java`, `github/GitHubSource.java` — the facts.
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/GapRound.kt` (`GapTargets.select`, `namesPackage`),
   `usecase/EnrichResource.kt` (`rememberIfArchived`), `sources/evidence/ReadmeEvidence.java` — the visit.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcEnrichmentCandidates.java` (`recordArchived`),
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcEnrichmentCandidates.java` (`recordArchived`),
   `ResourceRows.java` (`statedVitality`), `CatalogSearchSource.java`, `JdbcCatalogWriter.java` — the stored fact.
 - Tests: `VitalityPolicyTest`, `RankingTest`, `SearchResourcesTest`, `HuggingFaceSourcesTest`, `GitHubSourceTest`,
   `RunScoutTest` (an archived candidate is not proposed; a hit under its floor is not indexed), `AdmissionPolicyTest`
@@ -285,7 +285,7 @@ the product: the next source does not get it.
 - A renamed repository is found under its new name by GitHub, so it is not `gone`; the record keeps the old link.
 - A batch keeps its records from one round to the next. One where more than one repository in five is truly
   gone never marks them `gone`; it shows as `outcome="unanswered"`.
-- No alert reads `helper2.scout.repository_sweep` yet: a sweep that fails every tick shows only in
+- No alert reads `searchavo.scout.repository_sweep` yet: a sweep that fails every tick shows only in
   `outcome="failed"` and a log line.
 - The lock holds for the length of one batch. With two back office replicas and a short batch, both could sweep
   inside one interval; the chart runs one.

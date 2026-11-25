@@ -21,15 +21,15 @@ image: CD image job (role deploy) {
   gha -> runner: "artifact prebuilt from CI's package job\n(public.jar, backoffice.jar, web bundle)"
   runner -> bao: "OIDC login role=deploy;\nkv get ci/harbor"
   runner -> runner: "changes.sh before..HEAD:\nweb, backoffice"
-  runner -> harbor: "GET helper2:<new> → 404;\nGET helper2:<before> → digest;\ncosign verify: signed by our key"
-  runner -> harbor: "POST helper2:<before>/tags {<new>}\n(public carried, same digest)"
-  runner -> harbor: "pack prebuilt (BUILD=prebuilt) and push\nhelper2-web:<new>, helper2-backoffice:<new>\n(podman --digestfile → PUSHED)" {class: hot}
+  runner -> harbor: "GET searchavo:<new> → 404;\nGET searchavo:<before> → digest;\ncosign verify: signed by our key"
+  runner -> harbor: "POST searchavo:<before>/tags {<new>}\n(public carried, same digest)"
+  runner -> harbor: "pack prebuilt (BUILD=prebuilt) and push\nsearchavo-web:<new>, searchavo-backoffice:<new>\n(podman --digestfile → PUSHED)" {class: hot}
   runner -> harbor: "SBOM of each image (syft)"
 }
 
 sign: make sign {
-  runner -> runner: "PUSHED: helper2-web@<d1>,\nhelper2-backoffice@<d2> (nothing else)"
-  runner -> bao: "VAULT_ADDR, VAULT_TOKEN from BAO_*:\ntransit/keys/helper2-images (public half);\ntransit/sign/helper2-images/sha2-256" {class: hot}
+  runner -> runner: "PUSHED: searchavo-web@<d1>,\nsearchavo-backoffice@<d2> (nothing else)"
+  runner -> bao: "VAULT_ADDR, VAULT_TOKEN from BAO_*:\ntransit/keys/searchavo-images (public half);\ntransit/sign/searchavo-images/sha2-256" {class: hot}
   bao -> runner: "signature (the key stays in OpenBao)"
   runner -> harbor: "push the signature bundle\n(referrer of the digest)"
   runner -> harbor: "every image of <new> and postgres:<tag>:\ncosign verify --key cosign.pub"

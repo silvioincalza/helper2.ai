@@ -33,10 +33,10 @@ A research pass (9 Nov 2026) compared more sources. Most are later steps or out 
    (`ai.weak.agent`) with its plural and its translations, so "agent agents" or "agente agenti" is one word: `agent-base` (an
    `http.Agent`) and `paper` (vector graphics) are not about AI. Measured on `eval/classifier-labels.tsv`
    (`ClassificationLabelsTest`). The word lists are shared with GitHub, npm, live web and the Scout collectors.
-3. **Wiring.** A live source like npm: settings under `helper2.sources.hacker-news` (`H2_SOURCE_HACKER_NEWS_ENABLED`,
+3. **Wiring.** A live source like npm: settings under `searchavo.sources.hacker-news` (`SA_SOURCE_HACKER_NEWS_ENABLED`,
    timeout 2.5 s, cache 30 min), the same circuit breaker and bulkhead as the other live sources, both apps. The
    Sources page lists it from its descriptor.
-4. **On by default, one switch.** `H2_SOURCE_HACKER_NEWS_ENABLED` defaults to `true`; `false` switches the source
+4. **On by default, one switch.** `SA_SOURCE_HACKER_NEWS_ENABLED` defaults to `true`; `false` switches the source
    off. The ablation of [0046](ADR-0046-evaluation-guide-and-search.md) is recorded with the source on; if it costs quality for
    a query group, routing leaves it out for that group.
 5. **No popularity yet.** Story points would be a good tie-break, but a new `PopularityKind` changes the public API
@@ -47,12 +47,12 @@ the package catalog collector (GitHub + deps.dev, [0018](ADR-0018-ai-libraries-a
 
 ### Code
 
-- `backend/libs/core/src/main/java/ai/helper2/sources/hackernews/HackerNewsSource.java`
-- `backend/libs/core/src/main/java/ai/helper2/sources/support/HttpClients.java` (`fetchSize`, `firstHits`, `plainWords`)
-- `backend/libs/core/src/main/java/ai/helper2/sources/support/Classification.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/sources/hackernews/HackerNewsSource.java`
+- `backend/libs/core/src/main/java/ai/searchavo/sources/support/HttpClients.java` (`fetchSize`, `firstHits`, `plainWords`)
+- `backend/libs/core/src/main/java/ai/searchavo/sources/support/Classification.java`,
   `backend/libs/core/src/main/resources/i18n/ai-words_*.properties`
-- `backend/libs/core/src/main/java/ai/helper2/sources/config/LiveSourcesConfiguration.java`
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml` (settings, resilience instances)
+- `backend/libs/core/src/main/java/ai/searchavo/sources/config/LiveSourcesConfiguration.java`
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml` (settings, resilience instances)
 - Tests: `HackerNewsSourceTest`, `HackerNewsSourceLiveTest`
 
 ## Alternatives considered

@@ -90,10 +90,10 @@ describe('Feature: the results read cleaner', () => {
     await screen.findByText('Both ways');
 
     expect(within(rowOf('Both ways')).getByText(/^From /)).toHaveTextContent(
-      /^From GitHub · helper2\.ai catalog$/,
+      /^From GitHub · searchavo\.ai catalog$/,
     );
     expect(within(rowOf('Only by meaning')).getByText(/^From /)).toHaveTextContent(
-      /^From helper2\.ai catalog$/,
+      /^From searchavo\.ai catalog$/,
     );
     const tiles = screen.getByRole('list', { name: 'Sources searched' });
     expect(within(tiles).getByText('searchavo.ai catalog, by meaning')).toBeInTheDocument();

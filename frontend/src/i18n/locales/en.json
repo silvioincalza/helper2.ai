@@ -17,7 +17,7 @@
   "nav": {
     "main": "Main",
     "menu": "Menu",
-    "home": "helper2.ai home",
+    "home": "searchavo.ai home",
     "news": "News",
     "events": "Events",
     "saved": "Saved",
@@ -51,7 +51,7 @@
     "coverage": "We search only the sources listed on the Sources page, not the whole web.",
     "copyright": "© {{year}} Silvio Incalza",
     "github": "GitHub",
-    "githubLabel": "Source code of helper2.ai on GitHub (opens in a new tab)",
+    "githubLabel": "Source code of searchavo.ai on GitHub (opens in a new tab)",
     "license": "Apache-2.0",
     "licenseLabel": "Apache-2.0 license (opens in a new tab)",
     "mission": "Mission",
@@ -59,13 +59,13 @@
     "terms": "Terms",
     "versionLabel": "Release notes for version {{version}} (opens in a new tab)",
     "place": "Switzerland · EU servers",
-    "support": "Support helper2.ai",
+    "support": "Support searchavo.ai",
     "cookieSettings": "Cookie settings",
     "privacyChoices": "Privacy choices",
     "browse": "Browse by type"
   },
   "home": {
-    "name": "helper2.ai",
+    "name": "searchavo.ai",
     "title": "The metasearch for the AI ecosystem.",
     "lede": "One search across the world of AI for models, apps, MCP servers and papers. Ask the guide for a pick with proof.",
     "hint": "Enter searches. Shift+Enter asks the guide for picks with proof.",
@@ -120,7 +120,7 @@
       }
     },
     "does": {
-      "title": "What helper2.ai does for you",
+      "title": "What searchavo.ai does for you",
       "search": {
         "title": "Searches for you",
         "text": "One question goes to every source at once: Hugging Face, GitHub, npm, arXiv and more. You get one clean list."
@@ -149,12 +149,12 @@
   "results": {
     "title": "Search results",
     "all": "Results",
-    "command": "helper2 search",
-    "commandTimeline": "helper2 search --timeline",
+    "command": "searchavo search",
+    "commandTimeline": "searchavo search --timeline",
     "filtersOn": " · {{count}} on",
     "loading": "Searching the listed sources…",
     "errorTitle": "Search is unavailable",
-    "errorBody": "We could not reach the helper2.ai service. Nothing was searched. Check your connection, then try again.",
+    "errorBody": "We could not reach the searchavo.ai service. Nothing was searched. Check your connection, then try again.",
     "partialLine_one": "{{missed}} of {{count}} source did not answer",
     "partialLine_other": "{{missed}} of {{count}} sources did not answer",
     "partialLineShort_one": "{{count}} source did not answer",
@@ -237,7 +237,7 @@
       "note": "The keys work while the focus is in the results, for example after Tab or a click on a result's line."
     },
     "from": "From {{sources}}",
-    "fromCatalog": "helper2.ai catalog",
+    "fromCatalog": "searchavo.ai catalog",
     "foundIn": "Found in {{list}} under {{heading}}",
     "foundInList": "Found in {{list}}",
     "dateUpdated": "updated {{date}}",
@@ -278,7 +278,7 @@
     "unknown": "Date not stated",
     "unknownCount_one": "{{count}} result.",
     "unknownCount_other": "{{count}} results.",
-    "unknownHint": "No source states when these were created. We do not use the date helper2.ai found them instead.",
+    "unknownHint": "No source states when these were created. We do not use the date searchavo.ai found them instead.",
     "showThem": "Show them",
     "hideThem": "Hide them"
   },
@@ -378,7 +378,7 @@
     },
     "CURATED": {
       "label": "Curated",
-      "hint": "A starter list written by helper2.ai. Not live."
+      "hint": "A starter list written by searchavo.ai. Not live."
     },
     "DEMO": {
       "label": "Demo",
@@ -391,7 +391,7 @@
     "AI_SUMMARY": "AI summary",
     "AI_ESTIMATED": "AI-estimated",
     "SELF_DECLARED": "Self-declared by the vendor (extracted by AI)",
-    "CURATED": "Curated by helper2.ai",
+    "CURATED": "Curated by searchavo.ai",
     "COMMUNITY": "Community submission",
     "DEMO": "Demo data"
   },
@@ -450,7 +450,7 @@
   "date": {
     "published": "Published",
     "updated": "Last updated",
-    "discovered": "First seen by helper2.ai",
+    "discovered": "First seen by searchavo.ai",
     "conflicting": "Sources disagree",
     "fromSource": "source: {{source}}",
     "eventStart": "Takes place"
@@ -596,7 +596,7 @@
   },
   "sourcesPage": {
     "title": "Sources",
-    "lede": "These are all the sources helper2.ai can search. Anything not listed here is not covered.",
+    "lede": "These are all the sources searchavo.ai can search. Anything not listed here is not covered.",
     "error": "Could not load the source list.",
     "disabled": "Disabled",
     "terms": "Terms",
@@ -889,7 +889,7 @@
     "lede": "Help people find the right AI resource for their need, and show the proof behind every answer.",
     "sections": [
       {
-        "title": "Why helper2.ai exists",
+        "title": "Why searchavo.ai exists",
         "paragraphs": [
           "New AI models, tools, agents, MCP servers and papers appear every day. General search engines mix them with marketing pages and old content, so it is hard to know what is real and current.",
           "We search only sources about AI, tell you which sources we searched, and show where every result comes from and when it was checked."
@@ -918,7 +918,7 @@
       {
         "title": "Who is behind it",
         "paragraphs": [
-          "Silvio Incalza, a software engineer based in Switzerland, builds helper2.ai as an independent project. The AI guide runs on NVIDIA Nemotron models served by Nebius Token Factory."
+          "Silvio Incalza, a software engineer based in Switzerland, builds searchavo.ai as an independent project. The AI guide runs on NVIDIA Nemotron models served by Nebius Token Factory."
         ]
       }
     ],
@@ -956,7 +956,7 @@
       },
       "dates": {
         "title": "Dates are the source’s own",
-        "body": "Published and updated come from the source. Otherwise you see when helper2.ai first saw it."
+        "body": "Published and updated come from the source. Otherwise you see when searchavo.ai first saw it."
       },
       "unchecked": {
         "title": "Every explanation is labeled",
@@ -1063,9 +1063,9 @@
     "understood": "Understood as {{parts}}",
     "askWithout": "Ask without",
     "rephrase": "Rephrase",
-    "command": "helper2 guide",
-    "commandCount_one": "helper2 guide --picks {{count}}",
-    "commandCount_other": "helper2 guide --picks {{count}}",
+    "command": "searchavo guide",
+    "commandCount_one": "searchavo guide --picks {{count}}",
+    "commandCount_other": "searchavo guide --picks {{count}}",
     "chosenBy": "Chosen by {{model}}"
   },
   "sourceTile": {
@@ -1157,13 +1157,13 @@
     "tag": "Advertisements"
   },
   "supportWait": {
-    "tag": "From helper2.ai",
-    "text": "helper2.ai is free, with no account. If it saves you time, you can help pay for it.",
-    "link": "Support helper2.ai"
+    "tag": "From searchavo.ai",
+    "text": "searchavo.ai is free, with no account. If it saves you time, you can help pay for it.",
+    "link": "Support searchavo.ai"
   },
   "support": {
-    "title": "Support helper2.ai",
-    "lede": "You can use helper2.ai for free, with no account, and it stays that way. Running it costs money every day. If it saves you time, you can help pay for it.",
+    "title": "Support searchavo.ai",
+    "lede": "You can use searchavo.ai for free, with no account, and it stays that way. Running it costs money every day. If it saves you time, you can help pay for it.",
     "costsTitle": "What it costs to run",
     "costs": [
       "The AI models that write the guide's answers and read the pages about each resource.",
@@ -1177,12 +1177,12 @@
     "card": "Give by card",
     "cardNote": "One-off, any amount, no account needed. The payment is handled by Stripe, which takes a small fee.",
     "newTab": "(opens in a new tab)",
-    "leave": "Both buttons take you to the provider's own page. Nothing on helper2.ai changes when you give: no badge, no extra features, and we never ask you again.",
+    "leave": "Both buttons take you to the provider's own page. Nothing on searchavo.ai changes when you give: no badge, no extra features, and we never ask you again.",
     "closed": "Giving is not open yet.",
     "privacyIntro": "What the payment providers receive is on the",
     "privacyLink": "Privacy page.",
     "thanksTitle": "Thank you",
-    "thanksBody": "Your support helps keep helper2.ai free and fast for everyone.",
+    "thanksBody": "Your support helps keep searchavo.ai free and fast for everyone.",
     "backHome": "Back to search"
   },
   "hubs": {
@@ -1198,7 +1198,7 @@
       "PROMPT": "AI prompts",
       "COURSE": "AI courses"
     },
-    "lede": "{{name}} in the helper2.ai catalog, newest change first. Open one to see its license, pricing and sources, as its sources state them.",
+    "lede": "{{name}} in the searchavo.ai catalog, newest change first. Open one to see its license, pricing and sources, as its sources state them.",
     "error": "Could not load this list.",
     "empty": "Nothing here yet."
   }

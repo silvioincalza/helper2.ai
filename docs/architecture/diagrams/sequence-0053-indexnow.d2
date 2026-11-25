@@ -1,18 +1,18 @@
 # Sequence: the daily IndexNow batch and the engine checking the key (ADR 0053).
-# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/catalog/config/IndexNowConfiguration.java, catalog/schedule/IndexNowSchedule.java,
+# Source of truth: backend/apps/backoffice/src/main/java/ai/searchavo/catalog/config/IndexNowConfiguration.java, catalog/schedule/IndexNowSchedule.java,
 #   catalog/usecase/SendChangedPages.java, catalog/config/IndexNowNotice.java,
-#   backend/apps/public/src/main/java/ai/helper2/site/pages/web/IndexNowKeyFile.java.
+#   backend/apps/public/src/main/java/ai/searchavo/site/pages/web/IndexNowKeyFile.java.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0053-indexnow.d2 && d2 sequence-0053-indexnow.d2 sequence-0053-indexnow.svg
 
 ...@style
 
 shape: sequence_diagram
 
-bo: "helper2 back office\n(catalog)" {class: app}
+bo: "searchavo back office\n(catalog)" {class: app}
 db: PostgreSQL {class: data}
 inx: "api.indexnow.org" {class: app}
 engine: "Search engine\n(Bing and others)" {class: person}
-pub: "helper2 public app\n(site.pages)" {class: app}
+pub: "searchavo public app\n(site.pages)" {class: app}
 
 bo -> db: "index-worthy resources, newest change first\n(at most 10,000)"
 db -> bo: "id, title, last change"

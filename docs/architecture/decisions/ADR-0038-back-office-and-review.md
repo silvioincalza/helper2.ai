@@ -34,7 +34,7 @@ On a review item, accept and reject were not enough:
 ## Decision
 
 ### The back office
-1. **A thin `admin` module.** `ai.helper2.admin` holds the back office's web adapters (`ReviewController`,
+1. **A thin `admin` module.** `ai.searchavo.admin` holds the back office's web adapters (`ReviewController`,
    `OverviewController`, `ScoutRunsController`, ...) and use cases that only compose other modules (`GetOverview`). It owns
    no table and no module depends on it. It calls the other modules only through their use cases and ports
    (`catalog.usecase`, `scout.usecase`, `examples.usecase`, `identity`, `platform.settings`), never a class of their
@@ -50,7 +50,7 @@ On a review item, accept and reject were not enough:
    back office's `ModularityTest` (`controllersAnswerWithViewsNotPortRecords`) fails when a class of a `web` package
    uses `ReviewQueue.Status`, `ReviewQueue.Item`, `EnrichmentCandidates.View`, `EnrichmentCandidates.BacklogEntry` or
    `ReviewEvidence.Evidence`. Its own classes live in its own packages, never in a library's: the
-   place it serves the admin web app from is `admin.config.SpaProperties` (`helper2.spa`).
+   place it serves the admin web app from is `admin.config.SpaProperties` (`searchavo.spa`).
 2. **One page per part.** `/admin` (overview, the landing page), `/admin/review`, `/admin/runs`, `/admin/audit`, each with
    its state in the address, so a number on the overview links to the view that acts on it
    (`/admin/review?kind=USER_REPORT`).
@@ -59,7 +59,7 @@ On a review item, accept and reject were not enough:
    today's count and limit, web credits today, the last 10 Scout runs and the failed ones of the last 24 hours, the
    home examples shown and hidden ([0028](ADR-0028-home-examples.md)), the 10 most frequent enrichment validation
    issues of the runs started in the last 7 days (subject and rule, quotes and numbers taken out, counted per run; a
-   partial run opens no review item, so this is where the validator is tuned), and a link to Grafana (`H2_ADMIN_GRAFANA_URL`) for trends. It is computed at most once a minute, one computation at a time:
+   partial run opens no review item, so this is where the validator is tuned), and a link to Grafana (`SA_ADMIN_GRAFANA_URL`) for trends. It is computed at most once a minute, one computation at a time:
    the backlog count is a full pass, and Refresh must not repeat it. That count gives up after 5 seconds. The Grafana
    link must be an absolute http(s) URL with a host and a path only, or the app does not start: the page puts it in an
    href and every administrator's browser receives it, so it carries no user info, no query and no fragment. The
@@ -69,7 +69,7 @@ On a review item, accept and reject were not enough:
    from one replica's memory. Without Redis, or while it cannot answer, the count is unknown and shown as unknown.
    A budget per visitor (the guide's `ClientQuota`) counts through `CallCounter.unlisted()` and is never listed: its
    name comes from the visitor's address, and there is one per visitor. The ledger lists at most 64 names.
-5. **The zero-result rate is a metric.** `helper2.search.results{empty}` counts searches that found nothing, with no
+5. **The zero-result rate is a metric.** `searchavo.search.results{empty}` counts searches that found nothing, with no
    query text. It goes to Grafana, not to the overview.
 6. **The enrichment queue: the backlog, page by page, in the Scout's order.** `GET /api/v1/admin/enrichment-queue` and
    `/admin/enrichment` list the resources that wait, never-run ones first, then the ones to try again
@@ -86,7 +86,7 @@ On a review item, accept and reject were not enough:
    batch (`JdbcEnrichmentCandidates.oldestShare`, at least one) goes to the never-run resources that waited longest,
    oldest first, so a steady flow of popular finds does not starve the others; inside that quarter and in the rest,
    the most popular come first. The gauge
-   `helper2.scout.enrichment.oldest_pending.age` (seconds) says how long the oldest never-run resource has waited,
+   `searchavo.scout.enrichment.oldest_pending.age` (seconds) says how long the oldest never-run resource has waited,
    as of the last batch read. Measured on synthetic
    data, 250 000 resources: the next 20 from 1.4 s to under 1 ms, the count from 1.3 s to 0.65 s. Every backlog read
    gives up after 5 seconds. The queue is admin-only and shows catalog data, no personal data; a cursor
@@ -207,7 +207,7 @@ On a review item, accept and reject were not enough:
     It is an allow-list: each setting is listed by hand, through one factory per kind of value (count, cap, flag,
     duration, model, version, schedule, names). There is no factory for a secret. A value with a quote, an `@` or more
     than 500 characters is refused, so a URL with a user or a password cannot pass even by mistake. Each row names the
-    `H2_` variable that sets it. The values are bound at startup, so the page is fixed until the next restart.
+    `SA_` variable that sets it. The values are bound at startup, so the page is fixed until the next restart.
     Six spending limits are the exception: they change on the same page, at runtime, and their rows show the value
     now ([0007](ADR-0007-configuration-secrets-runtime-settings.md)). The overview says how many of them are changed, with a link
     to the page.
@@ -368,7 +368,7 @@ than a hundred), so the question is the same for each of them: what is this name
     - The value is written to the resource's column, and the field is listed in `resource.curated_fields`.
     - Accepting a candidate also curates its description, language and published date
       (`V2026.11.6.4__curated_description_language_published.sql`); no source or run changes them after.
-    - A CURATED, VERIFIED field assertion says where it came from; the page shows "Curated by Helper2".
+    - A CURATED, VERIFIED field assertion says where it came from; the page shows "Curated by Searchavo".
     - The AI's values of the field are rejected.
 26. **It wins everywhere, and stays.**
     - No record changes it: the catalog upsert keeps a listed column, whatever the origin of the record
@@ -394,7 +394,7 @@ than a hundred), so the question is the same for each of them: what is this name
 
 ### Code
 
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/` — `package-info.java`, `web/ReviewController.java`, `web/OverviewController.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/admin/` — `package-info.java`, `web/ReviewController.java`, `web/OverviewController.java`,
   `web/EnrichmentQueueController.java`, `web/SettingsController.java`, `web/AdminWebApp.java`, `usecase/GetOverview.java`, `catalog/internal/JdbcValidationIssues.java`,
   `usecase/ListEnrichmentQueue.java`, `usecase/GetEffectiveSettings.java` (its own groups and the public app's),
   `usecase/ResolveReview.java` (accepts a drafted example through `examples/usecase/AcceptExampleDraft.java`),
@@ -403,41 +403,41 @@ than a hundred), so the question is the same for each of them: what is this name
   `web/ReviewProblems.java` (the problem of an accept that adds nothing),
   `config/AdminUseCaseConfiguration.java` (wiring), `config/SpaProperties.java`.
 - The views and the typed details: `admin/usecase/ReviewItemView.java`, `ReviewDetails.java`, `ReviewItemViews.java`;
-  `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/ShownCandidate.kt` (`ShownCandidates`,
+  `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/ShownCandidate.kt` (`ShownCandidates`,
   `CandidateRevision`), `scout/internal/ResourceCandidateJson.java` (`shown`);
-  `backend/libs/core/src/main/java/ai/helper2/catalog/KnownTargetCandidates.java` (`shown`),
+  `backend/libs/core/src/main/java/ai/searchavo/catalog/KnownTargetCandidates.java` (`shown`),
   `catalog/internal/KnownTargetProposalJson.java`; `api/admin.yaml` (`ReviewDetails` and its three shapes);
-  `backend/apps/backoffice/src/test/java/ai/helper2/architecture/ModularityTest.java`
+  `backend/apps/backoffice/src/test/java/ai/searchavo/architecture/ModularityTest.java`
   (`controllersAnswerWithViewsNotPortRecords`), `api/ReviewItemDetailsApiIT.java` (a stored row of each kind).
-- The typed draft: `admin/web/ReviewItemMapper.java`; `backend/libs/core/src/main/java/ai/helper2/examples/usecase/ReadExampleDraft.java`,
+- The typed draft: `admin/web/ReviewItemMapper.java`; `backend/libs/core/src/main/java/ai/searchavo/examples/usecase/ReadExampleDraft.java`,
   `examples/internal/ReviewQueueDrafts.java` (the only reader of the draft's JSON),
-  `backend/apps/backoffice/src/main/java/ai/helper2/examples/config/ExamplesBackOfficeConfiguration.java`;
+  `backend/apps/backoffice/src/main/java/ai/searchavo/examples/config/ExamplesBackOfficeConfiguration.java`;
   `api/admin.yaml` (`ReviewItem.draft`, `ReviewItem.aiContent`, `DraftedExample`); `admin/web/ReviewController.java` (the
   evidence view's marker); `frontend/src/admin/ReviewItemDetails.tsx`.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/settings/` — `Setting.java`, `SettingsGroup.java`; each module's group in
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/settings/` — `Setting.java`, `SettingsGroup.java`; each module's group in
   `platform/llm/internal/LlmConfiguration.java`, `guide/internal/GuideConfiguration.java`,
   `search/internal/SearchSettingsConfiguration.java`, `scout/internal/ScoutConfiguration.java`,
   `sources/config/scout/CollectorsConfiguration.java` (back office), `setup/internal/SetupConfiguration.java`,
   `examples/internal/ExamplesBackOfficeAdapters.java` (back office). The public app's groups in the database:
   `platform/settings/PublicAppSettings.java`, `JdbcPublicAppSettings.java`, `PublicAppSettingsConfiguration.java`;
-  `backend/apps/public/src/main/java/ai/helper2/site/settings/PublishSettingsAtStartup.java`; `V1__schema.sql`
+  `backend/apps/public/src/main/java/ai/searchavo/site/settings/PublishSettingsAtStartup.java`; `V1__schema.sql`
   (`public_app_setting`); `api/admin.yaml` (`ConfigGroup.app`, `PublicAppPublication`).
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`resource_enrichment_backlog_idx`, `resource_enrichment_value_idx`); `catalog/enrichment/EnrichmentCandidates.java`
   and `catalog/internal/JdbcEnrichmentCandidates.java` (`pending`, `pendingCount`, `backlog`, `standing`, `prioritisedCount`),
   `catalog/internal/BacklogRule.java`.
-- Queue actions: `enrichment_queue_control` in `V1__schema.sql`; `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/EnrichmentQueue.kt`
+- Queue actions: `enrichment_queue_control` in `V1__schema.sql`; `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/EnrichmentQueue.kt`
   (`QueuePlace`), `scout/Scout.kt` (`EnrichmentQueueControl`),
-  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/UnitOfWork.kt`, `scout/usecase/RequeueEnrichment.kt`,
+  `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/UnitOfWork.kt`, `scout/usecase/RequeueEnrichment.kt`,
   `SkipEnrichment.kt`, `PrioritiseEnrichment.kt`; `scout/internal/JdbcEnrichmentQueueControl.java`,
   `ScoutConfiguration.java`; `admin/web/EnrichmentQueueController.java`; `platform/ProblemType.java` (`NOT_APPLICABLE`).
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/BudgetLedger.java`, `CallCounter.java`, `DailyBudget.java`,
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/llm/BudgetLedger.java`, `CallCounter.java`, `DailyBudget.java`,
   `internal/RedisCallCounter.java` (`current`), `internal/LlmConfiguration.java`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`openCountsByKind`),
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/ReviewQueue.java` (`openCountsByKind`),
   `scout/internal/CatalogEnrichmentStore.java` and `catalog/internal/JdbcEnrichmentCandidates.java` (`pendingCount`), `search/config/MicrometerSearchMetrics.java`.
-- `backend/libs/core/src/main/java/ai/helper2/examples/usecase/CountHomeExamples.java`, `backend/libs/core/src/main/kotlin/ai/helper2/examples/PoolCounts.kt`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetReviewEvidence.java`, `admin/web/ReviewController.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/examples/usecase/CountHomeExamples.java`, `backend/libs/core/src/main/kotlin/ai/searchavo/examples/PoolCounts.kt`.
+- `backend/apps/backoffice/src/main/java/ai/searchavo/admin/usecase/GetReviewEvidence.java`, `admin/web/ReviewController.java`,
   `catalog/ReviewEvidence.java`, `catalog/internal/JdbcReviewEvidence.java`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/BulkDecisionRule.java`, `admin/usecase/ResolveReviewItems.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/admin/BulkDecisionRule.java`, `admin/usecase/ResolveReviewItems.java`,
   `admin/usecase/ResolveReview.java` and `catalog/usecase/ResolveReviewItem.java` (the batch in the audit outcome).
 - `frontend/src/admin/` — `AdminLayout.tsx`, `AdminOverview.tsx`, `ReviewQueuePage.tsx`, `ReviewEvidence.tsx`,
   `ReviewItemDetails.tsx`, `ReviewKeysHelp.tsx`, `ReviewBulk.tsx`, `AdminDialog.tsx`, `ScoutRunsPage.tsx`,
@@ -453,17 +453,17 @@ than a hundred), so the question is the same for each of them: what is this name
   `admin/usecase/GetEffectiveSettingsTest.java`, `platform/settings/JdbcPublicAppSettingsIT.java`,
   `site/settings/PublishSettingsAtStartupTest.java`,
   `architecture/ModularityTest.java` (in the back office, admin names no internal class),
-  `backend/architecture/src/test/java/ai/helper2/architecture/TableOwnersTest.java` (the table-owner exception),
+  `backend/architecture/src/test/java/ai/searchavo/architecture/TableOwnersTest.java` (the table-owner exception),
   `examples/usecase/ReadExampleDraftTest.java`, `api/HomeExamplesApiIT.java` (the typed draft and its markers, checked against the contract),
   `frontend/src/admin/ExamplesPage.test.tsx`, `admin/config/SpaPropertiesBindingTest.java`,
   `frontend/src/admin/Admin.test.tsx`, `EnrichmentQueuePage.test.tsx`, `ReviewEvidence.test.tsx`, `ReviewBulk.test.tsx`,
   `SettingsPage.test.tsx`, `src/a11y.test.tsx`.
 
 The target of a relationship candidate:
-- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/ChangeRelationshipTarget.java`, `AddCuratedResource.java`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcRelationshipTargets.java`, `CuratedTypes.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/usecase/ChangeRelationshipTarget.java`, `AddCuratedResource.java`.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcRelationshipTargets.java`, `CuratedTypes.java`,
   `JdbcResources.java` (`atUrl`), `CatalogConfiguration.java` (the curated source's types).
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/admin.yaml`
+- `backend/apps/backoffice/src/main/java/ai/searchavo/admin/web/ReviewController.java`; `api/admin.yaml`
   (`RelationshipTargetChange`, `NewResource`, audit actions).
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`relationship.target_origin`, the audit actions).
 - `frontend/src/admin/RelationshipTarget.tsx`, `ReviewEvidence.tsx`.
@@ -473,13 +473,13 @@ The target of a relationship candidate:
   `RelationshipTargetGroupsApiIT`, `RelationshipGroups.test.tsx`.
 
 A candidate edit:
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/EditCandidate.kt`; `IndexAcceptedCandidate.kt`
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/EditCandidate.kt`; `IndexAcceptedCandidate.kt`
   (`CandidateRules`, `typeChosenByAdmin`).
-- `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java` (`edit`, `merge`, `read`, `reason`),
+- `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/ResourceCandidateJson.java` (`edit`, `merge`, `read`, `reason`),
   `ReviewQueueCandidateItems.java`, `ReviewQueueCandidateReview.java`, `ScoutConfiguration.java`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`updateCandidate` compares the details, `lock`);
-  `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java` (locks an accepted item first).
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/admin.yaml` (`CandidateEdit`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/ReviewQueue.java` (`updateCandidate` compares the details, `lock`);
+  `backend/apps/backoffice/src/main/java/ai/searchavo/admin/usecase/ResolveReview.java` (locks an accepted item first).
+- `backend/apps/backoffice/src/main/java/ai/searchavo/admin/web/ReviewController.java`; `api/admin.yaml` (`CandidateEdit`,
   `CandidateType`, audit action).
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (the `EDIT_CANDIDATE` audit action).
 - `frontend/src/admin/CandidateEditForm.tsx`, `ReviewItemDetails.tsx`, `ReviewQueuePage.tsx`.
@@ -487,14 +487,14 @@ A candidate edit:
   `CandidateEditForm.test.tsx`.
 
 A curated field:
-- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/CurateField.java`, `catalog/internal/JdbcCuratedFields.java`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcResources.java` (the upsert keeps a curated column),
-  `ResourceCards.java` and `backend/libs/core/src/main/kotlin/ai/helper2/search/Model.kt` (`withCurated`: the card takes it;
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/usecase/CurateField.java`, `catalog/internal/JdbcCuratedFields.java`.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcResources.java` (the upsert keeps a curated column),
+  `ResourceCards.java` and `backend/libs/core/src/main/kotlin/ai/searchavo/search/Model.kt` (`withCurated`: the card takes it;
   `SourceHit.curatedFields`), `search/ResultMerger.kt` (a search merge takes it), `CatalogSearchSource.java`,
   `JdbcEnrichmentCandidates.java`, `catalog/enrichment/EnrichmentCandidates.java` (the curated values).
-- `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/CatalogEnrichmentStore.java`,
-  `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Enrichment.kt` (`curatedFields`), `EvidenceValidator.kt`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`; `api/admin.yaml` (`ResourceField`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/CatalogEnrichmentStore.java`,
+  `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/Enrichment.kt` (`curatedFields`), `EvidenceValidator.kt`.
+- `backend/apps/backoffice/src/main/java/ai/searchavo/admin/web/ReviewController.java`; `api/admin.yaml` (`ResourceField`,
   `ResourceFieldValue`, audit actions).
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`resource.curated_fields`); `scripts/industry-events-seed.mjs` and the
   events seed it writes.
@@ -688,7 +688,7 @@ The back office calls no model itself. It shows model output and lets a person d
 - The overview's enrichment backlog count reads every resource that may wait (0.65 s at 250 000 synthetic resources, cached a minute; 1.7 to 1.9 s with 37 500 REJECTED resources and the queue decisions). A queue page where no REJECTED resource is due for a retry walks every REJECTED resource (0.4 s at 250 000), and so does the out-of-retries view (1.1 to 1.6 s with 37 500 REJECTED); a stored "last run failed" flag would let the index skip them. A budget that is never built (no model configured) is not listed.
 - The catalog's backlog query reads the Scout's `enrichment_queue_control` (a listed exception in the table-owner test). If it starts to hurt, the catalog can own the table behind a port, as for the re-run request of ADR 0014. ([ADR 0038](ADR-0038-back-office-and-review.md) §8)
 - Privacy check (privacy-legal): the skip reason in the enrichment queue is free text, like the review note. The form says "No personal data" and the code drops control characters, but nothing stops a name. Confirm whether the Privacy page must list the skip reason, and whether it needs a retention rule (today it stays until a requeue, a new skip or the resource's delete). ([ADR 0038](ADR-0038-back-office-and-review.md) §8)
-- Runtime settings: a change reaches the other replicas within about 20 s, so for those seconds two replicas can cut off at two limits. The Settings page's read-only groups show the startup value for every other setting. The public app's groups on that page are the ones its last started replica wrote ([ADR 0038](ADR-0038-back-office-and-review.md) §10): during a rolling deploy they can be the old or the new version's, and two replicas with different env values show only the last one's. A change has no Grafana annotation yet, so a dashboard does not show when a limit moved. A limit raised for one day stays until someone resets it: an expiry ("until midnight UTC") would need one more column. The six maximums are first guesses (2.5 to 5 times today's prod values); revisit them after a month of use. A new `H2_` default with an override in place changes nothing until the override is reset.
+- Runtime settings: a change reaches the other replicas within about 20 s, so for those seconds two replicas can cut off at two limits. The Settings page's read-only groups show the startup value for every other setting. The public app's groups on that page are the ones its last started replica wrote ([ADR 0038](ADR-0038-back-office-and-review.md) §10): during a rolling deploy they can be the old or the new version's, and two replicas with different env values show only the last one's. A change has no Grafana annotation yet, so a dashboard does not show when a limit moved. A limit raised for one day stays until someone resets it: an expiry ("until midnight UTC") would need one more column. The six maximums are first guesses (2.5 to 5 times today's prod values); revisit them after a month of use. A new `SA_` default with an override in place changes nothing until the override is reset.
 
 ### Open points
 

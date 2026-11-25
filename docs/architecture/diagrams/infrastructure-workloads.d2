@@ -1,10 +1,10 @@
-# Infrastructure, the workloads: what runs in the namespace helper2-prod, how each workload is sized and
+# Infrastructure, the workloads: what runs in the namespace searchavo-prod, how each workload is sized and
 # rolled out, which ports it serves, and what the per-workload network policies let it accept and reach
 # (ingress and egress are denied by default; ADR 0043), the one embedder that production and staging share
 # (ADR 0054), and what differs on staging.
 # Not here: passwords (infrastructure-secrets.d2), images and the canary (infrastructure-delivery.d2),
 # backups and monitoring (infrastructure-data.d2).
-# Source of truth: deploy/helm/helper2/values.yaml, values-prod.yaml, values-staging.yaml,
+# Source of truth: deploy/helm/searchavo/values.yaml, values-prod.yaml, values-staging.yaml,
 #   templates/app.yaml, web.yaml, backoffice.yaml, embedder.yaml, postgres.yaml, redis.yaml, migrate.yaml,
 #   networkpolicy.yaml, serviceaccount.yaml; the platform repo outside this repo (ingress-nginx, the Ingresses).
 # Render: cd docs/architecture/diagrams && d2 fmt infrastructure-workloads.d2 && d2 infrastructure-workloads.d2 infrastructure-workloads.svg
@@ -19,18 +19,18 @@ vars: {
 
 direction: right
 
-nginx: "ingress-nginx (ns ingress-nginx)\nIngress helper2-public: the public app's addresses → Service helper2,\nthe rest → Service helper2-web\nIngress helper2-admin → Service helper2-admin (private ranges only)" {class: app}
+nginx: "ingress-nginx (ns ingress-nginx)\nIngress searchavo-public: the public app's addresses → Service searchavo,\nthe rest → Service searchavo-web\nIngress searchavo-admin → Service searchavo-admin (private ranges only)" {class: app}
 
-prod: "ns helper2-prod · ingress + egress default-deny · one policy per workload\nServiceAccount helper2: no RBAC, no token" {
+prod: "ns searchavo-prod · ingress + egress default-deny · one policy per workload\nServiceAccount searchavo: no RBAC, no token" {
   class: group
 
   front: "SERVE REQUESTS" {
     class: group
-    web: "helper2-web Deployment (nginx) · 2 pods\nPDB minAvailable 1 · read-only root, user 101\n:8080 the web app's files (Service helper2-web)\n:8081 /healthz (in no Service)\nno egress" {class: app}
+    web: "searchavo-web Deployment (nginx) · 2 pods\nPDB minAvailable 1 · read-only root, user 101\n:8080 the web app's files (Service searchavo-web)\n:8081 /healthz (in no Service)\nno egress" {class: app}
     java: "egress: DNS, Postgres, Redis, Alloy, and TCP 443 outside" {
       class: group
-      app: "helper2 Deployment (public app) · 3 pods\nRollingUpdate: maxSurge 1, maxUnavailable 0\nPDB minAvailable 2 · spread by node\nJava 25 JRE, heap 60% of 1Gi\n:8080 site + /api/v1 (Service helper2)\n:8081 Actuator (in no Service)\nschema check only" {class: app}
-      bo: "helper2-backoffice Deployment · 1 pod\nadmin API + admin web app, Scout, catalog jobs\n:8080 (Service helper2-admin)\n:8081 Actuator (in no Service)\nschema check only" {class: app}
+      app: "searchavo Deployment (public app) · 3 pods\nRollingUpdate: maxSurge 1, maxUnavailable 0\nPDB minAvailable 2 · spread by node\nJava 25 JRE, heap 60% of 1Gi\n:8080 site + /api/v1 (Service searchavo)\n:8081 Actuator (in no Service)\nschema check only" {class: app}
+      bo: "searchavo-backoffice Deployment · 1 pod\nadmin API + admin web app, Scout, catalog jobs\n:8080 (Service searchavo-admin)\n:8081 Actuator (in no Service)\nschema check only" {class: app}
     }
   }
 
@@ -46,9 +46,9 @@ prod: "ns helper2-prod · ingress + egress default-deny · one policy per worklo
     }
   }
 
-  embedder: "helper2-embedder Deployment · 1 pod (ADR 0054)\nnvidia/nemotron-3.5-embed-1b on CPU, weights in the image\nrequests 1 CPU, 6Gi · limit 8Gi · read-only root, user 10001\n:8080 /v1/embeddings (Service helper2-embedder, ClusterIP)\nin: the public app and the back office of prod,\nand of staging with its canary · no egress, no Ingress" {class: ai}
+  embedder: "searchavo-embedder Deployment · 1 pod (ADR 0054)\nnvidia/nemotron-3.5-embed-1b on CPU, weights in the image\nrequests 1 CPU, 6Gi · limit 8Gi · read-only root, user 10001\n:8080 /v1/embeddings (Service searchavo-embedder, ClusterIP)\nin: the public app and the back office of prod,\nand of staging with its canary · no egress, no Ingress" {class: ai}
 
-  migrate: "helper2-migrate-<revision> Job\npublic image `migrate`: Flyway as the owner,\nthen the roles' logins · once per release" {class: app}
+  migrate: "searchavo-migrate-<revision> Job\npublic image `migrate`: Flyway as the owner,\nthen the roles' logins · once per release" {class: app}
 
   front.java -> stores.postgres: "JDBC :5432\n(the public app: data + shedlock locks)"
   front.java -> stores.redis: ":6379\n(the back office: own session namespace)"
@@ -56,7 +56,7 @@ prod: "ns helper2-prod · ingress + egress default-deny · one policy per worklo
   front.java -> embedder: "embeddings :8080\n(queries; the indexer every 3 s,\nstaging's every minute)" {class: ai-call}
 }
 
-staging: "ns helper2-staging · what differs from prod" {
+staging: "ns searchavo-staging · what differs from prod" {
   class: group
   sizes: "1 web pod, 1 public pod, 1 back office pod\nno disruption budget · no backup\nstaging host, noindex\nno embedder of its own" {class: app}
 }

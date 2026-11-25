@@ -20,10 +20,10 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 
 ## Decision
 
-**Names.** The product calls this source "Live web" (`live-web`; the Scout's queries `live-web-scout`, the stored result sets `live_web_query_result`, settings `H2_LIVE_WEB_*`). Tavily is the adapter behind it (`sources/tavily/`) and can be replaced; its name stays on the Privacy page, which must name the recipient of the search text, and in this ADR, which records the choice.
+**Names.** The product calls this source "Live web" (`live-web`; the Scout's queries `live-web-scout`, the stored result sets `live_web_query_result`, settings `SA_LIVE_WEB_*`). Tavily is the adapter behind it (`sources/tavily/`) and can be replaced; its name stays on the Privacy page, which must name the recipient of the search text, and in this ADR, which records the choice.
 
 1. **Store first.** `live_web_query_result(query_key, fetched_at, result_ids[])` in PostgreSQL. The key
-   is HMAC-SHA256(`H2_QUOTA_KEY_SECRET`, source id and the normalised query: words, expansions, limit, web query and
+   is HMAC-SHA256(`SA_QUOTA_KEY_SECRET`, source id and the normalised query: words, expansions, limit, web query and
    date window, the same material as the source cache key of [0005](ADR-0005-redis-as-a-disposable-cache.md)); exact match
    only. The key is what changes the Tavily request, so the intent class is not part of it: the timeline view
    (newest first, time-bound) of a search just made reads the same set and spends no second credit. A query has one
@@ -32,8 +32,8 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    ([0004](ADR-0004-persistence-and-the-schema.md)). A set with a hit the catalog does not hold is a miss. The search
    module owns the table (`JdbcWebResultStore`); a metered source never uses the Redis source cache.
 2. **Freshness by intent.** A stored set answers without a live call and without quota while it is fresh: 24 h for a
-   time-bound question (news, courses, hackathons, conferences, events; `H2_LIVE_WEB_FRESH_TIMEBOUND`), 48 h otherwise
-   (`H2_LIVE_WEB_FRESH_GENERAL`). The guide states the class from its intent (`NEWEST`, `WHEN`, `LEARN` are
+   time-bound question (news, courses, hackathons, conferences, events; `SA_LIVE_WEB_FRESH_TIMEBOUND`), 48 h otherwise
+   (`SA_LIVE_WEB_FRESH_GENERAL`). The guide states the class from its intent (`NEWEST`, `WHEN`, `LEARN` are
    time-bound); a search reads it from its words (punctuation removed, so "AI news?" is time-bound; a hyphenated word stays
    one word, so "event-driven" is general), type filter,
    date window or newest-first order (`IntentClass`). The class of the asking search decides whether a stored set is
@@ -54,13 +54,13 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    call takes no second one and, if that call gives no answer either, gives it back. Over the limit the source
    is `SKIPPED` (`SkipReason.DAILY_LIMIT`, "Daily limit of web searches reached; back at 00:00 UTC"), with its stored
    set when it is not older than 7 days (`STALE_CACHE`); the other sources answer as usual.
-   The limits are `H2_LIVE_WEB_GUEST_SEARCH` and `H2_LIVE_WEB_GUEST_GUIDE` (default 3). The chart sets them, with
+   The limits are `SA_LIVE_WEB_GUEST_SEARCH` and `SA_LIVE_WEB_GUEST_GUIDE` (default 3). The chart sets them, with
    the guide's questions per client and the global cap, only where `app.dailyLimits` sets them: staging raises the
    per-visitor limits to 1000, so a test is never cut off by earlier tests, and keeps a global cap of 200 live calls
    a day, because staging is public. Prod keeps the defaults.
 4. **Credits of the day, optional global cap.** Every live call (also the later calls of one guide question and the
    calls of internal callers) counts on `h2:v1:quota:global:<UTC date>`, field `credits`: the credits of the day
-   for the whole cluster. The counter is capped by `H2_LIVE_WEB_DAILY_CREDITS`; unset, the cap is the code
+   for the whole cluster. The counter is capped by `SA_LIVE_WEB_DAILY_CREDITS`; unset, the cap is the code
    maximum of the runtime setting, 3,000 a day ([0007](ADR-0007-configuration-secrets-runtime-settings.md)). The own and the global counter are checked and counted in **one Lua script** (`RedisQuotaCounter`), so
    concurrent requests on any replica never pass a limit. The script counts before the `source-live-web` policy is
    asked, so a live call that policy refuses (circuit open, bulkhead full) gives its credit back
@@ -84,8 +84,8 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 7. **Guide answers live no longer than their web results.** Guide answers are kept in PostgreSQL
    (the shared cache `ai_cache`, [0032](ADR-0032-guide-cost-guard-and-answer-cache.md)). Answer TTL = min(24 h, freshness left of the web
    results it used); an answer built on stale web results is not cached ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)).
-8. **Credits are measured.** `helper2.live-web.credits{feature}` counts every live call (`none` for internal
-   callers). Alert `Helper2LiveWebCreditsHigh` when more than 2,500 credits were spent in 24 h, near prod's cap. Prod's
+8. **Credits are measured.** `searchavo.live-web.credits{feature}` counts every live call (`none` for internal
+   callers). Alert `SearchavoLiveWebCreditsHigh` when more than 2,500 credits were spent in 24 h, near prod's cap. Prod's
    daily cap is 3,000 (`app.dailyLimits.webSearchCredits`), staging's 180. The plan has 14,000 credits a month for
    prod, staging and the Scout: about 450 a day. The caps do not keep a month under it (prod alone can reach 93,000
    in 31 days), so the alert is the warning, well before the cap. The Scout's
@@ -94,22 +94,22 @@ used up. The counts must hold across 3 replicas, store no address and no query t
    together, [0013](ADR-0013-discovery.md),
    [0012](ADR-0012-scout-collectors-and-events.md)).
 9. **Retention** ([0010](ADR-0010-data-retention.md)): stored sets are deleted 7 days after `fetched_at`
-   (`H2_RETENTION_LIVE_WEB_RESULTS`) by the search module's daily purge; counters by their 24 h TTL. No counter is
+   (`SA_RETENTION_LIVE_WEB_RESULTS`) by the search module's daily purge; counters by their 24 h TTL. No counter is
    kept under an account, so deleting one touches none.
-10. **No secret, no start.** An enabled metered source without `H2_QUOTA_KEY_SECRET` (OpenBao) stops startup.
+10. **No secret, no start.** An enabled metered source without `SA_QUOTA_KEY_SECRET` (OpenBao) stops startup.
 
 ### Code
 
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/WebSearch.kt` — `Asker`, `IntentClass`, `WebFreshness`, `WebSearchQuota`, `WebCredits`.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt` — store first, quota (`Run.quotaAllows`, `Run.settleWebSearches`); `SearchResources.kt` — `webSearchesLeft`.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/Ports.kt` — `WebResultStore`, `WebResultRetention`, `ResultObserver.recordedHits`.
-- `backend/libs/core/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `catalog/internal/CatalogResultObserver.java` (`recordedHits`).
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/PurgeExpiredData.kt`, `search/config/SearchRetentionSchedule.java`.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/quota/` — `QuotaCounter`, `RedisQuotaCounter` (Lua), `QuotaKeys` (HMAC).
-- `backend/libs/core/src/main/java/ai/helper2/sources/tavily/TavilySource.java` — the metered descriptor.
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt` (`find`, `forAsker`), `guide/GuideCost.kt` (`ttlOf`).
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml` (`helper2.search.web.*`), `db/migration/V1__schema.sql`, `api/common.yaml` (`WebSearches`).
-- `deploy/monitoring/helper2-rules.yaml` — `Helper2LiveWebCreditsHigh`.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/WebSearch.kt` — `Asker`, `IntentClass`, `WebFreshness`, `WebSearchQuota`, `WebCredits`.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SourceFanOut.kt` — store first, quota (`Run.quotaAllows`, `Run.settleWebSearches`); `SearchResources.kt` — `webSearchesLeft`.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/Ports.kt` — `WebResultStore`, `WebResultRetention`, `ResultObserver.recordedHits`.
+- `backend/libs/core/src/main/java/ai/searchavo/search/internal/JdbcWebResultStore.java`, `catalog/internal/CatalogResultObserver.java` (`recordedHits`).
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/PurgeExpiredData.kt`, `search/config/SearchRetentionSchedule.java`.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/quota/` — `QuotaCounter`, `RedisQuotaCounter` (Lua), `QuotaKeys` (HMAC).
+- `backend/libs/core/src/main/java/ai/searchavo/sources/tavily/TavilySource.java` — the metered descriptor.
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/usecase/AskGuide.kt` (`find`, `forAsker`), `guide/GuideCost.kt` (`ttlOf`).
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml` (`searchavo.search.web.*`), `db/migration/V1__schema.sql`, `api/common.yaml` (`WebSearches`).
+- `deploy/monitoring/searchavo-rules.yaml` — `SearchavoLiveWebCreditsHigh`.
 
 ## Alternatives considered
 

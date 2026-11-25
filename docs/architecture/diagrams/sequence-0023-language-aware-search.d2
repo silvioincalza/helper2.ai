@@ -1,11 +1,11 @@
 # Sequence: an Italian query ("app per tradurre testi") with translation in parallel with the semantic source.
-# Shows that helper2-semantic starts at once, the other sources wait for the translation (at most 2500 ms),
+# Shows that searchavo-semantic starts at once, the other sources wait for the translation (at most 2500 ms),
 # and each source's deadline starts at its own start.
-# Source of truth: backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt,
-#   backend/libs/core/src/main/kotlin/ai/helper2/search/LanguageDetector.kt,
-#   backend/libs/core/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java, .../platform/llm/DailyBudget.java,
+# Source of truth: backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SearchResources.kt,
+#   backend/libs/core/src/main/kotlin/ai/searchavo/search/LanguageDetector.kt,
+#   backend/libs/core/src/main/java/ai/searchavo/search/internal/SpringAiQueryTranslator.java, .../platform/llm/DailyBudget.java,
 #   .../platform/resilience/Resilience4jPolicies.java (llm-chat, db-cache), .../platform/cache/JdbcSharedCache.java,
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/SemanticSearchSource.java, CatalogSearchSource.java.
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/internal/SemanticSearchSource.java, CatalogSearchSource.java.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0023-language-aware-search.d2 && d2 sequence-0023-language-aware-search.d2 sequence-0023-language-aware-search.svg
 
 ...@style
@@ -20,7 +20,7 @@ budget: "DailyBudget\n(translation)" {class: app}
 pg: "PostgreSQL ai_cache\n(shared by the replicas)" {class: data}
 llm: "Nebius Token Factory\n(fast Nemotron model)" {class: ai}
 sem: "SemanticSearchSource\n(usesTranslation = false)" {class: app}
-idx: "CatalogSearchSource\n(helper2-index)" {class: app}
+idx: "CatalogSearchSource\n(searchavo-index)" {class: app}
 gh: "GitHubSource and\nother live sources" {class: app}
 
 fs -> ld: "detect(\"app per tradurre testi\")" {class: hot}

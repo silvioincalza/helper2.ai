@@ -3,11 +3,11 @@
 # host by the signed-in administrator) and
 # counted in Redis for all replicas (in-memory fallback while Redis is down),
 # the web image's files and the shell for client routes, with their cache headers.
-# Source of truth: deploy/helm/helper2/templates/app.yaml, web.yaml, networkpolicy.yaml, deploy/web/nginx.conf,
-#   deploy/web/headers.conf, backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java,
-#   backend/libs/platform/src/main/resources/helper2-shared.yaml (server.*, management.*),
-#   backend/apps/public/src/main/java/ai/helper2/identity/security/PublicSecurityConfiguration.java,
-#   backend/libs/platform/src/main/java/ai/helper2/platform/RateLimitInterceptor.java, RateLimiter.java, ClientKey.java,
+# Source of truth: deploy/helm/searchavo/templates/app.yaml, web.yaml, networkpolicy.yaml, deploy/web/nginx.conf,
+#   deploy/web/headers.conf, backend/apps/public/src/main/java/ai/searchavo/site/pages/web/PageRoutes.java,
+#   backend/libs/platform/src/main/resources/searchavo-shared.yaml (server.*, management.*),
+#   backend/apps/public/src/main/java/ai/searchavo/identity/security/PublicSecurityConfiguration.java,
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/RateLimitInterceptor.java, RateLimiter.java, ClientKey.java,
 #   RateLimitKey.java (the key strategy each app gives, ADR 0036),
 #   RedisRateLimiter.java, platform/quota/QuotaKeys.java (client pseudonym),
 #   InMemoryRateLimiter.java, platform/resilience/Resilience4jPolicies.java (policy redis).
@@ -19,7 +19,7 @@ direction: down
 
 in: "Request" {class: end}
 
-web: Web image (helper2-web, ADR 0043) {
+web: Web image (searchavo-web, ADR 0043) {
   class: group
   direction: down
   path: "A file address? (Ingress:\nnot an address of the public app)" {class: decision}
@@ -40,7 +40,7 @@ mgmt: "8081 management: only from the\nobservability namespace (NetworkPolicy);\
 metrics: "/actuator/prometheus, health" {class: end}
 
 app: "8080 app (from the Ingress\ncontroller only)" {class: app}
-addr: "remoteAddr: X-Forwarded-For used only when\nH2_FORWARD_HEADERS_STRATEGY=native\n(default none)" {class: app}
+addr: "remoteAddr: X-Forwarded-For used only when\nSA_FORWARD_HEADERS_STRATEGY=native\n(default none)" {class: app}
 headers: "Response headers: CSP 'self' only,\nReferrer-Policy strict-origin-when-cross-origin,\nPermissions-Policy (no camera, mic,\nlocation, payment, USB)" {class: app}
 
 csrf: "Not GET and no matching\nX-XSRF-TOKEN header?" {class: decision}
@@ -57,7 +57,7 @@ limit: RateLimitInterceptor {
   key: "ClientKey: IPv4, or IPv6 /64\n(zone id dropped,\nIPv4-mapped → IPv4)\n→ QuotaKeys.client: HMAC of the\nUTC day, no address in Redis" {class: app}
   breaker: "redis circuit lets it through?\n(open 30 s after half of\nthe last calls failed)" {class: decision}
   redis: "Redis Lua: INCR h2:v1:rate:<limiter>:<pseudonym>,\nPEXPIRE window on count 1; PTTL" {class: data}
-  memory: "InMemoryRateLimiter (this replica,\n≤ 50,000 clients kept);\nhelper2.rate-limit.fallback + 1" {class: app}
+  memory: "InMemoryRateLimiter (this replica,\n≤ 50,000 clients kept);\nsearchavo.rate-limit.fallback + 1" {class: app}
   window: "Count in fixed window\n≤ limit?" {class: decision}
   e429: "429 problem+json,\nRetry-After = window time left" {class: fail}
   pass: "Controller" {class: end}

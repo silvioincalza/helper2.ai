@@ -18,11 +18,11 @@ One page for a first read. Every other view is one part of it.
 
 ### C4 level 1: system context
 
-helper2 as one box.
+searchavo as one box.
 
 | Diagram | Shows |
 |---|---|
-| [architecture-system-context](architecture-system-context.svg) | helper2 as one box: the visitor, the admin and the crawler who use it, and the systems it talks to (the Nemotron models, the public sources, GitHub sign-in, the browser's third parties, delivery and operations). |
+| [architecture-system-context](architecture-system-context.svg) | searchavo as one box: the visitor, the admin and the crawler who use it, and the systems it talks to (the Nemotron models, the public sources, GitHub sign-in, the browser's third parties, delivery and operations). |
 
 ### C4 level 2: containers
 
@@ -30,7 +30,7 @@ What is deployed and runs on its own.
 
 | Diagram | Shows |
 |---|---|
-| [architecture-containers](architecture-containers.svg) | What is deployed and runs on its own: the two web apps in the browser, `helper2-web`, the public app, the back office, the migrate Job, the embedder, PostgreSQL and Redis, and who calls whom. |
+| [architecture-containers](architecture-containers.svg) | What is deployed and runs on its own: the two web apps in the browser, `searchavo-web`, the public app, the back office, the migrate Job, the embedder, PostgreSQL and Redis, and who calls whom. |
 
 ### C4 level 3: components
 
@@ -38,7 +38,7 @@ What is inside the containers: the modules of the two Java apps and the folders 
 
 | Diagram | Shows |
 |---|---|
-| [architecture-context](architecture-context.svg) | Context view: the modules as boxes (examples included, and the public app's site with pages, policy, monetisation and the CSP), who calls helper2 and what it calls. |
+| [architecture-context](architecture-context.svg) | Context view: the modules as boxes (examples included, and the public app's site with pages, policy, monetisation and the CSP), who calls searchavo and what it calls. |
 | [hexagonal-architecture](hexagonal-architecture.svg) | The classic hexagon: business logic (Kotlin `search`, `guide`, `setup`, `scout` and `shared`) inside, its use cases and ports on its edge, adapters around it, driving side left (the controllers and schedules of both apps) and driven side right (the public web, the Nemotron models, Redis, PostgreSQL). Hand-drawn SVG: edit the file itself. |
 | [architecture-search](architecture-search.svg) | One search: the search ports and the adapters behind them. |
 | [architecture-guide](architecture-guide.svg) | One guide question: AskGuide, the search it reuses, the evidence gate, the LLM layer. |
@@ -54,7 +54,7 @@ Where the containers run.
 
 | Diagram | Shows |
 |---|---|
-| [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted helper2 on Kubernetes, the full picture in zones: how a request gets in, production's applications, the one embedder that production and staging share, the stores and the jobs, what they call outside, the delivery, and where backups, metrics and traces go. Ports, sizes, secrets and policies are in the four views below. |
+| [infrastructure](infrastructure.svg) | Runtime infrastructure of the hosted searchavo on Kubernetes, the full picture in zones: how a request gets in, production's applications, the one embedder that production and staging share, the stores and the jobs, what they call outside, the delivery, and where backups, metrics and traces go. Ports, sizes, secrets and policies are in the four views below. |
 | [infrastructure-workloads](infrastructure-workloads.svg) | What runs in the namespace: each workload's size, rollout and ports, the migrate Job, what the network policies let each accept and reach, the embedder that production and staging share, and what differs on staging. |
 | [infrastructure-secrets](infrastructure-secrets.svg) | The two Secrets, where their values come from, and which workload reads which key: each app's database role and Redis user, the owner's password, the monitors. |
 | [infrastructure-delivery](infrastructure-delivery.svg) | How an image gets from GitHub to the cluster through the runner, OpenBao and Harbor, and the canary that runs beside production during a release. |
@@ -115,7 +115,7 @@ twin has one.
 | [0006](../decisions/ADR-0006-outbound-calls-and-resilience.md) | [flow](flow-0006-resilience-policies.svg) | [sequence](sequence-0006-resilience-policies.svg) | one Resilience.call through retry, bulkhead and circuit breaker; a collector riding out a 503 and a source circuit opening. |
 | [0007](../decisions/ADR-0007-configuration-secrets-runtime-settings.md) | [flow](flow-0007-configuration-and-secrets.svg) | [sequence](sequence-0007-configuration-and-secrets.svg) | how a secret travels from OpenBao to the app's environment, and how the app reads it. |
 | [0007](../decisions/ADR-0007-configuration-secrets-runtime-settings.md) | [flow](flow-0007-runtime-settings.svg) | [sequence](sequence-0007-runtime-settings.svg) | a spending limit changed from the Settings page: the checks, the append-only row and its audit, and every replica's snapshot refresh. |
-| [0007](../decisions/ADR-0007-configuration-secrets-runtime-settings.md) | [flow](flow-0007-settings-files.svg) | no call path of its own | which file gives a setting its value: the app's own documents, then the shared file, then the `H2_` variable or its default. |
+| [0007](../decisions/ADR-0007-configuration-secrets-runtime-settings.md) | [flow](flow-0007-settings-files.svg) | no call path of its own | which file gives a setting its value: the app's own documents, then the shared file, then the `SA_` variable or its default. |
 | [0008](../decisions/ADR-0008-llm-integration.md) | [flow](flow-0008-llm-integration.svg) | [sequence](sequence-0008-llm-integration.svg) | one model call through the shared LLM layer, from the caller to a usable answer or a fallback. |
 | [0009](../decisions/ADR-0009-observability.md) | [flow](flow-0009-observability.svg) | [sequence](sequence-0009-observability.svg) | where each kind of telemetry goes, the switches that decide it, the Grafana dashboard and the alert rules. |
 | [0010](../decisions/ADR-0010-data-retention.md) | [flow](flow-0010-data-retention.svg) | [sequence](sequence-0010-data-retention.svg) | the daily purges per module under their cluster locks, and the catalog rules in order. |

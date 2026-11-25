@@ -42,7 +42,7 @@ export function AdminShell() {
       <header className="h2-admin__bar">
         <div className="h2-wrap h2-admin__wide h2-admin__bar-row">
           <a className="h2-admin__brand" href="/admin">
-            helper2.ai <span>admin</span>
+            searchavo.ai <span>admin</span>
           </a>
           <SignOut />
         </div>

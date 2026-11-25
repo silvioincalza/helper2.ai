@@ -1,7 +1,7 @@
 # Flowchart: how a PyPI package becomes a library or a review candidate (ADR 0017).
-# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/sources/pypi/PypiCollector.java (collect, since, sort),
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/pypi/PypiCollectors.java (create),
-#   backend/apps/backoffice/src/main/java/ai/helper2/sources/pypi/BigQueryClient.java (query).
+# Source of truth: backend/apps/backoffice/src/main/java/ai/searchavo/sources/pypi/PypiCollector.java (collect, since, sort),
+#   backend/apps/backoffice/src/main/java/ai/searchavo/sources/pypi/PypiCollectors.java (create),
+#   backend/apps/backoffice/src/main/java/ai/searchavo/sources/pypi/BigQueryClient.java (query).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0017-pypi-through-bigquery.d2 && d2 flow-0017-pypi-through-bigquery.d2 flow-0017-pypi-through-bigquery.svg
 
 ...@style
@@ -9,7 +9,7 @@
 direction: down
 
 start: "Back office starts" {class: end}
-switch: "H2_SOURCE_PYPI_ENABLED?\n(default false)" {class: decision}
+switch: "SA_SOURCE_PYPI_ENABLED?\n(default false)" {class: decision}
 off: "Source off" {class: end}
 key: "Project and a readable\nservice account key?" {class: decision}
 stop: "Startup fails\n(names the variable, never its value)" {class: end}

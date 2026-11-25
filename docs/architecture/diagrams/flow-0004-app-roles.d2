@@ -1,8 +1,8 @@
 # Flowchart: who migrates, how an app waits for the schema, and what each app may reach in Postgres and Redis (ADR 0004).
 # Source of truth: backend/libs/schema (MigrateStep, AppLogins, SchemaCheck, V1__schema.sql: its last section, the app roles),
-#   backend/apps/public/src/main/java/ai/helper2/PublicApplication.java, backend/libs/identity (SessionConfiguration),
-#   deploy/helm/helper2/templates/ (migrate.yaml, app.yaml, backoffice.yaml, redis.yaml),
-#   deploy/helm/helper2/files/redis-users.acl, deploy/k8s/Makefile (env-secret, deploy), deploy/k8s/check-app-env.sh.
+#   backend/apps/public/src/main/java/ai/searchavo/PublicApplication.java, backend/libs/identity (SessionConfiguration),
+#   deploy/helm/searchavo/templates/ (migrate.yaml, app.yaml, backoffice.yaml, redis.yaml),
+#   deploy/helm/searchavo/files/redis-users.acl, deploy/k8s/Makefile (env-secret, deploy), deploy/k8s/check-app-env.sh.
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0004-app-roles.d2 && d2 flow-0004-app-roles.d2 flow-0004-app-roles.svg
 
 ...@style
@@ -30,11 +30,11 @@ step: Migrate step (Job, owner) {
 app: App startup (its own role) {
   class: group
   direction: down
-  dev: "H2_SCHEMA_MIGRATE?\n(dev profile, compose)" {class: decision}
+  dev: "SA_SCHEMA_MIGRATE?\n(dev profile, compose)" {class: decision}
   migrate: "migrate itself\n(as the owner, local only)" {class: app}
   validate: "validate the schema" {class: app}
   result: "Result?" {class: decision}
-  wait: "wait 5 s\n(up to H2_SCHEMA_WAIT, 4 min)" {class: app}
+  wait: "wait 5 s\n(up to SA_SCHEMA_WAIT, 4 min)" {class: app}
   over: "Wait over?" {class: decision}
   serve: "start: rows only,\nits own Redis user" {class: end}
   stop: "fail startup:\nchanged migration,\nor no Job ran" {class: fail}

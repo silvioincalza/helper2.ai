@@ -57,11 +57,11 @@ Screen notes for the administrator's use cases (UC-003, UC-004, UC-010, UC-013, 
 6. **Audit**: what administrators did, newest first: when, the action, the target, the outcome, who. A discovered list the system removed because its page is gone is listed too, with "System" as who.
 7. **Settings** (read-only, [ADR 0038](../architecture/decisions/ADR-0038-back-office-and-review.md)): what the app runs with now, one table per
    part (Models, AI guide, Search, Scout, Scout sources, Setup guide, Home examples). Each row: the setting in words,
-   its value ("500 calls a day", "No cap", "On", "None" when no model is set) and the `H2_` variable that sets it, or
+   its value ("500 calls a day", "No cap", "On", "None" when no model is set) and the `SA_` variable that sets it, or
    "No variable". Secrets are never shown. A change needs a new value and a restart, except for the spending
    limits at the top ([ADR 0007](../architecture/decisions/ADR-0007-configuration-secrets-runtime-settings.md)): Scout enrichments per run, enrichment
    calls and gap rounds a day, the guide's model calls a day, translations a day, Live web credits a day for all of
-   helper2.ai and for the Scout's searches, page reads a day, research model calls a day. Each row:
+   searchavo.ai and for the Scout's searches, page reads a day, research model calls a day. Each row:
    the value now with "Changed" or "Default", the default and its variable, the allowed range ("0 to 3000 calls a
    day") and one line of help. **Change** opens a number field; a value outside the range says "Enter a whole
    number from 0 to 3000." and nothing is sent. **Review changes** shows "600 calls a day → 50 calls a day", says
@@ -72,7 +72,7 @@ Screen notes for the administrator's use cases (UC-003, UC-004, UC-010, UC-013, 
    overview says "2 spending limits changed at runtime", a link to this page; the audit trail shows each change
    as "default 600 → 50" with its reason.
    **Switches you can change**, above the limits: "Google ads" ([ADR 0042](../architecture/decisions/ADR-0042-monetisation.md)), with
-   its value now (`true` or `false`) and "Changed" or "Default", the default and `H2_ADS_ENABLED`, and one line on
+   its value now (`true` or `false`) and "Changed" or "Default", the default and `SA_ADS_ENABLED`, and one line on
    what true and false do. **Set to true** (or **Set to false**) opens the same review: "Google ads: false → true",
    an optional reason, **Confirm change**: "Saved: Google ads is now true." **Reset to default** goes through the
    same review. History lists the last changes as `true`, `false` or "back to the default". Someone changed it

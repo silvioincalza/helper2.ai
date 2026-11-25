@@ -32,12 +32,12 @@ is a number with a maximum in code: a list of hosts does not fit there.
 
 ## Decision
 ### One collector per category
-1. **34 categories in 7 families, each its own collector.** The categories are one YAML list, `helper2.categories` in
+1. **34 categories in 7 families, each its own collector.** The categories are one YAML list, `searchavo.categories` in
    `application.yaml`. Each entry has an `id` (the catalog tag), a `family`, a `short-name` (the radar label, at most
    12 characters), a `name` (the Sources page's), its `words` and a `discovery` block:
    - `type`: what a product its searches find becomes (`PRODUCT`, `AGENT`, `PROMPT`, `SKILL`, `LIBRARY`, ...);
    - `queries`: one Tavily search each (most categories have one, five have two);
-   - optional: `interval` (default `helper2.scout.discovery.interval`, 7 days), `enabled`, `min-score` (default 0.4),
+   - optional: `interval` (default `searchavo.scout.discovery.interval`, 7 days), `enabled`, `min-score` (default 0.4),
      `require-keyword`, `index-lists`, `exclude-domains` (added to the shared list).
 
    The families and their categories:
@@ -64,13 +64,13 @@ is a number with a maximum in code: a list of hosts does not fit there.
 2. **Registered by a `BeanRegistrar`.** How many collectors there are depends on the configuration, so
    `DiscoveryCollectorRegistrar` (Spring Framework 7 `BeanRegistrar`, imported by `CollectorsConfiguration`) registers
    one bean per category. **This is the one exception to [0007](ADR-0007-configuration-secrets-runtime-settings.md):**
-   the registrar runs before any bean exists, so it reads `helper2.categories` from the `Environment` through Spring
+   the registrar runs before any bean exists, so it reads `searchavo.categories` from the `Environment` through Spring
    Boot's `Binder`, not as a `@ConfigurationProperties` bean. One record binds the list: `CategoriesProperties`
    (platform), as a bean and through its `bind(env)`. `DiscoveryCategories` (sources) checks the entries in code and
    turns them into `DiscoveryCategory`. The
    collectors themselves are built from the usual `@ConfigurationProperties` beans: the shared settings
-   `helper2.sources.discovery` (base URL, token, timeouts; `H2_SOURCE_DISCOVERY_ENABLED`,
-   `H2_SOURCE_DISCOVERY_DEADLINE`) and `helper2.scout.discovery` (interval, depth, results, score floor, excluded
+   `searchavo.sources.discovery` (base URL, token, timeouts; `SA_SOURCE_DISCOVERY_ENABLED`,
+   `SA_SOURCE_DISCOVERY_DEADLINE`) and `searchavo.scout.discovery` (interval, depth, results, score floor, excluded
    domains). All of them share one resilience policy, `collector-discovery`: a Tavily outage opens one circuit, not 34.
    The public app describes the same sources from the same settings (`ScoutSourceDescriptors`), so both apps list them.
    Each app checks its list against `CollectorIds`, the categories and the feeds (`CollectorsParityIT`,
@@ -87,7 +87,7 @@ is a number with a maximum in code: a list of hosts does not fit there.
    - one short query per search, never one long query for everything;
    - the query describes the product page in that page's own words ("serverless inference API for open-weight LLMs and
      image models"), without "best" or "launched": they bring back pages written to rank, and news;
-   - `topic: general`, `search_depth: advanced` (2 credits, best relevance; `H2_SCOUT_DISCOVERY_DEPTH=basic` halves the
+   - `topic: general`, `search_depth: advanced` (2 credits, best relevance; `SA_SCOUT_DISCOVERY_DEPTH=basic` halves the
      cost), `max_results: 10`;
    - `include_published_date`, `include_favicon` and `include_usage` on; `include_answer`, `include_raw_content` and
      `include_images` off. We keep what the search says about a page, never the page's full text, its images or an
@@ -188,7 +188,7 @@ is a number with a maximum in code: a list of hosts does not fit there.
     one the live search counts on and the Sources page shows ([0027](ADR-0027-live-web-store-first-daily-quota.md)),
     and to the Scout's own counter (`ScoutLiveWebCredits`; Redis, same key, field `scout-credits`). A search costs
     Tavily's `usage.credits`, or 2 (advanced) or 1 (basic) when the answer does not say. The metric is
-    `helper2.live-web.credits{feature="scout-discovery"}`. Past `helper2.scout.daily-credits` (`H2_SCOUT_DAILY_CREDITS`,
+    `searchavo.live-web.credits{feature="scout-discovery"}`. Past `searchavo.scout.daily-credits` (`SA_SCOUT_DAILY_CREDITS`,
     a runtime setting of [0007](ADR-0007-configuration-secrets-runtime-settings.md) §10, 1,000 by default) the categories due that day are SKIPPED ("Daily Tavily credit cap of the Scout reached") and try again the next
     day: the skip is `CollectedBatch.deferred`, so their pass stays open. The cap is checked again before each search:
     a pass that reaches it stops there, keeps its checkpoint and remembers the searches it made (§11). Every attempt counts, a retried one too
@@ -223,7 +223,7 @@ is a number with a maximum in code: a list of hosts does not fit there.
       its categories and the excerpt.
     - **Terms**: "How we describe resources" and "Health and legal tools". **Privacy**: the weekly category searches
       and what is kept from them.
-14. **Alerts.** `Helper2ScoutCollectorStale` leaves out `discovery-*`. One rule, `Helper2DiscoveryStale`, fires once per
+14. **Alerts.** `SearchavoScoutCollectorStale` leaves out `discovery-*`. One rule, `SearchavoDiscoveryStale`, fires once per
     environment when any category has had no success for its run interval plus a day (8 days at the default 7),
     and lists them.
 
@@ -234,7 +234,7 @@ is a number with a maximum in code: a list of hosts does not fit there.
       ([0012](ADR-0012-scout-collectors-and-events.md) point 6). An added list is read whatever its stars and words.
     - A web page an administrator added is a seed too (`WebPageLists`, [0012](ADR-0012-scout-collectors-and-events.md)
       point 6). It is read through the live web page reader as Markdown, at most once in
-      `H2_SCOUT_AWESOME_WEB_PAGES_EVERY` (7 days), for one live web credit of the Scout's daily cap; the passes
+      `SA_SCOUT_AWESOME_WEB_PAGES_EVERY` (7 days), for one live web credit of the Scout's daily cap; the passes
       between two reads use what the last read gave (`list_seed_last_read`). The GitHub lists it links to are followed like those of a seed
       README, and its links to product sites go to review (point 17) with the page as the list. It comes after the
       GitHub seeds in a pass, so an entry two lists share keeps the section of the GitHub list. A list page discovery
@@ -306,7 +306,7 @@ is a number with a maximum in code: a list of hosts does not fit there.
       ([0020](ADR-0020-resource-vitality.md) §2). It joins its repository by the rule of
       [0021](ADR-0021-resource-identity-one-resource-per-repository.md) §3 (`RepositoryJoin`): the list's entry row
       names the resource the package lands on. Maintainers, downloads and versions are not read into the catalog.
-    - **A course page**: a link on the host and path of a platform of `helper2.scout.courses.platforms` that is about
+    - **A course page**: a link on the host and path of a platform of `searchavo.scout.courses.platforms` that is about
       AI and reads like a course, by the rule of the course scout (`CoursePages`,
       [0012](ADR-0012-scout-collectors-and-events.md) point 7). The words read are the link's words, the heading path
       and the address. It becomes a `COURSE_CANDIDATE`, with the platform's name.
@@ -336,7 +336,7 @@ is a number with a maximum in code: a list of hosts does not fit there.
       each, the number of the models. Past a cap, each kind moves through its links day by day like the models
       (`DailyWindow`). A rate limit or a failure ends the reading of that kind only. Each call to arXiv, retries of
       the policy included, first takes arXiv's shared slot.
-      `H2_SOURCE_ARXIV_ENABLED=false`, `H2_SOURCE_NPM_ENABLED=false` or a cap of 0 turns a kind off. `H2_SOURCE_HF_TRENDING_ENABLED=false` or 0 models a pass turns the reading
+      `SA_SOURCE_ARXIV_ENABLED=false`, `SA_SOURCE_NPM_ENABLED=false` or a cap of 0 turns a kind off. `SA_SOURCE_HF_TRENDING_ENABLED=false` or 0 models a pass turns the reading
       off: a model link then follows the rule of other links.
     - A candidate is never indexed straight away. Its title is the link's words (the name of the product or the
       course), or the host when the words name only a place ("website", "demo"); a model's title is its id. It has
@@ -358,8 +358,8 @@ is a number with a maximum in code: a list of hosts does not fit there.
     - On an indexed resource, `JdbcCategoryLabels` reads the heading paths the list index already keeps
       (`awesome_list_entry.heading_path`). `IndexAwesomeLists` assigns the categories of a list's entries again after
       it writes them, so a new heading counts in the same run.
-19. **Metrics.** `helper2.scout.awesome.lists{depth=seed|nested}` counts lists read, `helper2.scout.awesome.candidates`
-    links proposed, `helper2.scout.awesome.models`, `.papers` and `.packages` what the sources confirmed, `helper2.scout.awesome.skips{reason}` every skip: a nested list (`nested-seen`, `nested-depth`,
+19. **Metrics.** `searchavo.scout.awesome.lists{depth=seed|nested}` counts lists read, `searchavo.scout.awesome.candidates`
+    links proposed, `searchavo.scout.awesome.models`, `.papers` and `.packages` what the sources confirmed, `searchavo.scout.awesome.skips{reason}` every skip: a nested list (`nested-seen`, `nested-depth`,
     `nested-cap`, `nested-archived`, `nested-fork`, `nested-few-stars`, `nested-not-ai`, `nested-unavailable`), a budget
     (`time-budget`, `size-budget`, `rate-limited`, `readme-unavailable`), an added web page (`page-never-read`,
     `page-credit-cap`, `page-reader-off`, `page-unavailable`), a link (`link-seen`, `link-cap`, and `link-`
@@ -367,15 +367,15 @@ is a number with a maximum in code: a list of hosts does not fit there.
     `model-unavailable`), a paper (`paper-cap`, `paper-not-kept`, `paper-rate-limited`, `paper-unavailable`) or a
     package (`package-cap`, `package-not-found`, `package-not-ai`, `package-rate-limited`, `package-unavailable`). The reasons are a fixed set ([0009](ADR-0009-observability.md)). No
     URL or list text is logged.
-20. **Configuration.** Under `helper2.scout.github-awesome` (`CollectorProperties.GitHubAwesome`):
-    `H2_SCOUT_AWESOME_MAX_RUN_TIME`, `H2_SCOUT_AWESOME_MAX_README_BYTES`, `H2_SCOUT_AWESOME_NESTED_DEPTH`,
-    `H2_SCOUT_AWESOME_NESTED_LISTS`, `H2_SCOUT_AWESOME_LINKS_PER_DAY`, `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`,
-    `H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER`, `H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ`; `links.max-per-pass`,
+20. **Configuration.** Under `searchavo.scout.github-awesome` (`CollectorProperties.GitHubAwesome`):
+    `SA_SCOUT_AWESOME_MAX_RUN_TIME`, `SA_SCOUT_AWESOME_MAX_README_BYTES`, `SA_SCOUT_AWESOME_NESTED_DEPTH`,
+    `SA_SCOUT_AWESOME_NESTED_LISTS`, `SA_SCOUT_AWESOME_LINKS_PER_DAY`, `SA_SCOUT_AWESOME_WEB_PAGES_EVERY`,
+    `SA_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER`, `SA_SCOUT_AWESOME_WEB_PAGES_NEVER_READ`; `links.max-per-pass`,
     `links.max-models-per-pass`, `links.model-index-min-likes`, `links.max-papers-per-pass` and
-    `links.max-packages-per-pass` are fixed in the YAML. Defaults in `helper2-shared.yaml`. Depth 0 turns nested lists
+    `links.max-packages-per-pass` are fixed in the YAML. Defaults in `searchavo-shared.yaml`. Depth 0 turns nested lists
     off; 0 links a day turns the review items off; 0 models a pass turns the reading of models off. The Hub client
-    is the one of `helper2.sources.hf-trending` (base URL, `H2_HF_TOKEN`, timeout). The arXiv and npm readers take
-    their base URL from `helper2.sources.arxiv` and `helper2.sources.npm`, and the collector's timeout; they send
+    is the one of `searchavo.sources.hf-trending` (base URL, `SA_HF_TOKEN`, timeout). The arXiv and npm readers take
+    their base URL from `searchavo.sources.arxiv` and `searchavo.sources.npm`, and the collector's timeout; they send
     no token.
 
 ### Discovery hosts
@@ -409,53 +409,53 @@ No new table for deep search, no new dependency.
 ([0038](ADR-0038-back-office-and-review.md)).
 
 ### Code
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/liveweb/scout/DiscoveryCollector.java` — one category's
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/liveweb/scout/DiscoveryCollector.java` — one category's
   searches, `keep` (Tavily's own pages, score, AI, shape), what is kept; `DiscoveryPages.java` — list, product or post,
   by URL and title, built from `HostLists`; `ScoutLiveWebCredits.java` — credits and the daily cap;
   `ScoutLiveWebSearch.java` — the search call, through the policy and the credit counter, and the deferred batch;
   `QueryProgress.java` — the searches done and the start date of the window.
-- `backend/libs/core/src/main/java/ai/helper2/sources/tavily/TavilySource.java` — `isTavilysOwnPage`, `toHit`;
+- `backend/libs/core/src/main/java/ai/searchavo/sources/tavily/TavilySource.java` — `isTavilysOwnPage`, `toHit`;
   `DiscoveryCategory.java`, `DiscoveryFamily.java`; `sources/config/DiscoveryCategories.java` — the checked entries, bound by
-  `backend/libs/platform/src/main/java/ai/helper2/platform/config/CategoriesProperties.java`;
+  `backend/libs/platform/src/main/java/ai/searchavo/platform/config/CategoriesProperties.java`;
   `CollectorProperties.java` (`Discovery`, `GitHubAwesome`); `support/RunInterval.java` — `staggered`, `nextDueDay`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/DiscoveryCollectorRegistrar.java` — one bean per
-  category; `CollectorsConfiguration.java`; the categories in `application.yaml` (`helper2.categories`);
-  `backend/apps/public/src/main/java/ai/helper2/sources/config/scout/ScoutSourceDescriptors.java`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/AwesomeCrawl.java` (nested lists, budgets),
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/config/scout/DiscoveryCollectorRegistrar.java` — one bean per
+  category; `CollectorsConfiguration.java`; the categories in `application.yaml` (`searchavo.categories`);
+  `backend/apps/public/src/main/java/ai/searchavo/sources/config/scout/ScoutSourceDescriptors.java`.
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/github/scout/AwesomeCrawl.java` (nested lists, budgets),
   `ListEntryLinks.java` (a link's kind), `DailyWindow.java` (the day's share of capped reads),
   `ProductLinks.java` (link checks), `AwesomeMetrics.java`,
-  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/WebAddresses.kt` (the host check of every address),
+  `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/WebAddresses.kt` (the host check of every address),
   `AwesomeListParser.java` (`Item`, `Link`, `Entry.pointsAtList`, `SearchBudget`), `GitHubAwesomeCollector.java`
   (`Deep`, `LinkRules`, `links`, `readModels`, `candidate`, `searchEntries`, `repoFacts`);
   `sources/huggingface/scout/HuggingFaceModelReader.java` (a model by its id);
   `sources/arxiv/scout/ArxivPaperReader.java` (papers by id, the shared slot);
   `sources/npm/scout/NpmPackageReader.java` (a package by its name);
-  `backend/libs/core/src/main/java/ai/helper2/sources/arxiv/ArxivSource.java` (`papers`, `isAboutAi`, `takesSlot`),
+  `backend/libs/core/src/main/java/ai/searchavo/sources/arxiv/ArxivSource.java` (`papers`, `isAboutAi`, `takesSlot`),
   `sources/npm/NpmSource.java` (`ofLatestVersion`);
   `sources/liveweb/scout/CoursePages.java` (the course rule);
-  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CanonicalUrl.kt` (`huggingFaceModel`, `arxivPaper`).
+  `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/CanonicalUrl.kt` (`huggingFaceModel`, `arxivPaper`).
 - `sources/github/scout/ListReader.java`, `GitHubReadmeReader.java`, `WebPageReader.java`, `WebPageLists.java` (an
   added web page: when it is read, its credit, the hosts never read), `AwesomeLists.java` (`readsAsList`),
   `GitHubAwesomeCollector.java` (`ListRepo`, `pageHit`, `alsoWrites`);
-  `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorDescriptors.java` (`curatedWebLists`);
+  `backend/libs/core/src/main/java/ai/searchavo/sources/config/CollectorDescriptors.java` (`curatedWebLists`);
   `scout/usecase/RunScout.kt` (`index`: every source a collector writes).
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/ListSeeds.kt` — `ListKind`, `ListSeed`, `ListSeedStore`,
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/ListSeeds.kt` — `ListKind`, `ListSeed`, `ListSeedStore`,
   `ListAddresses`, `HostsNeverRead`; `scout/usecase/ManageListSeeds.kt`; `scout/internal/JdbcListSeedStore.java`;
   `admin/web/ListSeedsController.java`; `V2026.11.8.4__list_seed.sql`, `V2026.11.8.5__list_seed_web_page.sql`;
   `CollectorProperties.GitHubAwesome.WebPages`; `frontend/src/admin/ListSeedsPanel.tsx`.
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/DiscoveryHosts.kt` — `HostKind`, `DiscoveryHost`,
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/DiscoveryHosts.kt` — `HostKind`, `DiscoveryHost`,
   `HostLists`, `DiscoveryHostStore`, `HostNames`; `scout/usecase/ManageDiscoveryHosts.kt`;
   `scout/internal/JdbcDiscoveryHostStore.java`; `admin/web/DiscoveryHostsController.java`; `api/admin.yaml`
   (`DiscoveryHosts`, `DiscoveryHostEntry`, `DiscoveryHostAdd`, `DiscoveryHostRemove`).
-- `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java` — `RESOURCE_CANDIDATE`
+- `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/ReviewQueueCandidateReview.java` — `RESOURCE_CANDIDATE`
   items, the merge, the daily link cap; `ResourceCandidateJson.java` — the candidate JSON, written, merged and read.
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Ports.kt` (`CandidateSignals`) — what a source states about a candidate;
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt` — accepting a candidate;
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/Ports.kt` (`CandidateSignals`) — what a source states about a candidate;
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/IndexAcceptedCandidate.kt` — accepting a candidate;
   ports `CandidateDetails`, `CatalogLookup`; `scout/Ports.kt` (`CollectedBatch.newCandidatesPerDay`,
-  `CandidateReview.propose`); `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/ResolveReview.java`.
-- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/WebSources.kt`, `Categories.kt` (`CategoryInput.headings`);
-  `backend/libs/platform/src/main/java/ai/helper2/platform/quota/QuotaCounter.java` (`add`), `RedisQuotaCounter.java`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java` (open candidate, category filter,
+  `CandidateReview.propose`); `backend/apps/backoffice/src/main/java/ai/searchavo/admin/usecase/ResolveReview.java`.
+- `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/WebSources.kt`, `Categories.kt` (`CategoryInput.headings`);
+  `backend/libs/platform/src/main/java/ai/searchavo/platform/quota/QuotaCounter.java` (`add`), `RedisQuotaCounter.java`.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/ReviewQueue.java` (open candidate, category filter,
   `candidatesOpenedToday`), `catalog/usecase/IndexAwesomeLists.java`, `catalog/internal/JdbcCatalogWriter.java`
   (`extra`), `JdbcCategoryLabels.java` (`of`), `catalog/usecase/RefreshCategories.java`, `JdbcAwesomeListIndex.java`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (the `RESOURCE_CANDIDATE` review kind,
@@ -466,7 +466,7 @@ No new table for deep search, no new dependency.
   `frontend/src/features/home/radarLayout.ts` (`placeDot`), `frontend/src/lib/radarRotation.ts` (groups), `HomeRadar.tsx`,
   `frontend/src/admin/ReviewQueuePage.tsx`, `ScoutRunsPage.tsx`, `DiscoveryHostsPanel.tsx`, `SettingsPage.tsx`;
   `frontend/src/i18n/locales/en.legal.json` (the Privacy and Terms pages).
-- `deploy/monitoring/helper2-rules.yaml` — `Helper2DiscoveryStale`.
+- `deploy/monitoring/searchavo-rules.yaml` — `SearchavoDiscoveryStale`.
 - Tests: `DiscoveryCollectorTest` (`tavilysOwnPagesAreNeitherCandidatesNorListPages`), `TavilySourceTest`,
   `DiscoveryPagesTest`, `DiscoveryCollectorRegistrarTest`, `CollectorsParityIT`, `ScoutSourceDescriptorsParityTest`, `RunIntervalTest`, `IndexAcceptedCandidateTest`,
   `ResourceCandidateJsonTest`, `AwesomeCrawlTest`, `ProductLinksTest`, `WebAddressesTest`, `ListEntryLinksTest`,
@@ -477,7 +477,7 @@ No new table for deep search, no new dependency.
   `CatalogPurgeExpiredDataIT`, `JdbcCatalogWriterIT`, `ResiliencePoliciesConfigIT`, `ReportAndReviewIT`
   (`twoCategoriesFindingOnePageMakeOneItemThatKeepsWhatBothSearchesSaid`), `DiscoveryCategories.test.tsx`,
   `radarLayout.test.ts`, `radarRotation.test.ts`, `HomeRadar.test.tsx`, `ReviewQueuePage.test.tsx`,
-  `DiscoveryHostsPanel.test.tsx`, `deploy/monitoring/tests/helper2-rules-test.yaml`.
+  `DiscoveryHostsPanel.test.tsx`, `deploy/monitoring/tests/searchavo-rules-test.yaml`.
 
 ## Alternatives considered
 - **One collector for every category** — one source on the radar and the Sources page, one run a week for all
@@ -504,7 +504,7 @@ No new table for deep search, no new dependency.
   call per linked repository (thousands a day). Name and section find most lists for 30 calls.
 - **A daily link cap counted in Redis** — the review items are already in PostgreSQL; counting them there needs no
   second store and survives a cache flush.
-- **Host lists as a runtime setting of type list, as `H2_` variables, or a snapshot refreshed every 20 s** — the setting
+- **Host lists as a runtime setting of type list, as `SA_` variables, or a snapshot refreshed every 20 s** — the setting
   is a number with a maximum in code; a variable needs a deploy; a snapshot is one more thread, not needed while only
   batch runs read the lists.
 
@@ -521,7 +521,7 @@ No new table for deep search, no new dependency.
 - Credits: 39 searches × 2 credits = 78 a week, ~335 a month (390 in a month with 5 passes). A normal day is about 12 credits
   (5 categories × ~1.2 searches × 2 credits); on LinkedIn's day its 20 basic searches bring the day to about 32. The
   daily cap is 1,000 by default, so it stops a fault, not a normal day, until an administrator lowers it. Deep search spends no credits.
-- The global daily credit cap of the live search (`H2_LIVE_WEB_DAILY_CREDITS`) counts the Scout's discovery credits
+- The global daily credit cap of the live search (`SA_LIVE_WEB_DAILY_CREDITS`) counts the Scout's discovery credits
   too: a day of discovery leaves less for visitors. The Scout itself checks only its own cap.
 - 34 run records a week and 34 rows on the Sources page, grouped by family so they stay readable.
 - The registrar reads its configuration outside `@ConfigurationProperties` (the exception to [0007](ADR-0007-configuration-secrets-runtime-settings.md) above). Its entries are
@@ -536,7 +536,7 @@ No new table for deep search, no new dependency.
   The places of a site (`/blog`, `/docs`, `/careers` …) and GitHub's own pages stay in code: they are rules about
   addresses, not about sites.
 - Retention ([0010](ADR-0010-data-retention.md)): list pages (ARTICLE) are deleted 180 days after
-  `retrieved_at` (`H2_RETENTION_WEB_NEWS`); an accepted product stays as long as it is listed; a review item stays
+  `retrieved_at` (`SA_RETENTION_WEB_NEWS`); an accepted product stays as long as it is listed; a review item stays
   until it is decided, then 180 days. The search facts go with their record or item.
 - Privacy: no user data in the searches. The Hugging Face Hub, arXiv and the npm registry are asked only for an id
   a public list links. No author of a paper and no maintainer of a package is kept. `discovery_host` and `list_seed` hold the GitHub user ID of the
@@ -548,8 +548,8 @@ No new table for deep search, no new dependency.
   reading of a third party's list page is a point for the lawyer, not settled here.
 - An added web page is not deleted between two reads: the list index has no retention period and keeps what the
   last read gave until the next read writes it again ([0023](ADR-0023-catalog-full-text-index.md) point 16). Its resource (source `curated-web-lists`) is indexed by
-  the Scout like a GitHub list, so no retention period deletes it: `H2_RETENTION_WEB_NEWS` covers the records of the web search sources, not
-  those of `curated-web-lists`, and `H2_RETENTION_OBSERVED_UNSEEN` covers observed resources only. After its list is
+  the Scout like a GitHub list, so no retention period deletes it: `SA_RETENTION_WEB_NEWS` covers the records of the web search sources, not
+  those of `curated-web-lists`, and `SA_RETENTION_OBSERVED_UNSEEN` covers observed resources only. After its list is
   removed from "Lists to read" the resource stays, and so does what its list index held at the last read.
 - List pages are indexed without review. Their claims are not facts in the catalog: they are `ARTICLE`s, and
   enrichment cites only what they say about themselves.
@@ -563,8 +563,8 @@ No new table for deep search, no new dependency.
 - Each product that discovery finds (consumer tools, hosting, prompt libraries) waits for an admin: the weekly review load and the share accepted decide each category's `min-score` and the categories.
 - A link of a list entry to a PyPI package ([S2.3.12](https://github.com/silvioincalza/helper2.ai/issues/850)), a Hugging Face dataset or a Space ([S2.3.13](https://github.com/silvioincalza/helper2.ai/issues/851)) gives nothing: no reader confirms these by id. A paper outside the AI categories of the arXiv source is not kept. A package read from a list has no downloads and no date of its last release: the latest-version document states neither. A package that joins its repository is linked to its list on the run that read it; a later run of the same pass links it only when the repository is an entry too. A model the Hub renamed is linked to its list only on the run that read it. A second link of an entry is often its docs or its demo: the rules of product pages skip most, the others reach review with the link's own words as title.
 - Deep search in awesome lists skips product sites on plain http, on an IDN (punycode) name or linked only through HTML. A list linked under a plain heading whose name does not say "awesome" is not followed. A category given by a list heading stays until the resource's categories are assigned again. All seed lists are read every pass, even when the first ones fill the entry cap.
-- No weekly alert watches the Scout's credits (`helper2_live_web_credits_total{feature=~"scout-discovery|scout-linkedin"}`).
-- An added web page: the type rule counts every linked line of the Markdown the page reader gives, navigation and footer links too, so a page with a long menu can pass it; its entries and links follow the rules of a README; a page that keeps failing costs up to 3 credits in a row before it waits `H2_SCOUT_AWESOME_WEB_PAGES_EVERY`; `robots.txt` is not read by us: the page reader's operator fetches the page.
+- No weekly alert watches the Scout's credits (`searchavo_live_web_credits_total{feature=~"scout-discovery|scout-linkedin"}`).
+- An added web page: the type rule counts every linked line of the Markdown the page reader gives, navigation and footer links too, so a page with a long menu can pass it; its entries and links follow the rules of a README; a page that keeps failing costs up to 3 credits in a row before it waits `SA_SCOUT_AWESOME_WEB_PAGES_EVERY`; `robots.txt` is not read by us: the page reader's operator fetches the page.
 - There is no host deny list for discovery and no cap on list pages per host per pass; vendor compare and alternatives pages are not dropped; Chrome Web Store, Firefox add-on and GPT links are not recognised; press pages keep long excerpts, and an excerpt can hold an email address; open candidates do not expire; any collector can be the source of a candidate.
 - No replay evaluation on a recorded snapshot tunes each category's `min-score`, the list-title rule and the words, although the search facts are kept per record and candidate.
 - A query that keeps failing keeps its category's pass open: only that query is searched again at each run, until it answers. A pass left open with candidates held back over the daily cap loses those of the searches already done (the resume cursor skips them). A failed attempt counts what its depth costs, so a 429 is counted too.
@@ -607,7 +607,7 @@ No new table for deep search, no new dependency.
 | 7 | Data | Covered: `discovery_host` in V1; review items and heading paths; provenance in `foundBy` and `source_record.extra`. |
 | 8 | Browser & Computer Use | Deferred, safe: no page is fetched; product and course links are only stored for review, a model is read from the Hub's API. |
 | 9 | Guardrails | Covered: URL rules and the shapes, Tavily's own pages dropped, `ProductLinks`, host checks, the tag cap, `require-keyword`. |
-| 10 | Observability | Covered: run records, credit metrics, the deep-search metrics, `Helper2DiscoveryStale`. |
+| 10 | Observability | Covered: run records, credit metrics, the deep-search metrics, `SearchavoDiscoveryStale`. |
 | 11 | Evaluation | Gap, deferred: the share of good candidates and category precision from headings are measured once the review has run some weeks and the category eval has labels ([0026](ADR-0026-filters-facets-categories.md)). |
 | 12 | Deployment | Covered: settings with safe defaults, no chart change. Rollback: `enabled: false` per category, depth 0 and 0 links a day. |
 | 13 | Security & Identity | Covered: the host endpoints are ADMIN only on the back office, CSRF on writes; no new secret. |

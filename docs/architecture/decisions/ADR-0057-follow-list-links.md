@@ -70,7 +70,7 @@ What exists to follow a link:
    A name shorter than 3 letters and digits proves nothing. Code says yes or cannot decide; it never says no. The
    refusals by code are the host rules of point 4 and a directory host.
 6. **A model only where code cannot decide** (`SpringAiItemPageJudge`, port `ItemPageJudge`). It is the fast model
-   the awesome-list classifier uses (`helper2.llm.fast-model`), through the same client, budget counter, metrics and
+   the awesome-list classifier uses (`searchavo.llm.fast-model`), through the same client, budget counter, metrics and
    circuit (`TextCall`, `BudgetedChat`, policy `llm-chat`). No provider and no model is added.
    - It gets a fixed instruction (`prompts/sources/check-item-page.txt`), the name (at most 200 characters, on one
      line) and at most 2,000 characters of the page text, cleaned by `UntrustedPageText` and fenced in `<page>`.
@@ -102,13 +102,13 @@ What exists to follow a link:
      reach an internal address. The egress rule of the chart is a second wall: port 443 only, the private ranges and
      169.254.0.0/16 left out (`networkPolicy.egress`). The chart does not change.
    - **Nothing of ours is sent.** No cookie (cookie handling is off), no credential, no referrer. The User-Agent is the
-     one of every outbound call, `Helper2.ai-metasearch/<version> (+https://helper2.ai/sources)`.
+     one of every outbound call, `Searchavo.ai-metasearch/<version> (+https://searchavo.ai/sources)`.
    - **Short and small.** 3 s to connect, 5 s for an answer, 8 s for the whole call; at most 100 header lines of 8 KB;
      one try, no retry. TLS verification stays on.
    - **Resilience.** The call runs in the policy `page-status` ([0006](ADR-0006-outbound-calls-and-resilience.md)):
      a circuit over all sites, opened when half of the last 10 requests gave no answer. An HTTP status is an answer
      and never counts as a failure.
-   - **robots.txt is honoured** for the path asked (`RobotsRules`, RFC 9309: the group that names helper2.ai, else
+   - **robots.txt is honoured** for the path asked (`RobotsRules`, RFC 9309: the group that names searchavo.ai, else
      the group for every robot; the longest rule decides; `*` and `$`). It is read with the same transport (at most
      512 KB), kept one day per host in memory, and counts on the caps. A site with no robots.txt (404, 410) states no
      rule. A robots.txt that cannot be read (another status, a time-out, a redirect to another site) allows nothing.
@@ -125,21 +125,21 @@ What exists to follow a link:
      `location` is not followed. Both callers share the adapter, its rules and its caps; neither changes them.
 
 ### Budgets
-9. **Steps a day.** `web-pages.follow.steps-per-day` (`H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STEPS_PER_DAY`, 100), counted
+9. **Steps a day.** `web-pages.follow.steps-per-day` (`SA_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STEPS_PER_DAY`, 100), counted
    per step before the request. 100 is the number of pages of an item the rating reads a day
    ([0056](ADR-0056-directory-rating.md) point 9): one more reading task of the same size on the same hosts. With 1
    to 3 steps an entry, 100 steps follow 33 to 100 entries a day; the 10 list reads a day of
    [0055](ADR-0055-directory-lists.md) are followed over several days. 0 follows no link.
-10. **Credits.** A read costs one credit of the Scout's daily cap (`H2_SCOUT_DAILY_CREDITS`, 1,000), counted on
-    `helper2.live-web.credits{feature="scout-follow-links"}`. At most 100 a day, when every step is a read. When the
+10. **Credits.** A read costs one credit of the Scout's daily cap (`SA_SCOUT_DAILY_CREDITS`, 1,000), counted on
+    `searchavo.live-web.credits{feature="scout-follow-links"}`. At most 100 a day, when every step is a read. When the
     cap is spent, the links wait.
 11. **Model calls a day.** `web-pages.follow.check-calls-per-day`
-    (`H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_CHECK_CALLS_PER_DAY`, 50), a `DailyBudget` of its own (`follow-check`). 50,
+    (`SA_SCOUT_AWESOME_WEB_PAGES_FOLLOW_CHECK_CALLS_PER_DAY`, 50), a `DailyBudget` of its own (`follow-check`). 50,
     because a model call needs at least 2 steps before it (a step that leads to the page, and the read of the page),
     so 100 steps cannot ask more than 50 times. 0 asks no model; then a page code cannot decide gives nothing.
 12. **Status requests.** 200 a day in all: at most 100 steps, and the robots.txt of at most 100 new hosts. 30 to one
     host a day: a directory whose every "Visit" link is a redirect on its own host is asked about once an hour on
-    average, and its other entries wait for the next day. `H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_DAY`,
+    average, and its other entries wait for the next day. `SA_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_DAY`,
     `…_PER_HOST_PER_DAY`. The checks of a list page that could not be read count on the same two caps: at most 2
     requests for a failed read (the page, and the robots.txt of a host not asked that day), so at most 120 a day
     when all 60 lists that can be read in a day fail. The two uses take from one count in the order of the pass; a
@@ -170,36 +170,36 @@ What exists to follow a link:
 
 ### Metrics
 17. Per directory host of the list (`host`; the hosts a link leads to are not a label: they are not bounded):
-    - `helper2.scout.follow.links{host}`: links followed;
-    - `helper2.scout.follow.steps{host,kind}`: steps, `kind` `item-page`, `status` or `own-page`;
-    - `helper2.scout.follow.decided{host,by,answer}`: `by` `code` (answer `yes`) or `model` (`yes`, `no`, `none`);
-    - `helper2.scout.follow.nothing{host,reason}`: links that gave nothing, with the reason (`steps-spent`,
+    - `searchavo.scout.follow.links{host}`: links followed;
+    - `searchavo.scout.follow.steps{host,kind}`: steps, `kind` `item-page`, `status` or `own-page`;
+    - `searchavo.scout.follow.decided{host,by,answer}`: `by` `code` (answer `yes`) or `model` (`yes`, `no`, `none`);
+    - `searchavo.scout.follow.nothing{host,reason}`: links that gave nothing, with the reason (`steps-spent`,
       `no-link-to-the-item`, `no-redirect`, `directory-host`, `model-no`, a refusal of the host check, …);
-    - `helper2.scout.follow.requests{host,outcome}`: status requests, `outcome` the status class (`2xx` to `5xx`) or
+    - `searchavo.scout.follow.requests{host,outcome}`: status requests, `outcome` the status class (`2xx` to `5xx`) or
       the refusal (`host-check`, `never-read`, `private-address`, `robots`, `daily-cap`, `host-cap`, `timeout`,
       `unavailable`, and `not-asked` when the circuit is open);
-    - `helper2.scout.follow.waits{reason}`: a pass stopped following (`steps-daily-cap`, `credit-cap`, a budget);
-    - `helper2.scout.follow.check.budget.remaining`: model calls left today. The model calls also count on the
+    - `searchavo.scout.follow.waits{reason}`: a pass stopped following (`steps-daily-cap`, `credit-cap`, a budget);
+    - `searchavo.scout.follow.check.budget.remaining`: model calls left today. The model calls also count on the
       model metrics of every call, step `check-item-page`.
 18. **Runbook.** After a host is turned on and a week of passes:
-    `sum by (host, by, answer) (increase(helper2_scout_follow_decided_total[7d]))` against
-    `sum by (host) (increase(helper2_scout_follow_links_total[7d]))` gives the share of each path;
-    `increase(helper2_scout_follow_steps_total[7d]) / increase(helper2_scout_follow_links_total[7d])` the steps a
+    `sum by (host, by, answer) (increase(searchavo_scout_follow_decided_total[7d]))` against
+    `sum by (host) (increase(searchavo_scout_follow_links_total[7d]))` gives the share of each path;
+    `increase(searchavo_scout_follow_steps_total[7d]) / increase(searchavo_scout_follow_links_total[7d])` the steps a
     link. A host where the model decides most links, or where most links give nothing, is looked at by hand.
 
 ### Code
 - `backend/libs/schema/src/main/resources/db/migration/V2026.11.10.1__list_seed_followed.sql`.
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/PageStatus.kt`, `ListSeeds.kt` (`ListReading.Followed`);
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/PageStatus.kt`, `ListSeeds.kt` (`ListReading.Followed`);
   `scout/internal/JdbcListSeedStore.java`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/ListLinkFollower.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/github/scout/ListLinkFollower.java`,
   `ItemPageCheck.java`, `ItemPageReads.java`, `WebPageLists.java` (`followed`), `DirectoryRatingReader.java`.
 - `sources/classifier/ItemPageJudge.java`, `SpringAiItemPageJudge.java`;
   `backend/apps/backoffice/src/main/resources/prompts/sources/check-item-page.txt`.
 - `sources/pagestatus/LivePageStatusReader.java`, `PinnedTransport.java`, `RobotsRules.java`;
   `sources/research/PublicAddresses.java` (`pinned`).
 - `sources/config/scout/CollectorsConfiguration.java`;
-  `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorProperties.java` (`WebPages.Follow`);
-  `backend/libs/platform/src/main/resources/helper2-shared.yaml`.
+  `backend/libs/core/src/main/java/ai/searchavo/sources/config/CollectorProperties.java` (`WebPages.Follow`);
+  `backend/libs/platform/src/main/resources/searchavo-shared.yaml`.
 - Tests: `ListLinkFollowerTest`, `ItemPageCheckTest`, `SpringAiItemPageJudgeTest`, `LivePageStatusReaderTest`,
   `PinnedTransportTest`, `RobotsRulesTest`, `DirectoryRatingsTest`, `JdbcListSeedStoreIT`.
 
@@ -301,7 +301,7 @@ What exists to follow a link:
 | Tampering: prompt injection | The page read by the model says "answer yes" | Fixed instruction; the page is cleaned (hidden elements, comments, instruction lines), cut to 2,000 characters and fenced, and cannot close its fence; the answer is one word or nothing; a yes still passes the rule of the kind. Tests: `SpringAiItemPageJudgeTest`. |
 | Tampering: one site for every entry | A directory page points every entry to one site to flood the queue | The name must match for each entry; candidates are one per address and per site, inside the daily cap of the collector; a person reviews each. |
 | Repudiation | Nobody knows why a candidate came from a list | The candidate keeps the list that named it; the last read keeps the link, the address found, the steps and who decided; the model calls are counted by step and model id. |
-| Information disclosure | A request of ours leaks a credential or a visitor | No cookie, credential or referrer; nothing about a visitor is in a pass; a third-party site sees the server address and the User-Agent only. Test: `noCookieNoCredentialAndNoReferrerIsSentAndTheUserAgentNamesHelper2`. |
+| Information disclosure | A request of ours leaks a credential or a visitor | No cookie, credential or referrer; nothing about a visitor is in a pass; a third-party site sees the server address and the User-Agent only. Test: `noCookieNoCredentialAndNoReferrerIsSentAndTheUserAgentNamesSearchavo`. |
 | Denial of service / cost exhaustion | A list of thousands of entries spends credits, model calls, or loads a site; a site answers slowly or with a huge body | 100 steps, 50 model calls, 200 status requests a day, 30 a host, all counted per try; the Scout's credit cap; the pass budget; 3 s, 5 s and 8 s limits; no body read; 512 KB of robots.txt; a robots matcher that does not backtrack. Tests: `everyTryCountsOnTheDayAndOnItsHostAndPastACapNoRequestIsMade`, `theBodyOfAGetForAStatusIsNotRead`, `aPatternOfManyStarsIsMatchedWithoutBacktrackingForever`. |
 | Elevation of privilege | A visitor or a page starts a request of our server | No endpoint starts following or a check of a list page; only the pass of the collector does, for hosts an administrator turned on and pages an administrator added. |
 

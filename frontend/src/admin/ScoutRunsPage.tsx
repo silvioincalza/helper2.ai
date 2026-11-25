@@ -16,7 +16,7 @@ import { TableSkeleton } from '@/ui/Skeleton';
 import { RUN_TONE } from './adminModel';
 import { CategoryBackfill } from './CategoryBackfill';
 
-const COMMAND = 'helper2 scouts --runs';
+const COMMAND = 'searchavo scouts --runs';
 
 export const RUN_POLL_MS = 3000;
 

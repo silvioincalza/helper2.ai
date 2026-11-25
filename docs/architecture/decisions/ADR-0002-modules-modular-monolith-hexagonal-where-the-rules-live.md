@@ -9,7 +9,7 @@
 **Requirements:** C-003, C-014
 
 ## Context
-Helper2 has several features: federated search, a catalog, an artificial intelligence (AI) guide, a background Scout
+Searchavo has several features: federated search, a catalog, an artificial intelligence (AI) guide, a background Scout
 and sign-in. One database is enough for the load. But the rules (ranking, merging, the evidence gate) must stay
 testable without Spring, a database or a model, and features must not reach into each other's internals.
 Microservices would add network calls and deploys without a scaling need.
@@ -36,7 +36,7 @@ to reach into the other's code.
      `examples`, `sources` (the live search sources and the collectors' descriptors) and the shared web part. A
      context is a package, not a Gradle project; the rules of §8 hold its boundaries.
    - The shared web part of `core` is what both apps serve the same way: the types of `api/common.yaml`, generated
-     once into `ai.helper2.api.common` ([0003](ADR-0003-contract-first-rest.md)), and the controllers of its paths
+     once into `ai.searchavo.api.common` ([0003](ADR-0003-contract-first-rest.md)), and the controllers of its paths
      (`SearchController`, `SourcesController`, `CategoriesController`), `CardMapper` and
      `ContractEnumConverters`. Each class is compiled once, and the `core` jar lands in both boot jars.
 
@@ -81,7 +81,7 @@ to reach into the other's code.
    The Java use cases of `identity`, `catalog`, `examples` and `admin` have the same shape: plain classes over ports
    in the base package (`Users`, `Bookmarks`, `AuditLog` in identity, `DraftQueue` in examples), and
    the adapters implement them in `internal` (the JDBC stores, the drafts in the review queue).
-   A use case that opens its own transaction takes the port `UnitOfWork` of the kernel (`ai.helper2.shared`).
+   A use case that opens its own transaction takes the port `UnitOfWork` of the kernel (`ai.searchavo.shared`).
    The platform has its one adapter, `TransactionalUnitOfWork`, and `UnitOfWorkConfiguration` makes its one bean in
    both apps. A use case answers a refusal as an outcome, never as an HTTP problem
    ([0051](ADR-0051-use-cases-return-outcomes.md)).
@@ -145,7 +145,7 @@ to reach into the other's code.
    - `ApplicationModules.verify()`: no cycles, only public types of other modules are used;
    - the domain packages do not depend on `org.springframework..`, `tools.jackson..` or `java.sql..`;
    - the domain packages do not depend on any `web`, `cache`, `config` or `internal` package;
-   - both rules find the use cases by the pattern `ai.helper2..usecase..`, so a new `usecase` package is checked with
+   - both rules find the use cases by the pattern `ai.searchavo..usecase..`, so a new `usecase` package is checked with
      no change to the test; the domain packages that are not `usecase` packages are listed by hand (`shared`, `search`,
      `identity`, `catalog`, `catalog.enrichment`, `admin`, `research`, `site.pages`, ...);
    - no class outside `sources` depends on a class of `sources`;
@@ -171,7 +171,7 @@ to reach into the other's code.
 
    `SourceBoundariesTest` checks the same boundaries on the source files. The compiler copies a constant into the
    class that uses it and leaves no reference in the bytecode, so a rule on classes cannot see an import of a
-   constant; a rule on the text of the file does. It reads every `ai.helper2` name in
+   constant; a rule on the text of the file does. It reads every `ai.searchavo` name in
    the main sources of every project, and in the test and fixture sources of the libraries:
    - a context uses only itself and the contexts below it (§3), by package: `shared` (kernel), `platform`,
      `identity`, `search`, `search.web` and `api` (the shared web part, `web-contract` in the test), `catalog`,
@@ -192,10 +192,10 @@ to reach into the other's code.
    A context of `core` also checks its own rules on its classes alone, without an app: `IdentityArchitectureTest`,
    `CatalogArchitectureTest`, `ExamplesArchitectureTest` (only the contexts below it, no app code, no use case into
    `internal`, the domain framework-free) and `WebContractArchitectureTest`. The last one fails if the shared web
-   part uses an app's generated types (`ai.helper2.api.generated`).
-9. **One place for build settings.** `backend/build-logic/` holds the convention plugins: `helper2.format` (Spotless,
-   [0047](ADR-0047-code-format-and-dead-code-audit.md)), `helper2.kotlin-library` (Java 25, Kotlin, the BOMs,
-   test settings) and `helper2.spring-app` (Spring Boot, the app's contract generation,
+   part uses an app's generated types (`ai.searchavo.api.generated`).
+9. **One place for build settings.** `backend/build-logic/` holds the convention plugins: `searchavo.format` (Spotless,
+   [0047](ADR-0047-code-format-and-dead-code-audit.md)), `searchavo.kotlin-library` (Java 25, Kotlin, the BOMs,
+   test settings) and `searchavo.spring-app` (Spring Boot, the app's contract generation,
    [0003](ADR-0003-contract-first-rest.md)). The generator options are in one place, `SpringContract.kt`, used by
    both apps and by `core`. Every project uses one of the plugins; versions live there and in
    `build-logic/build.gradle.kts`.
@@ -211,7 +211,7 @@ to reach into the other's code.
     settings. The tests that start the whole app stay there too, the contract tests of the shared paths included:
     they check each app's answers against that app's whole contract.
     `libs/platform` holds its unit tests and the tests that bind its settings. It starts no Spring context of its
-    own: `helper2-shared.yaml` names classes of `search` and `sources` in the resilience rules, so the platform's
+    own: `searchavo-shared.yaml` names classes of `search` and `sources` in the resilience rules, so the platform's
     integration tests run in an app.
     Helpers several projects need are test fixtures of the lowest library that owns them: the Testcontainers
     setup, the recorded responses, `Eventually` (a check tried again until a time limit) and the shared
@@ -224,56 +224,56 @@ to reach into the other's code.
 
 ### Code
 - `backend/settings.gradle.kts` — the projects.
-- `backend/build-logic/build.gradle.kts`, `backend/build-logic/src/main/kotlin/helper2.*.gradle.kts`,
-  `backend/build-logic/src/main/kotlin/ai/helper2/buildlogic/SpringContract.kt` — the conventions.
+- `backend/build-logic/build.gradle.kts`, `backend/build-logic/src/main/kotlin/searchavo.*.gradle.kts`,
+  `backend/build-logic/src/main/kotlin/ai/searchavo/buildlogic/SpringContract.kt` — the conventions.
 - `backend/build.gradle.kts` — the version ([0045](ADR-0045-releases-and-versions.md)) and `checkNoRootSources`.
 - `backend/libs/*/build.gradle.kts`, `backend/apps/public/build.gradle.kts`, `backend/apps/backoffice/build.gradle.kts`,
   `backend/architecture/build.gradle.kts` — each project's dependencies.
-- `backend/{libs,apps}/*/src/main/java/ai/helper2/*/package-info.java` — module declarations.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/package-info.java` — the named interface `llm`;
+- `backend/{libs,apps}/*/src/main/java/ai/searchavo/*/package-info.java` — module declarations.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/llm/package-info.java` — the named interface `llm`;
   `.../platform/llm/internal/` — what only the LLM layer uses.
-- `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ModularityRules.java` — the module
+- `backend/libs/platform/src/testFixtures/java/ai/searchavo/testing/architecture/ModularityRules.java` — the module
   and hexagon rules both apps share;
-  `backend/apps/{public,backoffice}/src/test/java/ai/helper2/architecture/ModularityTest.java` — each app's packages
+  `backend/apps/{public,backoffice}/src/test/java/ai/searchavo/architecture/ModularityTest.java` — each app's packages
   and its own rules;
-  `backend/architecture/src/test/java/ai/helper2/architecture/SourceBoundariesTest.java` — the same
+  `backend/architecture/src/test/java/ai/searchavo/architecture/SourceBoundariesTest.java` — the same
   boundaries read from the source, over the roots `BackendSources`
-  (`backend/libs/platform/src/testFixtures/java/ai/helper2/testing/BackendSources.java`) lists; `TableOwnersTest.java`
+  (`backend/libs/platform/src/testFixtures/java/ai/searchavo/testing/BackendSources.java`) lists; `TableOwnersTest.java`
   and `SchemaUseTest.java` next to it — the table owners and the schema the code uses;
-  `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/Eventually.java`,
-  `backend/libs/core/src/testFixtures/java/ai/helper2/search/SharedApiTestBase.java` — the shared test helpers;
-  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/CollectorIds.kt` — the collectors' ids;
-  `backend/libs/core/src/test/java/ai/helper2/identity/architecture/IdentityArchitectureTest.java`,
-  `backend/libs/core/src/test/java/ai/helper2/catalog/architecture/CatalogArchitectureTest.java`,
-  `backend/libs/core/src/test/java/ai/helper2/examples/architecture/ExamplesArchitectureTest.java`,
-  `backend/libs/core/src/test/java/ai/helper2/api/architecture/WebContractArchitectureTest.java` — a
+  `backend/libs/platform/src/testFixtures/java/ai/searchavo/testing/Eventually.java`,
+  `backend/libs/core/src/testFixtures/java/ai/searchavo/search/SharedApiTestBase.java` — the shared test helpers;
+  `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/CollectorIds.kt` — the collectors' ids;
+  `backend/libs/core/src/test/java/ai/searchavo/identity/architecture/IdentityArchitectureTest.java`,
+  `backend/libs/core/src/test/java/ai/searchavo/catalog/architecture/CatalogArchitectureTest.java`,
+  `backend/libs/core/src/test/java/ai/searchavo/examples/architecture/ExamplesArchitectureTest.java`,
+  `backend/libs/core/src/test/java/ai/searchavo/api/architecture/WebContractArchitectureTest.java` — a
   context's own rules.
-- `backend/libs/core/src/test/java/ai/helper2/CoreTestApplication.java`, `PublicParts.java`, `BackOfficeParts.java`,
+- `backend/libs/core/src/test/java/ai/searchavo/CoreTestApplication.java`, `PublicParts.java`, `BackOfficeParts.java`,
   `backend/libs/core/src/test/resources/application.yaml` — the test-only application of `core`. As the back office
   it has the catalog's back office adapters (`@EnableCatalogBackOfficeAdapters`) and no back office use case: a test
   that needs one is in `backend/apps/backoffice/src/test`, in the context's package.
-- `backend/libs/core/src/main/java/ai/helper2/search/web/` (`SearchController`, `SourcesController`, `CategoriesController`,
-  `CardMapper`), `backend/libs/core/src/main/java/ai/helper2/api/ContractEnumConverters.java` — the shared
+- `backend/libs/core/src/main/java/ai/searchavo/search/web/` (`SearchController`, `SourcesController`, `CategoriesController`,
+  `CardMapper`), `backend/libs/core/src/main/java/ai/searchavo/api/ContractEnumConverters.java` — the shared
   web adapters.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/Ports.kt`, `.../scout/Ports.kt`, `.../scout/Scout.kt`,
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/Ports.kt`, `.../scout/Ports.kt`, `.../scout/Scout.kt`,
   `.../guide/Guide.kt`, `.../guide/GuideCost.kt` — ports.
-- `backend/libs/core/src/main/java/ai/helper2/identity/{Users,Bookmarks,AuditLog}.java`,
-  `backend/libs/core/src/main/kotlin/ai/helper2/examples/ExampleDrafts.kt` (`DraftQueue`),
-  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/UnitOfWork.kt` — ports
-  of the Java use cases; `backend/libs/platform/src/main/java/ai/helper2/platform/TransactionalUnitOfWork.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/identity/{Users,Bookmarks,AuditLog}.java`,
+  `backend/libs/core/src/main/kotlin/ai/searchavo/examples/ExampleDrafts.kt` (`DraftQueue`),
+  `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/UnitOfWork.kt` — ports
+  of the Java use cases; `backend/libs/platform/src/main/java/ai/searchavo/platform/TransactionalUnitOfWork.java`,
   `UnitOfWorkConfiguration.java` (both apps) — the transaction adapter; `.../identity/config/IdentityUseCaseConfiguration.java`,
   `.../examples/config/ExamplesUseCaseConfiguration.java` (both apps),
   `.../admin/config/AdminUseCaseConfiguration.java` — the use cases and their transactions.
-- `backend/apps/backoffice/src/main/java/ai/helper2/catalog/config/CatalogBackOfficeConfiguration.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/catalog/config/CatalogBackOfficeConfiguration.java`,
   `.../examples/config/ExamplesBackOfficeConfiguration.java`, `.../search/config/SearchBackOfficeConfiguration.java`,
-  `backend/apps/backoffice/src/main/java/ai/helper2/BackOfficeApplication.java` — the wiring only the back office
-  loads; `backend/libs/core/src/main/java/ai/helper2/catalog/config/EnableCatalogBackOfficeAdapters.java`,
+  `backend/apps/backoffice/src/main/java/ai/searchavo/BackOfficeApplication.java` — the wiring only the back office
+  loads; `backend/libs/core/src/main/java/ai/searchavo/catalog/config/EnableCatalogBackOfficeAdapters.java`,
   `.../examples/config/EnableExamplesBackOfficeAdapters.java` — the library's entries to
   `.../catalog/internal/CatalogBackOfficeAdapters.java` and `.../examples/internal/ExamplesBackOfficeAdapters.java`.
-- `backend/{libs,apps}/*/src/main/kotlin/ai/helper2/{search,guide,scout}/usecase/`,
-  `backend/{libs,apps}/*/src/main/java/ai/helper2/{catalog,identity,examples,admin}/usecase/` — use cases;
+- `backend/{libs,apps}/*/src/main/kotlin/ai/searchavo/{search,guide,scout}/usecase/`,
+  `backend/{libs,apps}/*/src/main/java/ai/searchavo/{catalog,identity,examples,admin}/usecase/` — use cases;
   `.../{search,catalog}/usecase/package-info.java` — named interfaces.
-- `backend/{libs,apps}/*/src/main/java/ai/helper2/search/{web,cache,config}`, `.../guide/{web,internal}`,
+- `backend/{libs,apps}/*/src/main/java/ai/searchavo/search/{web,cache,config}`, `.../guide/{web,internal}`,
   `.../scout/{web,internal}`, `.../catalog/internal`, `.../sources/*` — adapters.
 - `deploy/Dockerfile`, `deploy/backoffice.Dockerfile` — build `:apps:public:bootJar` and `:apps:backoffice:bootJar`.
 

@@ -1,9 +1,9 @@
 # Sequence: the daily catalog purge on a cluster of replicas: one replica takes the lock and runs the rules in order,
 # the others skip; the Scout, account, audit, search, guide and shared cache purges run the same way under their own locks.
-# Source of truth: backend/libs/platform/src/main/java/ai/helper2/platform/DailyJobs.java,
-#   backend/apps/backoffice/src/main/java/ai/helper2/catalog/schedule/CatalogRetentionSchedule.java, catalog/usecase/PurgeExpiredData.java,
+# Source of truth: backend/libs/platform/src/main/java/ai/searchavo/platform/DailyJobs.java,
+#   backend/apps/backoffice/src/main/java/ai/searchavo/catalog/schedule/CatalogRetentionSchedule.java, catalog/usecase/PurgeExpiredData.java,
 #   catalog/internal/JdbcCatalogRetention.java, platform/ClusterLocks.java (keptAlive, tryRun),
-#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutRetentionSchedule.java, identity/schedule/AuditRetentionSchedule.java,
+#   backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/ScoutRetentionSchedule.java, identity/schedule/AuditRetentionSchedule.java,
 #   apps/public/.../identity/schedule/AccountRetentionSchedule.java,
 #   search/config/SearchRetentionSchedule.java, guide/schedule/GuideRetentionSchedule.java,
 #   platform/cache/SharedCacheConfiguration.java.
