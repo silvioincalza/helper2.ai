@@ -457,7 +457,10 @@ ifeq ($(filter $(ROLLBACK_UNHEALTHY_GIVEN),true false),)
 $(error ROLLBACK_UNHEALTHY must be true or false, got '$(ROLLBACK_UNHEALTHY_GIVEN)')
 endif
 ROLLBACK_TARGET = $(if $(filter false,$(ROLLBACK_UNHEALTHY_GIVEN)),off,$${before:-none})
-deploy: check-env release-ready env-secret ## env-secret, then helm upgrade ENV to TAG (default: current commit), wait, roll back on failure; then the status check, and back to the revision deployed before when it fails (not with ROLLBACK_UNHEALTHY=false, on the command line of one deploy)
+# Helm's own rollback goes with it: on a first install --rollback-on-failure uninstalls the release, and the
+# pods that did not become ready are gone before anyone reads them.
+HELM_ROLLBACK = $(if $(filter false,$(ROLLBACK_UNHEALTHY_GIVEN)),,--rollback-on-failure)
+deploy: check-env release-ready env-secret ## env-secret, then helm upgrade ENV to TAG (default: current commit), wait, roll back on failure; then the status check, and back to the revision deployed before when it fails (neither rollback with ROLLBACK_UNHEALTHY=false, on the command line of one deploy)
 	set -euo pipefail; \
 	before=$$(./check-release.sh deployed-revision $(NS)); \
 	helm upgrade --install $(HELM_ARGS) --server-side=true --force-conflicts --wait --wait-for-jobs --timeout 12m --rollback-on-failure --history-max 3; \
@@ -706,6 +709,10 @@ chart-check-status:
 	[ "$$(target)" = '$${before:-none}' ] || { echo "make deploy must roll back by default: $$(target)"; exit 1; }; \
 	[ "$$(target "" ROLLBACK_UNHEALTHY=false)" = '$${before:-none}' ] || { echo "ROLLBACK_UNHEALTHY from the environment must not switch the rollback off"; exit 1; }; \
 	[ "$$(target ROLLBACK_UNHEALTHY=false)" = off ] || { echo "ROLLBACK_UNHEALTHY=false on the command line must switch the rollback off: $$(target ROLLBACK_UNHEALTHY=false)"; exit 1; }; \
+	helm_rb() { $(MAKE) --no-print-directory -s -f Makefile -f <(printf 'print-helm-rollback:\n\t@printf "%%s" %s\n' "'"'$$(HELM_ROLLBACK)'"'") print-helm-rollback ENV=prod $${1:-} 2>/dev/null || true; }; \
+	[ "$$(helm_rb)" = --rollback-on-failure ] || { echo "make deploy must let Helm roll back a failed upgrade by default: '$$(helm_rb)'"; exit 1; }; \
+	[ -z "$$(helm_rb ROLLBACK_UNHEALTHY=false)" ] || { echo "ROLLBACK_UNHEALTHY=false must drop the --rollback-on-failure of helm upgrade too: '$$(helm_rb ROLLBACK_UNHEALTHY=false)'"; exit 1; }; \
+	grep -qF -- '--timeout 12m $$(HELM_ROLLBACK) --history-max' <<< "$$recipe" || { echo "make deploy must pass HELM_ROLLBACK to helm upgrade, not a fixed --rollback-on-failure"; exit 1; }; \
 	target ROLLBACK_UNHEALTHY=no >/dev/null; grep -q "ROLLBACK_UNHEALTHY must be true or false" "$$err" || { echo "ROLLBACK_UNHEALTHY=no must be refused: $$(cat "$$err")"; exit 1; }; \
 	if grep -rn 'ROLLBACK_UNHEALTHY' $(ROOT)/deploy/helm app.env.example; then echo "ROLLBACK_UNHEALTHY is for one deploy on the make command line: no chart value or app.env key may set it"; exit 1; fi; \
 	echo "== one path switches the rollback off in a workflow: cd.yml's manual input keep-unhealthy (default false) -> deploy.yml -> make deploy ROLLBACK_UNHEALTHY=false"; \
