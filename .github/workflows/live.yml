@@ -20,10 +20,10 @@ jobs:
       run:
         working-directory: backend
     env:
-      H2_GITHUB_TOKEN: ${{ secrets.H2_GITHUB_TOKEN }}
-      H2_HF_TOKEN: ${{ secrets.H2_HF_TOKEN }}
-      H2_LIVE_WEB_API_KEY: ${{ secrets.H2_LIVE_WEB_API_KEY }}
-      H2_NEBIUS_API_KEY: ${{ secrets.H2_NEBIUS_API_KEY }}
+      SA_GITHUB_TOKEN: ${{ secrets.SA_GITHUB_TOKEN }}
+      SA_HF_TOKEN: ${{ secrets.SA_HF_TOKEN }}
+      SA_LIVE_WEB_API_KEY: ${{ secrets.SA_LIVE_WEB_API_KEY }}
+      SA_NEBIUS_API_KEY: ${{ secrets.SA_NEBIUS_API_KEY }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880

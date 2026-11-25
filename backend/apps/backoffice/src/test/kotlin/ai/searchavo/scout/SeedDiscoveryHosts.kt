@@ -1,0 +1,124 @@
+package ai.searchavo.scout
+
+import java.time.Instant
+
+object SeedDiscoveryHosts {
+
+  @JvmField
+  val WRITING: Set<String> =
+    setOf(
+      "medium.com",
+      "dev.to",
+      "substack.com",
+      "forbes.com",
+      "techcrunch.com",
+      "theverge.com",
+      "wired.com",
+      "zdnet.com",
+      "venturebeat.com",
+      "hashnode.dev",
+      "wordpress.com",
+      "blogspot.com",
+      "beehiiv.com",
+    )
+
+  @JvmField
+  val DIRECTORY: Set<String> =
+    setOf(
+      "producthunt.com",
+      "huggingface.co",
+      "wikipedia.org",
+      "news.ycombinator.com",
+      "g2.com",
+      "capterra.com",
+      "gartner.com",
+      "notion.site",
+      "theresanaiforthat.com",
+      "futurepedia.io",
+      "futuretools.io",
+      "toolify.ai",
+      "topai.tools",
+      "aitools.fyi",
+      "getapp.com",
+      "softwareadvice.com",
+      "trustradius.com",
+      "trustpilot.com",
+      "alternativeto.net",
+      "saasworthy.com",
+    )
+
+  @JvmField val LISTS: HostLists = HostLists(WRITING, DIRECTORY)
+
+  @JvmStatic
+  fun store(): InMemoryDiscoveryHostStore =
+    InMemoryDiscoveryHostStore().apply {
+      WRITING.forEach { add(DiscoveryHost(it, HostKind.WRITING, "migration", Instant.EPOCH, null)) }
+      DIRECTORY.forEach {
+        add(DiscoveryHost(it, HostKind.DIRECTORY, "migration", Instant.EPOCH, null))
+      }
+    }
+}
+
+class InMemoryDiscoveryHostStore : DiscoveryHostStore {
+  private val hosts = LinkedHashMap<String, DiscoveryHost>()
+  var failing = false
+
+  override fun all(): List<DiscoveryHost> {
+    check(!failing) { "store down" }
+    return hosts.values.sortedWith(compareBy({ it.kind }, { it.host }))
+  }
+
+  override fun add(host: DiscoveryHost): Boolean = hosts.putIfAbsent(host.host, host) == null
+
+  override fun remove(host: String): DiscoveryHost? = hosts.remove(host)
+
+  override fun readLists(host: String, on: Boolean): DiscoveryHost? =
+    hosts.computeIfPresent(host) { _, listed ->
+      if (listed.kind == HostKind.DIRECTORY) listed.copy(readsLists = on) else listed
+    }
+}
+
+class InMemoryListSeedStore : ListSeedStore {
+  private val seeds = LinkedHashMap<String, ListSeed>()
+  private val readings = LinkedHashMap<String, ListReading>()
+
+  override fun all(): List<ListSeed> = seeds.values.toList()
+
+  override fun add(seed: ListSeed): Boolean = seeds.putIfAbsent(seed.address, seed) == null
+
+  override fun remove(address: String): ListSeed? =
+    seeds.remove(address).also { readings.remove(address) }
+
+  override fun readStarted(address: String, at: Instant) {
+    seeds.computeIfPresent(address) { _, seed ->
+      seed.copy(readTriedAt = at, readFailures = seed.readFailures + 1)
+    }
+  }
+
+  override fun readSucceeded(address: String, reading: ListReading) {
+    seeds.computeIfPresent(address) { _, seed ->
+      seed.copy(readFailures = 0, goneChecks = 0, goneSince = null)
+    }
+    if (address in seeds) readings[address] = reading
+  }
+
+  override fun followed(address: String, followed: List<ListReading.Followed>) {
+    readings.computeIfPresent(address) { _, reading -> reading.copy(followed = followed) }
+  }
+
+  override fun lastReads(): Map<String, ListReading> = readings.toMap()
+
+  override fun goneChecked(address: String, at: Instant): ListSeed? =
+    seeds.computeIfPresent(address) { _, seed ->
+      seed.copy(goneChecks = seed.goneChecks + 1, goneSince = seed.goneSince ?: at)
+    }
+
+  override fun notGone(address: String) {
+    seeds.computeIfPresent(address) { _, seed -> seed.copy(goneChecks = 0, goneSince = null) }
+  }
+
+  override fun forgotten(address: String): ListSeed? {
+    readings.remove(address)
+    return if (seeds[address]?.origin == ListOrigin.DISCOVERY) seeds.remove(address) else null
+  }
+}

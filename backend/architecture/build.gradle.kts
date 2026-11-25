@@ -1,10 +1,10 @@
-plugins { id("helper2.kotlin-library") }
+plugins { id("searchavo.kotlin-library") }
 
 dependencies { testImplementation(testFixtures(project(":libs:platform"))) }
 
 tasks.named<Test>("test") {
   inputs
-    .files(rootProject.files("../deploy/helm/helper2/files/redis-users.acl"))
+    .files(rootProject.files("../deploy/helm/searchavo/files/redis-users.acl"))
     .withPropertyName("redisUsers")
     .withPathSensitivity(PathSensitivity.RELATIVE)
   inputs

@@ -1,12 +1,12 @@
 openapi: 3.1.0
 info:
-  title: helper2.ai public API
+  title: searchavo.ai public API
   version: 2026.12.0
   summary: Federated metasearch for AI resources, with explicit provenance and source status.
   description: |
     Public API: served by the public app. Shared types live in common.yaml; the back office API is admin.yaml.
 
-    Contract-first REST API for helper2.ai. This file is the source of truth:
+    Contract-first REST API for searchavo.ai. This file is the source of truth:
     the Spring backend generates its controller interfaces and DTOs from it, and the
     React frontend generates its TypeScript types from it.
 
@@ -44,10 +44,10 @@ paths:
     get:
       tags: [home-lists]
       operationId: listRecent
-      summary: Newest resources in the helper2.ai catalog, by the publication date their source states.
+      summary: Newest resources in the searchavo.ai catalog, by the publication date their source states.
       description: |
         For the home page "Today" list. Only resources whose source states a publication date, from
-        `days` ago up to now, newest first; never helper2.ai's discovery date. Served from the index, so it
+        `days` ago up to now, newest first; never searchavo.ai's discovery date. Served from the index, so it
         does not call live sources.
       parameters:
         - { name: days, in: query, schema: { type: integer, minimum: 1, maximum: 30, default: 14 } }
@@ -439,22 +439,22 @@ components:
         script).
       required: [githubSponsorsUrl, stripePaymentUrl, ga4MeasurementId, adsenseClient, adsenseSlot, adsenseSlotSearch, adsenseSlotGuide]
       properties:
-        githubSponsorsUrl: { type: [string, 'null'], format: uri, description: "GitHub Sponsors page (`H2_SUPPORT_GITHUB_SPONSORS_URL`)." }
-        stripePaymentUrl: { type: [string, 'null'], format: uri, description: "Stripe Payment Link (`H2_SUPPORT_STRIPE_PAYMENT_URL`)." }
-        ga4MeasurementId: { type: [string, 'null'], description: "Google Analytics 4 stream, loaded only after consent (`H2_ANALYTICS_GA4_MEASUREMENT_ID`)." }
+        githubSponsorsUrl: { type: [string, 'null'], format: uri, description: "GitHub Sponsors page (`SA_SUPPORT_GITHUB_SPONSORS_URL`)." }
+        stripePaymentUrl: { type: [string, 'null'], format: uri, description: "Stripe Payment Link (`SA_SUPPORT_STRIPE_PAYMENT_URL`)." }
+        ga4MeasurementId: { type: [string, 'null'], description: "Google Analytics 4 stream, loaded only after consent (`SA_ANALYTICS_GA4_MEASUREMENT_ID`)." }
         adsenseClient:
           type: [string, 'null']
           description: >-
-            Google AdSense publisher, ca-pub-... (`H2_ADS_ADSENSE_CLIENT`, ADR 0042). Null unless an ad unit is set too:
+            Google AdSense publisher, ca-pub-... (`SA_ADS_ADSENSE_CLIENT`, ADR 0042). Null unless an ad unit is set too:
             then the page loads Google's consent tool and shows the slot of each ad unit that is set.
-        adsenseSlot: { type: [string, 'null'], description: "AdSense ad unit of the slot on resource pages (`H2_ADS_ADSENSE_SLOT`, ADR 0042)." }
-        adsenseSlotSearch: { type: [string, 'null'], description: "AdSense ad unit of the slot below the search results (`H2_ADS_ADSENSE_SLOT_SEARCH`, ADR 0042)." }
-        adsenseSlotGuide: { type: [string, 'null'], description: "AdSense ad unit of the slot below a guide answer (`H2_ADS_ADSENSE_SLOT_GUIDE`, ADR 0042)." }
+        adsenseSlot: { type: [string, 'null'], description: "AdSense ad unit of the slot on resource pages (`SA_ADS_ADSENSE_SLOT`, ADR 0042)." }
+        adsenseSlotSearch: { type: [string, 'null'], description: "AdSense ad unit of the slot below the search results (`SA_ADS_ADSENSE_SLOT_SEARCH`, ADR 0042)." }
+        adsenseSlotGuide: { type: [string, 'null'], description: "AdSense ad unit of the slot below a guide answer (`SA_ADS_ADSENSE_SLOT_GUIDE`, ADR 0042)." }
 
     Policy:
       type: object
       description: >-
-        What helper2.ai allows and keeps, as configured. Periods are in seconds; the pages round them to hours, days or
+        What searchavo.ai allows and keeps, as configured. Periods are in seconds; the pages round them to hours, days or
         months. Daily limits reset at 00:00 UTC.
       required: [guide, dailyLimits, retention, sources]
       properties:
@@ -462,7 +462,7 @@ components:
           type: object
           required: [maxCandidates, maxPicks]
           properties:
-            maxCandidates: { type: integer, minimum: 1, description: "Search results the guide's model chooses from (`H2_GUIDE_MAX_CANDIDATES`, ADR 0031)." }
+            maxCandidates: { type: integer, minimum: 1, description: "Search results the guide's model chooses from (`SA_GUIDE_MAX_CANDIDATES`, ADR 0031)." }
             maxPicks: { type: integer, minimum: 1, description: Most picks in one guide answer (ADR 0031). }
         dailyLimits:
           type: object
@@ -472,14 +472,14 @@ components:
               type: integer
               minimum: 0
               description: >-
-                Fresh guide questions per client address and UTC day (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`, ADR 0032). An
+                Fresh guide questions per client address and UTC day (`SA_GUIDE_CLIENT_DAILY_QUESTIONS`, ADR 0032). An
                 answer from the cache costs none.
             freeAnswers:
               type: integer
               minimum: 0
               description: >-
                 Answers with no pick, and questions that fail, a client address gets a day without spending a question
-                (`H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS`, ADR 0032).
+                (`SA_GUIDE_CLIENT_DAILY_FREE_ANSWERS`, ADR 0032).
             webSearches:
               $ref: '#/components/schemas/WebSearchLimits'
               description: Live web searches per visitor, feature and UTC day (ADR 0027), the same for every visitor.
@@ -490,27 +490,27 @@ components:
           properties:
             webSearchCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A visitor's web search counter, per feature and UTC day (fixed in code, ADR 0027)." }
             guideQuestionCountersSeconds: { type: integer, format: int64, minimum: 0, description: "A client address's guide question counter, per UTC day (fixed in code, ADR 0032)." }
-            webNewsSeconds: { type: integer, format: int64, minimum: 0, description: "Articles and news found by web search, after they were last retrieved (`H2_RETENTION_WEB_NEWS`)." }
-            pendingReviewPagesSeconds: { type: integer, format: int64, minimum: 0, description: "A page waiting for review, after the decision (`H2_RETENTION_RESOLVED_REVIEW_ITEMS`)." }
-            pageTextSeconds: { type: integer, format: int64, minimum: 0, description: "The cleaned text of a product's own page, in the cache (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`)." }
-            pageReadSeconds: { type: integer, format: int64, minimum: 0, description: "The address and text fingerprint of a product page that was read (`H2_SCOUT_EVIDENCE_PAGE_READ_TTL`)." }
-            backupsSeconds: { type: integer, format: int64, minimum: 0, description: "A database backup (`H2_RETENTION_BACKUPS`, from the chart's `backup.retentionDays`, ADR 0043)." }
-            cachedSearchesSeconds: { type: integer, format: int64, minimum: 0, description: "Source answers in the search cache, served while a source fails (`H2_SEARCH_STALE_FOR`)." }
-            cachedGuideAnswersSeconds: { type: integer, format: int64, minimum: 0, description: "Guide answers in the shared cache (`H2_GUIDE_CACHE_TTL`)." }
-            translationsSeconds: { type: integer, format: int64, minimum: 0, description: "English translations of searches typed in another language (`H2_SEARCH_TRANSLATION_TTL`)." }
-            queryVectorsSeconds: { type: integer, format: int64, minimum: 0, description: "Search vectors used to search by meaning (`H2_SEARCH_QUERY_VECTOR_TTL`)." }
-            storedWebResultsSeconds: { type: integer, format: int64, minimum: 0, description: "Stored web search results (`H2_RETENTION_LIVE_WEB_RESULTS`)." }
-            inactiveAccountsSeconds: { type: integer, format: int64, minimum: 0, description: "An account, its settings and its saved items, after the last sign-in (`H2_RETENTION_INACTIVE_ACCOUNTS`)." }
-            handledReportsSeconds: { type: integer, format: int64, minimum: 0, description: "Reports, after their review was resolved (`H2_RETENTION_RESOLVED_ISSUE_REPORTS`)." }
-            adminRecordsSeconds: { type: integer, format: int64, minimum: 0, description: "An administrator's action in the back office audit trail, with their id and the reason they wrote (`H2_RETENTION_ADMIN_AUDIT`, ADR 0038)." }
-            runtimeSettingChangesSeconds: { type: integer, format: int64, minimum: 0, description: "A change to a runtime setting, with the administrator's id and reason (`H2_RETENTION_RUNTIME_SETTINGS`, ADR 0007). Each setting's newest change stays while it applies." }
-            pastEventsSeconds: { type: integer, format: int64, minimum: 0, description: "An event of the catalog, after it ended (`H2_RETENTION_PAST_EVENTS`)." }
+            webNewsSeconds: { type: integer, format: int64, minimum: 0, description: "Articles and news found by web search, after they were last retrieved (`SA_RETENTION_WEB_NEWS`)." }
+            pendingReviewPagesSeconds: { type: integer, format: int64, minimum: 0, description: "A page waiting for review, after the decision (`SA_RETENTION_RESOLVED_REVIEW_ITEMS`)." }
+            pageTextSeconds: { type: integer, format: int64, minimum: 0, description: "The cleaned text of a product's own page, in the cache (`SA_SCOUT_EVIDENCE_PAGE_TEXT_TTL`)." }
+            pageReadSeconds: { type: integer, format: int64, minimum: 0, description: "The address and text fingerprint of a product page that was read (`SA_SCOUT_EVIDENCE_PAGE_READ_TTL`)." }
+            backupsSeconds: { type: integer, format: int64, minimum: 0, description: "A database backup (`SA_RETENTION_BACKUPS`, from the chart's `backup.retentionDays`, ADR 0043)." }
+            cachedSearchesSeconds: { type: integer, format: int64, minimum: 0, description: "Source answers in the search cache, served while a source fails (`SA_SEARCH_STALE_FOR`)." }
+            cachedGuideAnswersSeconds: { type: integer, format: int64, minimum: 0, description: "Guide answers in the shared cache (`SA_GUIDE_CACHE_TTL`)." }
+            translationsSeconds: { type: integer, format: int64, minimum: 0, description: "English translations of searches typed in another language (`SA_SEARCH_TRANSLATION_TTL`)." }
+            queryVectorsSeconds: { type: integer, format: int64, minimum: 0, description: "Search vectors used to search by meaning (`SA_SEARCH_QUERY_VECTOR_TTL`)." }
+            storedWebResultsSeconds: { type: integer, format: int64, minimum: 0, description: "Stored web search results (`SA_RETENTION_LIVE_WEB_RESULTS`)." }
+            inactiveAccountsSeconds: { type: integer, format: int64, minimum: 0, description: "An account, its settings and its saved items, after the last sign-in (`SA_RETENTION_INACTIVE_ACCOUNTS`)." }
+            handledReportsSeconds: { type: integer, format: int64, minimum: 0, description: "Reports, after their review was resolved (`SA_RETENTION_RESOLVED_ISSUE_REPORTS`)." }
+            adminRecordsSeconds: { type: integer, format: int64, minimum: 0, description: "An administrator's action in the back office audit trail, with their id and the reason they wrote (`SA_RETENTION_ADMIN_AUDIT`, ADR 0038)." }
+            runtimeSettingChangesSeconds: { type: integer, format: int64, minimum: 0, description: "A change to a runtime setting, with the administrator's id and reason (`SA_RETENTION_RUNTIME_SETTINGS`, ADR 0007). Each setting's newest change stays while it applies." }
+            pastEventsSeconds: { type: integer, format: int64, minimum: 0, description: "An event of the catalog, after it ended (`SA_RETENTION_PAST_EVENTS`)." }
         sources:
           type: object
           description: What the Scout reads from the web and how much of it, as the Privacy page states it (ADR 0013).
           required: [categories, categorySearches, quoteChars, articleExcerptChars, productPageExcerptChars, productPages, errorLogChars]
           properties:
-            categories: { type: integer, minimum: 0, description: Categories of AI tools searched for once a week (`helper2.categories`). }
+            categories: { type: integer, minimum: 0, description: Categories of AI tools searched for once a week (`searchavo.categories`). }
             categorySearches: { type: integer, minimum: 0, description: Web searches those categories make in all, once a week. }
             quoteChars: { type: integer, minimum: 1, description: Longest quote the Scout keeps from a page (fixed in code, ADR 0013). }
             articleExcerptChars: { type: integer, minimum: 1, description: Longest excerpt kept of an article found by web search (fixed in code). }

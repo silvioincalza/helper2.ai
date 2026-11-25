@@ -1,0 +1,138 @@
+{{- if not .Values.canary.only }}
+{{- $bo := .Values.backoffice }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: searchavo-backoffice
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "searchavo.labels" . | nindent 4 }}
+spec:
+  replicas: {{ required "backoffice.replicas" $bo.replicas }}
+  strategy: { type: RollingUpdate, rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
+  selector: { matchLabels: { app: searchavo-backoffice } }
+  template:
+    metadata:
+      labels: { app: searchavo-backoffice }
+      annotations:
+        {{- with .Values.envSecret.revision }}
+        checksum/env-revision: {{ . | quote }}
+        {{- end }}
+        {{- if and .Values.redis.auth.enabled .Values.redis.auth.existingSecret }}
+        checksum/redis-auth-revision: {{ include "searchavo.redisAuthRevision" . }}
+        {{- end }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: /actuator/prometheus
+    spec:
+      serviceAccountName: searchavo
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      topologySpreadConstraints:
+        - { maxSkew: 1, topologyKey: kubernetes.io/hostname, whenUnsatisfiable: ScheduleAnyway, labelSelector: { matchLabels: { app: searchavo-backoffice } } }
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, seccompProfile: { type: RuntimeDefault } }
+      {{- $shutdown := .Values.app.shutdown }}
+      terminationGracePeriodSeconds: {{ add (int (required "app.shutdown.preStopSeconds" $shutdown.preStopSeconds)) (int (required "app.shutdown.drainSeconds" $shutdown.drainSeconds)) 5 }}
+      containers:
+        - name: backoffice
+          image: {{ include "searchavo.backofficeImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom: [{ secretRef: { name: {{ include "searchavo.envSecret" . }} } }]
+          env:
+            - { name: SA_PROFILES, value: {{ .Values.app.springProfiles | quote }} }
+            - { name: SA_SHUTDOWN_TIMEOUT, value: "{{ int $shutdown.drainSeconds }}s" }
+            - { name: SA_DATABASE_URL, value: "jdbc:postgresql://postgres:5432/searchavo" }
+            - { name: SA_DATABASE_USER, value: h2_backoffice }
+            - name: SA_DATABASE_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ include "searchavo.credentialsSecret" . }}, key: SA_DATABASE_BACKOFFICE_PASSWORD } }
+            - { name: SA_REDIS_HOST, value: redis }
+            {{- if .Values.redis.auth.enabled }}
+            - { name: SA_REDIS_USER, value: h2_backoffice }
+            - name: SA_REDIS_PASSWORD
+              valueFrom: { {{ include "searchavo.redisPasswordFrom" (list . "SA_REDIS_BACKOFFICE_PASSWORD") }} }
+            {{- else }}
+            - { name: SA_REDIS_PASSWORD, value: "" }
+            {{- end }}
+            - { name: SA_BUILD_VERSION, value: {{ include "searchavo.backofficeTag" . | quote }} }
+            {{- with $bo.grafanaUrl }}
+            - { name: SA_ADMIN_GRAFANA_URL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with $bo.adminBaseUrl }}
+            - { name: SA_ADMIN_BASE_URL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .Values.app.publicBaseUrl }}
+            - { name: SA_PUBLIC_BASE_URL, value: {{ . | quote }} }
+            {{- end }}
+            {{- with .Values.app.indexNowKey }}
+            - { name: SA_INDEXNOW_KEY, value: {{ . | quote }} }
+            {{- end }}
+            - { name: SA_NOINDEX, value: {{ .Values.app.noindex | toString | quote }} }
+            {{- include "searchavo.embedderEnv" . | nindent 12 }}
+            - { name: SA_SCOUT_ENABLED, value: {{ $bo.scoutEnabled | toString | quote }} }
+            - { name: SA_SCOUT_INITIAL_DELAY, value: {{ required "backoffice.scoutInitialDelay" $bo.scoutInitialDelay | quote }} }
+            - { name: SA_SCOUT_CRON, value: {{ required "backoffice.scoutCron" $bo.scoutCron | quote }} }
+            - { name: SA_SCOUT_MAX_ENRICHMENTS, value: {{ $bo.scoutMaxEnrichments | toString | quote }} }
+            - { name: SA_RESEARCH_ENABLED, value: {{ $bo.researchEnabled | toString | quote }} }
+            {{- $limits := .Values.app.dailyLimits }}
+            {{- range $name, $value := dict "SA_LIVE_WEB_DAILY_CREDITS" $limits.webSearchCredits "SA_GUIDE_DAILY_MODEL_CALLS" $limits.guideModelCalls }}
+            {{- if not (kindIs "invalid" $value) }}
+            - { name: {{ $name }}, value: {{ $value | toString | quote }} }
+            {{- end }}
+            {{- end }}
+            - { name: SA_RETENTION_BACKUPS, value: {{ printf "P%dD" (int .Values.backup.retentionDays) | quote }} }
+            - { name: SA_COOKIE_SECURE, value: "true" }
+            - { name: SA_FORWARD_HEADERS_STRATEGY, value: native }
+            - { name: SA_LOG_FORMAT, value: logstash }
+            - { name: SA_ENVIRONMENT, value: {{ required "app.environment" .Values.app.environment | quote }} }
+            - { name: SA_TRACING_EXPORT, value: {{ .Values.app.tracing.export | toString | quote }} }
+            - { name: SA_TRACING_SAMPLING, value: {{ .Values.app.tracing.sampling | toString | quote }} }
+            - { name: SA_OTLP_TRACES_ENDPOINT, value: {{ .Values.app.tracing.endpoint | quote }} }
+            - { name: SA_MANAGEMENT_PORT, value: "8081" }
+            - { name: SA_METRICS_PUBLIC, value: "true" }
+          ports:
+            - { containerPort: 8080, name: http }
+            - { containerPort: 8081, name: management }
+          startupProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 5
+            failureThreshold: {{ div (required "app.startupSeconds" .Values.app.startupSeconds) 5 }}
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: management }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 10
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              sleep: { seconds: {{ int $shutdown.preStopSeconds }} }
+          resources:
+            {{- toYaml $bo.resources | nindent 12 }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]
+{{- if gt (int $bo.replicas) 1 }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: searchavo-backoffice
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "searchavo.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ sub (int $bo.replicas) 1 }}
+  selector: { matchLabels: { app: searchavo-backoffice } }
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: searchavo-admin
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "searchavo.labels" . | nindent 4 }}
+spec:
+  selector: { app: searchavo-backoffice }
+  ports: [{ port: 80, targetPort: http }]
+{{- end }}

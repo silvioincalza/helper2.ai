@@ -22,7 +22,7 @@ const QUERY_FILE = adversarial ? 'guide-adversarial.json' : intents ? 'guide-int
 const allQueries = JSON.parse(await readFile(new URL(`../eval/${QUERY_FILE}`, import.meta.url), 'utf8'));
 let queries = core ? allQueries.filter((q) => !q.extended) : allQueries;
 const qrels = await readQrels(new URL('../eval/guide-qrels.tsv', import.meta.url));
-const PAUSE_MS = Number(process.env.H2_EVAL_PAUSE_MS ?? 7000);
+const PAUSE_MS = Number(process.env.SA_EVAL_PAUSE_MS ?? 7000);
 const GITHUB_PER_MINUTE = 25;
 const POOL_SIZE = 24;
 const OUTPUT = new URL(
@@ -489,9 +489,9 @@ ${problems.length ? problems.join('\n') : 'None: every source of every answer su
 
 ## How to run
 
-\`node scripts/eval-guide.mjs <baseUrl>\` against a backend started with \`H2_GUIDE_CACHE_TTL=PT1S\` (staging), so every answer is a real model call and the questions are sent exactly as written.
+\`node scripts/eval-guide.mjs <baseUrl>\` against a backend started with \`SA_GUIDE_CACHE_TTL=PT1S\` (staging), so every answer is a real model call and the questions are sent exactly as written.
 \`--core\` runs the 21 core questions only (the nightly run); \`--repeat <n>\` runs the set n times to count flips.
-Each question counts against the per-address daily quota (\`H2_GUIDE_CLIENT_DAILY_QUESTIONS\`) and spends about 3 of the guide's daily model calls (\`H2_GUIDE_DAILY_MODEL_CALLS\`); the backend under test sets both to cover the run (see "Guide: the clean baseline" in [eval/README.md](README.md)).
+Each question counts against the per-address daily quota (\`SA_GUIDE_CLIENT_DAILY_QUESTIONS\`) and spends about 3 of the guide's daily model calls (\`SA_GUIDE_DAILY_MODEL_CALLS\`); the backend under test sets both to cover the run (see "Guide: the clean baseline" in [eval/README.md](README.md)).
 \`--intents\` runs the intent cases (it writes \`eval/guide-intents-run.md\`), \`--adversarial\` the hostile questions (it writes \`eval/guide-adversarial-run.md\`).
 The script stops and leaves this file unchanged on the first answer with the \`GUIDE_BUDGET_SPENT\` notice (the guide's model budget is used up; exit code 3; the message says when it opens again), on the first with \`GUIDE_NETWORK_QUOTA\` (the runner's network has used its questions; exit code 4) or \`GUIDE_DAILY_QUOTA\` (the address has; exit code 1), or after 3 answers in a row without a model and without such a notice (the provider is down; exit code 1). Each log line names the notices of its answer.
 The section under "Notes on this run" is hand-written and kept by the script; the rest is regenerated.

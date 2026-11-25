@@ -1,944 +1,71 @@
-helper2.build.version = ${H2_BUILD_VERSION:local}  =>  local
-helper2.catalog.categories.backfill-at-startup = ${H2_CATEGORIES_BACKFILL_AT_STARTUP:true}  =>  true
-helper2.catalog.curated.enabled = ${H2_SOURCE_CURATED_ENABLED:true}  =>  true
-helper2.catalog.curated.timeout = 1000ms
-helper2.catalog.index.timeout = ${H2_SOURCE_INDEX_TIMEOUT:3s}  =>  3s
-helper2.catalog.indexer.batch = ${H2_EMBEDDING_BATCH:1}  =>  1
-helper2.catalog.indexer.every = ${H2_EMBEDDING_EVERY:PT5S}  =>  PT5S
-helper2.catalog.indexer.initial-delay = PT30S
-helper2.catalog.indexer.singles-after-failure = 5
-helper2.catalog.indexer.timeout = 30s
-helper2.catalog.observation-queue = 256
-helper2.catalog.observed-settles-after = PT24H
-helper2.catalog.reconcile-by-projection = ${H2_CATALOG_RECONCILE_BY_PROJECTION:true}  =>  true
-helper2.catalog.semantic.max-distance = ${H2_SOURCE_SEMANTIC_MAX_DISTANCE:0.65}  =>  0.65
-helper2.catalog.semantic.query-vector-ttl = ${H2_SEARCH_QUERY_VECTOR_TTL:7d}  =>  7d
-helper2.catalog.semantic.timeout = ${H2_SOURCE_SEMANTIC_TIMEOUT:3s}  =>  3s
-helper2.categories[0].discovery.queries[0] = free prompt library with ready-to-use prompts for ChatGPT Claude and Gemini
-helper2.categories[0].discovery.type = PROMPT
-helper2.categories[0].family = prompts-and-skills
-helper2.categories[0].id = prompt-libraries
-helper2.categories[0].name = Prompt libraries
-helper2.categories[0].short-name = Prompts
-helper2.categories[0].words[0] = prompt library
-helper2.categories[0].words[1] = prompt libraries
-helper2.categories[0].words[2] = prompt marketplace
-helper2.categories[0].words[3] = prompt collection
-helper2.categories[0].words[4] = ready to use prompts
-helper2.categories[0].words[5] = prompt pack
-helper2.categories[10].discovery.exclude-domains[0] = coursera.org
-helper2.categories[10].discovery.exclude-domains[1] = udemy.com
-helper2.categories[10].discovery.exclude-domains[2] = edx.org
-helper2.categories[10].discovery.exclude-domains[3] = skillshare.com
-helper2.categories[10].discovery.exclude-domains[4] = udacity.com
-helper2.categories[10].discovery.exclude-domains[5] = pluralsight.com
-helper2.categories[10].discovery.queries[0] = AI tutor app that explains homework step by step and makes quizzes and flashcards for students
-helper2.categories[10].discovery.queries[1] = AI tools for teachers that create lesson plans and grade assignments
-helper2.categories[10].discovery.type = PRODUCT
-helper2.categories[10].family = everyday-apps
-helper2.categories[10].id = education-and-tutors
-helper2.categories[10].name = Education and tutors
-helper2.categories[10].short-name = Education
-helper2.categories[10].words[0] = ai tutor
-helper2.categories[10].words[10] = grading assistant
-helper2.categories[10].words[11] = ai grading
-helper2.categories[10].words[1] = ai tutoring
-helper2.categories[10].words[2] = homework help
-helper2.categories[10].words[3] = homework helper
-helper2.categories[10].words[4] = study assistant
-helper2.categories[10].words[5] = flashcard generat
-helper2.categories[10].words[6] = quiz generat
-helper2.categories[10].words[7] = ai teaching assistant
-helper2.categories[10].words[8] = lesson plan generat
-helper2.categories[10].words[9] = ai for teachers
-helper2.categories[11].discovery.exclude-domains[0] = webmd.com
-helper2.categories[11].discovery.exclude-domains[10] = nhs.uk
-helper2.categories[11].discovery.exclude-domains[11] = drugs.com
-helper2.categories[11].discovery.exclude-domains[12] = wikipedia.org
-helper2.categories[11].discovery.exclude-domains[1] = mayoclinic.org
-helper2.categories[11].discovery.exclude-domains[2] = clevelandclinic.org
-helper2.categories[11].discovery.exclude-domains[3] = healthline.com
-helper2.categories[11].discovery.exclude-domains[4] = medicalnewstoday.com
-helper2.categories[11].discovery.exclude-domains[5] = verywellhealth.com
-helper2.categories[11].discovery.exclude-domains[6] = medlineplus.gov
-helper2.categories[11].discovery.exclude-domains[7] = nih.gov
-helper2.categories[11].discovery.exclude-domains[8] = cdc.gov
-helper2.categories[11].discovery.exclude-domains[9] = who.int
-helper2.categories[11].discovery.index-lists = false
-helper2.categories[11].discovery.min-score = 0.5
-helper2.categories[11].discovery.queries[0] = AI medical scribe that writes clinical notes from doctor and patient visits
-helper2.categories[11].discovery.queries[1] = AI health app that answers health questions and tracks symptoms for patients
-helper2.categories[11].discovery.require-keyword = true
-helper2.categories[11].discovery.type = PRODUCT
-helper2.categories[11].family = everyday-apps
-helper2.categories[11].id = health
-helper2.categories[11].name = Health
-helper2.categories[11].short-name = Health
-helper2.categories[11].words[0] = medical scribe
-helper2.categories[11].words[10] = patient intake
-helper2.categories[11].words[11] = symptom checker
-helper2.categories[11].words[12] = ai health assistant
-helper2.categories[11].words[13] = ai health app
-helper2.categories[11].words[1] = ai scribe
-helper2.categories[11].words[2] = clinical documentation
-helper2.categories[11].words[3] = clinical notes
-helper2.categories[11].words[4] = ambient clinical
-helper2.categories[11].words[5] = healthcare ai
-helper2.categories[11].words[6] = ai for healthcare
-helper2.categories[11].words[7] = medical ai
-helper2.categories[11].words[8] = medical coding
-helper2.categories[11].words[9] = prior authori
-helper2.categories[12].discovery.queries[0] = AI image generator that creates and edits images from text prompts
-helper2.categories[12].discovery.type = PRODUCT
-helper2.categories[12].family = creative-and-media
-helper2.categories[12].id = image-generation
-helper2.categories[12].name = Image generation
-helper2.categories[12].short-name = Images
-helper2.categories[12].words[0] = image generat
-helper2.categories[12].words[1] = text to image
-helper2.categories[12].words[2] = ai art generat
-helper2.categories[12].words[3] = ai artwork
-helper2.categories[12].words[4] = photo editor
-helper2.categories[12].words[5] = image editing
-helper2.categories[12].words[6] = background remov
-helper2.categories[12].words[7] = upscal
-helper2.categories[13].discovery.queries[0] = AI video generator that turns text or images into video
-helper2.categories[13].discovery.type = PRODUCT
-helper2.categories[13].family = creative-and-media
-helper2.categories[13].id = video-generation
-helper2.categories[13].name = Video generation
-helper2.categories[13].short-name = Video
-helper2.categories[13].words[0] = video generat
-helper2.categories[13].words[1] = text to video
-helper2.categories[13].words[2] = image to video
-helper2.categories[13].words[3] = ai video
-helper2.categories[13].words[4] = video editor
-helper2.categories[13].words[5] = avatar video
-helper2.categories[13].words[6] = lip sync
-helper2.categories[14].discovery.queries[0] = realistic AI text to speech and voice cloning
-helper2.categories[14].discovery.queries[1] = AI music generator that creates songs from a text prompt
-helper2.categories[14].discovery.type = PRODUCT
-helper2.categories[14].family = creative-and-media
-helper2.categories[14].id = voice-and-audio
-helper2.categories[14].name = Voice and audio
-helper2.categories[14].short-name = Voice, audio
-helper2.categories[14].words[0] = text to speech
-helper2.categories[14].words[1] = voice clon
-helper2.categories[14].words[2] = voice generat
-helper2.categories[14].words[3] = ai voice
-helper2.categories[14].words[4] = speech synthesis
-helper2.categories[14].words[5] = tts api
-helper2.categories[14].words[6] = music generat
-helper2.categories[14].words[7] = ai music
-helper2.categories[14].words[8] = song generat
-helper2.categories[15].discovery.queries[0] = AI presentation maker that creates slides from a prompt
-helper2.categories[15].discovery.queries[1] = AI website builder and UI design generator
-helper2.categories[15].discovery.type = PRODUCT
-helper2.categories[15].family = creative-and-media
-helper2.categories[15].id = design-and-presentations
-helper2.categories[15].name = Design and presentations
-helper2.categories[15].short-name = Design
-helper2.categories[15].words[0] = ai presentation
-helper2.categories[15].words[1] = presentation maker
-helper2.categories[15].words[2] = slide deck
-helper2.categories[15].words[3] = pitch deck
-helper2.categories[15].words[4] = slides generat
-helper2.categories[15].words[5] = ui design
-helper2.categories[15].words[6] = ai website builder
-helper2.categories[15].words[7] = website generat
-helper2.categories[15].words[8] = logo generat
-helper2.categories[15].words[9] = graphic design
-helper2.categories[16].discovery.queries[0] = AI customer support agent that answers tickets and live chat
-helper2.categories[16].discovery.type = PRODUCT
-helper2.categories[16].family = business
-helper2.categories[16].id = customer-support
-helper2.categories[16].name = Customer support
-helper2.categories[16].short-name = Support
-helper2.categories[16].words[0] = customer support
-helper2.categories[16].words[1] = customer service
-helper2.categories[16].words[2] = helpdesk
-helper2.categories[16].words[3] = help desk
-helper2.categories[16].words[4] = support ticket
-helper2.categories[17].discovery.queries[0] = platform to build AI voice agents that answer phone calls
-helper2.categories[17].discovery.type = AGENT
-helper2.categories[17].family = business
-helper2.categories[17].id = voice-agents
-helper2.categories[17].name = Voice agents
-helper2.categories[17].short-name = Voice agents
-helper2.categories[17].words[0] = voice agent
-helper2.categories[17].words[1] = phone agent
-helper2.categories[17].words[2] = ai receptionist
-helper2.categories[17].words[3] = conversational voice ai
-helper2.categories[18].discovery.queries[0] = AI data analyst that answers questions about spreadsheets and databases
-helper2.categories[18].discovery.type = PRODUCT
-helper2.categories[18].family = business
-helper2.categories[18].id = data-and-analytics
-helper2.categories[18].name = Data and analytics
-helper2.categories[18].short-name = Data
-helper2.categories[18].words[0] = data analysis
-helper2.categories[18].words[1] = ai data analyst
-helper2.categories[18].words[2] = ai analyst
-helper2.categories[18].words[3] = text to sql
-helper2.categories[18].words[4] = business intelligence
-helper2.categories[18].words[5] = spreadsheet ai
-helper2.categories[18].words[6] = chat with your data
-helper2.categories[19].discovery.queries[0] = no-code builder for AI apps and workflow automations
-helper2.categories[19].discovery.type = PRODUCT
-helper2.categories[19].family = business
-helper2.categories[19].id = no-code
-helper2.categories[19].name = No-code
-helper2.categories[19].short-name = No-code
-helper2.categories[19].words[0] = no code ai
-helper2.categories[19].words[1] = no code builder
-helper2.categories[19].words[2] = no code app
-helper2.categories[19].words[3] = nocode
-helper2.categories[19].words[4] = low code
-helper2.categories[19].words[5] = workflow automation
-helper2.categories[19].words[6] = automation builder
-helper2.categories[1].discovery.queries[0] = open-source collection of Claude Code and agent skills with SKILL.md files
-helper2.categories[1].discovery.type = SKILL
-helper2.categories[1].family = prompts-and-skills
-helper2.categories[1].id = skills-and-gpts
-helper2.categories[1].name = Agent skills and GPTs
-helper2.categories[1].short-name = Skills
-helper2.categories[1].words[0] = agent skill
-helper2.categories[1].words[1] = claude skill
-helper2.categories[1].words[2] = skill.md
-helper2.categories[1].words[3] = custom gpt
-helper2.categories[1].words[4] = gpt store
-helper2.categories[20].discovery.queries[0] = AI marketing platform that writes SEO blog posts and ad copy and plans social media content
-helper2.categories[20].discovery.type = PRODUCT
-helper2.categories[20].family = business
-helper2.categories[20].id = marketing-and-seo
-helper2.categories[20].name = Marketing and SEO
-helper2.categories[20].short-name = Marketing
-helper2.categories[20].words[0] = ai marketing
-helper2.categories[20].words[10] = social media content
-helper2.categories[20].words[11] = email marketing
-helper2.categories[20].words[12] = generative engine optimi
-helper2.categories[20].words[1] = marketing ai
-helper2.categories[20].words[2] = seo tool
-helper2.categories[20].words[3] = seo content
-helper2.categories[20].words[4] = seo optimi
-helper2.categories[20].words[5] = ai seo
-helper2.categories[20].words[6] = keyword research
-helper2.categories[20].words[7] = ad copy
-helper2.categories[20].words[8] = ad creative
-helper2.categories[20].words[9] = social media post
-helper2.categories[21].discovery.exclude-domains[0] = law.cornell.edu
-helper2.categories[21].discovery.exclude-domains[10] = wikipedia.org
-helper2.categories[21].discovery.exclude-domains[1] = findlaw.com
-helper2.categories[21].discovery.exclude-domains[2] = justia.com
-helper2.categories[21].discovery.exclude-domains[3] = nolo.com
-helper2.categories[21].discovery.exclude-domains[4] = avvo.com
-helper2.categories[21].discovery.exclude-domains[5] = lawinsider.com
-helper2.categories[21].discovery.exclude-domains[6] = legalzoom.com
-helper2.categories[21].discovery.exclude-domains[7] = rocketlawyer.com
-helper2.categories[21].discovery.exclude-domains[8] = upcounsel.com
-helper2.categories[21].discovery.exclude-domains[9] = eur-lex.europa.eu
-helper2.categories[21].discovery.index-lists = false
-helper2.categories[21].discovery.min-score = 0.5
-helper2.categories[21].discovery.queries[0] = AI legal assistant for lawyers that reviews contracts and drafts legal documents
-helper2.categories[21].discovery.require-keyword = true
-helper2.categories[21].discovery.type = PRODUCT
-helper2.categories[21].family = business
-helper2.categories[21].id = legal
-helper2.categories[21].name = Legal
-helper2.categories[21].short-name = Legal
-helper2.categories[21].words[0] = legal ai
-helper2.categories[21].words[10] = e discovery
-helper2.categories[21].words[11] = clause extraction
-helper2.categories[21].words[1] = ai legal
-helper2.categories[21].words[2] = ai lawyer
-helper2.categories[21].words[3] = legal assistant
-helper2.categories[21].words[4] = contract review
-helper2.categories[21].words[5] = contract analy
-helper2.categories[21].words[6] = contract drafting
-helper2.categories[21].words[7] = legal research
-helper2.categories[21].words[8] = legal drafting
-helper2.categories[21].words[9] = ediscovery
-helper2.categories[22].discovery.queries[0] = AI coding agent and code editor for software developers
-helper2.categories[22].discovery.type = PRODUCT
-helper2.categories[22].family = developers
-helper2.categories[22].id = coding
-helper2.categories[22].name = Coding
-helper2.categories[22].short-name = Coding
-helper2.categories[22].words[0] = coding assistant
-helper2.categories[22].words[1] = coding agent
-helper2.categories[22].words[2] = code assistant
-helper2.categories[22].words[3] = ai coding
-helper2.categories[22].words[4] = code review
-helper2.categories[22].words[5] = code generat
-helper2.categories[22].words[6] = ai ide
-helper2.categories[22].words[7] = ai code editor
-helper2.categories[23].discovery.queries[0] = platform to build deploy and run AI agents for business workflows
-helper2.categories[23].discovery.type = AGENT
-helper2.categories[23].family = developers
-helper2.categories[23].id = agent-platforms
-helper2.categories[23].name = Agent platforms
-helper2.categories[23].short-name = Agents
-helper2.categories[23].words[0] = agent platform
-helper2.categories[23].words[1] = agent builder
-helper2.categories[23].words[2] = build ai agents
-helper2.categories[23].words[3] = autonomous agent
-helper2.categories[23].words[4] = multi agent
-helper2.categories[24].discovery.queries[0] = open-source framework or library to build LLM apps and agents
-helper2.categories[24].discovery.type = LIBRARY
-helper2.categories[24].family = developers
-helper2.categories[24].id = llm-frameworks
-helper2.categories[24].name = LLM frameworks
-helper2.categories[24].short-name = Frameworks
-helper2.categories[24].words[0] = llm framework
-helper2.categories[24].words[1] = agent framework
-helper2.categories[24].words[2] = orchestration framework
-helper2.categories[24].words[3] = llm library
-helper2.categories[25].discovery.queries[0] = vector database or RAG platform for retrieval augmented generation
-helper2.categories[25].discovery.queries[1] = API to parse PDFs and documents into clean text for LLMs
-helper2.categories[25].discovery.type = PRODUCT
-helper2.categories[25].family = developers
-helper2.categories[25].id = rag-and-vector-databases
-helper2.categories[25].name = RAG and vector databases
-helper2.categories[25].short-name = RAG
-helper2.categories[25].words[0] = vector database
-helper2.categories[25].words[10] = ocr model
-helper2.categories[25].words[11] = document extraction
-helper2.categories[25].words[1] = vector db
-helper2.categories[25].words[2] = vector search
-helper2.categories[25].words[3] = retrieval augmented
-helper2.categories[25].words[4] = rag pipeline
-helper2.categories[25].words[5] = rag platform
-helper2.categories[25].words[6] = document parsing
-helper2.categories[25].words[7] = pdf parsing
-helper2.categories[25].words[8] = pdf to markdown
-helper2.categories[25].words[9] = ocr api
-helper2.categories[26].discovery.queries[0] = LLM observability evaluation and monitoring tool
-helper2.categories[26].discovery.type = PRODUCT
-helper2.categories[26].family = developers
-helper2.categories[26].id = llmops-and-evaluation
-helper2.categories[26].name = LLMOps and evaluation
-helper2.categories[26].short-name = LLMOps
-helper2.categories[26].words[0] = llm observability
-helper2.categories[26].words[1] = llmops
-helper2.categories[26].words[2] = llm evaluation
-helper2.categories[26].words[3] = llm evals
-helper2.categories[26].words[4] = evals
-helper2.categories[26].words[5] = llm tracing
-helper2.categories[26].words[6] = llm monitoring
-helper2.categories[26].words[7] = prompt management
-helper2.categories[26].words[8] = prompt versioning
-helper2.categories[27].discovery.queries[0] = AI guardrails and LLM security tool against prompt injection
-helper2.categories[27].discovery.type = PRODUCT
-helper2.categories[27].family = developers
-helper2.categories[27].id = ai-security
-helper2.categories[27].name = AI security
-helper2.categories[27].short-name = AI security
-helper2.categories[27].words[0] = guardrail
-helper2.categories[27].words[1] = prompt injection
-helper2.categories[27].words[2] = llm security
-helper2.categories[27].words[3] = ai security
-helper2.categories[27].words[4] = ai red team
-helper2.categories[27].words[5] = jailbreak
-helper2.categories[28].discovery.queries[0] = platform to fine-tune and train open-source LLMs
-helper2.categories[28].discovery.type = PRODUCT
-helper2.categories[28].family = developers
-helper2.categories[28].id = fine-tuning
-helper2.categories[28].name = Fine-tuning
-helper2.categories[28].short-name = Fine-tuning
-helper2.categories[28].words[0] = fine tuning platform
-helper2.categories[28].words[1] = fine tune llm
-helper2.categories[28].words[2] = fine tune models
-helper2.categories[28].words[3] = finetun
-helper2.categories[28].words[4] = lora
-helper2.categories[28].words[5] = qlora
-helper2.categories[28].words[6] = model training
-helper2.categories[29].discovery.queries[0] = serverless inference API for open-weight LLMs and image models
-helper2.categories[29].discovery.type = PRODUCT
-helper2.categories[29].family = hosting-and-infra
-helper2.categories[29].id = model-hosting
-helper2.categories[29].name = Model hosting
-helper2.categories[29].short-name = Hosting
-helper2.categories[29].words[0] = inference api
-helper2.categories[29].words[1] = serverless inference
-helper2.categories[29].words[2] = model hosting
-helper2.categories[29].words[3] = deploy models
-helper2.categories[29].words[4] = inference platform
-helper2.categories[2].discovery.queries[0] = AI chat assistant app for web and mobile that answers questions and remembers context
-helper2.categories[2].discovery.type = PRODUCT
-helper2.categories[2].family = everyday-apps
-helper2.categories[2].id = ai-assistants
-helper2.categories[2].name = AI assistants
-helper2.categories[2].short-name = Assistants
-helper2.categories[2].words[0] = personal assistant
-helper2.categories[2].words[1] = ai companion
-helper2.categories[2].words[2] = ai chat app
-helper2.categories[2].words[3] = chatgpt alternative
-helper2.categories[30].discovery.queries[0] = GPU cloud platform to deploy and scale AI apps and models
-helper2.categories[30].discovery.type = PRODUCT
-helper2.categories[30].family = hosting-and-infra
-helper2.categories[30].id = ai-cloud-and-paas
-helper2.categories[30].name = AI cloud and PaaS
-helper2.categories[30].short-name = AI cloud
-helper2.categories[30].words[0] = serverless gpu
-helper2.categories[30].words[1] = gpu cloud
-helper2.categories[30].words[2] = gpu instances
-helper2.categories[30].words[3] = rent gpus
-helper2.categories[30].words[4] = deploy ai apps
-helper2.categories[30].words[5] = ai cloud
-helper2.categories[31].discovery.queries[0] = LLM gateway or router that gives one API for many model providers
-helper2.categories[31].discovery.type = PRODUCT
-helper2.categories[31].family = hosting-and-infra
-helper2.categories[31].id = ai-gateways
-helper2.categories[31].name = AI gateways
-helper2.categories[31].short-name = Gateways
-helper2.categories[31].words[0] = llm gateway
-helper2.categories[31].words[1] = ai gateway
-helper2.categories[31].words[2] = llm router
-helper2.categories[31].words[3] = model router
-helper2.categories[31].words[4] = llm proxy
-helper2.categories[32].discovery.queries[0] = open-source self-hosted AI app you run on your own server with Docker
-helper2.categories[32].discovery.type = PRODUCT
-helper2.categories[32].family = run-it-yourself
-helper2.categories[32].id = self-hosted
-helper2.categories[32].name = Self-hosted
-helper2.categories[32].short-name = Self-hosted
-helper2.categories[32].words[0] = self hosted
-helper2.categories[32].words[1] = selfhosted
-helper2.categories[32].words[2] = on prem
-helper2.categories[32].words[3] = docker compose
-helper2.categories[32].words[4] = homelab
-helper2.categories[33].discovery.queries[0] = desktop app to run LLMs locally and offline on your own computer
-helper2.categories[33].discovery.type = PRODUCT
-helper2.categories[33].family = run-it-yourself
-helper2.categories[33].id = local-ai
-helper2.categories[33].name = Local AI
-helper2.categories[33].short-name = Local AI
-helper2.categories[33].words[0] = run locally
-helper2.categories[33].words[1] = runs locally
-helper2.categories[33].words[2] = run llms locally
-helper2.categories[33].words[3] = local llm
-helper2.categories[33].words[4] = local ai
-helper2.categories[33].words[5] = offline ai
-helper2.categories[33].words[6] = works offline
-helper2.categories[33].words[7] = on device
-helper2.categories[3].discovery.queries[0] = AI writing assistant for emails documents and marketing copy
-helper2.categories[3].discovery.type = PRODUCT
-helper2.categories[3].family = everyday-apps
-helper2.categories[3].id = writing
-helper2.categories[3].name = Writing
-helper2.categories[3].short-name = Writing
-helper2.categories[3].words[0] = writing assistant
-helper2.categories[3].words[1] = ai writer
-helper2.categories[3].words[2] = ai writing
-helper2.categories[3].words[3] = copywriting
-helper2.categories[3].words[4] = paraphras
-helper2.categories[3].words[5] = grammar checker
-helper2.categories[4].discovery.queries[0] = AI translator for documents websites and conversations
-helper2.categories[4].discovery.type = PRODUCT
-helper2.categories[4].family = everyday-apps
-helper2.categories[4].id = translation
-helper2.categories[4].name = Translation
-helper2.categories[4].short-name = Translation
-helper2.categories[4].words[0] = ai translat
-helper2.categories[4].words[1] = machine translation
-helper2.categories[4].words[2] = document translat
-helper2.categories[4].words[3] = translation app
-helper2.categories[4].words[4] = real time translat
-helper2.categories[5].discovery.queries[0] = AI notetaker that joins meetings and writes notes and action items
-helper2.categories[5].discovery.type = PRODUCT
-helper2.categories[5].family = everyday-apps
-helper2.categories[5].id = meetings-and-transcription
-helper2.categories[5].name = Meetings and transcription
-helper2.categories[5].short-name = Meetings
-helper2.categories[5].words[0] = meeting assistant
-helper2.categories[5].words[1] = meeting notes
-helper2.categories[5].words[2] = meeting summar
-helper2.categories[5].words[3] = notetaker
-helper2.categories[5].words[4] = note taker
-helper2.categories[5].words[5] = transcription
-helper2.categories[5].words[6] = transcribe
-helper2.categories[5].words[7] = speech to text
-helper2.categories[6].discovery.queries[0] = AI that summarises and answers questions about PDFs and documents
-helper2.categories[6].discovery.type = PRODUCT
-helper2.categories[6].family = everyday-apps
-helper2.categories[6].id = documents-and-pdf
-helper2.categories[6].name = Documents and PDF
-helper2.categories[6].short-name = Documents
-helper2.categories[6].words[0] = chat with pdf
-helper2.categories[6].words[1] = chat with your documents
-helper2.categories[6].words[2] = pdf summar
-helper2.categories[6].words[3] = document summar
-helper2.categories[6].words[4] = ai pdf
-helper2.categories[7].discovery.queries[0] = AI research assistant that finds and summarises scientific papers
-helper2.categories[7].discovery.type = PRODUCT
-helper2.categories[7].family = everyday-apps
-helper2.categories[7].id = research-and-papers
-helper2.categories[7].name = Research and papers
-helper2.categories[7].short-name = Research
-helper2.categories[7].words[0] = research assistant
-helper2.categories[7].words[1] = literature review
-helper2.categories[7].words[2] = research papers
-helper2.categories[7].words[3] = scientific papers
-helper2.categories[7].words[4] = paper summar
-helper2.categories[7].words[5] = deep research
-helper2.categories[8].discovery.queries[0] = AI search engine that answers questions with cited sources
-helper2.categories[8].discovery.type = PRODUCT
-helper2.categories[8].family = everyday-apps
-helper2.categories[8].id = ai-search
-helper2.categories[8].name = AI search
-helper2.categories[8].short-name = AI search
-helper2.categories[8].words[0] = ai search
-helper2.categories[8].words[1] = ai search engine
-helper2.categories[8].words[2] = answer engine
-helper2.categories[8].words[3] = ai powered search
-helper2.categories[9].discovery.queries[0] = AI browser extension for Chrome or Firefox
-helper2.categories[9].discovery.type = PRODUCT
-helper2.categories[9].family = everyday-apps
-helper2.categories[9].id = browser-extensions
-helper2.categories[9].name = Browser extensions
-helper2.categories[9].short-name = Extensions
-helper2.categories[9].words[0] = browser extension
-helper2.categories[9].words[1] = chrome extension
-helper2.categories[9].words[2] = firefox add on
-helper2.categories[9].words[3] = firefox extension
-helper2.categories[9].words[4] = extension for chrome
-helper2.cluster-lock.table = public_app_lock
-helper2.embedding.api-key = ${H2_NVIDIA_API_KEY:}  =>  <empty>
-helper2.embedding.base-url = ${H2_NVIDIA_EMBEDDING_BASE_URL:https://integrate.api.nvidia.com/v1}  =>  https://integrate.api.nvidia.com/v1
-helper2.embedding.dimensions = 1024
-helper2.embedding.model = ${H2_NVIDIA_EMBEDDING_MODEL:nvidia/nemotron-3.5-embed-1b}  =>  nvidia/nemotron-3.5-embed-1b
-helper2.embedding.timeout = 3s
-helper2.examples.cron = ${H2_EXAMPLES_CRON:0 41 2 * * *}  =>  0 41 2 * * *
-helper2.examples.draft-calls = ${H2_EXAMPLES_DRAFT_CALLS:5}  =>  5
-helper2.examples.draft-sources = ${H2_EXAMPLES_DRAFT_SOURCES:12}  =>  12
-helper2.examples.pending-delay = ${H2_EXAMPLES_PENDING_DELAY:PT1M}  =>  PT1M
-helper2.examples.pending-every = ${H2_EXAMPLES_PENDING_EVERY:PT5M}  =>  PT5M
-helper2.feeds[0].homepage = https://openai.com/news/
-helper2.feeds[0].id = openai
-helper2.feeds[0].publisher = OpenAI
-helper2.feeds[0].short-name = OpenAI
-helper2.feeds[0].url = https://openai.com/news/rss.xml
-helper2.feeds[1].homepage = https://deepmind.google/blog/
-helper2.feeds[1].id = google-deepmind
-helper2.feeds[1].publisher = Google DeepMind
-helper2.feeds[1].short-name = DeepMind
-helper2.feeds[1].url = https://deepmind.google/blog/rss.xml
-helper2.feeds[2].homepage = https://research.google/blog/
-helper2.feeds[2].id = google-research
-helper2.feeds[2].publisher = Google Research
-helper2.feeds[2].short-name = G. Research
-helper2.feeds[2].url = https://research.google/blog/rss/
-helper2.feeds[3].homepage = https://blog.google/innovation-and-ai/technology/ai/
-helper2.feeds[3].id = google-ai
-helper2.feeds[3].publisher = Google
-helper2.feeds[3].short-name = Google AI
-helper2.feeds[3].url = https://blog.google/innovation-and-ai/technology/ai/rss/
-helper2.feeds[4].homepage = https://huggingface.co/blog
-helper2.feeds[4].id = hugging-face
-helper2.feeds[4].publisher = Hugging Face
-helper2.feeds[4].short-name = HF blog
-helper2.feeds[4].url = https://huggingface.co/blog/feed.xml
-helper2.feeds[5].homepage = https://mistral.ai/news
-helper2.feeds[5].id = mistral
-helper2.feeds[5].publisher = Mistral AI
-helper2.feeds[5].short-name = Mistral
-helper2.feeds[5].url = https://mistral.ai/news/rss
-helper2.feeds[6].homepage = https://blogs.nvidia.com/
-helper2.feeds[6].id = nvidia
-helper2.feeds[6].publisher = NVIDIA
-helper2.feeds[6].require-words[0] = ai
-helper2.feeds[6].require-words[1] = agent*
-helper2.feeds[6].require-words[2] = model*
-helper2.feeds[6].require-words[3] = llm*
-helper2.feeds[6].require-words[4] = inference
-helper2.feeds[6].require-words[5] = generative
-helper2.feeds[6].require-words[6] = robot*
-helper2.feeds[6].require-words[7] = nemotron
-helper2.feeds[6].require-words[8] = cuda
-helper2.feeds[6].short-name = NVIDIA
-helper2.feeds[6].url = https://blogs.nvidia.com/feed/
-helper2.feeds[7].homepage = https://aws.amazon.com/blogs/machine-learning/
-helper2.feeds[7].id = aws-ml
-helper2.feeds[7].publisher = AWS
-helper2.feeds[7].short-name = AWS ML
-helper2.feeds[7].url = https://aws.amazon.com/blogs/machine-learning/feed/
-helper2.guide.cache-ttl = ${H2_GUIDE_CACHE_TTL:PT24H}  =>  PT24H
-helper2.guide.choose-max-tokens = ${H2_NEBIUS_CHOOSE_MAX_TOKENS:8192}  =>  8192
-helper2.guide.client-daily-free-answers = ${H2_GUIDE_CLIENT_DAILY_FREE_ANSWERS:5}  =>  5
-helper2.guide.client-daily-questions = ${H2_GUIDE_CLIENT_DAILY_QUESTIONS:30}  =>  30
-helper2.guide.daily-model-calls = ${H2_GUIDE_DAILY_MODEL_CALLS:600}  =>  600
-helper2.guide.deadline-margin = 2s
-helper2.guide.fairness.budget-pace-slots = ${H2_GUIDE_BUDGET_PACE_SLOTS:12}  =>  12
-helper2.guide.fairness.client-concurrent-questions = ${H2_GUIDE_CLIENT_CONCURRENT_QUESTIONS:2}  =>  2
-helper2.guide.fairness.network-daily-questions = ${H2_GUIDE_NETWORK_DAILY_QUESTIONS:300}  =>  300
-helper2.guide.heartbeat = ${H2_GUIDE_HEARTBEAT:PT15S}  =>  PT15S
-helper2.guide.judge.concurrent = ${H2_GUIDE_JUDGE_CONCURRENT:2}  =>  2
-helper2.guide.judge.daily-calls = ${H2_GUIDE_JUDGE_DAILY_CALLS:300}  =>  300
-helper2.guide.judge.model = ${H2_GUIDE_JUDGE_MODEL:}  =>  <empty>
-helper2.guide.max-candidates = ${H2_GUIDE_MAX_CANDIDATES:24}  =>  24
-helper2.guide.mcp-registry-url = ${helper2.sources.mcp-registry.base-url}  =>  https://registry.modelcontextprotocol.io
-helper2.guide.model-call-minimum = 10s
-helper2.guide.model-call-timeout = ${H2_LLM_TIMEOUT:40s}  =>  40s
-helper2.guide.model-stream = ${H2_GUIDE_MODEL_STREAM:OFF}  =>  OFF
-helper2.guide.question-deadline = ${H2_GUIDE_QUESTION_DEADLINE:PT90S}  =>  PT90S
-helper2.guide.similar-threshold = ${H2_GUIDE_SIMILAR_THRESHOLD:}  =>  <empty>
-helper2.guide.thinking.browse-tokens = ${H2_GUIDE_THINK_BROWSE_TOKENS:2048}  =>  2048
-helper2.guide.thinking.choose-tokens = ${H2_GUIDE_THINK_CHOOSE_TOKENS:0}  =>  0
-helper2.guide.thinking.plan-tokens = ${H2_GUIDE_THINK_PLAN_TOKENS:0}  =>  0
-helper2.guide.thinking.verify-tokens = ${H2_GUIDE_THINK_VERIFY_TOKENS:0}  =>  0
-helper2.http.max-connections = 50
-helper2.http.max-connections-per-route = 20
-helper2.http.max-response-size = 2MB
-helper2.http.pool-wait = 250ms
-helper2.identity.frontend-url = ${H2_FRONTEND_URL:/}  =>  /
-helper2.identity.metrics-public = ${H2_METRICS_PUBLIC:false}  =>  false
-helper2.identity.noindex = ${H2_NOINDEX:false}  =>  false
-helper2.llm.chat-model = ${spring.ai.openai.chat.model:}  =>  <empty>
-helper2.llm.chat-provider = ${spring.ai.model.chat}  =>  none
-helper2.llm.fast-model = <empty>
-helper2.llm.native-schema = ${H2_NEBIUS_NATIVE_SCHEMA:true}  =>  true
-helper2.llm.provider-label = <empty>
-helper2.llm.reasoning-model = <empty>
-helper2.monetisation.ads-enabled = ${H2_ADS_ENABLED:false}  =>  false
-helper2.monetisation.adsense-client = ${H2_ADS_ADSENSE_CLIENT:}  =>  <empty>
-helper2.monetisation.adsense-slot = ${H2_ADS_ADSENSE_SLOT:}  =>  <empty>
-helper2.monetisation.adsense-slot-guide = ${H2_ADS_ADSENSE_SLOT_GUIDE:}  =>  <empty>
-helper2.monetisation.adsense-slot-search = ${H2_ADS_ADSENSE_SLOT_SEARCH:}  =>  <empty>
-helper2.monetisation.ga4-measurement-id = ${H2_ANALYTICS_GA4_MEASUREMENT_ID:}  =>  <empty>
-helper2.monetisation.github-sponsors-url = ${H2_SUPPORT_GITHUB_SPONSORS_URL:}  =>  <empty>
-helper2.monetisation.stripe-payment-url = ${H2_SUPPORT_STRIPE_PAYMENT_URL:}  =>  <empty>
-helper2.pages.indexnow.key = ${H2_INDEXNOW_KEY:}  =>  <empty>
-helper2.pages.noindex = ${H2_NOINDEX:false}  =>  false
-helper2.pages.public-base-url = ${H2_PUBLIC_BASE_URL:https://helper2.ai}  =>  https://helper2.ai
-helper2.pages.sitemap-limit = 200000
-helper2.pages.template = ${H2_PAGES_TEMPLATE:file:/shell/index.html}  =>  file:/shell/index.html
-helper2.quota.key-secret = ${H2_QUOTA_KEY_SECRET:}  =>  <empty>
-helper2.rate-limit.default-per-minute = ${H2_RATE_LIMIT_DEFAULT_PER_MINUTE:120}  =>  120
-helper2.rate-limit.guide-per-minute = ${H2_RATE_LIMIT_GUIDE_PER_MINUTE:10}  =>  10
-helper2.rate-limit.recent-per-minute = ${H2_RATE_LIMIT_RECENT_PER_MINUTE:60}  =>  60
-helper2.rate-limit.report-per-hour = ${H2_RATE_LIMIT_REPORT_PER_HOUR:20}  =>  20
-helper2.rate-limit.search-per-minute = ${H2_RATE_LIMIT_SEARCH_PER_MINUTE:120}  =>  120
-helper2.retention.admin-audit = ${H2_RETENTION_ADMIN_AUDIT:P730D}  =>  P730D
-helper2.retention.backups = ${H2_RETENTION_BACKUPS:P7D}  =>  P7D
-helper2.retention.cron = ${H2_RETENTION_CRON:0 17 3 * * *}  =>  0 17 3 * * *
-helper2.retention.enrichment-runs = ${H2_RETENTION_ENRICHMENT_RUNS:P90D}  =>  P90D
-helper2.retention.inactive-accounts = ${H2_RETENTION_INACTIVE_ACCOUNTS:P730D}  =>  P730D
-helper2.retention.live-web-results = ${H2_RETENTION_LIVE_WEB_RESULTS:P7D}  =>  P7D
-helper2.retention.observed-unseen = ${H2_RETENTION_OBSERVED_UNSEEN:P180D}  =>  P180D
-helper2.retention.past-events = ${H2_RETENTION_PAST_EVENTS:P3650D}  =>  P3650D
-helper2.retention.resolved-issue-reports = ${H2_RETENTION_RESOLVED_ISSUE_REPORTS:P365D}  =>  P365D
-helper2.retention.resolved-review-items = ${H2_RETENTION_RESOLVED_REVIEW_ITEMS:P180D}  =>  P180D
-helper2.retention.runtime-settings = ${H2_RETENTION_RUNTIME_SETTINGS:P730D}  =>  P730D
-helper2.retention.scout-runs = ${H2_RETENTION_SCOUT_RUNS:P90D}  =>  P90D
-helper2.retention.web-news = ${H2_RETENTION_WEB_NEWS:P180D}  =>  P180D
-helper2.runtime-settings.refresh = ${H2_RUNTIME_SETTINGS_REFRESH:PT20S}  =>  PT20S
-helper2.schema.logins.h2_backoffice = ${H2_DATABASE_BACKOFFICE_PASSWORD:}  =>  <empty>
-helper2.schema.logins.h2_public = ${H2_DATABASE_PUBLIC_PASSWORD:}  =>  <empty>
-helper2.schema.migrate = ${H2_SCHEMA_MIGRATE:false}  =>  false
-helper2.schema.monitor-password = ${H2_DATABASE_MONITOR_PASSWORD:}  =>  <empty>
-helper2.schema.statement-timeouts.h2_backoffice = 60s
-helper2.schema.statement-timeouts.h2_public = 5s
-helper2.schema.wait-for = ${H2_SCHEMA_WAIT:PT4M}  =>  PT4M
-helper2.scout.admission.github-topic-leaders.index-min-stars = ${H2_SCOUT_TOPIC_LEADERS_INDEX_MIN_STARS:1000}  =>  1000
-helper2.scout.admission.github-topic-leaders.index-pushed-within = ${H2_SCOUT_TOPIC_LEADERS_INDEX_PUSHED_WITHIN:P90D}  =>  P90D
-helper2.scout.admission.hf-trending.index-min-likes = 20
-helper2.scout.ai-deadlines.interval = ${H2_SCOUT_AI_DEADLINES_INTERVAL:P1D}  =>  P1D
-helper2.scout.confs-tech.interval = ${H2_SCOUT_CONFS_TECH_INTERVAL:P1D}  =>  P1D
-helper2.scout.courses.interval = ${H2_SCOUT_COURSES_INTERVAL:P7D}  =>  P7D
-helper2.scout.courses.platforms = coursera.org=Coursera, oreilly.com=O'Reilly, edx.org=edX, udemy.com=Udemy, deeplearning.ai=DeepLearning.AI, huggingface.co/learn=Hugging Face Learn, cloud.google.com/learn=Google Cloud, aws.amazon.com/certification=AWS, learn.microsoft.com/en-us/credentials=Microsoft Learn, nvidia.com=NVIDIA
-helper2.scout.courses.query = new artificial intelligence course or certification
-helper2.scout.daily-credits = ${H2_SCOUT_DAILY_CREDITS:1000}  =>  1000
-helper2.scout.discovery.exclude-domains = youtube.com, reddit.com, x.com, twitter.com, facebook.com, instagram.com, tiktok.com, linkedin.com, pinterest.com, quora.com, producthunt.com, theresanaiforthat.com, futurepedia.io, futuretools.io, toolify.ai, topai.tools, aitools.fyi, g2.com, capterra.com, getapp.com, softwareadvice.com, trustradius.com, trustpilot.com, alternativeto.net, saasworthy.com
-helper2.scout.discovery.interval = ${H2_SCOUT_DISCOVERY_INTERVAL:P7D}  =>  P7D
-helper2.scout.discovery.max-results = 10
-helper2.scout.discovery.min-score = 0.4
-helper2.scout.discovery.search-depth = ${H2_SCOUT_DISCOVERY_DEPTH:advanced}  =>  advanced
-helper2.scout.evidence.page-read-ttl = ${H2_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}  =>  P30D
-helper2.scout.evidence.page-text-ttl = ${H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}  =>  PT24H
-helper2.scout.github-awesome.classifier-daily-calls = ${H2_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS:300}  =>  300
-helper2.scout.github-awesome.classify-batch = 25
-helper2.scout.github-awesome.classify-max-tokens = 8192
-helper2.scout.github-awesome.interval = ${H2_SCOUT_AWESOME_INTERVAL:P1D}  =>  P1D
-helper2.scout.github-awesome.links.exclude-domains = arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org, discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com, kaggle.com, npmjs.com, pypi.org, gitlab.com, bitbucket.org, apps.apple.com, play.google.com, chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
-helper2.scout.github-awesome.links.max-models-per-pass = 100
-helper2.scout.github-awesome.links.max-packages-per-pass = 100
-helper2.scout.github-awesome.links.max-papers-per-pass = 200
-helper2.scout.github-awesome.links.max-per-pass = 500
-helper2.scout.github-awesome.links.model-index-min-likes = 10
-helper2.scout.github-awesome.links.per-day = ${H2_SCOUT_AWESOME_LINKS_PER_DAY:50}  =>  50
-helper2.scout.github-awesome.max-entries-per-pass = 1000
-helper2.scout.github-awesome.max-entries-per-run = ${H2_SCOUT_AWESOME_PER_RUN:1000}  =>  1000
-helper2.scout.github-awesome.max-lists = 10
-helper2.scout.github-awesome.max-readme-bytes-per-run = ${H2_SCOUT_AWESOME_MAX_README_BYTES:50MB}  =>  50MB
-helper2.scout.github-awesome.max-run-time = ${H2_SCOUT_AWESOME_MAX_RUN_TIME:PT15M}  =>  PT15M
-helper2.scout.github-awesome.min-list-stars = 1000
-helper2.scout.github-awesome.min-repo-stars = 50
-helper2.scout.github-awesome.nested.max-depth = ${H2_SCOUT_AWESOME_NESTED_DEPTH:2}  =>  2
-helper2.scout.github-awesome.nested.max-lists-per-run = ${H2_SCOUT_AWESOME_NESTED_LISTS:30}  =>  30
-helper2.scout.github-awesome.topic-queries = topic:awesome-list topic:llm, topic:awesome topic:llm, topic:awesome-list topic:artificial-intelligence, topic:awesome-list topic:ai-agents, topic:awesome topic:mcp, topic:awesome topic:generative-ai
-helper2.scout.github-awesome.web-pages.discovered-reads-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_DISCOVERED_READS_PER_DAY:10}  =>  10
-helper2.scout.github-awesome.web-pages.follow.check-calls-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_CHECK_CALLS_PER_DAY:50}  =>  50
-helper2.scout.github-awesome.web-pages.follow.check-max-tokens = 8192
-helper2.scout.github-awesome.web-pages.follow.status-requests-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_DAY:200}  =>  200
-helper2.scout.github-awesome.web-pages.follow.status-requests-per-host-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_HOST_PER_DAY:30}  =>  30
-helper2.scout.github-awesome.web-pages.follow.steps-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STEPS_PER_DAY:100}  =>  100
-helper2.scout.github-awesome.web-pages.gone-checks = ${H2_SCOUT_AWESOME_WEB_PAGES_GONE_CHECKS:3}  =>  3
-helper2.scout.github-awesome.web-pages.item-page-reads-per-day = ${H2_SCOUT_AWESOME_WEB_PAGES_ITEM_PAGE_READS_PER_DAY:100}  =>  100
-helper2.scout.github-awesome.web-pages.max-discovered = ${H2_SCOUT_AWESOME_WEB_PAGES_MAX_DISCOVERED:100}  =>  100
-helper2.scout.github-awesome.web-pages.never-read = ${H2_SCOUT_AWESOME_WEB_PAGES_NEVER_READ:coursera.org=its terms forbid automated reading without written consent}  =>  coursera.org=its terms forbid automated reading without written consent
-helper2.scout.github-awesome.web-pages.read-every = ${H2_SCOUT_AWESOME_WEB_PAGES_EVERY:P7D}  =>  P7D
-helper2.scout.github-awesome.web-pages.retry-after = ${H2_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER:PT1H}  =>  PT1H
-helper2.scout.github-sdks.deps-dev-url = ${H2_SCOUT_SDKS_DEPS_DEV_URL:https://api.deps.dev}  =>  https://api.deps.dev
-helper2.scout.github-sdks.interval = ${H2_SCOUT_SDKS_INTERVAL:P7D}  =>  P7D
-helper2.scout.github-sdks.languages = ${H2_SCOUT_SDKS_LANGUAGES:Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000}  =>  Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000
-helper2.scout.github-sdks.org-min-stars = ${H2_SCOUT_SDKS_ORG_MIN_STARS:300}  =>  300
-helper2.scout.github-sdks.orgs = ${H2_SCOUT_SDKS_ORGS:openai, anthropics, google-gemini, googleapis, aws, Azure, mistralai, cohere-ai, huggingface, ollama, langchain-ai, langchain4j, spring-projects, run-llama, microsoft, deepjavalibrary, oracle, awslabs}  =>  openai, anthropics, google-gemini, googleapis, aws, Azure, mistralai, cohere-ai, huggingface, ollama, langchain-ai, langchain4j, spring-projects, run-llama, microsoft, deepjavalibrary, oracle, awslabs
-helper2.scout.github-sdks.packages-per-repo = ${H2_SCOUT_SDKS_PACKAGES_PER_REPO:3}  =>  3
-helper2.scout.github-sdks.pages-per-query = ${H2_SCOUT_SDKS_PAGES_PER_QUERY:3}  =>  3
-helper2.scout.github-sdks.per-day = ${H2_SCOUT_SDKS_PER_DAY:500}  =>  500
-helper2.scout.github-sdks.per-query = ${H2_SCOUT_SDKS_PER_QUERY:100}  =>  100
-helper2.scout.github-sdks.queries-per-run = ${H2_SCOUT_SDKS_QUERIES_PER_RUN:20}  =>  20
-helper2.scout.github-sdks.rate-limit-reserve = ${H2_SCOUT_SDKS_RATE_LIMIT_RESERVE:10}  =>  10
-helper2.scout.github-sdks.search-pause = ${H2_SCOUT_SDKS_SEARCH_PAUSE:2s}  =>  2s
-helper2.scout.github-sdks.topics = ${H2_SCOUT_SDKS_TOPICS:llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, generative-ai, large-language-models, llm-framework, openai, anthropic, gemini, ollama, openai-api, sdk}  =>  llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, generative-ai, large-language-models, llm-framework, openai, anthropic, gemini, ollama, openai-api, sdk
-helper2.scout.github-topic-leaders.index-per-topic = ${H2_SCOUT_TOPIC_LEADERS_INDEX_PER_TOPIC:1000}  =>  1000
-helper2.scout.github-topic-leaders.interval = ${H2_SCOUT_TOPIC_LEADERS_INTERVAL:P7D}  =>  P7D
-helper2.scout.github-topic-leaders.min-stars = ${H2_SCOUT_TOPIC_LEADERS_MIN_STARS:3000}  =>  3000
-helper2.scout.github-topic-leaders.per-day = ${H2_SCOUT_TOPIC_LEADERS_PER_DAY:25}  =>  25
-helper2.scout.github-topic-leaders.per-topic = ${H2_SCOUT_TOPIC_LEADERS_PER_TOPIC:50}  =>  50
-helper2.scout.github-topic-leaders.search-pause = ${H2_SCOUT_TOPIC_LEADERS_SEARCH_PAUSE:2s}  =>  2s
-helper2.scout.github-topic-leaders.topics = ${H2_SCOUT_TOPIC_LEADERS_TOPICS:llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, speech-recognition, generative-ai, large-language-models, llm-framework, structured-output, machine-learning, deep-learning}  =>  llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, speech-recognition, generative-ai, large-language-models, llm-framework, structured-output, machine-learning, deep-learning
-helper2.scout.hf-provider-orgs.interval = ${H2_SCOUT_HF_ORGS_INTERVAL:P1D}  =>  P1D
-helper2.scout.hf-provider-orgs.orgs = meta-llama,nvidia,mistralai,deepseek-ai,Qwen,google,openai,xai-org, microsoft,amazon,ibm-granite,CohereLabs,facebook,zai-org,moonshotai,MiniMaxAI, baidu,tencent,ByteDance-Seed,stepfun-ai,internlm,openbmb,inclusionAI,XiaomiMiMo, allenai,swiss-ai,LiquidAI,LGAI-EXAONE,upstage,BAAI,jinaai,stabilityai, black-forest-labs,Lightricks,Wan-AI,kyutai
-helper2.scout.hf-provider-orgs.per-org = 20
-helper2.scout.hf-trending.interval = ${H2_SCOUT_HF_INTERVAL:P1D}  =>  P1D
-helper2.scout.linkedin.interval = ${H2_SCOUT_LINKEDIN_INTERVAL:P7D}  =>  P7D
-helper2.scout.linkedin.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen, launches new AI product, AI startup announces launch, introducing our new AI agent, now available generative AI platform, open-source AI model release announcement, MCP server launch announcement, AI conference, AI hackathon, generative AI meetup, AI summit Europe, LLM workshop webinar, AI event Switzerland, NVIDIA GTC
-helper2.scout.live-web-events.interval = ${H2_SCOUT_LIVE_WEB_EVENTS_INTERVAL:P7D}  =>  P7D
-helper2.scout.live-web-events.max-pages = ${H2_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}  =>  20
-helper2.scout.live-web-events.queries = upcoming AI hackathons, upcoming AI meetups and talks, upcoming AI conferences and summits, upcoming AI workshops
-helper2.scout.live-web-events.read-max-tokens = 800
-helper2.scout.live-web-events.read-model = ${H2_SCOUT_EVENT_READER_MODEL:FAST}  =>  FAST
-helper2.scout.live-web-events.reader-daily-calls = ${H2_SCOUT_EVENT_READER_DAILY_CALLS:40}  =>  40
-helper2.scout.live-web.interval = ${H2_SCOUT_LIVE_WEB_INTERVAL:P5D}  =>  P5D
-helper2.scout.live-web.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen
-helper2.scout.mcp-registry.interval = ${H2_SCOUT_MCP_INTERVAL:PT1H}  =>  PT1H
-helper2.scout.news-feeds.interval = ${H2_SCOUT_NEWS_FEEDS_INTERVAL:P1D}  =>  P1D
-helper2.scout.pypi.candidates-per-day = ${H2_SCOUT_PYPI_CANDIDATES_PER_DAY:20}  =>  20
-helper2.scout.pypi.interval = ${H2_SCOUT_PYPI_INTERVAL:P1D}  =>  P1D
-helper2.scout.pypi.max-bytes-billed = ${H2_SCOUT_PYPI_MAX_BYTES_BILLED:20000000000}  =>  20000000000
-helper2.search.per-source-limit = ${H2_SEARCH_PER_SOURCE_LIMIT:30}  =>  30
-helper2.search.ranking.rating-weight = ${H2_SEARCH_RANKING_RATING_WEIGHT:0}  =>  0
-helper2.search.stale-for = ${H2_SEARCH_STALE_FOR:24h}  =>  24h
-helper2.search.translate-timeout = ${H2_SEARCH_TRANSLATE_TIMEOUT_MS:2500}  =>  2500
-helper2.search.translation.daily-calls = ${H2_SEARCH_DAILY_TRANSLATIONS:300}  =>  300
-helper2.search.translation.ttl = ${H2_SEARCH_TRANSLATION_TTL:24h}  =>  24h
-helper2.search.web.fresh-general = ${H2_LIVE_WEB_FRESH_GENERAL:PT48H}  =>  PT48H
-helper2.search.web.fresh-time-bound = ${H2_LIVE_WEB_FRESH_TIMEBOUND:PT24H}  =>  PT24H
-helper2.search.web.quota.global-daily-credits = ${H2_LIVE_WEB_DAILY_CREDITS:}  =>  <empty>
-helper2.search.web.quota.guest.guide = ${H2_LIVE_WEB_GUEST_GUIDE:10}  =>  10
-helper2.search.web.quota.guest.search = ${H2_LIVE_WEB_GUEST_SEARCH:10}  =>  10
-helper2.setup.cache-ttl = ${H2_SETUP_CACHE_TTL:PT1H}  =>  PT1H
-helper2.setup.document-cache = ${H2_SETUP_DOCUMENT_CACHE_MB:32}  =>  32
-helper2.setup.document-timeout = ${H2_SETUP_DOCUMENT_TIMEOUT:10s}  =>  10s
-helper2.setup.github-token = ${H2_SETUP_GITHUB_TOKEN:}  =>  <empty>
-helper2.setup.guide.cache-ttl = ${H2_SETUP_GUIDE_CACHE_TTL:P7D}  =>  P7D
-helper2.setup.guide.client-daily-guides = ${H2_SETUP_GUIDE_CLIENT_DAILY:20}  =>  20
-helper2.setup.guide.daily-model-calls = ${H2_SETUP_GUIDE_DAILY_MODEL_CALLS:500}  =>  500
-helper2.setup.guide.network-daily-guides = ${H2_SETUP_GUIDE_NETWORK_DAILY:200}  =>  200
-helper2.setup.guide.reasoning = ${H2_SETUP_GUIDE_REASONING:false}  =>  false
-helper2.setup.guide.step-text = ${H2_SETUP_GUIDE_STEP_TEXT:VERIFIED}  =>  VERIFIED
-helper2.setup.guide.unreadable-ttl = ${H2_SETUP_UNREADABLE_TTL:PT10M}  =>  PT10M
-helper2.setup.hosts.github = ${helper2.sources.github.base-url}  =>  https://api.github.com
-helper2.setup.hosts.hf-token = ${helper2.sources.huggingface.token}  =>  <empty>
-helper2.setup.hosts.huggingface = ${helper2.sources.huggingface.base-url}  =>  https://huggingface.co
-helper2.setup.hourly-fetches = ${H2_SETUP_HOURLY_FETCHES:1000}  =>  1000
-helper2.setup.mcp-registry.base-url = ${helper2.sources.mcp-registry.base-url}  =>  https://registry.modelcontextprotocol.io
-helper2.setup.mcp-registry.timeout = ${helper2.sources.mcp-registry.timeout}  =>  10s
-helper2.setup.npm-readme-base-url = ${H2_SETUP_NPM_README_BASE_URL:https://cdn.jsdelivr.net}  =>  https://cdn.jsdelivr.net
-helper2.sources.ai-deadlines.base-url = https://api.github.com
-helper2.sources.ai-deadlines.cache-ttl = 30m
-helper2.sources.ai-deadlines.deadline = ${H2_SOURCE_AI_DEADLINES_DEADLINE:}  =>  <empty>
-helper2.sources.ai-deadlines.enabled = ${H2_SOURCE_AI_DEADLINES_ENABLED:true}  =>  true
-helper2.sources.ai-deadlines.timeout = 15s
-helper2.sources.ai-deadlines.token = ${H2_GITHUB_TOKEN:}  =>  <empty>
-helper2.sources.arxiv.base-url = https://export.arxiv.org
-helper2.sources.arxiv.cache-ttl = 6h
-helper2.sources.arxiv.enabled = ${H2_SOURCE_ARXIV_ENABLED:true}  =>  true
-helper2.sources.arxiv.timeout = 3s
-helper2.sources.confs-tech.base-url = https://api.github.com
-helper2.sources.confs-tech.cache-ttl = 30m
-helper2.sources.confs-tech.deadline = ${H2_SOURCE_CONFS_TECH_DEADLINE:}  =>  <empty>
-helper2.sources.confs-tech.enabled = ${H2_SOURCE_CONFS_TECH_ENABLED:true}  =>  true
-helper2.sources.confs-tech.timeout = 15s
-helper2.sources.confs-tech.token = ${H2_GITHUB_TOKEN:}  =>  <empty>
-helper2.sources.course-scout.base-url = https://api.tavily.com
-helper2.sources.course-scout.cache-ttl = 30m
-helper2.sources.course-scout.deadline = ${H2_SOURCE_COURSE_SCOUT_DEADLINE:}  =>  <empty>
-helper2.sources.course-scout.enabled = ${H2_SOURCE_COURSE_SCOUT_ENABLED:true}  =>  true
-helper2.sources.course-scout.timeout = 10s
-helper2.sources.course-scout.token = ${H2_LIVE_WEB_API_KEY:}  =>  <empty>
-helper2.sources.discovery.base-url = https://api.tavily.com
-helper2.sources.discovery.cache-ttl = 30m
-helper2.sources.discovery.deadline = ${H2_SOURCE_DISCOVERY_DEADLINE:}  =>  <empty>
-helper2.sources.discovery.enabled = ${H2_SOURCE_DISCOVERY_ENABLED:true}  =>  true
-helper2.sources.discovery.timeout = 20s
-helper2.sources.discovery.token = ${H2_LIVE_WEB_API_KEY:}  =>  <empty>
-helper2.sources.github-awesome.base-url = https://api.github.com
-helper2.sources.github-awesome.cache-ttl = 30m
-helper2.sources.github-awesome.deadline = ${H2_SOURCE_GITHUB_AWESOME_DEADLINE:}  =>  <empty>
-helper2.sources.github-awesome.enabled = ${H2_SOURCE_GITHUB_AWESOME_ENABLED:true}  =>  true
-helper2.sources.github-awesome.timeout = 15s
-helper2.sources.github-awesome.token = ${H2_GITHUB_TOKEN:}  =>  <empty>
-helper2.sources.github-sdks.base-url = https://api.github.com
-helper2.sources.github-sdks.cache-ttl = 30m
-helper2.sources.github-sdks.deadline = ${H2_SOURCE_GITHUB_SDKS_DEADLINE:}  =>  <empty>
-helper2.sources.github-sdks.enabled = ${H2_SOURCE_GITHUB_SDKS_ENABLED:true}  =>  true
-helper2.sources.github-sdks.timeout = 20s
-helper2.sources.github-sdks.token = ${H2_GITHUB_TOKEN:}  =>  <empty>
-helper2.sources.github-topic-leaders.base-url = https://api.github.com
-helper2.sources.github-topic-leaders.cache-ttl = 30m
-helper2.sources.github-topic-leaders.deadline = ${H2_SOURCE_GITHUB_TOPIC_LEADERS_DEADLINE:}  =>  <empty>
-helper2.sources.github-topic-leaders.enabled = ${H2_SOURCE_GITHUB_TOPIC_LEADERS_ENABLED:true}  =>  true
-helper2.sources.github-topic-leaders.timeout = 15s
-helper2.sources.github-topic-leaders.token = ${H2_GITHUB_TOKEN:}  =>  <empty>
-helper2.sources.github.base-url = https://api.github.com
-helper2.sources.github.cache-ttl = 30m
-helper2.sources.github.enabled = ${H2_SOURCE_GITHUB_ENABLED:true}  =>  true
-helper2.sources.github.timeout = 2500ms
-helper2.sources.github.token = ${H2_GITHUB_TOKEN:}  =>  <empty>
-helper2.sources.hacker-news.base-url = https://hn.algolia.com
-helper2.sources.hacker-news.cache-ttl = 30m
-helper2.sources.hacker-news.enabled = ${H2_SOURCE_HACKER_NEWS_ENABLED:true}  =>  true
-helper2.sources.hacker-news.timeout = 2500ms
-helper2.sources.hf-provider-orgs.base-url = https://huggingface.co
-helper2.sources.hf-provider-orgs.cache-ttl = 30m
-helper2.sources.hf-provider-orgs.deadline = ${H2_SOURCE_HF_ORGS_DEADLINE:}  =>  <empty>
-helper2.sources.hf-provider-orgs.enabled = ${H2_SOURCE_HF_ORGS_ENABLED:true}  =>  true
-helper2.sources.hf-provider-orgs.timeout = 10s
-helper2.sources.hf-provider-orgs.token = ${H2_HF_TOKEN:}  =>  <empty>
-helper2.sources.hf-trending.base-url = https://huggingface.co
-helper2.sources.hf-trending.cache-ttl = 30m
-helper2.sources.hf-trending.deadline = ${H2_SOURCE_HF_TRENDING_DEADLINE:}  =>  <empty>
-helper2.sources.hf-trending.enabled = ${H2_SOURCE_HF_TRENDING_ENABLED:true}  =>  true
-helper2.sources.hf-trending.timeout = 10s
-helper2.sources.hf-trending.token = ${H2_HF_TOKEN:}  =>  <empty>
-helper2.sources.huggingface.base-url = https://huggingface.co
-helper2.sources.huggingface.cache-ttl = 30m
-helper2.sources.huggingface.enabled = ${H2_SOURCE_HF_ENABLED:true}  =>  true
-helper2.sources.huggingface.timeout = 2500ms
-helper2.sources.huggingface.token = ${H2_HF_TOKEN:}  =>  <empty>
-helper2.sources.linkedin-scout.base-url = https://api.tavily.com
-helper2.sources.linkedin-scout.cache-ttl = 30m
-helper2.sources.linkedin-scout.deadline = ${H2_SOURCE_LINKEDIN_SCOUT_DEADLINE:}  =>  <empty>
-helper2.sources.linkedin-scout.enabled = ${H2_SOURCE_LINKEDIN_SCOUT_ENABLED:true}  =>  true
-helper2.sources.linkedin-scout.timeout = 10s
-helper2.sources.linkedin-scout.token = ${H2_LIVE_WEB_API_KEY:}  =>  <empty>
-helper2.sources.live-web-events-scout.base-url = https://api.tavily.com
-helper2.sources.live-web-events-scout.cache-ttl = 30m
-helper2.sources.live-web-events-scout.deadline = ${H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_DEADLINE:}  =>  <empty>
-helper2.sources.live-web-events-scout.enabled = ${H2_SOURCE_LIVE_WEB_EVENTS_SCOUT_ENABLED:true}  =>  true
-helper2.sources.live-web-events-scout.timeout = 20s
-helper2.sources.live-web-events-scout.token = ${H2_LIVE_WEB_API_KEY:}  =>  <empty>
-helper2.sources.live-web-scout.base-url = https://api.tavily.com
-helper2.sources.live-web-scout.cache-ttl = 30m
-helper2.sources.live-web-scout.deadline = ${H2_SOURCE_LIVE_WEB_SCOUT_DEADLINE:}  =>  <empty>
-helper2.sources.live-web-scout.enabled = ${H2_SOURCE_LIVE_WEB_SCOUT_ENABLED:true}  =>  true
-helper2.sources.live-web-scout.timeout = 10s
-helper2.sources.live-web-scout.token = ${H2_LIVE_WEB_API_KEY:}  =>  <empty>
-helper2.sources.live-web.base-url = https://api.tavily.com
-helper2.sources.live-web.cache-ttl = 30m
-helper2.sources.live-web.enabled = ${H2_SOURCE_LIVE_WEB_ENABLED:true}  =>  true
-helper2.sources.live-web.timeout = ${H2_SOURCE_LIVE_WEB_TIMEOUT:6s}  =>  6s
-helper2.sources.live-web.token = ${H2_LIVE_WEB_API_KEY:}  =>  <empty>
-helper2.sources.mcp-registry.base-url = https://registry.modelcontextprotocol.io
-helper2.sources.mcp-registry.cache-ttl = 30m
-helper2.sources.mcp-registry.deadline = ${H2_SOURCE_MCP_DEADLINE:}  =>  <empty>
-helper2.sources.mcp-registry.enabled = ${H2_SOURCE_MCP_ENABLED:true}  =>  true
-helper2.sources.mcp-registry.timeout = 10s
-helper2.sources.news-feeds.cache-ttl = 30m
-helper2.sources.news-feeds.deadline = ${H2_SOURCE_NEWS_FEEDS_DEADLINE:}  =>  <empty>
-helper2.sources.news-feeds.enabled = ${H2_SOURCE_NEWS_FEEDS_ENABLED:true}  =>  true
-helper2.sources.news-feeds.timeout = 10s
-helper2.sources.npm.base-url = https://registry.npmjs.org
-helper2.sources.npm.cache-ttl = 30m
-helper2.sources.npm.enabled = ${H2_SOURCE_NPM_ENABLED:true}  =>  true
-helper2.sources.npm.timeout = 2500ms
-helper2.sources.pypi.cache-ttl = 30m
-helper2.sources.pypi.enabled = ${H2_SOURCE_PYPI_ENABLED:false}  =>  false
-helper2.sources.pypi.timeout = 60s
-helper2.test.client = h2_public
-helper2.vitality.established-stars = ${H2_VITALITY_ESTABLISHED_STARS:10000}  =>  10000
-helper2.vitality.fork-min-stars = ${H2_VITALITY_FORK_MIN_STARS:10}  =>  10
-helper2.vitality.hosted-app-min-likes = ${H2_SOURCE_HF_SPACES_MIN_LIKES:3}  =>  3
-helper2.vitality.maintained-within = ${H2_VITALITY_MAINTAINED_WITHIN:P1095D}  =>  P1095D
-logging.structured.format.console = ${H2_LOG_FORMAT:logstash}  =>  logstash
+logging.structured.format.console = ${SA_LOG_FORMAT:logstash}  =>  logstash
 management.endpoint.health.probes.enabled = true
 management.endpoint.health.show-details = never
 management.endpoints.web.exposure.include = health,prometheus
 management.health.redis.enabled = false
 management.logging.export.otlp.enabled = false
-management.metrics.distribution.percentiles-histogram.helper2.llm.call = true
-management.metrics.distribution.percentiles-histogram.helper2.scout.run = true
-management.metrics.distribution.percentiles-histogram.helper2.search.latency = true
 management.metrics.distribution.percentiles-histogram.http.client.requests = true
 management.metrics.distribution.percentiles-histogram.http.server.requests = true
-management.metrics.tags.application = helper2
-management.metrics.tags.environment = ${H2_ENVIRONMENT:local}  =>  local
-management.opentelemetry.resource-attributes.deployment.environment.name = ${H2_ENVIRONMENT:local}  =>  local
-management.opentelemetry.resource-attributes.service.name = helper2
-management.opentelemetry.tracing.export.otlp.endpoint = ${H2_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}  =>  http://localhost:4318/v1/traces
+management.metrics.distribution.percentiles-histogram.searchavo.llm.call = true
+management.metrics.distribution.percentiles-histogram.searchavo.scout.run = true
+management.metrics.distribution.percentiles-histogram.searchavo.search.latency = true
+management.metrics.tags.application = searchavo
+management.metrics.tags.environment = ${SA_ENVIRONMENT:local}  =>  local
+management.opentelemetry.resource-attributes.deployment.environment.name = ${SA_ENVIRONMENT:local}  =>  local
+management.opentelemetry.resource-attributes.service.name = searchavo
+management.opentelemetry.tracing.export.otlp.endpoint = ${SA_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}  =>  http://localhost:4318/v1/traces
 management.otlp.metrics.export.enabled = false
-management.server.port = ${H2_MANAGEMENT_PORT:}  =>  <empty>
-management.tracing.export.enabled = ${H2_TRACING_EXPORT:false}  =>  false
-management.tracing.sampling.probability = ${H2_TRACING_SAMPLING:1.0}  =>  1.0
-resilience4j.bulkhead.configs.catalog.max-concurrent-calls = ${H2_RESILIENCE_CATALOG_MAX_CONCURRENT:3}  =>  3
+management.server.port = ${SA_MANAGEMENT_PORT:}  =>  <empty>
+management.tracing.export.enabled = ${SA_TRACING_EXPORT:false}  =>  false
+management.tracing.sampling.probability = ${SA_TRACING_SAMPLING:1.0}  =>  1.0
+resilience4j.bulkhead.configs.catalog.max-concurrent-calls = ${SA_RESILIENCE_CATALOG_MAX_CONCURRENT:3}  =>  3
 resilience4j.bulkhead.configs.catalog.max-wait-duration = 0
-resilience4j.bulkhead.configs.source.max-concurrent-calls = ${H2_RESILIENCE_SOURCE_MAX_CONCURRENT:20}  =>  20
+resilience4j.bulkhead.configs.source.max-concurrent-calls = ${SA_RESILIENCE_SOURCE_MAX_CONCURRENT:20}  =>  20
 resilience4j.bulkhead.configs.source.max-wait-duration = 0
-resilience4j.bulkhead.instances.db-cache.max-concurrent-calls = ${H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}  =>  2
+resilience4j.bulkhead.instances.db-cache.max-concurrent-calls = ${SA_RESILIENCE_DB_CACHE_MAX_CONCURRENT:2}  =>  2
 resilience4j.bulkhead.instances.db-cache.max-wait-duration = 0
-resilience4j.bulkhead.instances.guide.max-concurrent-calls = ${H2_GUIDE_MAX_CONCURRENT:8}  =>  8
+resilience4j.bulkhead.instances.guide.max-concurrent-calls = ${SA_GUIDE_MAX_CONCURRENT:8}  =>  8
 resilience4j.bulkhead.instances.guide.max-wait-duration = 0
-resilience4j.bulkhead.instances.setup-guide.max-concurrent-calls = ${H2_SETUP_GUIDE_MAX_CONCURRENT:2}  =>  2
+resilience4j.bulkhead.instances.setup-guide.max-concurrent-calls = ${SA_SETUP_GUIDE_MAX_CONCURRENT:2}  =>  2
 resilience4j.bulkhead.instances.setup-guide.max-wait-duration = 0
 resilience4j.bulkhead.instances.source-arxiv.base-config = source
 resilience4j.bulkhead.instances.source-curated.base-config = catalog
 resilience4j.bulkhead.instances.source-github.base-config = source
 resilience4j.bulkhead.instances.source-hacker-news.base-config = source
-resilience4j.bulkhead.instances.source-helper2-index.base-config = catalog
-resilience4j.bulkhead.instances.source-helper2-semantic.base-config = catalog
 resilience4j.bulkhead.instances.source-hf-models.base-config = source
 resilience4j.bulkhead.instances.source-hf-spaces.base-config = source
 resilience4j.bulkhead.instances.source-live-web.base-config = source
 resilience4j.bulkhead.instances.source-npm.base-config = source
+resilience4j.bulkhead.instances.source-searchavo-index.base-config = catalog
+resilience4j.bulkhead.instances.source-searchavo-semantic.base-config = catalog
 resilience4j.circuitbreaker.configs.collector.failure-rate-threshold = 50
-resilience4j.circuitbreaker.configs.collector.ignore-exceptions = ai.helper2.search.SourceFailure$RateLimited
+resilience4j.circuitbreaker.configs.collector.ignore-exceptions = ai.searchavo.search.SourceFailure$RateLimited
 resilience4j.circuitbreaker.configs.collector.minimum-number-of-calls = 5
 resilience4j.circuitbreaker.configs.collector.permitted-number-of-calls-in-half-open-state = 1
 resilience4j.circuitbreaker.configs.collector.sliding-window-size = 10
 resilience4j.circuitbreaker.configs.collector.sliding-window-type = COUNT_BASED
-resilience4j.circuitbreaker.configs.collector.wait-duration-in-open-state = ${H2_RESILIENCE_COLLECTOR_OPEN_FOR:1m}  =>  1m
+resilience4j.circuitbreaker.configs.collector.wait-duration-in-open-state = ${SA_RESILIENCE_COLLECTOR_OPEN_FOR:1m}  =>  1m
 resilience4j.circuitbreaker.configs.model.failure-rate-threshold = 50
 resilience4j.circuitbreaker.configs.model.minimum-number-of-calls = 5
 resilience4j.circuitbreaker.configs.model.permitted-number-of-calls-in-half-open-state = 2
 resilience4j.circuitbreaker.configs.model.sliding-window-size = 10
 resilience4j.circuitbreaker.configs.model.sliding-window-type = COUNT_BASED
-resilience4j.circuitbreaker.configs.model.wait-duration-in-open-state = ${H2_RESILIENCE_LLM_OPEN_FOR:30s}  =>  30s
-resilience4j.circuitbreaker.configs.source.failure-rate-threshold = ${H2_RESILIENCE_SOURCE_FAILURE_RATE:50}  =>  50
-resilience4j.circuitbreaker.configs.source.ignore-exceptions = ai.helper2.search.SourceFailure$RateLimited
+resilience4j.circuitbreaker.configs.model.wait-duration-in-open-state = ${SA_RESILIENCE_LLM_OPEN_FOR:30s}  =>  30s
+resilience4j.circuitbreaker.configs.source.failure-rate-threshold = ${SA_RESILIENCE_SOURCE_FAILURE_RATE:50}  =>  50
+resilience4j.circuitbreaker.configs.source.ignore-exceptions = ai.searchavo.search.SourceFailure$RateLimited
 resilience4j.circuitbreaker.configs.source.minimum-number-of-calls = 10
 resilience4j.circuitbreaker.configs.source.permitted-number-of-calls-in-half-open-state = 2
 resilience4j.circuitbreaker.configs.source.sliding-window-size = 20
 resilience4j.circuitbreaker.configs.source.sliding-window-type = COUNT_BASED
 resilience4j.circuitbreaker.configs.source.slow-call-duration-threshold = 2s
 resilience4j.circuitbreaker.configs.source.slow-call-rate-threshold = 50
-resilience4j.circuitbreaker.configs.source.wait-duration-in-open-state = ${H2_RESILIENCE_SOURCE_OPEN_FOR:30s}  =>  30s
+resilience4j.circuitbreaker.configs.source.wait-duration-in-open-state = ${SA_RESILIENCE_SOURCE_OPEN_FOR:30s}  =>  30s
 resilience4j.circuitbreaker.configs.store.failure-rate-threshold = 50
 resilience4j.circuitbreaker.configs.store.minimum-number-of-calls = 3
 resilience4j.circuitbreaker.configs.store.permitted-number-of-calls-in-half-open-state = 2
 resilience4j.circuitbreaker.configs.store.sliding-window-size = 10
 resilience4j.circuitbreaker.configs.store.sliding-window-type = COUNT_BASED
-resilience4j.circuitbreaker.configs.store.wait-duration-in-open-state = ${H2_RESILIENCE_REDIS_OPEN_FOR:30s}  =>  30s
+resilience4j.circuitbreaker.configs.store.wait-duration-in-open-state = ${SA_RESILIENCE_REDIS_OPEN_FOR:30s}  =>  30s
 resilience4j.circuitbreaker.instances.collector-ai-deadlines.base-config = collector
 resilience4j.circuitbreaker.instances.collector-confs-tech.base-config = collector
 resilience4j.circuitbreaker.instances.collector-course-scout.base-config = collector
@@ -965,21 +92,21 @@ resilience4j.circuitbreaker.instances.db-cache.sliding-window-size = 10
 resilience4j.circuitbreaker.instances.db-cache.sliding-window-type = COUNT_BASED
 resilience4j.circuitbreaker.instances.db-cache.slow-call-duration-threshold = 250ms
 resilience4j.circuitbreaker.instances.db-cache.slow-call-rate-threshold = 50
-resilience4j.circuitbreaker.instances.db-cache.wait-duration-in-open-state = ${H2_RESILIENCE_DB_CACHE_OPEN_FOR:30s}  =>  30s
+resilience4j.circuitbreaker.instances.db-cache.wait-duration-in-open-state = ${SA_RESILIENCE_DB_CACHE_OPEN_FOR:30s}  =>  30s
 resilience4j.circuitbreaker.instances.llm-chat-guide-fast.base-config = model
-resilience4j.circuitbreaker.instances.llm-chat-guide-fast.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
-resilience4j.circuitbreaker.instances.llm-chat-guide-fast.slow-call-duration-threshold = ${H2_RESILIENCE_LLM_SLOW_CALL:35s}  =>  35s
+resilience4j.circuitbreaker.instances.llm-chat-guide-fast.ignore-exception-predicate = ai.searchavo.platform.llm.ModelErrors$NotFromProvider
+resilience4j.circuitbreaker.instances.llm-chat-guide-fast.slow-call-duration-threshold = ${SA_RESILIENCE_LLM_SLOW_CALL:35s}  =>  35s
 resilience4j.circuitbreaker.instances.llm-chat-guide-fast.slow-call-rate-threshold = 50
 resilience4j.circuitbreaker.instances.llm-chat-guide-judge.base-config = model
-resilience4j.circuitbreaker.instances.llm-chat-guide-judge.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
+resilience4j.circuitbreaker.instances.llm-chat-guide-judge.ignore-exception-predicate = ai.searchavo.platform.llm.ModelErrors$NotFromProvider
 resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.base-config = model
-resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
-resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.slow-call-duration-threshold = ${H2_RESILIENCE_LLM_SLOW_CALL:35s}  =>  35s
+resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.ignore-exception-predicate = ai.searchavo.platform.llm.ModelErrors$NotFromProvider
+resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.slow-call-duration-threshold = ${SA_RESILIENCE_LLM_SLOW_CALL:35s}  =>  35s
 resilience4j.circuitbreaker.instances.llm-chat-guide-reasoning.slow-call-rate-threshold = 50
 resilience4j.circuitbreaker.instances.llm-chat.base-config = model
-resilience4j.circuitbreaker.instances.llm-chat.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$NotFromProvider
+resilience4j.circuitbreaker.instances.llm-chat.ignore-exception-predicate = ai.searchavo.platform.llm.ModelErrors$NotFromProvider
 resilience4j.circuitbreaker.instances.llm-embed-index.base-config = model
-resilience4j.circuitbreaker.instances.llm-embed-index.ignore-exception-predicate = ai.helper2.platform.llm.ModelErrors$RejectedInput
+resilience4j.circuitbreaker.instances.llm-embed-index.ignore-exception-predicate = ai.searchavo.platform.llm.ModelErrors$RejectedInput
 resilience4j.circuitbreaker.instances.llm-embed.base-config = model
 resilience4j.circuitbreaker.instances.page-status.base-config = collector
 resilience4j.circuitbreaker.instances.redis.base-config = store
@@ -987,19 +114,19 @@ resilience4j.circuitbreaker.instances.source-arxiv.base-config = source
 resilience4j.circuitbreaker.instances.source-curated.base-config = source
 resilience4j.circuitbreaker.instances.source-github.base-config = source
 resilience4j.circuitbreaker.instances.source-hacker-news.base-config = source
-resilience4j.circuitbreaker.instances.source-helper2-index.base-config = source
-resilience4j.circuitbreaker.instances.source-helper2-semantic.base-config = source
 resilience4j.circuitbreaker.instances.source-hf-models.base-config = source
 resilience4j.circuitbreaker.instances.source-hf-spaces.base-config = source
 resilience4j.circuitbreaker.instances.source-live-web.base-config = source
 resilience4j.circuitbreaker.instances.source-live-web.slow-call-duration-threshold = 5s
 resilience4j.circuitbreaker.instances.source-npm.base-config = source
+resilience4j.circuitbreaker.instances.source-searchavo-index.base-config = source
+resilience4j.circuitbreaker.instances.source-searchavo-semantic.base-config = source
 resilience4j.retry.configs.collector.enable-exponential-backoff = true
 resilience4j.retry.configs.collector.enable-randomized-wait = true
 resilience4j.retry.configs.collector.exponential-backoff-multiplier = 2
-resilience4j.retry.configs.collector.max-attempts = ${H2_RESILIENCE_COLLECTOR_MAX_ATTEMPTS:3}  =>  3
+resilience4j.retry.configs.collector.max-attempts = ${SA_RESILIENCE_COLLECTOR_MAX_ATTEMPTS:3}  =>  3
 resilience4j.retry.configs.collector.randomized-wait-factor = 0.5
-resilience4j.retry.configs.collector.retry-exception-predicate = ai.helper2.sources.support.TransientSourceFailure
+resilience4j.retry.configs.collector.retry-exception-predicate = ai.searchavo.sources.support.TransientSourceFailure
 resilience4j.retry.configs.collector.wait-duration = 1s
 resilience4j.retry.instances.collector-ai-deadlines.base-config = collector
 resilience4j.retry.instances.collector-confs-tech.base-config = collector
@@ -1020,11 +147,884 @@ resilience4j.retry.instances.collector-mcp-registry.base-config = collector
 resilience4j.retry.instances.collector-news-feeds.base-config = collector
 resilience4j.retry.instances.collector-pypi.base-config = collector
 resilience4j.retry.instances.collector-repository-sweep.base-config = collector
-server.forward-headers-strategy = ${H2_FORWARD_HEADERS_STRATEGY:none}  =>  none
-server.port = ${H2_PORT:8080}  =>  8080
+searchavo.build.version = ${SA_BUILD_VERSION:local}  =>  local
+searchavo.catalog.categories.backfill-at-startup = ${SA_CATEGORIES_BACKFILL_AT_STARTUP:true}  =>  true
+searchavo.catalog.curated.enabled = ${SA_SOURCE_CURATED_ENABLED:true}  =>  true
+searchavo.catalog.curated.timeout = 1000ms
+searchavo.catalog.index.timeout = ${SA_SOURCE_INDEX_TIMEOUT:3s}  =>  3s
+searchavo.catalog.indexer.batch = ${SA_EMBEDDING_BATCH:1}  =>  1
+searchavo.catalog.indexer.every = ${SA_EMBEDDING_EVERY:PT5S}  =>  PT5S
+searchavo.catalog.indexer.initial-delay = PT30S
+searchavo.catalog.indexer.singles-after-failure = 5
+searchavo.catalog.indexer.timeout = 30s
+searchavo.catalog.observation-queue = 256
+searchavo.catalog.observed-settles-after = PT24H
+searchavo.catalog.reconcile-by-projection = ${SA_CATALOG_RECONCILE_BY_PROJECTION:true}  =>  true
+searchavo.catalog.semantic.max-distance = ${SA_SOURCE_SEMANTIC_MAX_DISTANCE:0.65}  =>  0.65
+searchavo.catalog.semantic.query-vector-ttl = ${SA_SEARCH_QUERY_VECTOR_TTL:7d}  =>  7d
+searchavo.catalog.semantic.timeout = ${SA_SOURCE_SEMANTIC_TIMEOUT:3s}  =>  3s
+searchavo.categories[0].discovery.queries[0] = free prompt library with ready-to-use prompts for ChatGPT Claude and Gemini
+searchavo.categories[0].discovery.type = PROMPT
+searchavo.categories[0].family = prompts-and-skills
+searchavo.categories[0].id = prompt-libraries
+searchavo.categories[0].name = Prompt libraries
+searchavo.categories[0].short-name = Prompts
+searchavo.categories[0].words[0] = prompt library
+searchavo.categories[0].words[1] = prompt libraries
+searchavo.categories[0].words[2] = prompt marketplace
+searchavo.categories[0].words[3] = prompt collection
+searchavo.categories[0].words[4] = ready to use prompts
+searchavo.categories[0].words[5] = prompt pack
+searchavo.categories[10].discovery.exclude-domains[0] = coursera.org
+searchavo.categories[10].discovery.exclude-domains[1] = udemy.com
+searchavo.categories[10].discovery.exclude-domains[2] = edx.org
+searchavo.categories[10].discovery.exclude-domains[3] = skillshare.com
+searchavo.categories[10].discovery.exclude-domains[4] = udacity.com
+searchavo.categories[10].discovery.exclude-domains[5] = pluralsight.com
+searchavo.categories[10].discovery.queries[0] = AI tutor app that explains homework step by step and makes quizzes and flashcards for students
+searchavo.categories[10].discovery.queries[1] = AI tools for teachers that create lesson plans and grade assignments
+searchavo.categories[10].discovery.type = PRODUCT
+searchavo.categories[10].family = everyday-apps
+searchavo.categories[10].id = education-and-tutors
+searchavo.categories[10].name = Education and tutors
+searchavo.categories[10].short-name = Education
+searchavo.categories[10].words[0] = ai tutor
+searchavo.categories[10].words[10] = grading assistant
+searchavo.categories[10].words[11] = ai grading
+searchavo.categories[10].words[1] = ai tutoring
+searchavo.categories[10].words[2] = homework help
+searchavo.categories[10].words[3] = homework helper
+searchavo.categories[10].words[4] = study assistant
+searchavo.categories[10].words[5] = flashcard generat
+searchavo.categories[10].words[6] = quiz generat
+searchavo.categories[10].words[7] = ai teaching assistant
+searchavo.categories[10].words[8] = lesson plan generat
+searchavo.categories[10].words[9] = ai for teachers
+searchavo.categories[11].discovery.exclude-domains[0] = webmd.com
+searchavo.categories[11].discovery.exclude-domains[10] = nhs.uk
+searchavo.categories[11].discovery.exclude-domains[11] = drugs.com
+searchavo.categories[11].discovery.exclude-domains[12] = wikipedia.org
+searchavo.categories[11].discovery.exclude-domains[1] = mayoclinic.org
+searchavo.categories[11].discovery.exclude-domains[2] = clevelandclinic.org
+searchavo.categories[11].discovery.exclude-domains[3] = healthline.com
+searchavo.categories[11].discovery.exclude-domains[4] = medicalnewstoday.com
+searchavo.categories[11].discovery.exclude-domains[5] = verywellhealth.com
+searchavo.categories[11].discovery.exclude-domains[6] = medlineplus.gov
+searchavo.categories[11].discovery.exclude-domains[7] = nih.gov
+searchavo.categories[11].discovery.exclude-domains[8] = cdc.gov
+searchavo.categories[11].discovery.exclude-domains[9] = who.int
+searchavo.categories[11].discovery.index-lists = false
+searchavo.categories[11].discovery.min-score = 0.5
+searchavo.categories[11].discovery.queries[0] = AI medical scribe that writes clinical notes from doctor and patient visits
+searchavo.categories[11].discovery.queries[1] = AI health app that answers health questions and tracks symptoms for patients
+searchavo.categories[11].discovery.require-keyword = true
+searchavo.categories[11].discovery.type = PRODUCT
+searchavo.categories[11].family = everyday-apps
+searchavo.categories[11].id = health
+searchavo.categories[11].name = Health
+searchavo.categories[11].short-name = Health
+searchavo.categories[11].words[0] = medical scribe
+searchavo.categories[11].words[10] = patient intake
+searchavo.categories[11].words[11] = symptom checker
+searchavo.categories[11].words[12] = ai health assistant
+searchavo.categories[11].words[13] = ai health app
+searchavo.categories[11].words[1] = ai scribe
+searchavo.categories[11].words[2] = clinical documentation
+searchavo.categories[11].words[3] = clinical notes
+searchavo.categories[11].words[4] = ambient clinical
+searchavo.categories[11].words[5] = healthcare ai
+searchavo.categories[11].words[6] = ai for healthcare
+searchavo.categories[11].words[7] = medical ai
+searchavo.categories[11].words[8] = medical coding
+searchavo.categories[11].words[9] = prior authori
+searchavo.categories[12].discovery.queries[0] = AI image generator that creates and edits images from text prompts
+searchavo.categories[12].discovery.type = PRODUCT
+searchavo.categories[12].family = creative-and-media
+searchavo.categories[12].id = image-generation
+searchavo.categories[12].name = Image generation
+searchavo.categories[12].short-name = Images
+searchavo.categories[12].words[0] = image generat
+searchavo.categories[12].words[1] = text to image
+searchavo.categories[12].words[2] = ai art generat
+searchavo.categories[12].words[3] = ai artwork
+searchavo.categories[12].words[4] = photo editor
+searchavo.categories[12].words[5] = image editing
+searchavo.categories[12].words[6] = background remov
+searchavo.categories[12].words[7] = upscal
+searchavo.categories[13].discovery.queries[0] = AI video generator that turns text or images into video
+searchavo.categories[13].discovery.type = PRODUCT
+searchavo.categories[13].family = creative-and-media
+searchavo.categories[13].id = video-generation
+searchavo.categories[13].name = Video generation
+searchavo.categories[13].short-name = Video
+searchavo.categories[13].words[0] = video generat
+searchavo.categories[13].words[1] = text to video
+searchavo.categories[13].words[2] = image to video
+searchavo.categories[13].words[3] = ai video
+searchavo.categories[13].words[4] = video editor
+searchavo.categories[13].words[5] = avatar video
+searchavo.categories[13].words[6] = lip sync
+searchavo.categories[14].discovery.queries[0] = realistic AI text to speech and voice cloning
+searchavo.categories[14].discovery.queries[1] = AI music generator that creates songs from a text prompt
+searchavo.categories[14].discovery.type = PRODUCT
+searchavo.categories[14].family = creative-and-media
+searchavo.categories[14].id = voice-and-audio
+searchavo.categories[14].name = Voice and audio
+searchavo.categories[14].short-name = Voice, audio
+searchavo.categories[14].words[0] = text to speech
+searchavo.categories[14].words[1] = voice clon
+searchavo.categories[14].words[2] = voice generat
+searchavo.categories[14].words[3] = ai voice
+searchavo.categories[14].words[4] = speech synthesis
+searchavo.categories[14].words[5] = tts api
+searchavo.categories[14].words[6] = music generat
+searchavo.categories[14].words[7] = ai music
+searchavo.categories[14].words[8] = song generat
+searchavo.categories[15].discovery.queries[0] = AI presentation maker that creates slides from a prompt
+searchavo.categories[15].discovery.queries[1] = AI website builder and UI design generator
+searchavo.categories[15].discovery.type = PRODUCT
+searchavo.categories[15].family = creative-and-media
+searchavo.categories[15].id = design-and-presentations
+searchavo.categories[15].name = Design and presentations
+searchavo.categories[15].short-name = Design
+searchavo.categories[15].words[0] = ai presentation
+searchavo.categories[15].words[1] = presentation maker
+searchavo.categories[15].words[2] = slide deck
+searchavo.categories[15].words[3] = pitch deck
+searchavo.categories[15].words[4] = slides generat
+searchavo.categories[15].words[5] = ui design
+searchavo.categories[15].words[6] = ai website builder
+searchavo.categories[15].words[7] = website generat
+searchavo.categories[15].words[8] = logo generat
+searchavo.categories[15].words[9] = graphic design
+searchavo.categories[16].discovery.queries[0] = AI customer support agent that answers tickets and live chat
+searchavo.categories[16].discovery.type = PRODUCT
+searchavo.categories[16].family = business
+searchavo.categories[16].id = customer-support
+searchavo.categories[16].name = Customer support
+searchavo.categories[16].short-name = Support
+searchavo.categories[16].words[0] = customer support
+searchavo.categories[16].words[1] = customer service
+searchavo.categories[16].words[2] = helpdesk
+searchavo.categories[16].words[3] = help desk
+searchavo.categories[16].words[4] = support ticket
+searchavo.categories[17].discovery.queries[0] = platform to build AI voice agents that answer phone calls
+searchavo.categories[17].discovery.type = AGENT
+searchavo.categories[17].family = business
+searchavo.categories[17].id = voice-agents
+searchavo.categories[17].name = Voice agents
+searchavo.categories[17].short-name = Voice agents
+searchavo.categories[17].words[0] = voice agent
+searchavo.categories[17].words[1] = phone agent
+searchavo.categories[17].words[2] = ai receptionist
+searchavo.categories[17].words[3] = conversational voice ai
+searchavo.categories[18].discovery.queries[0] = AI data analyst that answers questions about spreadsheets and databases
+searchavo.categories[18].discovery.type = PRODUCT
+searchavo.categories[18].family = business
+searchavo.categories[18].id = data-and-analytics
+searchavo.categories[18].name = Data and analytics
+searchavo.categories[18].short-name = Data
+searchavo.categories[18].words[0] = data analysis
+searchavo.categories[18].words[1] = ai data analyst
+searchavo.categories[18].words[2] = ai analyst
+searchavo.categories[18].words[3] = text to sql
+searchavo.categories[18].words[4] = business intelligence
+searchavo.categories[18].words[5] = spreadsheet ai
+searchavo.categories[18].words[6] = chat with your data
+searchavo.categories[19].discovery.queries[0] = no-code builder for AI apps and workflow automations
+searchavo.categories[19].discovery.type = PRODUCT
+searchavo.categories[19].family = business
+searchavo.categories[19].id = no-code
+searchavo.categories[19].name = No-code
+searchavo.categories[19].short-name = No-code
+searchavo.categories[19].words[0] = no code ai
+searchavo.categories[19].words[1] = no code builder
+searchavo.categories[19].words[2] = no code app
+searchavo.categories[19].words[3] = nocode
+searchavo.categories[19].words[4] = low code
+searchavo.categories[19].words[5] = workflow automation
+searchavo.categories[19].words[6] = automation builder
+searchavo.categories[1].discovery.queries[0] = open-source collection of Claude Code and agent skills with SKILL.md files
+searchavo.categories[1].discovery.type = SKILL
+searchavo.categories[1].family = prompts-and-skills
+searchavo.categories[1].id = skills-and-gpts
+searchavo.categories[1].name = Agent skills and GPTs
+searchavo.categories[1].short-name = Skills
+searchavo.categories[1].words[0] = agent skill
+searchavo.categories[1].words[1] = claude skill
+searchavo.categories[1].words[2] = skill.md
+searchavo.categories[1].words[3] = custom gpt
+searchavo.categories[1].words[4] = gpt store
+searchavo.categories[20].discovery.queries[0] = AI marketing platform that writes SEO blog posts and ad copy and plans social media content
+searchavo.categories[20].discovery.type = PRODUCT
+searchavo.categories[20].family = business
+searchavo.categories[20].id = marketing-and-seo
+searchavo.categories[20].name = Marketing and SEO
+searchavo.categories[20].short-name = Marketing
+searchavo.categories[20].words[0] = ai marketing
+searchavo.categories[20].words[10] = social media content
+searchavo.categories[20].words[11] = email marketing
+searchavo.categories[20].words[12] = generative engine optimi
+searchavo.categories[20].words[1] = marketing ai
+searchavo.categories[20].words[2] = seo tool
+searchavo.categories[20].words[3] = seo content
+searchavo.categories[20].words[4] = seo optimi
+searchavo.categories[20].words[5] = ai seo
+searchavo.categories[20].words[6] = keyword research
+searchavo.categories[20].words[7] = ad copy
+searchavo.categories[20].words[8] = ad creative
+searchavo.categories[20].words[9] = social media post
+searchavo.categories[21].discovery.exclude-domains[0] = law.cornell.edu
+searchavo.categories[21].discovery.exclude-domains[10] = wikipedia.org
+searchavo.categories[21].discovery.exclude-domains[1] = findlaw.com
+searchavo.categories[21].discovery.exclude-domains[2] = justia.com
+searchavo.categories[21].discovery.exclude-domains[3] = nolo.com
+searchavo.categories[21].discovery.exclude-domains[4] = avvo.com
+searchavo.categories[21].discovery.exclude-domains[5] = lawinsider.com
+searchavo.categories[21].discovery.exclude-domains[6] = legalzoom.com
+searchavo.categories[21].discovery.exclude-domains[7] = rocketlawyer.com
+searchavo.categories[21].discovery.exclude-domains[8] = upcounsel.com
+searchavo.categories[21].discovery.exclude-domains[9] = eur-lex.europa.eu
+searchavo.categories[21].discovery.index-lists = false
+searchavo.categories[21].discovery.min-score = 0.5
+searchavo.categories[21].discovery.queries[0] = AI legal assistant for lawyers that reviews contracts and drafts legal documents
+searchavo.categories[21].discovery.require-keyword = true
+searchavo.categories[21].discovery.type = PRODUCT
+searchavo.categories[21].family = business
+searchavo.categories[21].id = legal
+searchavo.categories[21].name = Legal
+searchavo.categories[21].short-name = Legal
+searchavo.categories[21].words[0] = legal ai
+searchavo.categories[21].words[10] = e discovery
+searchavo.categories[21].words[11] = clause extraction
+searchavo.categories[21].words[1] = ai legal
+searchavo.categories[21].words[2] = ai lawyer
+searchavo.categories[21].words[3] = legal assistant
+searchavo.categories[21].words[4] = contract review
+searchavo.categories[21].words[5] = contract analy
+searchavo.categories[21].words[6] = contract drafting
+searchavo.categories[21].words[7] = legal research
+searchavo.categories[21].words[8] = legal drafting
+searchavo.categories[21].words[9] = ediscovery
+searchavo.categories[22].discovery.queries[0] = AI coding agent and code editor for software developers
+searchavo.categories[22].discovery.type = PRODUCT
+searchavo.categories[22].family = developers
+searchavo.categories[22].id = coding
+searchavo.categories[22].name = Coding
+searchavo.categories[22].short-name = Coding
+searchavo.categories[22].words[0] = coding assistant
+searchavo.categories[22].words[1] = coding agent
+searchavo.categories[22].words[2] = code assistant
+searchavo.categories[22].words[3] = ai coding
+searchavo.categories[22].words[4] = code review
+searchavo.categories[22].words[5] = code generat
+searchavo.categories[22].words[6] = ai ide
+searchavo.categories[22].words[7] = ai code editor
+searchavo.categories[23].discovery.queries[0] = platform to build deploy and run AI agents for business workflows
+searchavo.categories[23].discovery.type = AGENT
+searchavo.categories[23].family = developers
+searchavo.categories[23].id = agent-platforms
+searchavo.categories[23].name = Agent platforms
+searchavo.categories[23].short-name = Agents
+searchavo.categories[23].words[0] = agent platform
+searchavo.categories[23].words[1] = agent builder
+searchavo.categories[23].words[2] = build ai agents
+searchavo.categories[23].words[3] = autonomous agent
+searchavo.categories[23].words[4] = multi agent
+searchavo.categories[24].discovery.queries[0] = open-source framework or library to build LLM apps and agents
+searchavo.categories[24].discovery.type = LIBRARY
+searchavo.categories[24].family = developers
+searchavo.categories[24].id = llm-frameworks
+searchavo.categories[24].name = LLM frameworks
+searchavo.categories[24].short-name = Frameworks
+searchavo.categories[24].words[0] = llm framework
+searchavo.categories[24].words[1] = agent framework
+searchavo.categories[24].words[2] = orchestration framework
+searchavo.categories[24].words[3] = llm library
+searchavo.categories[25].discovery.queries[0] = vector database or RAG platform for retrieval augmented generation
+searchavo.categories[25].discovery.queries[1] = API to parse PDFs and documents into clean text for LLMs
+searchavo.categories[25].discovery.type = PRODUCT
+searchavo.categories[25].family = developers
+searchavo.categories[25].id = rag-and-vector-databases
+searchavo.categories[25].name = RAG and vector databases
+searchavo.categories[25].short-name = RAG
+searchavo.categories[25].words[0] = vector database
+searchavo.categories[25].words[10] = ocr model
+searchavo.categories[25].words[11] = document extraction
+searchavo.categories[25].words[1] = vector db
+searchavo.categories[25].words[2] = vector search
+searchavo.categories[25].words[3] = retrieval augmented
+searchavo.categories[25].words[4] = rag pipeline
+searchavo.categories[25].words[5] = rag platform
+searchavo.categories[25].words[6] = document parsing
+searchavo.categories[25].words[7] = pdf parsing
+searchavo.categories[25].words[8] = pdf to markdown
+searchavo.categories[25].words[9] = ocr api
+searchavo.categories[26].discovery.queries[0] = LLM observability evaluation and monitoring tool
+searchavo.categories[26].discovery.type = PRODUCT
+searchavo.categories[26].family = developers
+searchavo.categories[26].id = llmops-and-evaluation
+searchavo.categories[26].name = LLMOps and evaluation
+searchavo.categories[26].short-name = LLMOps
+searchavo.categories[26].words[0] = llm observability
+searchavo.categories[26].words[1] = llmops
+searchavo.categories[26].words[2] = llm evaluation
+searchavo.categories[26].words[3] = llm evals
+searchavo.categories[26].words[4] = evals
+searchavo.categories[26].words[5] = llm tracing
+searchavo.categories[26].words[6] = llm monitoring
+searchavo.categories[26].words[7] = prompt management
+searchavo.categories[26].words[8] = prompt versioning
+searchavo.categories[27].discovery.queries[0] = AI guardrails and LLM security tool against prompt injection
+searchavo.categories[27].discovery.type = PRODUCT
+searchavo.categories[27].family = developers
+searchavo.categories[27].id = ai-security
+searchavo.categories[27].name = AI security
+searchavo.categories[27].short-name = AI security
+searchavo.categories[27].words[0] = guardrail
+searchavo.categories[27].words[1] = prompt injection
+searchavo.categories[27].words[2] = llm security
+searchavo.categories[27].words[3] = ai security
+searchavo.categories[27].words[4] = ai red team
+searchavo.categories[27].words[5] = jailbreak
+searchavo.categories[28].discovery.queries[0] = platform to fine-tune and train open-source LLMs
+searchavo.categories[28].discovery.type = PRODUCT
+searchavo.categories[28].family = developers
+searchavo.categories[28].id = fine-tuning
+searchavo.categories[28].name = Fine-tuning
+searchavo.categories[28].short-name = Fine-tuning
+searchavo.categories[28].words[0] = fine tuning platform
+searchavo.categories[28].words[1] = fine tune llm
+searchavo.categories[28].words[2] = fine tune models
+searchavo.categories[28].words[3] = finetun
+searchavo.categories[28].words[4] = lora
+searchavo.categories[28].words[5] = qlora
+searchavo.categories[28].words[6] = model training
+searchavo.categories[29].discovery.queries[0] = serverless inference API for open-weight LLMs and image models
+searchavo.categories[29].discovery.type = PRODUCT
+searchavo.categories[29].family = hosting-and-infra
+searchavo.categories[29].id = model-hosting
+searchavo.categories[29].name = Model hosting
+searchavo.categories[29].short-name = Hosting
+searchavo.categories[29].words[0] = inference api
+searchavo.categories[29].words[1] = serverless inference
+searchavo.categories[29].words[2] = model hosting
+searchavo.categories[29].words[3] = deploy models
+searchavo.categories[29].words[4] = inference platform
+searchavo.categories[2].discovery.queries[0] = AI chat assistant app for web and mobile that answers questions and remembers context
+searchavo.categories[2].discovery.type = PRODUCT
+searchavo.categories[2].family = everyday-apps
+searchavo.categories[2].id = ai-assistants
+searchavo.categories[2].name = AI assistants
+searchavo.categories[2].short-name = Assistants
+searchavo.categories[2].words[0] = personal assistant
+searchavo.categories[2].words[1] = ai companion
+searchavo.categories[2].words[2] = ai chat app
+searchavo.categories[2].words[3] = chatgpt alternative
+searchavo.categories[30].discovery.queries[0] = GPU cloud platform to deploy and scale AI apps and models
+searchavo.categories[30].discovery.type = PRODUCT
+searchavo.categories[30].family = hosting-and-infra
+searchavo.categories[30].id = ai-cloud-and-paas
+searchavo.categories[30].name = AI cloud and PaaS
+searchavo.categories[30].short-name = AI cloud
+searchavo.categories[30].words[0] = serverless gpu
+searchavo.categories[30].words[1] = gpu cloud
+searchavo.categories[30].words[2] = gpu instances
+searchavo.categories[30].words[3] = rent gpus
+searchavo.categories[30].words[4] = deploy ai apps
+searchavo.categories[30].words[5] = ai cloud
+searchavo.categories[31].discovery.queries[0] = LLM gateway or router that gives one API for many model providers
+searchavo.categories[31].discovery.type = PRODUCT
+searchavo.categories[31].family = hosting-and-infra
+searchavo.categories[31].id = ai-gateways
+searchavo.categories[31].name = AI gateways
+searchavo.categories[31].short-name = Gateways
+searchavo.categories[31].words[0] = llm gateway
+searchavo.categories[31].words[1] = ai gateway
+searchavo.categories[31].words[2] = llm router
+searchavo.categories[31].words[3] = model router
+searchavo.categories[31].words[4] = llm proxy
+searchavo.categories[32].discovery.queries[0] = open-source self-hosted AI app you run on your own server with Docker
+searchavo.categories[32].discovery.type = PRODUCT
+searchavo.categories[32].family = run-it-yourself
+searchavo.categories[32].id = self-hosted
+searchavo.categories[32].name = Self-hosted
+searchavo.categories[32].short-name = Self-hosted
+searchavo.categories[32].words[0] = self hosted
+searchavo.categories[32].words[1] = selfhosted
+searchavo.categories[32].words[2] = on prem
+searchavo.categories[32].words[3] = docker compose
+searchavo.categories[32].words[4] = homelab
+searchavo.categories[33].discovery.queries[0] = desktop app to run LLMs locally and offline on your own computer
+searchavo.categories[33].discovery.type = PRODUCT
+searchavo.categories[33].family = run-it-yourself
+searchavo.categories[33].id = local-ai
+searchavo.categories[33].name = Local AI
+searchavo.categories[33].short-name = Local AI
+searchavo.categories[33].words[0] = run locally
+searchavo.categories[33].words[1] = runs locally
+searchavo.categories[33].words[2] = run llms locally
+searchavo.categories[33].words[3] = local llm
+searchavo.categories[33].words[4] = local ai
+searchavo.categories[33].words[5] = offline ai
+searchavo.categories[33].words[6] = works offline
+searchavo.categories[33].words[7] = on device
+searchavo.categories[3].discovery.queries[0] = AI writing assistant for emails documents and marketing copy
+searchavo.categories[3].discovery.type = PRODUCT
+searchavo.categories[3].family = everyday-apps
+searchavo.categories[3].id = writing
+searchavo.categories[3].name = Writing
+searchavo.categories[3].short-name = Writing
+searchavo.categories[3].words[0] = writing assistant
+searchavo.categories[3].words[1] = ai writer
+searchavo.categories[3].words[2] = ai writing
+searchavo.categories[3].words[3] = copywriting
+searchavo.categories[3].words[4] = paraphras
+searchavo.categories[3].words[5] = grammar checker
+searchavo.categories[4].discovery.queries[0] = AI translator for documents websites and conversations
+searchavo.categories[4].discovery.type = PRODUCT
+searchavo.categories[4].family = everyday-apps
+searchavo.categories[4].id = translation
+searchavo.categories[4].name = Translation
+searchavo.categories[4].short-name = Translation
+searchavo.categories[4].words[0] = ai translat
+searchavo.categories[4].words[1] = machine translation
+searchavo.categories[4].words[2] = document translat
+searchavo.categories[4].words[3] = translation app
+searchavo.categories[4].words[4] = real time translat
+searchavo.categories[5].discovery.queries[0] = AI notetaker that joins meetings and writes notes and action items
+searchavo.categories[5].discovery.type = PRODUCT
+searchavo.categories[5].family = everyday-apps
+searchavo.categories[5].id = meetings-and-transcription
+searchavo.categories[5].name = Meetings and transcription
+searchavo.categories[5].short-name = Meetings
+searchavo.categories[5].words[0] = meeting assistant
+searchavo.categories[5].words[1] = meeting notes
+searchavo.categories[5].words[2] = meeting summar
+searchavo.categories[5].words[3] = notetaker
+searchavo.categories[5].words[4] = note taker
+searchavo.categories[5].words[5] = transcription
+searchavo.categories[5].words[6] = transcribe
+searchavo.categories[5].words[7] = speech to text
+searchavo.categories[6].discovery.queries[0] = AI that summarises and answers questions about PDFs and documents
+searchavo.categories[6].discovery.type = PRODUCT
+searchavo.categories[6].family = everyday-apps
+searchavo.categories[6].id = documents-and-pdf
+searchavo.categories[6].name = Documents and PDF
+searchavo.categories[6].short-name = Documents
+searchavo.categories[6].words[0] = chat with pdf
+searchavo.categories[6].words[1] = chat with your documents
+searchavo.categories[6].words[2] = pdf summar
+searchavo.categories[6].words[3] = document summar
+searchavo.categories[6].words[4] = ai pdf
+searchavo.categories[7].discovery.queries[0] = AI research assistant that finds and summarises scientific papers
+searchavo.categories[7].discovery.type = PRODUCT
+searchavo.categories[7].family = everyday-apps
+searchavo.categories[7].id = research-and-papers
+searchavo.categories[7].name = Research and papers
+searchavo.categories[7].short-name = Research
+searchavo.categories[7].words[0] = research assistant
+searchavo.categories[7].words[1] = literature review
+searchavo.categories[7].words[2] = research papers
+searchavo.categories[7].words[3] = scientific papers
+searchavo.categories[7].words[4] = paper summar
+searchavo.categories[7].words[5] = deep research
+searchavo.categories[8].discovery.queries[0] = AI search engine that answers questions with cited sources
+searchavo.categories[8].discovery.type = PRODUCT
+searchavo.categories[8].family = everyday-apps
+searchavo.categories[8].id = ai-search
+searchavo.categories[8].name = AI search
+searchavo.categories[8].short-name = AI search
+searchavo.categories[8].words[0] = ai search
+searchavo.categories[8].words[1] = ai search engine
+searchavo.categories[8].words[2] = answer engine
+searchavo.categories[8].words[3] = ai powered search
+searchavo.categories[9].discovery.queries[0] = AI browser extension for Chrome or Firefox
+searchavo.categories[9].discovery.type = PRODUCT
+searchavo.categories[9].family = everyday-apps
+searchavo.categories[9].id = browser-extensions
+searchavo.categories[9].name = Browser extensions
+searchavo.categories[9].short-name = Extensions
+searchavo.categories[9].words[0] = browser extension
+searchavo.categories[9].words[1] = chrome extension
+searchavo.categories[9].words[2] = firefox add on
+searchavo.categories[9].words[3] = firefox extension
+searchavo.categories[9].words[4] = extension for chrome
+searchavo.cluster-lock.table = public_app_lock
+searchavo.embedding.api-key = ${SA_NVIDIA_API_KEY:}  =>  <empty>
+searchavo.embedding.base-url = ${SA_NVIDIA_EMBEDDING_BASE_URL:https://integrate.api.nvidia.com/v1}  =>  https://integrate.api.nvidia.com/v1
+searchavo.embedding.dimensions = 1024
+searchavo.embedding.model = ${SA_NVIDIA_EMBEDDING_MODEL:nvidia/nemotron-3.5-embed-1b}  =>  nvidia/nemotron-3.5-embed-1b
+searchavo.embedding.timeout = 3s
+searchavo.examples.cron = ${SA_EXAMPLES_CRON:0 41 2 * * *}  =>  0 41 2 * * *
+searchavo.examples.draft-calls = ${SA_EXAMPLES_DRAFT_CALLS:5}  =>  5
+searchavo.examples.draft-sources = ${SA_EXAMPLES_DRAFT_SOURCES:12}  =>  12
+searchavo.examples.pending-delay = ${SA_EXAMPLES_PENDING_DELAY:PT1M}  =>  PT1M
+searchavo.examples.pending-every = ${SA_EXAMPLES_PENDING_EVERY:PT5M}  =>  PT5M
+searchavo.feeds[0].homepage = https://openai.com/news/
+searchavo.feeds[0].id = openai
+searchavo.feeds[0].publisher = OpenAI
+searchavo.feeds[0].short-name = OpenAI
+searchavo.feeds[0].url = https://openai.com/news/rss.xml
+searchavo.feeds[1].homepage = https://deepmind.google/blog/
+searchavo.feeds[1].id = google-deepmind
+searchavo.feeds[1].publisher = Google DeepMind
+searchavo.feeds[1].short-name = DeepMind
+searchavo.feeds[1].url = https://deepmind.google/blog/rss.xml
+searchavo.feeds[2].homepage = https://research.google/blog/
+searchavo.feeds[2].id = google-research
+searchavo.feeds[2].publisher = Google Research
+searchavo.feeds[2].short-name = G. Research
+searchavo.feeds[2].url = https://research.google/blog/rss/
+searchavo.feeds[3].homepage = https://blog.google/innovation-and-ai/technology/ai/
+searchavo.feeds[3].id = google-ai
+searchavo.feeds[3].publisher = Google
+searchavo.feeds[3].short-name = Google AI
+searchavo.feeds[3].url = https://blog.google/innovation-and-ai/technology/ai/rss/
+searchavo.feeds[4].homepage = https://huggingface.co/blog
+searchavo.feeds[4].id = hugging-face
+searchavo.feeds[4].publisher = Hugging Face
+searchavo.feeds[4].short-name = HF blog
+searchavo.feeds[4].url = https://huggingface.co/blog/feed.xml
+searchavo.feeds[5].homepage = https://mistral.ai/news
+searchavo.feeds[5].id = mistral
+searchavo.feeds[5].publisher = Mistral AI
+searchavo.feeds[5].short-name = Mistral
+searchavo.feeds[5].url = https://mistral.ai/news/rss
+searchavo.feeds[6].homepage = https://blogs.nvidia.com/
+searchavo.feeds[6].id = nvidia
+searchavo.feeds[6].publisher = NVIDIA
+searchavo.feeds[6].require-words[0] = ai
+searchavo.feeds[6].require-words[1] = agent*
+searchavo.feeds[6].require-words[2] = model*
+searchavo.feeds[6].require-words[3] = llm*
+searchavo.feeds[6].require-words[4] = inference
+searchavo.feeds[6].require-words[5] = generative
+searchavo.feeds[6].require-words[6] = robot*
+searchavo.feeds[6].require-words[7] = nemotron
+searchavo.feeds[6].require-words[8] = cuda
+searchavo.feeds[6].short-name = NVIDIA
+searchavo.feeds[6].url = https://blogs.nvidia.com/feed/
+searchavo.feeds[7].homepage = https://aws.amazon.com/blogs/machine-learning/
+searchavo.feeds[7].id = aws-ml
+searchavo.feeds[7].publisher = AWS
+searchavo.feeds[7].short-name = AWS ML
+searchavo.feeds[7].url = https://aws.amazon.com/blogs/machine-learning/feed/
+searchavo.guide.cache-ttl = ${SA_GUIDE_CACHE_TTL:PT24H}  =>  PT24H
+searchavo.guide.choose-max-tokens = ${SA_NEBIUS_CHOOSE_MAX_TOKENS:8192}  =>  8192
+searchavo.guide.client-daily-free-answers = ${SA_GUIDE_CLIENT_DAILY_FREE_ANSWERS:5}  =>  5
+searchavo.guide.client-daily-questions = ${SA_GUIDE_CLIENT_DAILY_QUESTIONS:30}  =>  30
+searchavo.guide.daily-model-calls = ${SA_GUIDE_DAILY_MODEL_CALLS:600}  =>  600
+searchavo.guide.deadline-margin = 2s
+searchavo.guide.fairness.budget-pace-slots = ${SA_GUIDE_BUDGET_PACE_SLOTS:12}  =>  12
+searchavo.guide.fairness.client-concurrent-questions = ${SA_GUIDE_CLIENT_CONCURRENT_QUESTIONS:2}  =>  2
+searchavo.guide.fairness.network-daily-questions = ${SA_GUIDE_NETWORK_DAILY_QUESTIONS:300}  =>  300
+searchavo.guide.heartbeat = ${SA_GUIDE_HEARTBEAT:PT15S}  =>  PT15S
+searchavo.guide.judge.concurrent = ${SA_GUIDE_JUDGE_CONCURRENT:2}  =>  2
+searchavo.guide.judge.daily-calls = ${SA_GUIDE_JUDGE_DAILY_CALLS:300}  =>  300
+searchavo.guide.judge.model = ${SA_GUIDE_JUDGE_MODEL:}  =>  <empty>
+searchavo.guide.max-candidates = ${SA_GUIDE_MAX_CANDIDATES:24}  =>  24
+searchavo.guide.mcp-registry-url = ${searchavo.sources.mcp-registry.base-url}  =>  https://registry.modelcontextprotocol.io
+searchavo.guide.model-call-minimum = 10s
+searchavo.guide.model-call-timeout = ${SA_LLM_TIMEOUT:40s}  =>  40s
+searchavo.guide.model-stream = ${SA_GUIDE_MODEL_STREAM:OFF}  =>  OFF
+searchavo.guide.question-deadline = ${SA_GUIDE_QUESTION_DEADLINE:PT90S}  =>  PT90S
+searchavo.guide.similar-threshold = ${SA_GUIDE_SIMILAR_THRESHOLD:}  =>  <empty>
+searchavo.guide.thinking.browse-tokens = ${SA_GUIDE_THINK_BROWSE_TOKENS:2048}  =>  2048
+searchavo.guide.thinking.choose-tokens = ${SA_GUIDE_THINK_CHOOSE_TOKENS:0}  =>  0
+searchavo.guide.thinking.plan-tokens = ${SA_GUIDE_THINK_PLAN_TOKENS:0}  =>  0
+searchavo.guide.thinking.verify-tokens = ${SA_GUIDE_THINK_VERIFY_TOKENS:0}  =>  0
+searchavo.http.max-connections = 50
+searchavo.http.max-connections-per-route = 20
+searchavo.http.max-response-size = 2MB
+searchavo.http.pool-wait = 250ms
+searchavo.identity.frontend-url = ${SA_FRONTEND_URL:/}  =>  /
+searchavo.identity.metrics-public = ${SA_METRICS_PUBLIC:false}  =>  false
+searchavo.identity.noindex = ${SA_NOINDEX:false}  =>  false
+searchavo.llm.chat-model = ${spring.ai.openai.chat.model:}  =>  <empty>
+searchavo.llm.chat-provider = ${spring.ai.model.chat}  =>  none
+searchavo.llm.fast-model = <empty>
+searchavo.llm.native-schema = ${SA_NEBIUS_NATIVE_SCHEMA:true}  =>  true
+searchavo.llm.provider-label = <empty>
+searchavo.llm.reasoning-model = <empty>
+searchavo.monetisation.ads-enabled = ${SA_ADS_ENABLED:false}  =>  false
+searchavo.monetisation.adsense-client = ${SA_ADS_ADSENSE_CLIENT:}  =>  <empty>
+searchavo.monetisation.adsense-slot = ${SA_ADS_ADSENSE_SLOT:}  =>  <empty>
+searchavo.monetisation.adsense-slot-guide = ${SA_ADS_ADSENSE_SLOT_GUIDE:}  =>  <empty>
+searchavo.monetisation.adsense-slot-search = ${SA_ADS_ADSENSE_SLOT_SEARCH:}  =>  <empty>
+searchavo.monetisation.ga4-measurement-id = ${SA_ANALYTICS_GA4_MEASUREMENT_ID:}  =>  <empty>
+searchavo.monetisation.github-sponsors-url = ${SA_SUPPORT_GITHUB_SPONSORS_URL:}  =>  <empty>
+searchavo.monetisation.stripe-payment-url = ${SA_SUPPORT_STRIPE_PAYMENT_URL:}  =>  <empty>
+searchavo.pages.indexnow.key = ${SA_INDEXNOW_KEY:}  =>  <empty>
+searchavo.pages.noindex = ${SA_NOINDEX:false}  =>  false
+searchavo.pages.public-base-url = ${SA_PUBLIC_BASE_URL:https://searchavo.ai}  =>  https://searchavo.ai
+searchavo.pages.sitemap-limit = 200000
+searchavo.pages.template = ${SA_PAGES_TEMPLATE:file:/shell/index.html}  =>  file:/shell/index.html
+searchavo.quota.key-secret = ${SA_QUOTA_KEY_SECRET:}  =>  <empty>
+searchavo.rate-limit.default-per-minute = ${SA_RATE_LIMIT_DEFAULT_PER_MINUTE:120}  =>  120
+searchavo.rate-limit.guide-per-minute = ${SA_RATE_LIMIT_GUIDE_PER_MINUTE:10}  =>  10
+searchavo.rate-limit.recent-per-minute = ${SA_RATE_LIMIT_RECENT_PER_MINUTE:60}  =>  60
+searchavo.rate-limit.report-per-hour = ${SA_RATE_LIMIT_REPORT_PER_HOUR:20}  =>  20
+searchavo.rate-limit.search-per-minute = ${SA_RATE_LIMIT_SEARCH_PER_MINUTE:120}  =>  120
+searchavo.retention.admin-audit = ${SA_RETENTION_ADMIN_AUDIT:P730D}  =>  P730D
+searchavo.retention.backups = ${SA_RETENTION_BACKUPS:P7D}  =>  P7D
+searchavo.retention.cron = ${SA_RETENTION_CRON:0 17 3 * * *}  =>  0 17 3 * * *
+searchavo.retention.enrichment-runs = ${SA_RETENTION_ENRICHMENT_RUNS:P90D}  =>  P90D
+searchavo.retention.inactive-accounts = ${SA_RETENTION_INACTIVE_ACCOUNTS:P730D}  =>  P730D
+searchavo.retention.live-web-results = ${SA_RETENTION_LIVE_WEB_RESULTS:P7D}  =>  P7D
+searchavo.retention.observed-unseen = ${SA_RETENTION_OBSERVED_UNSEEN:P180D}  =>  P180D
+searchavo.retention.past-events = ${SA_RETENTION_PAST_EVENTS:P3650D}  =>  P3650D
+searchavo.retention.resolved-issue-reports = ${SA_RETENTION_RESOLVED_ISSUE_REPORTS:P365D}  =>  P365D
+searchavo.retention.resolved-review-items = ${SA_RETENTION_RESOLVED_REVIEW_ITEMS:P180D}  =>  P180D
+searchavo.retention.runtime-settings = ${SA_RETENTION_RUNTIME_SETTINGS:P730D}  =>  P730D
+searchavo.retention.scout-runs = ${SA_RETENTION_SCOUT_RUNS:P90D}  =>  P90D
+searchavo.retention.web-news = ${SA_RETENTION_WEB_NEWS:P180D}  =>  P180D
+searchavo.runtime-settings.refresh = ${SA_RUNTIME_SETTINGS_REFRESH:PT20S}  =>  PT20S
+searchavo.schema.logins.h2_backoffice = ${SA_DATABASE_BACKOFFICE_PASSWORD:}  =>  <empty>
+searchavo.schema.logins.h2_public = ${SA_DATABASE_PUBLIC_PASSWORD:}  =>  <empty>
+searchavo.schema.migrate = ${SA_SCHEMA_MIGRATE:false}  =>  false
+searchavo.schema.monitor-password = ${SA_DATABASE_MONITOR_PASSWORD:}  =>  <empty>
+searchavo.schema.statement-timeouts.h2_backoffice = 60s
+searchavo.schema.statement-timeouts.h2_public = 5s
+searchavo.schema.wait-for = ${SA_SCHEMA_WAIT:PT4M}  =>  PT4M
+searchavo.scout.admission.github-topic-leaders.index-min-stars = ${SA_SCOUT_TOPIC_LEADERS_INDEX_MIN_STARS:1000}  =>  1000
+searchavo.scout.admission.github-topic-leaders.index-pushed-within = ${SA_SCOUT_TOPIC_LEADERS_INDEX_PUSHED_WITHIN:P90D}  =>  P90D
+searchavo.scout.admission.hf-trending.index-min-likes = 20
+searchavo.scout.ai-deadlines.interval = ${SA_SCOUT_AI_DEADLINES_INTERVAL:P1D}  =>  P1D
+searchavo.scout.confs-tech.interval = ${SA_SCOUT_CONFS_TECH_INTERVAL:P1D}  =>  P1D
+searchavo.scout.courses.interval = ${SA_SCOUT_COURSES_INTERVAL:P7D}  =>  P7D
+searchavo.scout.courses.platforms = coursera.org=Coursera, oreilly.com=O'Reilly, edx.org=edX, udemy.com=Udemy, deeplearning.ai=DeepLearning.AI, huggingface.co/learn=Hugging Face Learn, cloud.google.com/learn=Google Cloud, aws.amazon.com/certification=AWS, learn.microsoft.com/en-us/credentials=Microsoft Learn, nvidia.com=NVIDIA
+searchavo.scout.courses.query = new artificial intelligence course or certification
+searchavo.scout.daily-credits = ${SA_SCOUT_DAILY_CREDITS:1000}  =>  1000
+searchavo.scout.discovery.exclude-domains = youtube.com, reddit.com, x.com, twitter.com, facebook.com, instagram.com, tiktok.com, linkedin.com, pinterest.com, quora.com, producthunt.com, theresanaiforthat.com, futurepedia.io, futuretools.io, toolify.ai, topai.tools, aitools.fyi, g2.com, capterra.com, getapp.com, softwareadvice.com, trustradius.com, trustpilot.com, alternativeto.net, saasworthy.com
+searchavo.scout.discovery.interval = ${SA_SCOUT_DISCOVERY_INTERVAL:P7D}  =>  P7D
+searchavo.scout.discovery.max-results = 10
+searchavo.scout.discovery.min-score = 0.4
+searchavo.scout.discovery.search-depth = ${SA_SCOUT_DISCOVERY_DEPTH:advanced}  =>  advanced
+searchavo.scout.evidence.page-read-ttl = ${SA_SCOUT_EVIDENCE_PAGE_READ_TTL:P30D}  =>  P30D
+searchavo.scout.evidence.page-text-ttl = ${SA_SCOUT_EVIDENCE_PAGE_TEXT_TTL:PT24H}  =>  PT24H
+searchavo.scout.github-awesome.classifier-daily-calls = ${SA_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS:300}  =>  300
+searchavo.scout.github-awesome.classify-batch = 25
+searchavo.scout.github-awesome.classify-max-tokens = 8192
+searchavo.scout.github-awesome.interval = ${SA_SCOUT_AWESOME_INTERVAL:P1D}  =>  P1D
+searchavo.scout.github-awesome.links.exclude-domains = arxiv.org, paperswithcode.com, openreview.net, aclanthology.org, semanticscholar.org, doi.org, discord.gg, discord.com, t.me, slack.com, colab.research.google.com, docs.google.com, drive.google.com, kaggle.com, npmjs.com, pypi.org, gitlab.com, bitbucket.org, apps.apple.com, play.google.com, chromewebstore.google.com, marketplace.visualstudio.com, wikipedia.org, archive.org
+searchavo.scout.github-awesome.links.max-models-per-pass = 100
+searchavo.scout.github-awesome.links.max-packages-per-pass = 100
+searchavo.scout.github-awesome.links.max-papers-per-pass = 200
+searchavo.scout.github-awesome.links.max-per-pass = 500
+searchavo.scout.github-awesome.links.model-index-min-likes = 10
+searchavo.scout.github-awesome.links.per-day = ${SA_SCOUT_AWESOME_LINKS_PER_DAY:50}  =>  50
+searchavo.scout.github-awesome.max-entries-per-pass = 1000
+searchavo.scout.github-awesome.max-entries-per-run = ${SA_SCOUT_AWESOME_PER_RUN:1000}  =>  1000
+searchavo.scout.github-awesome.max-lists = 10
+searchavo.scout.github-awesome.max-readme-bytes-per-run = ${SA_SCOUT_AWESOME_MAX_README_BYTES:50MB}  =>  50MB
+searchavo.scout.github-awesome.max-run-time = ${SA_SCOUT_AWESOME_MAX_RUN_TIME:PT15M}  =>  PT15M
+searchavo.scout.github-awesome.min-list-stars = 1000
+searchavo.scout.github-awesome.min-repo-stars = 50
+searchavo.scout.github-awesome.nested.max-depth = ${SA_SCOUT_AWESOME_NESTED_DEPTH:2}  =>  2
+searchavo.scout.github-awesome.nested.max-lists-per-run = ${SA_SCOUT_AWESOME_NESTED_LISTS:30}  =>  30
+searchavo.scout.github-awesome.topic-queries = topic:awesome-list topic:llm, topic:awesome topic:llm, topic:awesome-list topic:artificial-intelligence, topic:awesome-list topic:ai-agents, topic:awesome topic:mcp, topic:awesome topic:generative-ai
+searchavo.scout.github-awesome.web-pages.discovered-reads-per-day = ${SA_SCOUT_AWESOME_WEB_PAGES_DISCOVERED_READS_PER_DAY:10}  =>  10
+searchavo.scout.github-awesome.web-pages.follow.check-calls-per-day = ${SA_SCOUT_AWESOME_WEB_PAGES_FOLLOW_CHECK_CALLS_PER_DAY:50}  =>  50
+searchavo.scout.github-awesome.web-pages.follow.check-max-tokens = 8192
+searchavo.scout.github-awesome.web-pages.follow.status-requests-per-day = ${SA_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_DAY:200}  =>  200
+searchavo.scout.github-awesome.web-pages.follow.status-requests-per-host-per-day = ${SA_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STATUS_REQUESTS_PER_HOST_PER_DAY:30}  =>  30
+searchavo.scout.github-awesome.web-pages.follow.steps-per-day = ${SA_SCOUT_AWESOME_WEB_PAGES_FOLLOW_STEPS_PER_DAY:100}  =>  100
+searchavo.scout.github-awesome.web-pages.gone-checks = ${SA_SCOUT_AWESOME_WEB_PAGES_GONE_CHECKS:3}  =>  3
+searchavo.scout.github-awesome.web-pages.item-page-reads-per-day = ${SA_SCOUT_AWESOME_WEB_PAGES_ITEM_PAGE_READS_PER_DAY:100}  =>  100
+searchavo.scout.github-awesome.web-pages.max-discovered = ${SA_SCOUT_AWESOME_WEB_PAGES_MAX_DISCOVERED:100}  =>  100
+searchavo.scout.github-awesome.web-pages.never-read = ${SA_SCOUT_AWESOME_WEB_PAGES_NEVER_READ:coursera.org=its terms forbid automated reading without written consent}  =>  coursera.org=its terms forbid automated reading without written consent
+searchavo.scout.github-awesome.web-pages.read-every = ${SA_SCOUT_AWESOME_WEB_PAGES_EVERY:P7D}  =>  P7D
+searchavo.scout.github-awesome.web-pages.retry-after = ${SA_SCOUT_AWESOME_WEB_PAGES_RETRY_AFTER:PT1H}  =>  PT1H
+searchavo.scout.github-sdks.deps-dev-url = ${SA_SCOUT_SDKS_DEPS_DEV_URL:https://api.deps.dev}  =>  https://api.deps.dev
+searchavo.scout.github-sdks.interval = ${SA_SCOUT_SDKS_INTERVAL:P7D}  =>  P7D
+searchavo.scout.github-sdks.languages = ${SA_SCOUT_SDKS_LANGUAGES:Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000}  =>  Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000
+searchavo.scout.github-sdks.org-min-stars = ${SA_SCOUT_SDKS_ORG_MIN_STARS:300}  =>  300
+searchavo.scout.github-sdks.orgs = ${SA_SCOUT_SDKS_ORGS:openai, anthropics, google-gemini, googleapis, aws, Azure, mistralai, cohere-ai, huggingface, ollama, langchain-ai, langchain4j, spring-projects, run-llama, microsoft, deepjavalibrary, oracle, awslabs}  =>  openai, anthropics, google-gemini, googleapis, aws, Azure, mistralai, cohere-ai, huggingface, ollama, langchain-ai, langchain4j, spring-projects, run-llama, microsoft, deepjavalibrary, oracle, awslabs
+searchavo.scout.github-sdks.packages-per-repo = ${SA_SCOUT_SDKS_PACKAGES_PER_REPO:3}  =>  3
+searchavo.scout.github-sdks.pages-per-query = ${SA_SCOUT_SDKS_PAGES_PER_QUERY:3}  =>  3
+searchavo.scout.github-sdks.per-day = ${SA_SCOUT_SDKS_PER_DAY:500}  =>  500
+searchavo.scout.github-sdks.per-query = ${SA_SCOUT_SDKS_PER_QUERY:100}  =>  100
+searchavo.scout.github-sdks.queries-per-run = ${SA_SCOUT_SDKS_QUERIES_PER_RUN:20}  =>  20
+searchavo.scout.github-sdks.rate-limit-reserve = ${SA_SCOUT_SDKS_RATE_LIMIT_RESERVE:10}  =>  10
+searchavo.scout.github-sdks.search-pause = ${SA_SCOUT_SDKS_SEARCH_PAUSE:2s}  =>  2s
+searchavo.scout.github-sdks.topics = ${SA_SCOUT_SDKS_TOPICS:llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, generative-ai, large-language-models, llm-framework, openai, anthropic, gemini, ollama, openai-api, sdk}  =>  llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, generative-ai, large-language-models, llm-framework, openai, anthropic, gemini, ollama, openai-api, sdk
+searchavo.scout.github-topic-leaders.index-per-topic = ${SA_SCOUT_TOPIC_LEADERS_INDEX_PER_TOPIC:1000}  =>  1000
+searchavo.scout.github-topic-leaders.interval = ${SA_SCOUT_TOPIC_LEADERS_INTERVAL:P7D}  =>  P7D
+searchavo.scout.github-topic-leaders.min-stars = ${SA_SCOUT_TOPIC_LEADERS_MIN_STARS:3000}  =>  3000
+searchavo.scout.github-topic-leaders.per-day = ${SA_SCOUT_TOPIC_LEADERS_PER_DAY:25}  =>  25
+searchavo.scout.github-topic-leaders.per-topic = ${SA_SCOUT_TOPIC_LEADERS_PER_TOPIC:50}  =>  50
+searchavo.scout.github-topic-leaders.search-pause = ${SA_SCOUT_TOPIC_LEADERS_SEARCH_PAUSE:2s}  =>  2s
+searchavo.scout.github-topic-leaders.topics = ${SA_SCOUT_TOPIC_LEADERS_TOPICS:llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, speech-recognition, generative-ai, large-language-models, llm-framework, structured-output, machine-learning, deep-learning}  =>  llm, ai-agents, agents, rag, chatbot, mcp, model-context-protocol, speech-recognition, generative-ai, large-language-models, llm-framework, structured-output, machine-learning, deep-learning
+searchavo.scout.hf-provider-orgs.interval = ${SA_SCOUT_HF_ORGS_INTERVAL:P1D}  =>  P1D
+searchavo.scout.hf-provider-orgs.orgs = meta-llama,nvidia,mistralai,deepseek-ai,Qwen,google,openai,xai-org, microsoft,amazon,ibm-granite,CohereLabs,facebook,zai-org,moonshotai,MiniMaxAI, baidu,tencent,ByteDance-Seed,stepfun-ai,internlm,openbmb,inclusionAI,XiaomiMiMo, allenai,swiss-ai,LiquidAI,LGAI-EXAONE,upstage,BAAI,jinaai,stabilityai, black-forest-labs,Lightricks,Wan-AI,kyutai
+searchavo.scout.hf-provider-orgs.per-org = 20
+searchavo.scout.hf-trending.interval = ${SA_SCOUT_HF_INTERVAL:P1D}  =>  P1D
+searchavo.scout.linkedin.interval = ${SA_SCOUT_LINKEDIN_INTERVAL:P7D}  =>  P7D
+searchavo.scout.linkedin.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen, launches new AI product, AI startup announces launch, introducing our new AI agent, now available generative AI platform, open-source AI model release announcement, MCP server launch announcement, AI conference, AI hackathon, generative AI meetup, AI summit Europe, LLM workshop webinar, AI event Switzerland, NVIDIA GTC
+searchavo.scout.live-web-events.interval = ${SA_SCOUT_LIVE_WEB_EVENTS_INTERVAL:P7D}  =>  P7D
+searchavo.scout.live-web-events.max-pages = ${SA_SCOUT_LIVE_WEB_EVENTS_MAX_PAGES:20}  =>  20
+searchavo.scout.live-web-events.queries = upcoming AI hackathons, upcoming AI meetups and talks, upcoming AI conferences and summits, upcoming AI workshops
+searchavo.scout.live-web-events.read-max-tokens = 800
+searchavo.scout.live-web-events.read-model = ${SA_SCOUT_EVENT_READER_MODEL:FAST}  =>  FAST
+searchavo.scout.live-web-events.reader-daily-calls = ${SA_SCOUT_EVENT_READER_DAILY_CALLS:40}  =>  40
+searchavo.scout.live-web.interval = ${SA_SCOUT_LIVE_WEB_INTERVAL:P5D}  =>  P5D
+searchavo.scout.live-web.queries = new AI tool launched, new open-source LLM released, new MCP server released, new AI agent framework released, new model released OpenAI Anthropic Google Gemini, new model released xAI Grok Meta Llama Mistral, new model released NVIDIA Nemotron DeepSeek Qwen
+searchavo.scout.mcp-registry.interval = ${SA_SCOUT_MCP_INTERVAL:PT1H}  =>  PT1H
+searchavo.scout.news-feeds.interval = ${SA_SCOUT_NEWS_FEEDS_INTERVAL:P1D}  =>  P1D
+searchavo.scout.pypi.candidates-per-day = ${SA_SCOUT_PYPI_CANDIDATES_PER_DAY:20}  =>  20
+searchavo.scout.pypi.interval = ${SA_SCOUT_PYPI_INTERVAL:P1D}  =>  P1D
+searchavo.scout.pypi.max-bytes-billed = ${SA_SCOUT_PYPI_MAX_BYTES_BILLED:20000000000}  =>  20000000000
+searchavo.search.per-source-limit = ${SA_SEARCH_PER_SOURCE_LIMIT:30}  =>  30
+searchavo.search.ranking.rating-weight = ${SA_SEARCH_RANKING_RATING_WEIGHT:0}  =>  0
+searchavo.search.stale-for = ${SA_SEARCH_STALE_FOR:24h}  =>  24h
+searchavo.search.translate-timeout = ${SA_SEARCH_TRANSLATE_TIMEOUT_MS:2500}  =>  2500
+searchavo.search.translation.daily-calls = ${SA_SEARCH_DAILY_TRANSLATIONS:300}  =>  300
+searchavo.search.translation.ttl = ${SA_SEARCH_TRANSLATION_TTL:24h}  =>  24h
+searchavo.search.web.fresh-general = ${SA_LIVE_WEB_FRESH_GENERAL:PT48H}  =>  PT48H
+searchavo.search.web.fresh-time-bound = ${SA_LIVE_WEB_FRESH_TIMEBOUND:PT24H}  =>  PT24H
+searchavo.search.web.quota.global-daily-credits = ${SA_LIVE_WEB_DAILY_CREDITS:}  =>  <empty>
+searchavo.search.web.quota.guest.guide = ${SA_LIVE_WEB_GUEST_GUIDE:10}  =>  10
+searchavo.search.web.quota.guest.search = ${SA_LIVE_WEB_GUEST_SEARCH:10}  =>  10
+searchavo.setup.cache-ttl = ${SA_SETUP_CACHE_TTL:PT1H}  =>  PT1H
+searchavo.setup.document-cache = ${SA_SETUP_DOCUMENT_CACHE_MB:32}  =>  32
+searchavo.setup.document-timeout = ${SA_SETUP_DOCUMENT_TIMEOUT:10s}  =>  10s
+searchavo.setup.github-token = ${SA_SETUP_GITHUB_TOKEN:}  =>  <empty>
+searchavo.setup.guide.cache-ttl = ${SA_SETUP_GUIDE_CACHE_TTL:P7D}  =>  P7D
+searchavo.setup.guide.client-daily-guides = ${SA_SETUP_GUIDE_CLIENT_DAILY:20}  =>  20
+searchavo.setup.guide.daily-model-calls = ${SA_SETUP_GUIDE_DAILY_MODEL_CALLS:500}  =>  500
+searchavo.setup.guide.network-daily-guides = ${SA_SETUP_GUIDE_NETWORK_DAILY:200}  =>  200
+searchavo.setup.guide.reasoning = ${SA_SETUP_GUIDE_REASONING:false}  =>  false
+searchavo.setup.guide.step-text = ${SA_SETUP_GUIDE_STEP_TEXT:VERIFIED}  =>  VERIFIED
+searchavo.setup.guide.unreadable-ttl = ${SA_SETUP_UNREADABLE_TTL:PT10M}  =>  PT10M
+searchavo.setup.hosts.github = ${searchavo.sources.github.base-url}  =>  https://api.github.com
+searchavo.setup.hosts.hf-token = ${searchavo.sources.huggingface.token}  =>  <empty>
+searchavo.setup.hosts.huggingface = ${searchavo.sources.huggingface.base-url}  =>  https://huggingface.co
+searchavo.setup.hourly-fetches = ${SA_SETUP_HOURLY_FETCHES:1000}  =>  1000
+searchavo.setup.mcp-registry.base-url = ${searchavo.sources.mcp-registry.base-url}  =>  https://registry.modelcontextprotocol.io
+searchavo.setup.mcp-registry.timeout = ${searchavo.sources.mcp-registry.timeout}  =>  10s
+searchavo.setup.npm-readme-base-url = ${SA_SETUP_NPM_README_BASE_URL:https://cdn.jsdelivr.net}  =>  https://cdn.jsdelivr.net
+searchavo.sources.ai-deadlines.base-url = https://api.github.com
+searchavo.sources.ai-deadlines.cache-ttl = 30m
+searchavo.sources.ai-deadlines.deadline = ${SA_SOURCE_AI_DEADLINES_DEADLINE:}  =>  <empty>
+searchavo.sources.ai-deadlines.enabled = ${SA_SOURCE_AI_DEADLINES_ENABLED:true}  =>  true
+searchavo.sources.ai-deadlines.timeout = 15s
+searchavo.sources.ai-deadlines.token = ${SA_GITHUB_TOKEN:}  =>  <empty>
+searchavo.sources.arxiv.base-url = https://export.arxiv.org
+searchavo.sources.arxiv.cache-ttl = 6h
+searchavo.sources.arxiv.enabled = ${SA_SOURCE_ARXIV_ENABLED:true}  =>  true
+searchavo.sources.arxiv.timeout = 3s
+searchavo.sources.confs-tech.base-url = https://api.github.com
+searchavo.sources.confs-tech.cache-ttl = 30m
+searchavo.sources.confs-tech.deadline = ${SA_SOURCE_CONFS_TECH_DEADLINE:}  =>  <empty>
+searchavo.sources.confs-tech.enabled = ${SA_SOURCE_CONFS_TECH_ENABLED:true}  =>  true
+searchavo.sources.confs-tech.timeout = 15s
+searchavo.sources.confs-tech.token = ${SA_GITHUB_TOKEN:}  =>  <empty>
+searchavo.sources.course-scout.base-url = https://api.tavily.com
+searchavo.sources.course-scout.cache-ttl = 30m
+searchavo.sources.course-scout.deadline = ${SA_SOURCE_COURSE_SCOUT_DEADLINE:}  =>  <empty>
+searchavo.sources.course-scout.enabled = ${SA_SOURCE_COURSE_SCOUT_ENABLED:true}  =>  true
+searchavo.sources.course-scout.timeout = 10s
+searchavo.sources.course-scout.token = ${SA_LIVE_WEB_API_KEY:}  =>  <empty>
+searchavo.sources.discovery.base-url = https://api.tavily.com
+searchavo.sources.discovery.cache-ttl = 30m
+searchavo.sources.discovery.deadline = ${SA_SOURCE_DISCOVERY_DEADLINE:}  =>  <empty>
+searchavo.sources.discovery.enabled = ${SA_SOURCE_DISCOVERY_ENABLED:true}  =>  true
+searchavo.sources.discovery.timeout = 20s
+searchavo.sources.discovery.token = ${SA_LIVE_WEB_API_KEY:}  =>  <empty>
+searchavo.sources.github-awesome.base-url = https://api.github.com
+searchavo.sources.github-awesome.cache-ttl = 30m
+searchavo.sources.github-awesome.deadline = ${SA_SOURCE_GITHUB_AWESOME_DEADLINE:}  =>  <empty>
+searchavo.sources.github-awesome.enabled = ${SA_SOURCE_GITHUB_AWESOME_ENABLED:true}  =>  true
+searchavo.sources.github-awesome.timeout = 15s
+searchavo.sources.github-awesome.token = ${SA_GITHUB_TOKEN:}  =>  <empty>
+searchavo.sources.github-sdks.base-url = https://api.github.com
+searchavo.sources.github-sdks.cache-ttl = 30m
+searchavo.sources.github-sdks.deadline = ${SA_SOURCE_GITHUB_SDKS_DEADLINE:}  =>  <empty>
+searchavo.sources.github-sdks.enabled = ${SA_SOURCE_GITHUB_SDKS_ENABLED:true}  =>  true
+searchavo.sources.github-sdks.timeout = 20s
+searchavo.sources.github-sdks.token = ${SA_GITHUB_TOKEN:}  =>  <empty>
+searchavo.sources.github-topic-leaders.base-url = https://api.github.com
+searchavo.sources.github-topic-leaders.cache-ttl = 30m
+searchavo.sources.github-topic-leaders.deadline = ${SA_SOURCE_GITHUB_TOPIC_LEADERS_DEADLINE:}  =>  <empty>
+searchavo.sources.github-topic-leaders.enabled = ${SA_SOURCE_GITHUB_TOPIC_LEADERS_ENABLED:true}  =>  true
+searchavo.sources.github-topic-leaders.timeout = 15s
+searchavo.sources.github-topic-leaders.token = ${SA_GITHUB_TOKEN:}  =>  <empty>
+searchavo.sources.github.base-url = https://api.github.com
+searchavo.sources.github.cache-ttl = 30m
+searchavo.sources.github.enabled = ${SA_SOURCE_GITHUB_ENABLED:true}  =>  true
+searchavo.sources.github.timeout = 2500ms
+searchavo.sources.github.token = ${SA_GITHUB_TOKEN:}  =>  <empty>
+searchavo.sources.hacker-news.base-url = https://hn.algolia.com
+searchavo.sources.hacker-news.cache-ttl = 30m
+searchavo.sources.hacker-news.enabled = ${SA_SOURCE_HACKER_NEWS_ENABLED:true}  =>  true
+searchavo.sources.hacker-news.timeout = 2500ms
+searchavo.sources.hf-provider-orgs.base-url = https://huggingface.co
+searchavo.sources.hf-provider-orgs.cache-ttl = 30m
+searchavo.sources.hf-provider-orgs.deadline = ${SA_SOURCE_HF_ORGS_DEADLINE:}  =>  <empty>
+searchavo.sources.hf-provider-orgs.enabled = ${SA_SOURCE_HF_ORGS_ENABLED:true}  =>  true
+searchavo.sources.hf-provider-orgs.timeout = 10s
+searchavo.sources.hf-provider-orgs.token = ${SA_HF_TOKEN:}  =>  <empty>
+searchavo.sources.hf-trending.base-url = https://huggingface.co
+searchavo.sources.hf-trending.cache-ttl = 30m
+searchavo.sources.hf-trending.deadline = ${SA_SOURCE_HF_TRENDING_DEADLINE:}  =>  <empty>
+searchavo.sources.hf-trending.enabled = ${SA_SOURCE_HF_TRENDING_ENABLED:true}  =>  true
+searchavo.sources.hf-trending.timeout = 10s
+searchavo.sources.hf-trending.token = ${SA_HF_TOKEN:}  =>  <empty>
+searchavo.sources.huggingface.base-url = https://huggingface.co
+searchavo.sources.huggingface.cache-ttl = 30m
+searchavo.sources.huggingface.enabled = ${SA_SOURCE_HF_ENABLED:true}  =>  true
+searchavo.sources.huggingface.timeout = 2500ms
+searchavo.sources.huggingface.token = ${SA_HF_TOKEN:}  =>  <empty>
+searchavo.sources.linkedin-scout.base-url = https://api.tavily.com
+searchavo.sources.linkedin-scout.cache-ttl = 30m
+searchavo.sources.linkedin-scout.deadline = ${SA_SOURCE_LINKEDIN_SCOUT_DEADLINE:}  =>  <empty>
+searchavo.sources.linkedin-scout.enabled = ${SA_SOURCE_LINKEDIN_SCOUT_ENABLED:true}  =>  true
+searchavo.sources.linkedin-scout.timeout = 10s
+searchavo.sources.linkedin-scout.token = ${SA_LIVE_WEB_API_KEY:}  =>  <empty>
+searchavo.sources.live-web-events-scout.base-url = https://api.tavily.com
+searchavo.sources.live-web-events-scout.cache-ttl = 30m
+searchavo.sources.live-web-events-scout.deadline = ${SA_SOURCE_LIVE_WEB_EVENTS_SCOUT_DEADLINE:}  =>  <empty>
+searchavo.sources.live-web-events-scout.enabled = ${SA_SOURCE_LIVE_WEB_EVENTS_SCOUT_ENABLED:true}  =>  true
+searchavo.sources.live-web-events-scout.timeout = 20s
+searchavo.sources.live-web-events-scout.token = ${SA_LIVE_WEB_API_KEY:}  =>  <empty>
+searchavo.sources.live-web-scout.base-url = https://api.tavily.com
+searchavo.sources.live-web-scout.cache-ttl = 30m
+searchavo.sources.live-web-scout.deadline = ${SA_SOURCE_LIVE_WEB_SCOUT_DEADLINE:}  =>  <empty>
+searchavo.sources.live-web-scout.enabled = ${SA_SOURCE_LIVE_WEB_SCOUT_ENABLED:true}  =>  true
+searchavo.sources.live-web-scout.timeout = 10s
+searchavo.sources.live-web-scout.token = ${SA_LIVE_WEB_API_KEY:}  =>  <empty>
+searchavo.sources.live-web.base-url = https://api.tavily.com
+searchavo.sources.live-web.cache-ttl = 30m
+searchavo.sources.live-web.enabled = ${SA_SOURCE_LIVE_WEB_ENABLED:true}  =>  true
+searchavo.sources.live-web.timeout = ${SA_SOURCE_LIVE_WEB_TIMEOUT:6s}  =>  6s
+searchavo.sources.live-web.token = ${SA_LIVE_WEB_API_KEY:}  =>  <empty>
+searchavo.sources.mcp-registry.base-url = https://registry.modelcontextprotocol.io
+searchavo.sources.mcp-registry.cache-ttl = 30m
+searchavo.sources.mcp-registry.deadline = ${SA_SOURCE_MCP_DEADLINE:}  =>  <empty>
+searchavo.sources.mcp-registry.enabled = ${SA_SOURCE_MCP_ENABLED:true}  =>  true
+searchavo.sources.mcp-registry.timeout = 10s
+searchavo.sources.news-feeds.cache-ttl = 30m
+searchavo.sources.news-feeds.deadline = ${SA_SOURCE_NEWS_FEEDS_DEADLINE:}  =>  <empty>
+searchavo.sources.news-feeds.enabled = ${SA_SOURCE_NEWS_FEEDS_ENABLED:true}  =>  true
+searchavo.sources.news-feeds.timeout = 10s
+searchavo.sources.npm.base-url = https://registry.npmjs.org
+searchavo.sources.npm.cache-ttl = 30m
+searchavo.sources.npm.enabled = ${SA_SOURCE_NPM_ENABLED:true}  =>  true
+searchavo.sources.npm.timeout = 2500ms
+searchavo.sources.pypi.cache-ttl = 30m
+searchavo.sources.pypi.enabled = ${SA_SOURCE_PYPI_ENABLED:false}  =>  false
+searchavo.sources.pypi.timeout = 60s
+searchavo.test.client = h2_public
+searchavo.vitality.established-stars = ${SA_VITALITY_ESTABLISHED_STARS:10000}  =>  10000
+searchavo.vitality.fork-min-stars = ${SA_VITALITY_FORK_MIN_STARS:10}  =>  10
+searchavo.vitality.hosted-app-min-likes = ${SA_SOURCE_HF_SPACES_MIN_LIKES:3}  =>  3
+searchavo.vitality.maintained-within = ${SA_VITALITY_MAINTAINED_WITHIN:P1095D}  =>  P1095D
+server.forward-headers-strategy = ${SA_FORWARD_HEADERS_STRATEGY:none}  =>  none
+server.port = ${SA_PORT:8080}  =>  8080
 server.servlet.session.cookie.http-only = true
 server.servlet.session.cookie.same-site = lax
-server.servlet.session.cookie.secure = ${H2_COOKIE_SECURE:true}  =>  true
+server.servlet.session.cookie.secure = ${SA_COOKIE_SECURE:true}  =>  true
 server.servlet.session.timeout = 30m
 server.shutdown = graceful
 spring.ai.model.audio.speech = none
@@ -1033,26 +1033,26 @@ spring.ai.model.chat = none
 spring.ai.model.embedding = none
 spring.ai.model.image = none
 spring.ai.model.moderation = none
-spring.ai.openai.chat.max-retries = ${H2_LLM_MAX_RETRIES:0}  =>  0
-spring.ai.openai.chat.timeout = ${H2_LLM_TIMEOUT:40s}  =>  40s
-spring.application.name = helper2
-spring.config.import = ${helper2.dotenv-import:optional:file:../.env[.properties],optional:file:.env[.properties]}  =>  optional:file:build/no-dotenv[.properties]
+spring.ai.openai.chat.max-retries = ${SA_LLM_MAX_RETRIES:0}  =>  0
+spring.ai.openai.chat.timeout = ${SA_LLM_TIMEOUT:40s}  =>  40s
+spring.application.name = searchavo
+spring.config.import = ${searchavo.dotenv-import:optional:file:../.env[.properties],optional:file:.env[.properties]}  =>  optional:file:build/no-dotenv[.properties]
 spring.data.redis.connect-timeout = 500ms
-spring.data.redis.host = ${H2_REDIS_HOST:localhost}  =>  localhost
-spring.data.redis.password = ${H2_REDIS_PASSWORD:}  =>  <empty>
-spring.data.redis.port = ${H2_REDIS_PORT:6379}  =>  6379
+spring.data.redis.host = ${SA_REDIS_HOST:localhost}  =>  localhost
+spring.data.redis.password = ${SA_REDIS_PASSWORD:}  =>  <empty>
+spring.data.redis.port = ${SA_REDIS_PORT:6379}  =>  6379
 spring.data.redis.timeout = 250ms
-spring.data.redis.username = ${H2_REDIS_USER:}  =>  <empty>
+spring.data.redis.username = ${SA_REDIS_USER:}  =>  <empty>
 spring.datasource.hikari.connection-timeout = 3000
-spring.datasource.hikari.maximum-pool-size = ${H2_DATABASE_POOL_SIZE:16}  =>  16
-spring.datasource.password = ${H2_DATABASE_PASSWORD}  =>  <needs a variable>
-spring.datasource.url = ${H2_DATABASE_URL:jdbc:postgresql://localhost:5432/helper2}  =>  jdbc:postgresql://localhost:5432/helper2
-spring.datasource.username = ${H2_DATABASE_USER:helper2}  =>  helper2
+spring.datasource.hikari.maximum-pool-size = ${SA_DATABASE_POOL_SIZE:16}  =>  16
+spring.datasource.password = ${SA_DATABASE_PASSWORD}  =>  <needs a variable>
+spring.datasource.url = ${SA_DATABASE_URL:jdbc:postgresql://localhost:5432/searchavo}  =>  jdbc:postgresql://localhost:5432/searchavo
+spring.datasource.username = ${SA_DATABASE_USER:searchavo}  =>  searchavo
 spring.docker.compose.enabled = false
 spring.flyway.locations = classpath:db/migration
-spring.lifecycle.timeout-per-shutdown-phase = ${H2_SHUTDOWN_TIMEOUT:30s}  =>  30s
+spring.lifecycle.timeout-per-shutdown-phase = ${SA_SHUTDOWN_TIMEOUT:30s}  =>  30s
 spring.mvc.problemdetails.enabled = true
-spring.profiles.active = ${H2_PROFILES:}  =>  <empty>
+spring.profiles.active = ${SA_PROFILES:}  =>  <empty>
 spring.session.data.redis.namespace = h2:v1:session:public
 spring.threads.virtual.enabled = true
 spring.web.resources.add-mappings = false

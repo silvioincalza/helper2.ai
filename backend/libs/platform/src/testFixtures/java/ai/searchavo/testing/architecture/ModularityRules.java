@@ -1,0 +1,168 @@
+package ai.searchavo.testing.architecture;
+
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.assignableTo;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.belongToAnyOf;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import ai.searchavo.platform.ApiProblem;
+import ai.searchavo.platform.ProblemType;
+import ai.searchavo.platform.Problems;
+import ai.searchavo.shared.Refused;
+import ai.searchavo.shared.UnitOfWork;
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.springframework.modulith.core.ApplicationModules;
+
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public abstract class ModularityRules {
+
+  private static final String USE_CASES = "ai.searchavo..usecase..";
+
+  private static final String LLM = "ai.searchavo.platform.llm";
+
+  private static final DescribedPredicate<JavaClass> SPEAK_HTTP =
+      assignableTo(ApiProblem.class)
+          .or(belongToAnyOf(ProblemType.class, Problems.class))
+          .as("speak HTTP (ApiProblem and its subtypes, ProblemType, Problems)");
+
+  private final ApplicationModules modules;
+
+  private final String[] domain;
+
+  protected ModularityRules(Class<?> application, String... domainPackages) {
+    this.modules = ApplicationModules.of(application, new DoNotIncludeTestFixtures());
+    this.domain =
+        Stream.concat(Arrays.stream(domainPackages), Stream.of(USE_CASES)).toArray(String[]::new);
+  }
+
+  protected ApplicationModules modules() {
+    return modules;
+  }
+
+  protected JavaClasses classes() {
+    return ProductionClasses.onTheClasspath();
+  }
+
+  @Test
+  public void modulesHaveNoCyclesAndUseOnlyPublicApis() {
+    modules.verify();
+  }
+
+  @Test
+  public void domainIsFrameworkFree() {
+    noClasses()
+        .that()
+        .resideInAnyPackage(domain)
+        .and()
+        .haveSimpleNameNotEndingWith("package-info")
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage("org.springframework..", "tools.jackson..", "java.sql..")
+        .check(classes());
+  }
+
+  @Test
+  public void domainDoesNotDependOnItsAdapters() {
+    noClasses()
+        .that()
+        .resideInAnyPackage(domain)
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage(
+            "ai.searchavo..web..",
+            "ai.searchavo..cache..",
+            "ai.searchavo..config..",
+            "ai.searchavo..internal..")
+        .check(classes());
+  }
+
+  @Test
+  public void useCasesDoNotNameJdbcAdapters() {
+    noClasses()
+        .that()
+        .resideInAPackage(USE_CASES)
+        .should()
+        .dependOnClassesThat()
+        .haveSimpleNameStartingWith("Jdbc")
+        .check(classes());
+  }
+
+  @Test
+  public void useCasesDoNotSpeakHttp() {
+    noClasses()
+        .that()
+        .resideInAnyPackage(domain)
+        .should()
+        .dependOnClassesThat(SPEAK_HTTP)
+        .check(classes());
+  }
+
+  @Test
+  public void aUseCaseThatCanRefuseAfterAWriteRunsInAUnitOfWork() {
+    Set<String> refusing = outermostNames(classes().stream().filter(ModularityRules::isARefusal));
+    ArchRuleDefinition.classes()
+        .that(
+            DescribedPredicate.describe(
+                "declare a Refused outcome", (JavaClass type) -> refusing.contains(type.getName())))
+        .should()
+        .dependOnClassesThat()
+        .belongToAnyOf(UnitOfWork.class)
+        .check(classes());
+  }
+
+  private static boolean isARefusal(JavaClass type) {
+    return type.getEnclosingClass().isPresent() && type.isAssignableTo(Refused.class);
+  }
+
+  private static Set<String> outermostNames(Stream<JavaClass> types) {
+    return types.map(type -> outermost(type).getName()).collect(Collectors.toSet());
+  }
+
+  @Test
+  public void sourcesIsReachedOnlyThroughPorts() {
+    noClasses()
+        .that()
+        .resideOutsideOfPackage("ai.searchavo.sources..")
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage("ai.searchavo.sources..")
+        .check(classes());
+  }
+
+  @Test
+  public void theLlmLayerIsUsedOnlyThroughItsNamedInterface() {
+    Set<String> api =
+        modules
+            .getModuleByName("platform")
+            .flatMap(platform -> platform.getNamedInterfaces().getByName("llm"))
+            .orElseThrow()
+            .asJavaClasses()
+            .map(JavaClass::getName)
+            .collect(Collectors.toSet());
+    assertThat(api).contains(LLM + ".BudgetedChat");
+    noClasses()
+        .that()
+        .resideOutsideOfPackage(LLM + "..")
+        .should()
+        .dependOnClassesThat(
+            DescribedPredicate.describe(
+                "are llm classes outside the named interface 'llm'",
+                (JavaClass used) ->
+                    used.getPackageName().startsWith(LLM)
+                        && !api.contains(outermost(used).getName())))
+        .check(classes());
+  }
+
+  private static JavaClass outermost(JavaClass type) {
+    return type.getEnclosingClass().map(ModularityRules::outermost).orElse(type);
+  }
+}

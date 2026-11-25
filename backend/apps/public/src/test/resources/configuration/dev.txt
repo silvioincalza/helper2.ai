@@ -1,10 +1,10 @@
-helper2.identity.frontend-url = http://localhost:5173/
-helper2.identity.metrics-public = true
-helper2.schema.migrate = ${H2_SCHEMA_MIGRATE:true}  =>  true
 logging.structured.format.console = <empty>
-server.servlet.session.cookie.secure = ${H2_COOKIE_SECURE:false}  =>  false
-spring.datasource.password = ${H2_DATABASE_PASSWORD:helper2-local-only}  =>  helper2-local-only
+searchavo.identity.frontend-url = http://localhost:5173/
+searchavo.identity.metrics-public = true
+searchavo.schema.migrate = ${SA_SCHEMA_MIGRATE:true}  =>  true
+server.servlet.session.cookie.secure = ${SA_COOKIE_SECURE:false}  =>  false
+spring.datasource.password = ${SA_DATABASE_PASSWORD:searchavo-local-only}  =>  searchavo-local-only
 spring.docker.compose.enabled = true
 spring.docker.compose.file = ../compose.yaml
 spring.docker.compose.lifecycle-management = start-only
-spring.profiles.active = ${H2_PROFILES:}  =>  dev
+spring.profiles.active = ${SA_PROFILES:}  =>  dev

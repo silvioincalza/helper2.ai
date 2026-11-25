@@ -1,0 +1,16 @@
+package ai.searchavo.catalog.config;
+
+import jakarta.validation.constraints.NotNull;
+import java.time.Duration;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
+
+@Validated
+@ConfigurationProperties("searchavo.retention")
+public record CatalogRetentionProperties(
+    @NotNull Duration resolvedReviewItems,
+    @NotNull Duration resolvedIssueReports,
+    @NotNull Duration enrichmentRuns,
+    @NotNull Duration webNews,
+    @NotNull Duration pastEvents,
+    @NotNull Duration observedUnseen) {}

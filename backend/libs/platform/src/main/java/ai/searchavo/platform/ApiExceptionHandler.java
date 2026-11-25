@@ -1,0 +1,79 @@
+package ai.searchavo.platform;
+
+import jakarta.validation.ConstraintViolationException;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotWritableException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.util.DisconnectedClientHelper;
+
+@RestControllerAdvice
+class ApiExceptionHandler extends ResponseEntityExceptionHandler {
+
+  private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
+  static final String INVALID = "Invalid request parameters.";
+
+  @ExceptionHandler(BadRequestException.class)
+  ProblemDetail badRequest(BadRequestException e) {
+    return Problems.of(ProblemType.INVALID_REQUEST, INVALID);
+  }
+
+  @ExceptionHandler({ConstraintViolationException.class, MethodArgumentTypeMismatchException.class})
+  ProblemDetail invalidParameters(Exception e) {
+    return Problems.of(ProblemType.INVALID_REQUEST, INVALID);
+  }
+
+  @ExceptionHandler(ApiProblem.class)
+  ProblemDetail problem(ApiProblem e) {
+    return Problems.of(e.type(), e.detail());
+  }
+
+  @ExceptionHandler(RuntimeException.class)
+  ProblemDetail unexpected(RuntimeException e) {
+    log.error("Unhandled exception in a request", e);
+    return Problems.of(ProblemType.INTERNAL, "Something went wrong on our side.");
+  }
+
+  @Override
+  protected ResponseEntity<Object> handleHandlerMethodValidationException(
+      HandlerMethodValidationException ex,
+      HttpHeaders headers,
+      HttpStatusCode status,
+      WebRequest request) {
+    return ResponseEntity.badRequest().body(Problems.of(ProblemType.INVALID_REQUEST, INVALID));
+  }
+
+  @Override
+  protected @Nullable ResponseEntity<Object> handleHttpMessageNotWritable(
+      HttpMessageNotWritableException ex,
+      HttpHeaders headers,
+      HttpStatusCode status,
+      WebRequest request) {
+    if (DisconnectedClientHelper.isClientDisconnectedException(ex)) {
+      log.debug("The client left before the answer was written: {}", ex.getMessage());
+      return null;
+    }
+    return super.handleHttpMessageNotWritable(ex, headers, status, request);
+  }
+
+  @Override
+  protected ResponseEntity<Object> createResponseEntity(
+      @Nullable Object body, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    if (body instanceof ProblemDetail problem) {
+      ProblemType type = ProblemType.forStatus(status.value());
+      Problems.typed(problem, type, type == ProblemType.INVALID_REQUEST ? INVALID : null);
+    }
+    return super.createResponseEntity(body, headers, status, request);
+  }
+}

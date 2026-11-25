@@ -141,7 +141,7 @@ describe('Feature: the radar works like a navigation radar (ADR 0040, decision 6
     expect(opacity(el)).toBeGreaterThan(0.2);
   });
 
-  it('Scenario: only external sources, never Helper2 itself', () => {
+  it('Scenario: only external sources, never Searchavo itself', () => {
     render(<Page sources={radarSources(STAGING_SOURCES)} />);
     const seen = new Set<string>();
     for (let i = 0; i < 60; i++) {
@@ -151,7 +151,7 @@ describe('Feature: the radar works like a navigation radar (ADR 0040, decision 6
     const externalIds = STAGING_SOURCES.filter((s) => s.external).map((s) => s.id);
     for (const id of seen) expect(externalIds).toContain(id);
     expect(seen.size).toBeGreaterThan(5);
-    for (const own of ['helper2-index', 'helper2-semantic', 'curated'])
+    for (const own of ['searchavo-index', 'searchavo-semantic', 'curated'])
       expect(seen).not.toContain(own);
   });
 

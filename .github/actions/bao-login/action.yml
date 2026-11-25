@@ -9,7 +9,7 @@ inputs:
     required: true
   mount:
     description: jwt auth mount path
-    default: helper2/jwt
+    default: searchavo/jwt
   audience:
     description: audience requested for the OIDC token, must match the role's bound_audiences
     required: true

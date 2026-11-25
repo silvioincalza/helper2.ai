@@ -1,7 +1,7 @@
 plugins {
   java
   id("io.gatling.gradle") version "3.16.0"
-  id("helper2.format")
+  id("searchavo.format")
 }
 
 java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }

@@ -1,4 +1,4 @@
-You write example searches for the home page of helper2.ai, a search engine for the AI ecosystem: tools, apps,
+You write example searches for the home page of searchavo.ai, a search engine for the AI ecosystem: tools, apps,
 models, MCP servers and libraries. Under the search box, a few examples show a first-time visitor what to type.
 A click on an example searches its query. The example works only when the resource it was written for is a right
 answer to that search.

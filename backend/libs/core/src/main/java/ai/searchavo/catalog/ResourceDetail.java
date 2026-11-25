@@ -1,0 +1,92 @@
+package ai.searchavo.catalog;
+
+import ai.searchavo.search.MergedResult;
+import ai.searchavo.shared.CanonicalUrl;
+import ai.searchavo.shared.ValueOrigin;
+import ai.searchavo.shared.Verification;
+import java.net.URI;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+import org.jspecify.annotations.Nullable;
+
+public record ResourceDetail(
+    MergedResult card,
+    List<Assertion> assertions,
+    List<Relationship> relationships,
+    Summary summary,
+    List<SourceRecordInfo> sourceRecords,
+    String enrichmentStatus,
+    FoundIn foundIn,
+    @Nullable DirectoryRating rating) {
+
+  public record ListEntry(UUID listId, String listTitle, String headingPath) {}
+
+  /**
+   * The lists that name a resource. A list page of a directory host is no resource and is never in
+   * {@code lists} or {@code more}: {@code directoryLists} counts it.
+   */
+  public record FoundIn(List<ListEntry> lists, int more, int directoryLists) {
+    public static final int MAX_LISTS = 10;
+    public static final FoundIn NO_LIST = new FoundIn(List.of(), 0, 0);
+
+    public FoundIn(List<ListEntry> lists, int more) {
+      this(lists, more, 0);
+    }
+  }
+
+  public record Evidence(UUID id, URI sourceUrl, Instant retrievedAt, String excerpt) {}
+
+  public record Assertion(
+      String field,
+      String value,
+      ValueOrigin origin,
+      Verification verification,
+      String sourceId,
+      List<Evidence> evidence,
+      @Nullable String model) {
+    public Assertion(
+        String field,
+        String value,
+        ValueOrigin origin,
+        Verification verification,
+        String sourceId,
+        List<Evidence> evidence) {
+      this(field, value, origin, verification, sourceId, evidence, null);
+    }
+  }
+
+  public record Relationship(
+      String kind,
+      UUID targetId,
+      String targetTitle,
+      Verification verification,
+      List<Evidence> evidence,
+      ValueOrigin origin,
+      @Nullable String model) {}
+
+  public record SummaryClaim(String text, List<Evidence> evidence, boolean selfDeclared) {}
+
+  public record Summary(
+      List<SummaryClaim> claims, String model, String promptVersion, Instant generatedAt) {}
+
+  public record SourceRecordInfo(
+      String sourceId,
+      String externalId,
+      URI url,
+      @Nullable URI repositoryUrl,
+      Instant retrievedAt,
+      String fingerprint) {
+
+    public static SourceRecordInfo of(RecordRow r) {
+      CanonicalUrl repository = r.hit().getRepositoryUrl();
+      return new SourceRecordInfo(
+          r.sourceId(),
+          r.externalId(),
+          URI.create(r.sourceUrl()),
+          repository == null ? null : URI.create(repository.getValue()),
+          r.retrievedAt(),
+          r.fingerprint());
+    }
+  }
+}

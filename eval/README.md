@@ -39,13 +39,13 @@ relevant result: a 0 for each pooled result is the label.
 
 ## Search: record, judge, compare
 
-1. **Record once.** With the catalog database to measure (`H2_DATABASE_URL`), `H2_GITHUB_TOKEN`, `H2_LIVE_WEB_API_KEY` and
-   `H2_NVIDIA_API_KEY` in the repo-root `.env`: `cd backend && ./gradlew evalRecord`. One live search per query,
-   135 queries, about 11 minutes with the default 4 s pause (`H2_EVAL_PAUSE`, an ISO duration such as `PT4S`; the guide script has its own pause,
-   `H2_EVAL_PAUSE_MS`, in milliseconds). Queries that already have a snapshot are
+1. **Record once.** With the catalog database to measure (`SA_DATABASE_URL`), `SA_GITHUB_TOKEN`, `SA_LIVE_WEB_API_KEY` and
+   `SA_NVIDIA_API_KEY` in the repo-root `.env`: `cd backend && ./gradlew evalRecord`. One live search per query,
+   135 queries, about 11 minutes with the default 4 s pause (`SA_EVAL_PAUSE`, an ISO duration such as `PT4S`; the guide script has its own pause,
+   `SA_EVAL_PAUSE_MS`, in milliseconds). Queries that already have a snapshot are
    skipped; delete `backend/eval-data/search-snapshots/` to record a new set.
    **Starter set.** To judge less first, record every fourth query of `search-queries.json` (20 queries, all nine
-   groups, chosen by position, not by result): `H2_EVAL_ONLY=nav01,nav05,nav09,mcp03,mcp07,mcp11,mod03,mod07,lib01,lib05,lib09,pap03,pap07,new03,new07,lng03,lng07,typ01,typ05,non01 ./gradlew evalRecord`.
+   groups, chosen by position, not by result): `SA_EVAL_ONLY=nav01,nav05,nav09,mcp03,mcp07,mcp11,mod03,mod07,lib01,lib05,lib09,pap03,pap07,new03,new07,lng03,lng07,typ01,typ05,non01 ./gradlew evalRecord`.
    The metrics then cover these 20; the rest are recorded and judged later in the same way.
 2. **Pool.** `./gradlew evalTest` writes `backend/eval-data/search-pool.tsv`: every result in the top 20 of the baseline
    or of any source left out, plus the 10 nearest vectors, that has no grade yet.
@@ -55,7 +55,7 @@ relevant result: a 0 for each pooled result is the label.
 4. **Second judge.** Pick 20 % of the pooled lines at random (`shuf -n` over the pool), have a second person grade them
    without seeing the first grades, and save them as `search-qrels-second.tsv`. The report states Cohen's kappa; below
    0.6, agree on the grade definitions above and re-judge the disagreements.
-5. **Baseline.** `H2_EVAL_WRITE_BASELINE=true ./gradlew evalTest` stores `search-baseline.json`. From then on
+5. **Baseline.** `SA_EVAL_WRITE_BASELINE=true ./gradlew evalTest` stores `search-baseline.json`. From then on
    `./gradlew evalTest` fails when nDCG@10 drops more than 0.005 below it.
 6. **Compare a change.** Run `evalTest` before and after; the report has per-source ablations with a 95 % paired
    bootstrap interval. TREC files (`baseline.run`, `without-<source>.run`, `search.qrels`) work with
@@ -103,20 +103,20 @@ Before the run, for that day only, in staging's `app.env` or chart values (back 
 
 | Setting | For the run | Staging today | Why |
 |---|---|---|---|
-| `H2_GUIDE_CACHE_TTL` (`app.guideCacheTtl`) | `PT1S` | `PT1S` | every answer is a real model call |
-| `H2_GUIDE_DAILY_MODEL_CALLS` (`app.dailyLimits.guideModelCalls`) | 1000 | 600 | 50 questions x 3 runs x 3 calls = 450, up to 900 with retries |
-| `H2_GUIDE_CLIENT_DAILY_QUESTIONS` (`app.dailyLimits.guideQuestions`) | at least 200 | 1000 | 150 questions from one address |
-| `H2_LIVE_WEB_GUEST_GUIDE` (`app.dailyLimits.webSearches.guide`) | at least 200 | 1000 | a question that needs the web must not meet the per-visitor limit of 3 |
-| `H2_LIVE_WEB_GUEST_SEARCH` (`app.dailyLimits.webSearches.search`) | at least 200 | 1000 | the pool searches of questions with no answer |
-| `H2_LIVE_WEB_DAILY_CREDITS` (`app.dailyLimits.webSearchCredits`) | 400 | 180 | web searches of the guide and of the pool searches |
+| `SA_GUIDE_CACHE_TTL` (`app.guideCacheTtl`) | `PT1S` | `PT1S` | every answer is a real model call |
+| `SA_GUIDE_DAILY_MODEL_CALLS` (`app.dailyLimits.guideModelCalls`) | 1000 | 600 | 50 questions x 3 runs x 3 calls = 450, up to 900 with retries |
+| `SA_GUIDE_CLIENT_DAILY_QUESTIONS` (`app.dailyLimits.guideQuestions`) | at least 200 | 1000 | 150 questions from one address |
+| `SA_LIVE_WEB_GUEST_GUIDE` (`app.dailyLimits.webSearches.guide`) | at least 200 | 1000 | a question that needs the web must not meet the per-visitor limit of 3 |
+| `SA_LIVE_WEB_GUEST_SEARCH` (`app.dailyLimits.webSearches.search`) | at least 200 | 1000 | the pool searches of questions with no answer |
+| `SA_LIVE_WEB_DAILY_CREDITS` (`app.dailyLimits.webSearchCredits`) | 400 | 180 | web searches of the guide and of the pool searches |
 
-The backend needs its GitHub token (`H2_GITHUB_TOKEN`): the script keeps to 25 live GitHub searches a minute, which only
+The backend needs its GitHub token (`SA_GITHUB_TOKEN`): the script keeps to 25 live GitHub searches a minute, which only
 an authenticated token allows. Start after the nightly run (01:41 UTC) has finished.
 
 The run, from the repository root (about 45 minutes):
 
 ```
-node scripts/eval-guide.mjs "$H2_STAGING_URL" --repeat 3
+node scripts/eval-guide.mjs "$SA_STAGING_URL" --repeat 3
 ```
 
 Then:
@@ -143,7 +143,7 @@ What the figures decide:
 
 - "Answered" means the model gave an answer of the question's kind: an AI pick, a comparison, an explanation, or a dated record. "Expected empty" questions pass when they stay empty; each one says why in the query file.
 - "Checks confirmed" is confirmed / total constraint checks over the AI picks. Not confirmed means the resource's own text does not show it, not that it is false.
-- "(cache)" marks an answer served from the cache (the backend was not run with `H2_GUIDE_CACHE_TTL=PT1S`); its latency is left out of the percentiles.
+- "(cache)" marks an answer served from the cache (the backend was not run with `SA_GUIDE_CACHE_TTL=PT1S`); its latency is left out of the percentiles.
 - P@3 is the share of the first three AI picks graded relevant (2 or 3) in [guide-qrels.tsv](guide-qrels.tsv); nDCG@3 weighs them by grade. Picks not graded yet are written to `backend/eval-data/guide-pool.tsv` and count as not relevant.
 - "Candidates graded relevant": for each question with no answer, the script sends the answer's search terms to `GET /api/v1/search` (24 results) and writes them to the pool. It is close to the guide's own 24 candidates, not the same list (no intent filter, sort or web query). Once graded, it tells a retrieval problem (no good candidate) from a choosing problem (a good candidate the model left out).
 - A flip is a question answered in one run and not in another; "top-flip" is a first AI pick that differs between runs.
@@ -160,16 +160,16 @@ sources, not from a person, so a miss on them is a reason to look, not a proof. 
 values, empty when unknown.
 
 1. **Export the decisions.** Read-only, from the database with the most decisions (prod):
-   `{ echo 'BEGIN READ ONLY;'; cat scripts/research-eval-labels.sql; echo 'COMMIT;'; } | kubectl -n helper2-prod exec -i postgres-0 -- sh -c 'psql -q -U "$POSTGRES_USER" -d "${POSTGRES_DB:-$POSTGRES_USER}"' > eval/research-labels.tsv`.
+   `{ echo 'BEGIN READ ONLY;'; cat scripts/research-eval-labels.sql; echo 'COMMIT;'; } | kubectl -n searchavo-prod exec -i postgres-0 -- sh -c 'psql -q -U "$POSTGRES_USER" -d "${POSTGRES_DB:-$POSTGRES_USER}"' > eval/research-labels.tsv`.
    It holds public page URLs and titles only.
 2. **Label more by hand.** The queue has few rejects. The same command with `scripts/research-eval-pool.sql` writes
    120 open candidates, about 14 per type, to `backend/eval-data/research-pool.tsv`. Decide each one as you would in
    the queue, fill the expected values you can check on the page, and move the labelled rows to
    `research-labels-manual.tsv`. The set decides nothing below 100 items and 20 rejects.
-3. **Run.** In the repo-root `.env`: `H2_NEBIUS_API_KEY`, `H2_LIVE_WEB_API_KEY`, `H2_GITHUB_TOKEN`. Then, once per model:
-   `cd backend && H2_RESEARCH_MODEL=FAST H2_RESEARCH_DAILY_PAGE_READS=1000 ./gradlew :apps:backoffice:evalRecord --tests '*ResearchEvalRecorder'`
-   and the same with `H2_RESEARCH_MODEL=REASONING`. Each item takes up to 14 model calls and spends live web credits.
-   `H2_EVAL_ONLY=r001,r002` runs some items only; `H2_EVAL_PAUSE` (default `PT2S`) is the pause between items. Without
+3. **Run.** In the repo-root `.env`: `SA_NEBIUS_API_KEY`, `SA_LIVE_WEB_API_KEY`, `SA_GITHUB_TOKEN`. Then, once per model:
+   `cd backend && SA_RESEARCH_MODEL=FAST SA_RESEARCH_DAILY_PAGE_READS=1000 ./gradlew :apps:backoffice:evalRecord --tests '*ResearchEvalRecorder'`
+   and the same with `SA_RESEARCH_MODEL=REASONING`. Each item takes up to 14 model calls and spends live web credits.
+   `SA_EVAL_ONLY=r001,r002` runs some items only; `SA_EVAL_PAUSE` (default `PT2S`) is the pause between items. Without
    a model key the test is skipped.
 4. **Read.** `eval/research-report-<model>.md` (the numbers and each item), `research-baseline-<model>.json`, and
    every step of every run in `backend/eval-data/research-traces/<model>/`.

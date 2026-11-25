@@ -57,7 +57,7 @@ jobs:
     timeout-minutes: 45
     environment:
       name: ${{ inputs.environment }}
-      url: ${{ inputs.environment == 'prod' && 'https://helper2.ai' || 'https://helper2.incalza.me' }}
+      url: ${{ inputs.environment == 'prod' && 'https://searchavo.ai' || 'https://searchavo.incalza.me' }}
     concurrency:
       group: deploy-${{ inputs.environment }}
       cancel-in-progress: false
@@ -87,7 +87,7 @@ jobs:
         run: |
           set -euo pipefail
           kc=$(mktemp "$RUNNER_TEMP/kubeconfig.XXXXXX")
-          bao kv get -mount=helper2/kv -field=kubeconfig "ci/$ENV" > "$kc"
+          bao kv get -mount=searchavo/kv -field=kubeconfig "ci/$ENV" > "$kc"
           echo "KUBECONFIG=$kc" >> "$GITHUB_ENV"
 
       - name: Resolve tag
@@ -102,7 +102,7 @@ jobs:
           set -euo pipefail
           tag=$INPUT_TAG
           if [[ -z $tag && $ENV == prod ]]; then
-            image=$(kubectl -n helper2-staging get deployment helper2 \
+            image=$(kubectl -n searchavo-staging get deployment searchavo \
               -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}')
             image=${image%@*}
             tag=${image##*:}
@@ -157,7 +157,7 @@ jobs:
             [[ -n $(git for-each-ref --contains "$sha" refs/remotes/origin/release/) ]] \
               || { echo "$tag is not on main nor on a release/* branch"; exit 1; }
           fi
-          running=$(kubectl -n "helper2-$ENV" get deployment helper2 \
+          running=$(kubectl -n "searchavo-$ENV" get deployment searchavo \
             -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}' 2>/dev/null || true)
           running=${running%@*}
           running=${running##*:}
@@ -179,13 +179,13 @@ jobs:
               echo "::error::$order is not a higher version than $running, which $ENV runs; a rollback needs rollback: true"; exit 1
             fi
           fi
-          pg_tag=$(git show "$sha:deploy/helm/helper2/values.yaml" \
+          pg_tag=$(git show "$sha:deploy/helm/searchavo/values.yaml" \
             | awk '/^postgres:/ {p=1; next} p && /^[^ #]/ {exit} p && $1 == "tag:" {print $2; exit}')
-          emb_tag=$(git show "$sha:deploy/helm/helper2/values.yaml" \
+          emb_tag=$(git show "$sha:deploy/helm/searchavo/values.yaml" \
             | awk '/^embedder:/ {p=1; next} p && /^[^ #]/ {exit} p && $1 == "tag:" {print $2; exit}')
           make verify-images TAG="$tag" PG_TAG="$pg_tag" EMB_TAG="$emb_tag" HARBOR_KV=ci/harbor-pull DIGESTS=/dev/null
           git checkout --quiet --detach "$sha"
-          if ! grep -q 'need_digest' Makefile || ! grep -q 'helper2.atDigest' ../helm/helper2/templates/_helpers.tpl; then
+          if ! grep -q 'need_digest' Makefile || ! grep -q 'searchavo.atDigest' ../helm/searchavo/templates/_helpers.tpl; then
             if [[ $ROLLBACK != true ]]; then
               echo "::error::$tag predates the deploy by digest (ADR 0044): deploying it needs rollback: true"; exit 1
             fi
@@ -236,7 +236,7 @@ jobs:
           set -euo pipefail
           umask 077
           mkdir -p "$ENV"
-          bao kv get -mount=helper2/kv -field=app_env "ci/$ENV" > "$ENV/app.env"
+          bao kv get -mount=searchavo/kv -field=app_env "ci/$ENV" > "$ENV/app.env"
 
       - name: Dump of the database (release with a migration)
         id: dump
@@ -247,7 +247,7 @@ jobs:
         run: |
           set -euo pipefail
           migrations=$GITHUB_WORKSPACE/backend/libs/schema/src/main/resources/db/migration
-          running=$(kubectl -n "helper2-$ENV" get deployment helper2 \
+          running=$(kubectl -n "searchavo-$ENV" get deployment searchavo \
             -o jsonpath='{.spec.template.spec.containers[?(@.name=="app")].image}' 2>/dev/null || true)
           running=${running%@*}
           running=${running##*:}
@@ -266,7 +266,7 @@ jobs:
           echo "$VERSION brings a migration over ${running:-an unknown release} (or its commit is unknown): $ENV's database is dumped first"
           dump=$(make --no-print-directory release-dump VERSION="$VERSION")
           echo "dump=$dump" >> "$GITHUB_OUTPUT"
-          echo "Dump before $VERSION: \`$dump\` on the volume pg-backup of helper2-$ENV. Way back for the data: \`make -C deploy/k8s ENV=$ENV restore DUMP=$dump\` (RUNBOOK-release.md, Going back)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Dump before $VERSION: \`$dump\` on the volume pg-backup of searchavo-$ENV. Way back for the data: \`make -C deploy/k8s ENV=$ENV restore DUMP=$dump\` (RUNBOOK-release.md, Going back)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Canary and smoke test (release)
         if: inputs.release-version != '' && inputs.canary
@@ -307,10 +307,10 @@ jobs:
         if: inputs.environment == 'staging'
         run: |
           set -euo pipefail
-          status=$(helm -n "helper2-$ENV" status helper2 2>/dev/null | awk '/^STATUS:/ {print $2}' || true)
+          status=$(helm -n "searchavo-$ENV" status searchavo 2>/dev/null | awk '/^STATUS:/ {print $2}' || true)
           case "$status" in
             pending-*)
-              echo "release helper2 in helper2-$ENV is $status: rolling back to the last deployed revision first"
+              echo "release searchavo in searchavo-$ENV is $status: rolling back to the last deployed revision first"
               make rollback
               ;;
           esac

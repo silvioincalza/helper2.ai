@@ -44,11 +44,11 @@ Each line is checked once. A release run does not check them.
 |---|---|---|
 | The environment `prod`, with its required reviewer and its two deployment rules (`main`, tags `v*`) | `gh api repos/$R/environments/prod --jq '.protection_rules[].type'` prints `required_reviewers` | **(Owner)** [RUNBOOK-new-repository.md](RUNBOOK-new-repository.md) §7 |
 | The three rulesets: `main`, `release/**`, tags `v*` | `gh api repos/$R/rulesets --jq '.[].name'` | **(Owner)** RUNBOOK-new-repository.md §5 |
-| The variables `BAO_ADDR`, `BAO_AUDIENCE`, `H2_STAGING_URL` | `gh variable list -R $R` | **(Owner)** RUNBOOK-new-repository.md §7 |
+| The variables `BAO_ADDR`, `BAO_AUDIENCE`, `SA_STAGING_URL` | `gh variable list -R $R` | **(Owner)** RUNBOOK-new-repository.md §7 |
 | The OpenBao roles `deploy`, `deploy-staging` and `deploy-prod` accept this repository; `deploy-prod` reads `ci/prod`, `ci/harbor-pull` and `ci/harbor` | a green push run of `cd` proves `deploy` and `deploy-staging`; `deploy-prod` is proved by the first prod job | **(Owner)** RUNBOOK-new-repository.md §8, [CI.md, Security model](CI.md#security-model) |
 | `ci/prod` holds prod's `app.env` and the `deployer` kubeconfig; the off-site backup Secret is on prod | `make -C deploy/k8s ENV=prod credentials`, `make -C deploy/k8s ENV=prod backup-credentials` | **(Owner)** RUNBOOK-new-repository.md §9 |
-| Staging's and prod's `app.env` in OpenBao hold `H2_DATABASE_MONITOR_PASSWORD` and `H2_REDIS_MONITOR_PASSWORD` (two new values of `openssl rand -hex 32`), staging's before the merge that adds them; the cluster's Alloy keeps the `pg_` and `redis_` metric names of `helper2-*` pods | `scripts/env-align.sh --dry-run deploy/k8s/app.env.example deploy/k8s/<env>/app.env` lists neither; `make -C deploy/k8s ENV=<env> credentials`; the exporters' series in Prometheus | **(Owner)** [ADR 0009](../../docs/architecture/decisions/ADR-0009-observability.md) §7; the allow-list in the platform repo |
-| Prod can be recovered and is watched: a tested restore, the off-site copy, the exporters and the eviction alert, the DNS records, `H2_SETUP_GITHUB_TOKEN` | [S10.8.1](https://github.com/silvioincalza/helper2.ai/issues/353), [S1.8.3](https://github.com/silvioincalza/helper2.ai/issues/174) | **(Owner)** per step |
+| Staging's and prod's `app.env` in OpenBao hold `SA_DATABASE_MONITOR_PASSWORD` and `SA_REDIS_MONITOR_PASSWORD` (two new values of `openssl rand -hex 32`), staging's before the merge that adds them; the cluster's Alloy keeps the `pg_` and `redis_` metric names of `searchavo-*` pods | `scripts/env-align.sh --dry-run deploy/k8s/app.env.example deploy/k8s/<env>/app.env` lists neither; `make -C deploy/k8s ENV=<env> credentials`; the exporters' series in Prometheus | **(Owner)** [ADR 0009](../../docs/architecture/decisions/ADR-0009-observability.md) §7; the allow-list in the platform repo |
+| Prod can be recovered and is watched: a tested restore, the off-site copy, the exporters and the eviction alert, the DNS records, `SA_SETUP_GITHUB_TOKEN` | [S10.8.1](https://github.com/silvioincalza/helper2.ai/issues/353), [S1.8.3](https://github.com/silvioincalza/helper2.ai/issues/174) | **(Owner)** per step |
 | The ad networks' rules are read before a prod ad setting is filled | [S8.4.1](https://github.com/silvioincalza/helper2.ai/issues/332) | **(Owner)** |
 | The Privacy and Terms pages: the points for a lawyer are answered, or the owner releases with them open | [F9.3](https://github.com/silvioincalza/helper2.ai/issues/102) | **(Owner)** |
 
@@ -73,17 +73,17 @@ Before every release. Nothing here changes prod.
 
    ```bash
    make -C deploy/k8s ENV=prod status
-   helm -n helper2-prod history helper2 --max 5
+   helm -n searchavo-prod history searchavo --max 5
    ```
 
 4. **Last night's dump is there**, and its off-site upload. The release's own dump is taken by the release run
    (step 5); this check proves the CronJob it runs works.
 
    ```bash
-   kubectl -n helper2-prod get cronjob pg-backup
-   kubectl -n helper2-prod get jobs -l app=pg-backup --sort-by=.status.startTime
-   kubectl -n helper2-prod logs job/<last night's job> -c dump
-   kubectl -n helper2-prod logs job/<last night's job> -c upload
+   kubectl -n searchavo-prod get cronjob pg-backup
+   kubectl -n searchavo-prod get jobs -l app=pg-backup --sort-by=.status.startTime
+   kubectl -n searchavo-prod logs job/<last night's job> -c dump
+   kubectl -n searchavo-prod logs job/<last night's job> -c upload
    ```
 
    When last night's job failed, stop: fix the cause first, the release's dump would fail the same way.
@@ -120,10 +120,10 @@ release, and the rollout replaces the pods one at a time. Only a release with `c
 | 2 | **(Owner)** | Merge the version pull request with a merge commit (`gh pr merge <n> --merge`). The ruleset of `release/**` wants `ci-ok` on it: when the pull request shows no check, start CI on its branch with `gh workflow run ci.yml -R $R --ref release-bump/YYYY.N.P` | **(workflow)** the push runs `cd` on the release branch: CI, the images built, signed and scanned. `gh run list -R $R --workflow cd.yml --branch release/YYYY.N --limit 1` is green | Fix the branch by pull request into `release/YYYY.N`; each push builds again |
 | 3 | **(Owner)** | Run `release` from `main` with `version`. `headline` for a breaking change. `canary` unticked only for the maintenance window of check 5. `notes_since` only when the release below holds no commit of `main` ([ADR 0045](../../docs/architecture/decisions/ADR-0045-releases-and-versions.md) §9): after v2026.11.10 it is `notes-base/2026.11.10`, the commit of `main` v2026.11.10 took | **(workflow)** jobs `check` and `built` are green: the branch, the version rule, the seven files, staging ran the commit a `.0` is cut from, the CD run of the branch passed | Nothing reached prod and no tag exists. Fix what the error names, run `release` again |
 | 4 | **(Owner)** | Read the summary of `check` (version, commit, the commit it is cut from), then approve the job `prod`: [the release runs](https://github.com/silvioincalza/helper2.ai/actions/workflows/release.yml) → the run → Review deployments | The job `prod / deploy` starts on the self-hosted runner | Reject: nothing reached prod |
-| 5a | **(workflow)** | A release whose migration folder differs from the release prod runs: the dump of prod's database, `make release-dump`, the Job `pg-backup-release-YYYY-N-P` from `pg-backup`. A rerun of the version keeps the dump of the Job that finished, taken before the first canary | The run summary names the dump `helper2-<UTC date>T<UTC time>Z.sql.gz` and the restore command | The job fails before the canary: nothing reached prod, no tag, the version is free. Read the Job's logs (`-c dump`, `-c upload`) |
-| 5 | **(workflow)** | The canary: its migrate Job on prod's database, one public app pod and one web pod, reached only with the run's header. Then the smoke test through `https://helper2.ai`, with the header and without | The run summary says the canary passed and is removed | The canary is removed and the job fails. Prod runs the release before. No tag anywhere, the version is still free. A migration the canary ran stays in the schema |
+| 5a | **(workflow)** | A release whose migration folder differs from the release prod runs: the dump of prod's database, `make release-dump`, the Job `pg-backup-release-YYYY-N-P` from `pg-backup`. A rerun of the version keeps the dump of the Job that finished, taken before the first canary | The run summary names the dump `searchavo-<UTC date>T<UTC time>Z.sql.gz` and the restore command | The job fails before the canary: nothing reached prod, no tag, the version is free. Read the Job's logs (`-c dump`, `-c upload`) |
+| 5 | **(workflow)** | The canary: its migrate Job on prod's database, one public app pod and one web pod, reached only with the run's header. Then the smoke test through `https://searchavo.ai`, with the header and without | The run summary says the canary passed and is removed | The canary is removed and the job fails. Prod runs the release before. No tag anywhere, the version is still free. A migration the canary ran stays in the schema |
 | 6 | **(workflow)** | The version tag `YYYY.N.P` in Harbor, on the three images of the commit | The step log says `tagged …` for each image | From here a failure uses the version up: see section 5 |
-| 7 | **(workflow)** | `make diff`, then `make deploy`: prod by version, by digest, and the check after it (release deployed, workloads rolled out, migrate Job complete, `/` and `/api/v1/sources` answer 200) | The step ends with `release helper2 in helper2-prod is healthy`; then `make status` passes | The release goes back by itself to the revision deployed before, is checked once more, and the job fails |
+| 7 | **(workflow)** | `make diff`, then `make deploy`: prod by version, by digest, and the check after it (release deployed, workloads rolled out, migrate Job complete, `/` and `/api/v1/sources` answer 200) | The step ends with `release searchavo in searchavo-prod is healthy`; then `make status` passes | The release goes back by itself to the revision deployed before, is checked once more, and the job fails |
 | 8 | **(workflow)** | The job `publish`: the tag `vYYYY.N.P`, the GitHub release with its notes (the pull requests of `main` it ships, made by the job: no edit by hand), the four SBOMs, the pull request `release-merge/vYYYY.N.P` into `main` with CI started on it | `gh release view vYYYY.N.P -R $R`; the pull request is open | Prod already runs the version. Run the failed job again: `gh run rerun <run id> -R $R --failed`. It finishes what is missing |
 | 9 | **(Owner)** | Merge the pull request back into `main` with a merge commit (`gh pr merge <n> --merge`) once `ci-ok` is green | Staging's footer shows the version after its CD run | A conflict: resolve it on `release-merge/vYYYY.N.P`; that push runs CI |
 
@@ -143,26 +143,26 @@ gh workflow run release.yml -R $R --ref main -f version=YYYY.N.P -f notes_since=
 
    ```bash
    make -C deploy/k8s ENV=prod status
-   kubectl -n helper2-prod get deployment helper2 helper2-backoffice helper2-web \
+   kubectl -n searchavo-prod get deployment searchavo searchavo-backoffice searchavo-web \
      -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.template.spec.containers[0].image}{"\n"}{end}'
-   helm -n helper2-prod list
+   helm -n searchavo-prod list
    ```
 
-   `helm list` shows the release `helper2` only: no `helper2-canary` is left.
-2. Open `https://helper2.ai`: the footer shows the version, a search answers, the Sources page lists the sources,
+   `helm list` shows the release `searchavo` only: no `searchavo-canary` is left.
+2. Open `https://searchavo.ai`: the footer shows the version, a search answers, the Sources page lists the sources,
    sign-in works. On the admin host: the overview loads, and Settings shows the public app's build as the version.
 3. The schema is the one the release holds: every row successful, the newest version the newest `V…` file.
 
    ```bash
-   kubectl -n helper2-prod exec postgres-0 -- psql -U helper2 -d helper2 -At \
+   kubectl -n searchavo-prod exec postgres-0 -- psql -U searchavo -d searchavo -At \
      -c 'SELECT version, description, checksum, success FROM flyway_schema_history ORDER BY installed_rank'
    ```
 
 4. The tag and the release exist: `git ls-remote --tags https://github.com/$R.git vYYYY.N.P`,
    `gh release view vYYYY.N.P -R $R`.
-5. Grafana, dashboards `helper2` and `helper2-backoffice`, for the first hour: requests by status, source outcomes,
-   the guide's outcomes. No alert of [`helper2-rules.yaml`](../monitoring/helper2-rules.yaml) fires.
-6. The next morning: the nightly dump ran (`kubectl -n helper2-prod get pods -l app=pg-backup`) and the Scout's run
+5. Grafana, dashboards `searchavo` and `searchavo-backoffice`, for the first hour: requests by status, source outcomes,
+   the guide's outcomes. No alert of [`searchavo-rules.yaml`](../monitoring/searchavo-rules.yaml) fires.
+6. The next morning: the nightly dump ran (`kubectl -n searchavo-prod get pods -l app=pg-backup`) and the Scout's run
    shows in Scout runs.
 
 ## 5. Going back
@@ -175,7 +175,7 @@ onto the schema as the release left it.
 | `check` or `built` | the release before | none | Fix what the error names, run `release` again |
 | The canary or its smoke test | the release before; the canary is removed | none, the version is free | Read the canary step's log. Fix by pull request into `release/YYYY.N`, then `release` again with the same version |
 | The rollout, after the Harbor tag | the revision deployed before: `make deploy` went back by itself | Harbor keeps `YYYY.N.P`; the run tags the commit `used/vYYYY.N.P` | When the code was not the cause: `release` again, same version, same commit. Else merge the fix, `release-prepare` with `patch-of`, and release the next patch |
-| The rollback itself (`ROLLBACK FAILED`, or `ROLLED BACK, STILL NOT HEALTHY`) | not healthy | as above | Nothing more is tried by the run. Read the pods and `helm -n helper2-prod history helper2`, then `make -C deploy/k8s ENV=prod rollback` |
+| The rollback itself (`ROLLBACK FAILED`, or `ROLLED BACK, STILL NOT HEALTHY`) | not healthy | as above | Nothing more is tried by the run. Read the pods and `helm -n searchavo-prod history searchavo`, then `make -C deploy/k8s ENV=prod rollback` |
 | `publish` | the new version, healthy | missing in Git | `gh run rerun <run id> -R $R --failed` |
 | Later: the release is healthy for the checks and wrong for users | the new version | all there | One of the three ways below |
 
@@ -206,9 +206,9 @@ After a rollback the version that failed is still released: its tag never moves.
 dump the release named (step 5a), with both apps stopped:
 
 ```bash
-kubectl -n helper2-prod scale deployment/helper2 deployment/helper2-backoffice --replicas=0
+kubectl -n searchavo-prod scale deployment/searchavo deployment/searchavo-backoffice --replicas=0
 make -C deploy/k8s ENV=prod uncanary
-make -C deploy/k8s ENV=prod restore DUMP=helper2-<UTC date>T<UTC time>Z.sql.gz   # asks for the namespace
+make -C deploy/k8s ENV=prod restore DUMP=searchavo-<UTC date>T<UTC time>Z.sql.gz   # asks for the namespace
 make -C deploy/k8s ENV=prod rollback          # the release before, on its schema; its pods start again
 make -C deploy/k8s ENV=prod status
 ```
@@ -227,7 +227,7 @@ off-site copy) and runs `main`. With staging on a commit before a migration that
 ```bash
 make -C deploy/k8s ENV=staging release-dump VERSION=<the next version>   # prints the dump's name
 gh workflow run cd.yml -R $R --ref main                                  # staging migrates
-kubectl -n helper2-staging scale deployment/helper2 deployment/helper2-backoffice --replicas=0
+kubectl -n searchavo-staging scale deployment/searchavo deployment/searchavo-backoffice --replicas=0
 make -C deploy/k8s ENV=staging restore DUMP=<the dump>
 make -C deploy/k8s ENV=staging rollback
 make -C deploy/k8s ENV=staging status
@@ -244,15 +244,15 @@ last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Ne
 1. The pull request back into `main` is merged (step 9), and its branch is gone.
 2. `CHANGELOG.md` on `main`: the entry of the version no longer says unreleased. By pull request.
 3. The release's story is closed by its pull request, and the Project follows.
-4. No canary is left (`helm -n helper2-prod list`). Once the release is healthy and kept, its dump Job is deleted:
-   `kubectl -n helper2-prod delete job pg-backup-release-YYYY-N-P --ignore-not-found` (the dump stays on the volume).
+4. No canary is left (`helm -n searchavo-prod list`). Once the release is healthy and kept, its dump Job is deleted:
+   `kubectl -n searchavo-prod delete job pg-backup-release-YYYY-N-P --ignore-not-found` (the dump stays on the volume).
 5. The first release with the restore check runs it once by hand, then the CronJob takes over every Sunday:
 
    ```bash
-   kubectl -n helper2-prod create job --from=cronjob/pg-restore-check pg-restore-check-now
-   kubectl -n helper2-prod wait --for=condition=complete job/pg-restore-check-now --timeout=60m
-   kubectl -n helper2-prod logs job/pg-restore-check-now -c check
-   kubectl -n helper2-prod delete job pg-restore-check-now
+   kubectl -n searchavo-prod create job --from=cronjob/pg-restore-check pg-restore-check-now
+   kubectl -n searchavo-prod wait --for=condition=complete job/pg-restore-check-now --timeout=60m
+   kubectl -n searchavo-prod logs job/pg-restore-check-now -c check
+   kubectl -n searchavo-prod delete job pg-restore-check-now
    ```
 6. Nothing to delete in Git or Harbor: a release branch, a release tag and an image tag stay for good.
 7. From the first tag `vYYYY.N.P` on, CI refuses an edit of a released migration
@@ -283,11 +283,11 @@ last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Ne
   Then, with that number as `CHECKSUM`, right before the release (check 4's dump is taken first):
 
   ```bash
-  NS=helper2-prod; CHECKSUM=<the number>
-  kubectl -n $NS exec postgres-0 -- psql -U helper2 -d helper2 -v ON_ERROR_STOP=1 -1 \
+  NS=searchavo-prod; CHECKSUM=<the number>
+  kubectl -n $NS exec postgres-0 -- psql -U searchavo -d searchavo -v ON_ERROR_STOP=1 -1 \
     -c 'DROP INDEX IF EXISTS resource_updated_idx, resource_label_value_idx' \
     -c "UPDATE flyway_schema_history SET checksum = $CHECKSUM WHERE version = '1'"
-  kubectl -n $NS exec postgres-0 -- psql -U helper2 -d helper2 -At \
+  kubectl -n $NS exec postgres-0 -- psql -U searchavo -d searchavo -At \
     -c "SELECT version, checksum FROM flyway_schema_history WHERE version = '1'"
   ```
 
@@ -295,7 +295,7 @@ last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Ne
   its own file. The pods that run are not touched. So the step and the release are done in one sitting.
   This holds only while the two indexes are the whole difference: `git diff v<running>..<commit>` of the file in
   check 5 must show those two lines and nothing else. Any other change of V1 needs its own step, or an empty database.
-- **Staging gets the same step**, with `NS=helper2-staging`, before the first `cd` deploy that carries the new file.
+- **Staging gets the same step**, with `NS=searchavo-staging`, before the first `cd` deploy that carries the new file.
   Without it that deploy fails at the migrate Job and Helm goes back to the release before.
 - **A normal release, with the canary.** No migration runs, so no window. `make diff` in the run shows what changes
   beside the three images and the chart version: the image of the off-site upload in the backup CronJob.

@@ -1,0 +1,414 @@
+groups:
+  - name: searchavo-http
+    rules:
+      - alert: SearchavoHighServerErrorRatio
+        expr: |
+          (
+            sum by (environment) (rate(http_server_requests_seconds_count{application="searchavo", uri!~"/actuator.*", status=~"5.."}[5m]))
+            /
+            sum by (environment) (rate(http_server_requests_seconds_count{application="searchavo", uri!~"/actuator.*"}[5m]))
+          ) > 0.05
+          and
+          sum by (environment) (rate(http_server_requests_seconds_count{application="searchavo", uri!~"/actuator.*"}[5m])) > 1/60
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "More than 5% of requests to searchavo ({{ $labels.environment }}) fail with a 5xx status."
+          description: "{{ $value | humanizePercentage }} of the requests of the last 5 minutes ended with a server error, for 10 minutes."
+          runbook: "Dashboard row 'HTTP (app port)' (Requests by status, p95 by route), then row Logs filtered on ERROR. 503 on the guide = all slots busy, 504 = question deadline; other 5xx: check Postgres and Redis pods and the last deploy (make ENV=<env> rollback)."
+
+  - name: searchavo-search
+    rules:
+      - record: environment_source:searchavo_source_latency_seconds:p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum by (environment, source, le) (rate(searchavo_source_latency_seconds_bucket{application="searchavo"}[5m]))
+          )
+      - alert: SearchavoSourceFailing
+        expr: |
+          (
+            sum by (environment, source) (rate(searchavo_source_requests_total{application="searchavo", outcome=~"FAILED|TIMED_OUT|RATE_LIMITED"}[15m]))
+            /
+            sum by (environment, source) (rate(searchavo_source_requests_total{application="searchavo", outcome!="SKIPPED"}[15m]))
+          ) > 0.2
+          and
+          sum by (environment, source) (rate(searchavo_source_requests_total{application="searchavo", outcome!="SKIPPED"}[15m])) > 1/300
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Source {{ $labels.source }} fails on more than 20% of searches ({{ $labels.environment }})."
+          description: "{{ $value | humanizePercentage }} of the calls to {{ $labels.source }} failed, timed out or were rate limited over the last 15 minutes. Searches still answer, without that source or from its stale cache."
+          runbook: "Dashboard panels 'Source failures (FAILED, TIMED_OUT, RATE_LIMITED)' and 'Outbound HTTP errors by host'. TIMED_OUT: the provider is slow; RATE_LIMITED: check the token or quota of that provider; FAILED: row Logs, search for the source id."
+      - alert: SearchavoPartialSearches
+        expr: |
+          (
+            sum by (environment) (rate(searchavo_search_requests_total{application="searchavo", partial="true"}[30m]))
+            /
+            sum by (environment) (rate(searchavo_search_requests_total{application="searchavo"}[30m]))
+          ) > 0.5
+          and
+          sum by (environment) (rate(searchavo_search_requests_total{application="searchavo"}[30m])) > 1/600
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than half of the searches on searchavo ({{ $labels.environment }}) return partial results."
+          description: "{{ $value | humanizePercentage }} of the searches of the last 30 minutes missed at least one source, for 30 minutes."
+          runbook: "Find the source with SearchavoSourceFailing or the panel 'Source outcomes'; a source SKIPPED on every search (cooldown, daily limit, missing token) also makes every search partial."
+      - alert: SearchavoSearchCacheErrors
+        expr: sum by (environment) (rate(searchavo_cache_events_total{application="searchavo", event="error"}[5m])) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The search cache in Redis fails on searchavo ({{ $labels.environment }})."
+          description: "Search cache reads or writes have failed for 10 minutes. Searches still answer, but every search calls the sources live."
+          runbook: "Check the redis-0 pod (kubectl -n searchavo-<env> get pod redis-0, logs) and its PersistentVolumeClaim; the rate-limit alert SearchavoRateLimitInMemory fires too when Redis is down."
+
+  - name: searchavo-resilience
+    rules:
+      - alert: SearchavoCircuitOpen
+        expr: max by (environment, name) (1 - resilience4j_circuitbreaker_state{application=~"searchavo|searchavo-backoffice", state="closed"}) == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Circuit {{ $labels.name }} has not closed for 5 minutes ({{ $labels.environment }})."
+          description: "The resilience policy {{ $labels.name }} keeps refusing calls (ADR 0006): source-* is SKIPPED in searches, collector-* fails its Scout runs, redis means the cache, budgets and rate limits run without Redis, llm-chat means queries run untranslated and the setup guide is unavailable, llm-chat-guide-fast means guide questions get no plan and answer with top search results, llm-chat-guide-reasoning means guide answers are top search results (both also when the model answers but too slowly), llm-embed means search runs without the meaning-based index, llm-embed-index means the embedding indexer stalls while search queries still embed."
+          runbook: "Dashboard row 'Search and sources' (source outcomes) or the Redis pod for name=redis. A source-* circuit: check the provider's status and its outbound HTTP errors; it closes by itself once a trial call succeeds (every 30 s)."
+      - alert: SearchavoCallsNotPermitted
+        expr: sum by (environment, name) (rate(resilience4j_circuitbreaker_not_permitted_calls_total{application=~"searchavo|searchavo-backoffice"}[5m])) * 60 > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Policy {{ $labels.name }} refuses calls ({{ $labels.environment }})."
+          description: "{{ $value | humanize }} calls a minute were refused by the open circuit of {{ $labels.name }} over the last 5 minutes, for 10 minutes."
+          runbook: "Same cause as SearchavoCircuitOpen for {{ $labels.name }}; the rate shows how much traffic the outage costs. Searches still answer from the other sources and the stale cache."
+
+  - name: searchavo-platform
+    rules:
+      - alert: SearchavoRateLimitInMemory
+        expr: sum by (environment, limiter) (increase(searchavo_rate_limit_fallback_total{application="searchavo"}[5m])) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Rate limiter {{ $labels.limiter }} decides in one replica's memory ({{ $labels.environment }})."
+          description: "Redis was unavailable to the rate limiter, so each replica counted on its own: a client could make up to replicas x the limit. The daily budgets count in memory too."
+          runbook: "Check the redis-0 pod and its logs; the counter stops growing once Redis answers again (the circuit closes after 30 s)."
+      - alert: SearchavoPodRestarting
+        expr: sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total{namespace=~"searchavo-.+"}[1h])) > 2
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.container }} of pod {{ $labels.pod }} restarted more than twice in an hour ({{ $labels.namespace }})."
+          description: "{{ $value }} restarts in the last hour. A crash loop or an out-of-memory kill."
+          runbook: "kubectl -n {{ $labels.namespace }} describe pod {{ $labels.pod }} (Last State: OOMKilled or Error), then kubectl logs --previous. Dashboard row 'Pod (infra)', 'Container memory vs limit'."
+      - alert: SearchavoContainerOOMKilled
+        expr: |
+          sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total{namespace=~"searchavo-.+"}[10m])) > 0
+          and on (namespace, pod, container)
+          max by (namespace, pod, container) (kube_pod_container_status_last_terminated_reason{namespace=~"searchavo-.+", reason="OOMKilled"}) == 1
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.container }} of pod {{ $labels.pod }} was killed for using more memory than its limit ({{ $labels.namespace }})."
+          description: "The container restarted in the last 10 minutes after an out-of-memory kill. Its memory limit is too low for its peak: for Redis, an AOF rewrite under a burst of writes (ADR 0005)."
+          runbook: "kubectl -n {{ $labels.namespace }} describe pod {{ $labels.pod }} (Last State: OOMKilled), then kubectl logs --previous. Dashboard row 'Pod (infra)', 'Container memory vs limit'. Raise the container's memory limit in values.yaml; for Redis keep it at least 3.5 times redis.maxMemory."
+      - alert: SearchavoReplicasMissing
+        expr: |
+          kube_deployment_status_replicas_available{namespace=~"searchavo-.+", deployment="searchavo"}
+          < on (namespace, deployment) kube_deployment_spec_replicas{namespace=~"searchavo-.+", deployment="searchavo"}
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The app runs with fewer replicas than wanted ({{ $labels.namespace }})."
+          description: "{{ $value }} replicas available for 10 minutes. A rollout stuck on a failing probe, a node out, or a scheduling problem."
+          runbook: "kubectl -n {{ $labels.namespace }} rollout status deploy/searchavo; kubectl -n {{ $labels.namespace }} get pods -l app=searchavo; describe a Pending or not-ready pod."
+      - alert: SearchavoNoReplica
+        expr: kube_deployment_status_replicas_available{namespace=~"searchavo-.+", deployment="searchavo"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No app replica is available: the site is down ({{ $labels.namespace }})."
+          description: "No pod of deploy/searchavo passed its readiness probe for 2 minutes."
+          runbook: "kubectl -n {{ $labels.namespace }} get pods -l app=searchavo; kubectl logs for the crash; roll back with the CD workflow (rollback) if a new tag caused it (deploy/k8s/README.md, Rollback)."
+      - alert: SearchavoBackofficeDown
+        expr: kube_deployment_status_replicas_available{namespace=~"searchavo-.+", deployment="searchavo-backoffice"} == 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No back office replica is available ({{ $labels.namespace }})."
+          description: "No pod of deploy/searchavo-backoffice passed its readiness probe for 15 minutes. The Scout, the embedding indexer and the admin pages are stopped; the public site keeps answering."
+          runbook: "kubectl -n {{ $labels.namespace }} get pods -l app=searchavo-backoffice; kubectl -n {{ $labels.namespace }} logs deploy/searchavo-backoffice -c backoffice; roll back with the CD workflow if a new tag caused it."
+
+      - alert: SearchavoVolumeAlmostFull
+        expr: |
+          kubelet_volume_stats_available_bytes{namespace=~"searchavo-.+"}
+          / on (namespace, persistentvolumeclaim) kubelet_volume_stats_capacity_bytes{namespace=~"searchavo-.+"} < 0.2
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Volume {{ $labels.persistentvolumeclaim }} has less than 20% free ({{ $labels.namespace }})."
+          description: "{{ $value | humanizePercentage }} free. Postgres stops at a full volume; the backup job fails; Redis cannot append."
+          runbook: "kubectl -n {{ $labels.namespace }} get pvc {{ $labels.persistentvolumeclaim }}; grow the claim (values.yaml storage, the class must allow expansion) or purge (ADR 0010)."
+      - alert: SearchavoVolumeFull
+        expr: |
+          kubelet_volume_stats_available_bytes{namespace=~"searchavo-.+"}
+          / on (namespace, persistentvolumeclaim) kubelet_volume_stats_capacity_bytes{namespace=~"searchavo-.+"} < 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Volume {{ $labels.persistentvolumeclaim }} has less than 10% free ({{ $labels.namespace }})."
+          description: "{{ $value | humanizePercentage }} free. Writes fail soon."
+          runbook: "kubectl -n {{ $labels.namespace }} get pvc {{ $labels.persistentvolumeclaim }}; grow the claim now (values.yaml storage) or free space (old dumps on pg-backup, purge on Postgres)."
+      - alert: SearchavoBackupFailed
+        expr: |
+          max by (namespace, job_name) (kube_job_failed{namespace=~"searchavo-.+", job_name=~"pg-backup-.+", condition="true"}) == 1
+          and on (namespace, job_name)
+          (time() - kube_job_status_start_time{namespace=~"searchavo-.+", job_name=~"pg-backup-.+"}) < 86400
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "The Postgres backup Job {{ $labels.job_name }} failed ({{ $labels.namespace }})."
+          description: "Tonight's pg_dump (or its off-site upload) failed after its retries. Dumps are kept 7 days, so each failed night shortens the history."
+          runbook: "kubectl -n {{ $labels.namespace }} logs job/{{ $labels.job_name }} -c dump (and -c upload with the off-site copy). Rerun: kubectl -n {{ $labels.namespace }} create job --from=cronjob/pg-backup pg-backup-now (deploy/k8s/README.md, Backups)."
+
+      - alert: SearchavoBackupStale
+        expr: |
+          time() - max by (namespace) (kube_cronjob_status_last_successful_time{namespace=~"searchavo-.+", cronjob="pg-backup"}) > 36 * 3600
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No successful Postgres backup for 36 hours ({{ $labels.namespace }})."
+          description: "The pg-backup CronJob last succeeded {{ $value | humanizeDuration }} ago. Tonight's run did not start or did not finish: a suspended CronJob, a Pod stuck Pending, or a missed start."
+          runbook: "kubectl -n {{ $labels.namespace }} get cronjob pg-backup; kubectl -n {{ $labels.namespace }} get jobs,pods -l app=pg-backup. Rerun: kubectl -n {{ $labels.namespace }} create job --from=cronjob/pg-backup pg-backup-now (deploy/k8s/README.md, Backups)."
+
+      - alert: SearchavoRestoreCheckFailed
+        expr: |
+          max by (namespace, job_name) (kube_job_failed{namespace=~"searchavo-.+", job_name=~"pg-restore-check-.+", condition="true"}) == 1
+          and on (namespace, job_name)
+          (time() - kube_job_status_start_time{namespace=~"searchavo-.+", job_name=~"pg-restore-check-.+"}) < 7 * 86400
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "The weekly restore check {{ $labels.job_name }} failed ({{ $labels.namespace }})."
+          description: "The latest dump could not be fetched, restored into a throwaway Postgres, or checked (failed migration, empty table). Until a check passes, nothing proves prod can come back from its backup."
+          runbook: "kubectl -n {{ $labels.namespace }} logs job/{{ $labels.job_name }} -c check (and -c fetch with the off-site copy). Rerun: kubectl -n {{ $labels.namespace }} create job --from=cronjob/pg-restore-check pg-restore-check-now (deploy/k8s/README.md, Backups)."
+
+      - alert: SearchavoRestoreCheckStale
+        expr: |
+          time() - max by (namespace) (kube_cronjob_status_last_successful_time{namespace=~"searchavo-.+", cronjob="pg-restore-check"}) > 8 * 86400
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No successful restore check for 8 days ({{ $labels.namespace }})."
+          description: "The pg-restore-check CronJob last succeeded {{ $value | humanizeDuration }} ago. This week's run did not start or did not finish: a suspended CronJob, a Pod stuck Pending, or a missed start."
+          runbook: "kubectl -n {{ $labels.namespace }} get cronjob pg-restore-check; kubectl -n {{ $labels.namespace }} get jobs,pods -l app=pg-restore-check. Rerun: kubectl -n {{ $labels.namespace }} create job --from=cronjob/pg-restore-check pg-restore-check-now (deploy/k8s/README.md, Backups)."
+
+      - alert: SearchavoRedisEvicting
+        expr: |
+          sum by (namespace) (increase(redis_evicted_keys_total{namespace=~"searchavo-.+", app="redis-exporter"}[15m])) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis dropped {{ $value | humanize }} keys in 15 minutes to stay under its memory limit ({{ $labels.namespace }})."
+          description: "Redis is full (redis.maxMemory, allkeys-lru) and evicts the least recently used keys. Sign-in sessions, rate-limit windows and source caches share it: an eviction can sign an admin out or give a client a fresh window early."
+          runbook: "Redis dashboard (memory used against max, evicted keys); kubectl -n {{ $labels.namespace }} exec redis-0 -- redis-cli info memory. Raise redis.maxMemory (and the pod's limit) or shorten the cache TTLs."
+
+      - alert: SearchavoDatastoreExporterDown
+        expr: |
+          (
+            max by (namespace, app) (up{namespace=~"searchavo-.+", app=~"postgres-exporter|redis-exporter"})
+            or on (namespace, app) max by (namespace, app) (label_replace(kube_deployment_spec_replicas{namespace=~"searchavo-.+", deployment=~"postgres-exporter|redis-exporter"}, "app", "$1", "deployment", "(.*)")) * 0
+          ) == 0
+          or max by (namespace, app) (pg_up{namespace=~"searchavo-.+", app="postgres-exporter"}) == 0
+          or max by (namespace, app) (redis_up{namespace=~"searchavo-.+", app="redis-exporter"}) == 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.app }} has reported nothing for 15 minutes ({{ $labels.namespace }})."
+          description: "The exporter is not scraped, or it cannot log in to its data store. Until it is back, Redis evictions and Postgres statistics go unseen."
+          runbook: "kubectl -n {{ $labels.namespace }} logs deploy/{{ $labels.app }}; a login refused: the h2_monitor password in searchavo-credentials (make env-secret) and the migrate Job of the last deploy."
+
+  - name: searchavo-budgets
+    rules:
+      - alert: SearchavoDailyBudgetLow
+        expr: |
+          min by (environment, budget) (
+            label_replace({__name__=~"searchavo_.+_budget_remaining", application="searchavo"}, "budget", "$1", "__name__", "searchavo_(.+)_budget_remaining")
+          )
+          /
+          max by (environment, budget) (
+            max_over_time(label_replace({__name__=~"searchavo_.+_budget_remaining", application="searchavo"}, "budget", "$1", "__name__", "searchavo_(.+)_budget_remaining")[1d:5m])
+          )
+          < 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Daily budget {{ $labels.budget }} is below 20% ({{ $labels.environment }})."
+          description: "Only {{ $value | humanizePercentage }} of today's model calls are left. When it reaches 0 the feature degrades until 00:00 UTC (guide: search-only answers; setup guide: no answer; translation: query sent as typed)."
+          runbook: "Dashboard searchavo, panels 'Questions by outcome' and 'Daily budget remaining' (AI guide): normal traffic or one loop/abuser? Caps: SA_GUIDE_DAILY_MODEL_CALLS (guide), SA_SEARCH_DAILY_TRANSLATIONS (search_translation), SA_SETUP_GUIDE_DAILY_MODEL_CALLS (tool_guide)."
+
+      - alert: SearchavoBackofficeBudgetLow
+        expr: |
+          min by (environment, budget) (
+            label_replace({__name__=~"searchavo_.+_(budget|credits)_remaining", application="searchavo-backoffice", __name__!="searchavo_search_translation_budget_remaining"}, "budget", "$1$2", "__name__", "searchavo_(.+)_budget_remaining|searchavo_(.+_credits)_remaining")
+          )
+          /
+          max by (environment, budget) (
+            max_over_time(label_replace({__name__=~"searchavo_.+_(budget|credits)_remaining", application="searchavo-backoffice", __name__!="searchavo_search_translation_budget_remaining"}, "budget", "$1$2", "__name__", "searchavo_(.+)_budget_remaining|searchavo_(.+_credits)_remaining")[1d:5m])
+          )
+          < 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Back office budget {{ $labels.budget }} is below 20% ({{ $labels.environment }})."
+          description: "Only {{ $value | humanizePercentage }} of today's {{ $labels.budget }} is left. At 0 the step waits until 00:00 UTC: enrichment, gap rounds, the classifier and the event reader skip their model call, example drafts stop, the evidence step reads no page. The backlog waits for the next day."
+          runbook: "Dashboard searchavo-backoffice, row 'Enrichment and budgets': a large backlog after a fresh database spends the caps for days, as planned; a sudden drop on a normal day is a loop. Caps (back office Settings page or SA_): scout.dailyEnrichmentCalls (SA_SCOUT_DAILY_ENRICHMENT_CALLS), scout.gapDailyCalls (SA_SCOUT_GAP_DAILY_CALLS), SA_SCOUT_AWESOME_CLASSIFIER_DAILY_CALLS, SA_SCOUT_PAGE_READER_DAILY_CREDITS."
+      - alert: SearchavoLiveWebCreditsHigh
+        expr: sum by (environment) (increase(searchavo_live_web_credits_total{application=~"searchavo|searchavo-backoffice"}[1d])) > 2500
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tavily used more than 2,500 credits in the last 24 hours ({{ $labels.environment }})."
+          description: "{{ $value | humanize }} Tavily credits (live calls and the Scout's discovery, news, courses, LinkedIn, events and evidence reads) in the last 24 hours. Prod's cap for all live calls is 3,000 a day: at the cap the live web stops for visitors until 00:00 UTC. At this pace the monthly credits also run out before the plan resets; then Tavily fails for everyone and searches answer from stored results and the other sources."
+          runbook: "Dashboard: searchavo_live_web_credits_total by feature (every scout-* feature is the Scout, on the searchavo-backoffice dashboard). Many addresses at the limit = rotating IPs: lower the live web credits a day on the back office Settings page, or set SA_LIVE_WEB_DAILY_CREDITS (no release). A Scout that reads much: lower its search and page-read credits on the same page. Few stored-set hits (searchavo_cache_events_total, event=store_hit): check the freshness settings."
+
+  - name: searchavo-catalog
+    rules:
+      - alert: SearchavoObservationsLost
+        expr: sum by (environment, outcome) (rate(searchavo_catalog_observations_total{application=~"searchavo|searchavo-backoffice", outcome=~"dropped|failed"}[5m])) > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Search results are not written to the catalog ({{ $labels.outcome }}) on searchavo ({{ $labels.environment }})."
+          description: "Background writes of search results have ended as {{ $labels.outcome }} for 10 minutes. Searches still answer, but the results they found live are not stored: they get no discovery date and the catalog cannot find them later."
+          runbook: "dropped = the queue of 256 writes is full (searchavo_catalog_observations_queued): one thread writes, so look for slow Postgres writes or a burst of searches. failed = the write threw: logs 'Recording search results failed', then the Postgres pod."
+      - alert: SearchavoEmbeddingIndexerStalled
+        expr: (time() - max by (environment) (max_over_time(searchavo_embedding_last_success_seconds{application="searchavo-backoffice"}[2h]))) > 1800
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The embedding indexer has not finished a batch for 30 minutes ({{ $labels.environment }})."
+          description: "The last successful batch was {{ $value | humanizeDuration }} ago (one runs every 5 s). New resources are found by keyword search only until it recovers."
+          runbook: "Dashboard searchavo-backoffice, row 'Embedding indexer', 'Embedding failures by reason': rate_limited = NVIDIA API catalog limit (the indexer pauses 2 min); embedding = the API; refused = the circuit is open after repeated failures and no call was sent; database = Postgres. Logs: 'Embedding batch failed'."
+      - alert: SearchavoEmbeddingBacklogStuck
+        expr: |
+          max by (environment) (
+            last_over_time(searchavo_embedding_backlog{application="searchavo-backoffice"}[20m])
+            and on (environment, instance)
+            (time() - max_over_time(searchavo_embedding_last_success_seconds{application="searchavo-backoffice"}[20m]) < 1800)
+          ) > 0
+        for: 3h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Resources have waited for an embedding for 3 hours ({{ $labels.environment }})."
+          description: "The embedding backlog has stayed above 0 for 3 hours ({{ $value }} resources now); the indexer embeds about 12 resources a minute, about 17,000 a day."
+          runbook: "If SearchavoEmbeddingIndexerStalled fires too, fix that first. Otherwise resources arrive faster than the indexer embeds them (searchavo.catalog.indexer.batch 1 every 5 s = 12 a minute; SA_EMBEDDING_BATCH and SA_EMBEDDING_EVERY change it)."
+
+      - alert: SearchavoReviewBacklog
+        expr: max by (environment) (searchavo_review_open_items{application="searchavo-backoffice"}) > 50
+        for: 1d
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 50 review items have waited for a decision for a day ({{ $labels.environment }})."
+          description: "{{ $value }} review items are OPEN. Until someone decides them, AI-proposed relationships stay unverified and user reports go unanswered."
+          runbook: "Admin page, Review: decide or reject in bulk by kind. A sudden rise of one kind (ENRICHMENT_VALIDATION, RELATIONSHIP_CANDIDATE) points to an enrichment prompt or model change."
+
+  - name: searchavo-scout
+    interval: 5m
+    rules:
+      - alert: SearchavoScoutCollectorStale
+        expr: |
+          (time() - max by (environment, source) (max_over_time(searchavo_scout_last_success{application="searchavo-backoffice", source!~"discovery-.*"}[9d])))
+          >
+          max by (environment, source) (clamp_min(max_over_time(searchavo_scout_interval_seconds{application="searchavo-backoffice", source!~"discovery-.*"}[9d]), 86400)) + 86400
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Scout collector {{ $labels.source }}: no successful run for {{ $value | humanizeDuration }} ({{ $labels.environment }})."
+          description: "The catalog misses new resources from {{ $labels.source }} since its last successful run: one day more than its run interval (at least one day, the daily Scout run) has passed."
+          runbook: "Dashboard searchavo-backoffice, row Scout, 'Run failures by error'; the admin back office lists the runs. searchavo_scout_interval_seconds gives each collector's interval (SA_SCOUT_*_INTERVAL). A collector disabled on purpose keeps firing until its last value is 9 days old."
+
+      - alert: SearchavoDiscoveryStale
+        expr: |
+          count by (environment) (
+            (time() - max by (environment, source) (max_over_time(searchavo_scout_last_success{application="searchavo-backoffice", source=~"discovery-.*"}[9d])))
+            >
+            max by (environment, source) (clamp_min(max_over_time(searchavo_scout_interval_seconds{application="searchavo-backoffice", source=~"discovery-.*"}[9d]), 86400)) + 86400
+          ) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $value }} discovery categories: no successful run for one day more than their run interval ({{ $labels.environment }})."
+          description: "No new products or list articles from: {{ range query (printf \"(time() - max by (source) (max_over_time(searchavo_scout_last_success{application='searchavo-backoffice', environment='%s', source=~'discovery-.*'}[9d]))) > max by (source) (clamp_min(max_over_time(searchavo_scout_interval_seconds{application='searchavo-backoffice', environment='%s', source=~'discovery-.*'}[9d]), 86400)) + 86400\" $labels.environment $labels.environment) }}{{ .Labels.source }} {{ end }}"
+          runbook: "Admin back office, Scout runs: the message of each category's last run (a Tavily error, the daily credit cap of the Scout, or not due). Run now on one category to check. A category disabled on purpose keeps firing until its last value is 9 days old."
+
+      - alert: SearchavoScoutRunsFailing
+        expr: |
+          count by (environment) (
+            sum by (environment, source) (increase(searchavo_scout_run_seconds_count{application="searchavo-backoffice", status="failed"}[1d])) > 0
+          ) >= 3
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $value }} Scout collectors failed in the last 24 hours ({{ $labels.environment }})."
+          description: "Several collectors failed on the same day, so the cause is likely one they share: the model provider, Tavily, GitHub or the database."
+          runbook: "Dashboard searchavo-backoffice, row Scout, 'Run failures by error' (the error tag names the exception). Admin back office, Scout runs: the message of each failed run. Then the provider's status page; SearchavoCircuitOpen for the collector-<id> policies."
+  - name: searchavo-guide
+    rules:
+      - alert: SearchavoGuidePicksFromLowRanks
+        expr: |
+          (
+            sum by (environment) (increase(searchavo_guide_picks_total{application="searchavo", rank="9+"}[1d]))
+            /
+            sum by (environment) (increase(searchavo_guide_picks_total{application="searchavo"}[1d]))
+          ) > 0.45
+          and
+          sum by (environment) (increase(searchavo_guide_picks_total{application="searchavo", rank="9+"}[1d])) >= 3
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "More than 45% of the guide's picks come from search rank 9 or lower ({{ $labels.environment }})."
+          description: "{{ $value | humanizePercentage }} of the picks kept in the last day were ranked 9+ in search. A page may be written to be chosen by the model (content poisoning)."
+          runbook: "Logs: 'guide timings' lines with keptRanks containing 9 or more, then ask the same question and read the low-ranked pick's page for instructions aimed at a model. Report the resource from the back office; rerun scripts/eval-guide.mjs --adversarial."
+      - alert: SearchavoGuideFirstUsefulSlow
+        expr: |
+          histogram_quantile(0.95, sum by (environment, le) (rate(searchavo_guide_first_useful_seconds_bucket{application="searchavo"}[15m]))) > 8
+          and
+          sum by (environment) (rate(searchavo_guide_first_useful_seconds_count{application="searchavo"}[15m])) > 1/300
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The guide takes more than 8 s to show its first useful step at p95 ({{ $labels.environment }})."
+          description: "The p95 time from a guide question to its results or question back was {{ $value | humanizeDuration }} over the last 15 minutes, above the 8 s target, for 15 minutes."
+          runbook: "Dashboard row 'AI guide', 'Time to first useful event by intent', then 'Model call p95 by step / model' (step plan) and 'Source latency p95' (the search). Logs: 'guide timings' lines, plan= and search=. A slow provider: Token Factory status; a slow source: SearchavoSourceFailing."

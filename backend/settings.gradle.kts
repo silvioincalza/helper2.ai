@@ -8,7 +8,7 @@ plugins {
 
 dependencyResolutionManagement { repositories { mavenCentral() } }
 
-rootProject.name = "helper2-backend"
+rootProject.name = "searchavo-backend"
 
 include(
   ":libs:kernel",

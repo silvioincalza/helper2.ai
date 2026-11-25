@@ -1,4 +1,4 @@
-const CATALOG_SOURCES: ReadonlySet<string> = new Set(['helper2-index', 'helper2-semantic']);
+const CATALOG_SOURCES: ReadonlySet<string> = new Set(['searchavo-index', 'searchavo-semantic']);
 
 export function rowSourceNames(
   sources: readonly { sourceId: string; sourceName: string }[],

@@ -1,5 +1,5 @@
 plugins {
-  id("helper2.kotlin-library")
+  id("searchavo.kotlin-library")
   `java-test-fixtures`
 }
 
@@ -40,7 +40,7 @@ tasks.named<Test>("test") {
     .withPropertyName("appSettings")
     .withPathSensitivity(PathSensitivity.RELATIVE)
   inputs
-    .files(rootProject.files("../deploy/helm/helper2/files/redis-users.acl"))
+    .files(rootProject.files("../deploy/helm/searchavo/files/redis-users.acl"))
     .withPropertyName("redisUsers")
     .withPathSensitivity(PathSensitivity.RELATIVE)
   inputs
@@ -48,7 +48,7 @@ tasks.named<Test>("test") {
     .withPropertyName("envGuides")
     .withPathSensitivity(PathSensitivity.RELATIVE)
   inputs
-    .dir(rootProject.file("../deploy/helm/helper2/templates"))
+    .dir(rootProject.file("../deploy/helm/searchavo/templates"))
     .withPropertyName("chartTemplates")
     .withPathSensitivity(PathSensitivity.RELATIVE)
 }

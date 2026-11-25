@@ -1,0 +1,75 @@
+package ai.searchavo.search.usecase
+
+import ai.searchavo.search.AnalyzedQuery
+import ai.searchavo.search.QueryAnalyzer
+import ai.searchavo.search.QueryTranslator
+import ai.searchavo.shared.WordLists
+import java.text.Normalizer
+import java.time.Duration
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
+import org.slf4j.LoggerFactory
+
+internal class QueryTranslation(
+  private val translator: QueryTranslator,
+  private val executor: ExecutorService,
+  private val analyzer: QueryAnalyzer,
+  private val timeout: Duration,
+) {
+  private val log = LoggerFactory.getLogger(QueryTranslation::class.java)
+
+  fun start(text: String, language: String): Future<String?>? =
+    if (translator === QueryTranslator.NONE) null
+    else executor.submit<String?> { translator.toEnglish(text, language) }
+
+  // UC-001 BR-010: discard a late, web-address, about-the-query or unchanged translation.
+  fun await(future: Future<String?>, text: String): String? {
+    val raw =
+      try {
+        future.get(timeout.toMillis(), TimeUnit.MILLISECONDS)
+      } catch (e: TimeoutException) {
+        future.cancel(true)
+        log.info("Query translation timed out after $timeout")
+        null
+      } catch (e: InterruptedException) {
+        Thread.currentThread().interrupt()
+        null
+      } catch (e: Exception) {
+        log.info("Query translation failed: {}", e.javaClass.simpleName)
+        null
+      } ?: return null
+    if (URL_LIKE.containsMatchIn(raw)) return null
+    val words = plainWords(raw)
+    if (isAboutTheQuery(words)) return null
+    return words.takeIf {
+      it.isNotBlank() && it != plainWords(analyzer.analyze(text).normalized)
+    }
+  }
+
+  private fun isAboutTheQuery(words: String) =
+    ABOUT_THE_QUERY.containsMatchIn(words) || OPENS_ABOUT_THE_QUERY.containsMatchIn(words)
+
+  private fun plainWords(s: String) =
+    QueryTranslator.bounded(
+      Normalizer.normalize(s, Normalizer.Form.NFC).lowercase().replace(NON_WORD, " ")
+    )
+
+  fun withTranslation(analyzed: AnalyzedQuery, english: String?): AnalyzedQuery =
+    if (english == null) analyzed
+    else
+      analyzed.copy(
+        expandedTerms = (listOf(english) + analyzed.expandedTerms).distinct(),
+        requiredVariants = (listOf(english) + analyzed.requiredVariants).distinct(),
+        translation = english,
+      )
+
+  private companion object {
+    val URL_LIKE = Regex("(?i)https?:|www\\.|://")
+    val WORDS = WordLists.load("translation-words")
+    val ABOUT_THE_QUERY = WORDS.anywhere("about-query")
+    val OPENS_ABOUT_THE_QUERY = WORDS.atStart("about-query.start")
+    val NON_WORD = Regex("[^\\p{L}\\p{N}\\s-]+")
+  }
+}

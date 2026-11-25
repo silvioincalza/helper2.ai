@@ -1,13 +1,13 @@
 openapi: 3.1.0
 info:
-  title: helper2.ai back office API
+  title: searchavo.ai back office API
   version: 2026.12.0
   summary: Federated metasearch for AI resources, with explicit provenance and source status.
   description: |
     Back office API (ADR 0036, 0038): served by the back office app on the in-network admin host only. Shared
     types live in common.yaml.
 
-    Contract-first REST API for helper2.ai. This file is the source of truth:
+    Contract-first REST API for searchavo.ai. This file is the source of truth:
     the Spring backend generates its controller interfaces and DTOs from it, and the
     React frontend generates its TypeScript types from it.
 
@@ -506,7 +506,7 @@ paths:
       summary: Assign the categories of every resource again.
       description: >-
         Answers at once; the backfill then runs in the background on one replica, in batches (ADR 0026). It is
-        idempotent. Counts go to the metric `helper2.categories.backfill.resources` and the log.
+        idempotent. Counts go to the metric `searchavo.categories.backfill.resources` and the log.
       responses:
         "202":
           {
@@ -778,7 +778,7 @@ paths:
       operationId: listRuntimeSettings
       summary: The spending limits and the switches an administrator may change at runtime, with their history.
       description: >-
-        Each setting of the allow-list (ADR 0007): the value applied now, the default (the H2_ variable), the allowed
+        Each setting of the allow-list (ADR 0007): the value applied now, the default (the SA_ variable), the allowed
         range, its version and its last changes. The value a replica applies can be up to one refresh interval
         (20 s by default) behind.
       responses:
@@ -834,7 +834,7 @@ paths:
     post:
       tags: [runtime-settings]
       operationId: resetRuntimeSetting
-      summary: Back to the default (the H2_ variable).
+      summary: Back to the default (the SA_ variable).
       description: >-
         Appends a change with no value. 404 for a key that is not in the allow-list; 409 when the version is not the
         setting's newest.
@@ -898,7 +898,7 @@ paths:
     post:
       tags: [runtime-settings]
       operationId: resetRuntimeSwitch
-      summary: Back to the default (the H2_ variable).
+      summary: Back to the default (the SA_ variable).
       description: >-
         Appends a change with no value. 404 for a key that is not a switch of the allow-list; 409 when the version is
         not the switch's newest.
@@ -1029,7 +1029,7 @@ paths:
         (`origin`, ADR 0055).
         The awesome-list collector reads these GitHub repositories at the start of every pass, before the lists its
         own search finds, whatever their stars and name. It reads an added web page through the live web page reader,
-        at most once in the days set by H2_SCOUT_AWESOME_WEB_PAGES_EVERY (ADR 0012).
+        at most once in the days set by SA_SCOUT_AWESOME_WEB_PAGES_EVERY (ADR 0012).
       responses:
         "200":
           description: Every list, oldest first.
@@ -1366,7 +1366,7 @@ paths:
         running run; other ids are skipped. `itemIds` takes at most 500 ids, and an item already researched runs
         again. With `allOpen`, the server queues every such item whose newest run is not DONE, at most 20,000: ask
         `/admin/review-research/estimate` first. Runs are async: the answer lists the queued runs. While research is
-        off on the back office (H2_RESEARCH_ENABLED), the answer is 503 and nothing is queued.
+        off on the back office (SA_RESEARCH_ENABLED), the answer is 503 and nothing is queued.
       requestBody:
         required: true
         content:
@@ -1474,7 +1474,7 @@ paths:
         goes back to QUEUED, or starts again with a new `startedAt`, is a new attempt: its steps start again at seq 1,
         so the client drops the steps it holds. The stream ends after the run is DONE, FAILED or CANCELLED,
         or when the browser leaves. New rows are read once a second; a comment line keeps a quiet stream open. A back
-        office serves a few streams at a time (H2_RESEARCH_MAX_STREAMS) and answers 429 beyond them.
+        office serves a few streams at a time (SA_RESEARCH_MAX_STREAMS) and answers 429 beyond them.
       parameters:
         - {
             name: runId,
@@ -1699,7 +1699,7 @@ components:
           {
             type: [string, "null"],
             format: uri,
-            description: "The metrics dashboard for trends (H2_ADMIN_GRAFANA_URL): an http(s) URL with a host and a path only, never user info, a query or a fragment; null when not set.",
+            description: "The metrics dashboard for trends (SA_ADMIN_GRAFANA_URL): an http(s) URL with a host and a path only, never user info, a query or a fragment; null when not set.",
           }
 
     ValidationIssueSummary:
@@ -1842,7 +1842,7 @@ components:
         variable:
           {
             type: [string, "null"],
-            description: The H2_ variable that sets it; null when the code or the chart fixes it.,
+            description: The SA_ variable that sets it; null when the code or the chart fixes it.,
           }
 
     RuntimeSettings:
@@ -1886,9 +1886,9 @@ components:
         variable:
           {
             type: string,
-            description: The H2_ variable (true or false) whose value is the default.,
+            description: The SA_ variable (true or false) whose value is the default.,
           }
-        defaultOn: { type: boolean, description: The H2_ value. }
+        defaultOn: { type: boolean, description: The SA_ value. }
         "on": { type: boolean, description: The value applied now. }
         overridden:
           {
@@ -1998,13 +1998,13 @@ components:
         variable:
           {
             type: string,
-            description: The H2_ variable whose value is the default.,
+            description: The SA_ variable whose value is the default.,
           }
         defaultValue:
           {
             type: [integer, "null"],
             minimum: 0,
-            description: The H2_ value; null = no cap,
+            description: The SA_ value; null = no cap,
             or the setting is not used on this replica.,
           }
         value:

@@ -17,7 +17,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   [[ $l =~ ^[[:space:]] ]] && fail "line $n starts with a space or tab"
   [[ $l == *=* ]] || fail "line $n is not KEY=value"
   key=${l%%=*}
-  [[ $key =~ ^H2_[A-Z0-9_]+$ ]] || fail "line $n: key \"$key\" must match ^H2_[A-Z0-9_]+\$"
+  [[ $key =~ ^SA_[A-Z0-9_]+$ ]] || fail "line $n: key \"$key\" must match ^SA_[A-Z0-9_]+\$"
   [ -z "$(value "$key")" ] || fail "line $n: $key is set twice"
   printf -v "v_$key" '%s' "${l#*=}"
 done < "$file"
@@ -31,13 +31,13 @@ distinct() {
   done
 }
 
-for key in H2_DATABASE_PASSWORD H2_DATABASE_PUBLIC_PASSWORD H2_DATABASE_BACKOFFICE_PASSWORD H2_DATABASE_MONITOR_PASSWORD; do
+for key in SA_DATABASE_PASSWORD SA_DATABASE_PUBLIC_PASSWORD SA_DATABASE_BACKOFFICE_PASSWORD SA_DATABASE_MONITOR_PASSWORD; do
   [[ $(value "$key") =~ ^[A-Za-z0-9+/=_-]{32,}$ ]] || fail "$key needs 32+ characters of base64 (openssl rand -hex 32)"
 done
-distinct H2_DATABASE_PASSWORD H2_DATABASE_PUBLIC_PASSWORD H2_DATABASE_BACKOFFICE_PASSWORD H2_DATABASE_MONITOR_PASSWORD
+distinct SA_DATABASE_PASSWORD SA_DATABASE_PUBLIC_PASSWORD SA_DATABASE_BACKOFFICE_PASSWORD SA_DATABASE_MONITOR_PASSWORD
 if [ "$redis" != "--no-redis-password" ]; then
-  for key in H2_REDIS_PASSWORD H2_REDIS_PUBLIC_PASSWORD H2_REDIS_BACKOFFICE_PASSWORD H2_REDIS_MONITOR_PASSWORD; do
+  for key in SA_REDIS_PASSWORD SA_REDIS_PUBLIC_PASSWORD SA_REDIS_BACKOFFICE_PASSWORD SA_REDIS_MONITOR_PASSWORD; do
     [[ $(value "$key") =~ ^[A-Za-z0-9]{32,}$ ]] || fail "$key needs 32+ letters and digits (openssl rand -hex 32)"
   done
-  distinct H2_REDIS_PASSWORD H2_REDIS_PUBLIC_PASSWORD H2_REDIS_BACKOFFICE_PASSWORD H2_REDIS_MONITOR_PASSWORD
+  distinct SA_REDIS_PASSWORD SA_REDIS_PUBLIC_PASSWORD SA_REDIS_BACKOFFICE_PASSWORD SA_REDIS_MONITOR_PASSWORD
 fi

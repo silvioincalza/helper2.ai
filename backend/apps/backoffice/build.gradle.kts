@@ -1,8 +1,8 @@
-import ai.helper2.buildlogic.BundleContract
+import ai.searchavo.buildlogic.BundleContract
 
-plugins { id("helper2.spring-app") }
+plugins { id("searchavo.spring-app") }
 
-base.archivesName = "helper2-backoffice"
+base.archivesName = "searchavo-backoffice"
 
 tasks.named<BundleContract>("bundleContract") {
   entries.from(rootProject.layout.projectDirectory.file("../api/admin.yaml"))
@@ -51,7 +51,7 @@ dependencies {
 
 tasks.named<Test>("test") {
   inputs
-    .files(rootProject.files("../deploy/helm/helper2/files/redis-users.acl"))
+    .files(rootProject.files("../deploy/helm/searchavo/files/redis-users.acl"))
     .withPropertyName("redisUsers")
     .withPathSensitivity(PathSensitivity.RELATIVE)
 }

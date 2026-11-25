@@ -26,7 +26,7 @@ updates:
       actions: { patterns: ["*"] }
 
   - package-ecosystem: docker
-    directories: [/deploy, /deploy/postgres, /deploy/helm/helper2]
+    directories: [/deploy, /deploy/postgres, /deploy/helm/searchavo]
     schedule: { interval: weekly, day: monday }
     groups:
       app-images: { patterns: ["*eclipse-temurin*", "*node*"] }

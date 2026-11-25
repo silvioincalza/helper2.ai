@@ -1,0 +1,227 @@
+package ai.searchavo.api;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.regex.Pattern;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.simple.JdbcClient;
+
+class PagesIT extends ApiTestBase {
+
+  private static final Pattern SITEMAP_RESOURCE =
+      Pattern.compile("<loc>https://searchavo\\.ai(/resource/[0-9a-f-]{36}(?:/[a-z0-9-]+)?)</loc>");
+
+  @Autowired JdbcClient jdbc;
+
+  private UUID curated(String canonicalUrl) {
+    return jdbc.sql("SELECT id FROM resource WHERE canonical_url = :u")
+        .param("u", canonicalUrl)
+        .query(UUID.class)
+        .single();
+  }
+
+  private String page(String path, int status) throws Exception {
+    return mvc.perform(get(path))
+        .andExpect(status().is(status))
+        .andExpect(header().string("Cache-Control", "no-cache"))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+  }
+
+  private String movedTo(String path) throws Exception {
+    return mvc.perform(get(path))
+        .andExpect(status().isMovedPermanently())
+        .andReturn()
+        .getResponse()
+        .getHeader("Location");
+  }
+
+  @Test
+  void aResourcePageCarriesItsHeadAndBody() throws Exception {
+    UUID id = curated("https://deepl.com/translator");
+    String readable = movedTo("/resource/" + id);
+    assertThat(readable).startsWith("/resource/" + id + "/deepl");
+    String html = page(readable, 200);
+    assertThat(html)
+        .contains("<title data-h2-head>DeepL")
+        .contains("rel=\"canonical\" href=\"https://searchavo.ai" + readable + "\"")
+        .contains("application/ld+json")
+        .contains("<div id=\"root\"><main class=\"h2-prerender\"><h1>DeepL")
+        .containsPattern("<script nonce=\"[A-Za-z0-9+/=]{24}\" type=\"module\"");
+  }
+
+  @Test
+  void aBareIdOrAWrongSlugMovesForGoodToTheReadableAddress() throws Exception {
+    UUID id = curated("https://deepl.com/translator");
+    String readable = movedTo("/resource/" + id);
+    assertThat(movedTo("/resource/" + id + "/an-old-title")).isEqualTo(readable);
+    page(readable, 200);
+  }
+
+  @Test
+  void unknownAddressesAreRealNotFoundsThatStillLoadTheApp() throws Exception {
+    for (String path :
+        List.of(
+            "/resource/" + UUID.randomUUID(),
+            "/resource/not-an-id",
+            "/no-such-page",
+            "/sources/")) {
+      assertThat(page(path, 404))
+          .as(path)
+          .contains("<meta data-h2-head name=\"robots\" content=\"noindex\">")
+          .contains("<div id=\"root\">");
+    }
+  }
+
+  @Test
+  void searchAndPersonalPagesAreNotIndexedButFollowed() throws Exception {
+    for (String path : List.of("/search?q=ollama", "/?q=ollama", "/saved", "/account")) {
+      assertThat(page(path, 200)).as(path).contains("content=\"noindex, follow\"");
+    }
+    assertThat(page("/", 200)).contains("content=\"index, follow\"").contains("\"WebSite\"");
+  }
+
+  @Test
+  void aHeadRequestGetsThePageStatusToo() throws Exception {
+    mvc.perform(head("/no-such-page")).andExpect(status().isNotFound());
+    mvc.perform(head("/sources")).andExpect(status().isOk());
+  }
+
+  @Test
+  void filesAndTheApiAreNotClaimed() throws Exception {
+    for (String file :
+        java.util.List.of("/assets/missing.js", "/theme.js", "/favicon.svg", "/favicon.ico")) {
+      mvc.perform(get(file)).andExpect(status().isNotFound());
+    }
+    mvc.perform(get("/api/v1/home/examples")).andExpect(status().isOk());
+  }
+
+  @Test
+  void robotsNamesTheSitemapAndNeverBlocksTheApi() throws Exception {
+    mvc.perform(get("/robots.txt"))
+        .andExpect(status().isOk())
+        .andExpect(
+            content()
+                .string(
+                    org.hamcrest.Matchers.containsString(
+                        "Sitemap: https://searchavo.ai/sitemap.xml")))
+        .andExpect(
+            content()
+                .string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("/api"))));
+  }
+
+  private String xml(String path) throws Exception {
+    return mvc.perform(get(path))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+  }
+
+  @Test
+  void llmsTxtIsPlainTextOnThePublicHost() throws Exception {
+    mvc.perform(get("/llms.txt"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Content-Type", "text/plain;charset=UTF-8"))
+        .andExpect(content().string(org.hamcrest.Matchers.startsWith("# searchavo.ai\n")))
+        .andExpect(
+            content()
+                .string(org.hamcrest.Matchers.containsString("(https://searchavo.ai/sources)")));
+  }
+
+  @Test
+  void theSitemapIsAnIndexOfItsParts() throws Exception {
+    String index = xml("/sitemap.xml");
+    assertThat(index)
+        .contains("<sitemapindex")
+        .contains("<loc>https://searchavo.ai/sitemaps/pages.xml</loc>")
+        .contains("<loc>https://searchavo.ai/sitemaps/resources-1.xml</loc>");
+    assertThat(xml("/sitemaps/pages.xml")).contains("<loc>https://searchavo.ai/sources</loc>");
+    mvc.perform(get("/sitemaps/resources-999.xml")).andExpect(status().isNotFound());
+    mvc.perform(get("/sitemaps/other.xml")).andExpect(status().isNotFound());
+  }
+
+  @Test
+  void theSitemapListsOnlyPagesThePageItselfMarksIndexed() throws Exception {
+    String xml = xml("/sitemaps/resources-1.xml");
+    List<String> paths =
+        SITEMAP_RESOURCE.matcher(xml).results().map(m -> m.group(1)).limit(25).toList();
+    assertThat(paths).isNotEmpty();
+    for (String path : paths) {
+      assertThat(page(path, 200))
+          .as("sitemap resource %s", path)
+          .contains("content=\"index, follow\"");
+    }
+    List<UUID> news =
+        jdbc.sql("SELECT id FROM resource WHERE type IN ('NEWS', 'ARTICLE')")
+            .query(UUID.class)
+            .list();
+    news.forEach(n -> assertThat(xml).doesNotContain(n.toString()));
+  }
+
+  @Test
+  void everySitePageHasABodyWithItsHeadingAndLinksToTheOthers() throws Exception {
+    for (String path :
+        List.of("/", "/sources", "/events", "/mission", "/privacy", "/terms", "/support")) {
+      assertThat(page(path, 200))
+          .as(path)
+          .contains("<div id=\"root\"><main class=\"h2-prerender\"><h1>")
+          .contains("<nav><h2>More on searchavo.ai</h2>")
+          .doesNotContain("<a href=\"" + path + "\">");
+    }
+    assertThat(page("/search?q=ollama", 200)).contains("<div id=\"root\"></div>");
+  }
+
+  @Test
+  void aHubPageListsOnlyItsTypeAndIsIndexedWhenItListsAResource() throws Exception {
+    var json = tools.jackson.databind.json.JsonMapper.builder().build();
+    String sitePages = xml("/sitemaps/pages.xml");
+    int listed = 0;
+    for (ai.searchavo.site.pages.Hub hub : ai.searchavo.site.pages.Hub.getEntries()) {
+      String type = hub.getType().name();
+      String body =
+          mvc.perform(get("/api/v1/hubs/" + type))
+              .andExpect(status().isOk())
+              .andExpect(header().string("Cache-Control", "max-age=300, public"))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      var read = json.readTree(body);
+      assertThat(read.path("type").asString()).isEqualTo(type);
+      assertThat(read.path("items").size()).isLessThanOrEqualTo(50);
+      read.path("items").forEach(card -> assertThat(card.path("type").asString()).isEqualTo(type));
+      listed += read.path("items").size();
+      boolean filled = !read.path("items").isEmpty();
+      assertThat(page(hub.getPath(), 200))
+          .as(hub.getPath())
+          .contains("content=\"" + (filled ? "index, follow" : "noindex, follow") + "\"")
+          .contains("<h1>" + hub.getLabel() + ": newest in the catalog</h1>");
+      assertThat(sitePages.contains("<loc>https://searchavo.ai" + hub.getPath() + "</loc>"))
+          .as("%s is in the sitemap only when it lists a resource", hub.getPath())
+          .isEqualTo(filled);
+    }
+    assertThat(listed).as("the seeded catalog fills at least one hub").isPositive();
+    mvc.perform(get("/api/v1/hubs/EVENT")).andExpect(status().isNotFound());
+    mvc.perform(get("/api/v1/hubs/NOPE")).andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void theHomeBodyListsWhatTheHomePageListsAsNew() throws Exception {
+    String recent = xml("/api/v1/recent?size=20");
+    String home = page("/", 200);
+    if (recent.contains("\"id\"")) {
+      assertThat(home).contains("<h2>New in the catalog</h2>").contains("<a href=\"/resource/");
+    } else {
+      assertThat(home).doesNotContain("New in the catalog");
+    }
+  }
+}

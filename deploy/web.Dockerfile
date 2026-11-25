@@ -22,10 +22,10 @@ USER root
 RUN apk upgrade --no-cache zlib
 RUN rm -rf /usr/share/nginx/html /etc/nginx/conf.d /docker-entrypoint.sh /docker-entrypoint.d
 COPY deploy/web/nginx.conf /etc/nginx/nginx.conf
-COPY deploy/web/headers.conf /etc/nginx/helper2-headers.conf
+COPY deploy/web/headers.conf /etc/nginx/searchavo-headers.conf
 COPY --from=web /src/frontend/dist/assets /srv/web/assets
 COPY --from=web /src/frontend/dist/theme.js /src/frontend/dist/favicon.svg /src/frontend/dist/favicon.ico /srv/web/
-COPY --from=web /src/frontend/dist/index.html /usr/share/helper2/shell/index.html
+COPY --from=web /src/frontend/dist/index.html /usr/share/searchavo/shell/index.html
 USER 101
 RUN nginx -t
 EXPOSE 8080 8081

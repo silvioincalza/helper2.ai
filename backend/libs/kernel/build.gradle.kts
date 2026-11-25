@@ -1,1 +1,1 @@
-plugins { id("helper2.kotlin-library") }
+plugins { id("searchavo.kotlin-library") }

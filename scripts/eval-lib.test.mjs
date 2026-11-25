@@ -60,7 +60,7 @@ test('three answers in a row without a model stop the run and blame the provider
   assert.equal(stop.exitCode, EXIT_FAILED);
   assert.match(stop.message, /3 answers in a row without a model/);
   assert.match(stop.message, /provider is down/);
-  assert.doesNotMatch(stop.message, /H2_GUIDE_DAILY_MODEL_CALLS|are spent/);
+  assert.doesNotMatch(stop.message, /SA_GUIDE_DAILY_MODEL_CALLS|are spent/);
 });
 
 test('an answer from the model, or a failed request, does not stop the run', () => {
@@ -95,7 +95,7 @@ test('the script stops at the first question when the backend says its budget is
   try {
     const base = `http://localhost:${server.address().port}`;
 
-    const { code, stdout, stderr } = await evalGuide(base, { H2_EVAL_PAUSE_MS: '0', GITHUB_STEP_SUMMARY: '' });
+    const { code, stdout, stderr } = await evalGuide(base, { SA_EVAL_PAUSE_MS: '0', GITHUB_STEP_SUMMARY: '' });
 
     assert.equal(code, EXIT_BUDGET_SPENT);
     assert.equal(stdout.trim().split('\n').length, 1, 'one question asked');

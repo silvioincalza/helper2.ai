@@ -23,8 +23,8 @@ const live = (over: Partial<SourceInfo> = {}): SourceInfo => ({
 describe('the radar (ADR 0040): which sources and how they look', () => {
   it('shows only the enabled external sources: 13 of the 16 on staging', () => {
     expect(external).toHaveLength(13);
-    expect(external.map((s) => s.id)).not.toContain('helper2-index');
-    expect(external.map((s) => s.id)).not.toContain('helper2-semantic');
+    expect(external.map((s) => s.id)).not.toContain('searchavo-index');
+    expect(external.map((s) => s.id)).not.toContain('searchavo-semantic');
     expect(external.map((s) => s.id)).not.toContain('curated');
     expect(radarSources([live({ enabled: false })])).toEqual([]);
   });

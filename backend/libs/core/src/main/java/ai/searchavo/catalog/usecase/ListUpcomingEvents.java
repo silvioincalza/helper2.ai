@@ -1,0 +1,26 @@
+package ai.searchavo.catalog.usecase;
+
+import ai.searchavo.catalog.ResourceCards;
+import ai.searchavo.catalog.Resources;
+import ai.searchavo.search.MergedResult;
+import java.time.Instant;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+
+public class ListUpcomingEvents {
+
+  private final Resources store;
+  private final ResourceCards cards;
+
+  public ListUpcomingEvents(Resources store, ResourceCards cards) {
+    this.store = store;
+    this.cards = cards;
+  }
+
+  public record Page(List<MergedResult> items, int total) {}
+
+  public Page list(Instant today, @Nullable Instant until, int limit, int offset) {
+    List<MergedResult> items = cards.cardsOf(store.upcomingEvents(today, until, limit, offset));
+    return new Page(items, store.countUpcomingEvents(today, until));
+  }
+}

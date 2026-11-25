@@ -1,0 +1,183 @@
+package ai.searchavo.search.config;
+
+import ai.searchavo.platform.quota.QuotaCounter;
+import ai.searchavo.platform.quota.QuotaKeys;
+import ai.searchavo.platform.resilience.Resilience;
+import ai.searchavo.platform.settings.RuntimeSetting;
+import ai.searchavo.platform.settings.RuntimeSettings;
+import ai.searchavo.search.DailyLimits;
+import ai.searchavo.search.DescribedSource;
+import ai.searchavo.search.DiscoveredResources;
+import ai.searchavo.search.LanguageDetector;
+import ai.searchavo.search.QueryTranslator;
+import ai.searchavo.search.Ranking;
+import ai.searchavo.search.RankingWeights;
+import ai.searchavo.search.RecordedOutcomes;
+import ai.searchavo.search.ResultObserver;
+import ai.searchavo.search.ResultRatings;
+import ai.searchavo.search.SearchCache;
+import ai.searchavo.search.SearchPolicy;
+import ai.searchavo.search.SearchSource;
+import ai.searchavo.search.ShadowLibraries;
+import ai.searchavo.search.SourceHealth;
+import ai.searchavo.search.VitalityPolicy;
+import ai.searchavo.search.WebFreshness;
+import ai.searchavo.search.WebSearchQuota;
+import ai.searchavo.search.cache.RedisSearchCache;
+import ai.searchavo.search.internal.JdbcWebResultStore;
+import ai.searchavo.search.usecase.ListSources;
+import ai.searchavo.search.usecase.SearchResources;
+import ai.searchavo.shared.CategoryMatcher;
+import io.micrometer.context.ContextExecutorService;
+import io.micrometer.context.ContextSnapshotFactory;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Clock;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import tools.jackson.databind.ObjectMapper;
+
+@Configuration(proxyBeanMethods = false)
+class SearchConfiguration {
+
+  @Bean(destroyMethod = "shutdownNow")
+  ExecutorService searchExecutor() {
+    return ContextExecutorService.wrap(
+        Executors.newVirtualThreadPerTaskExecutor(), ContextSnapshotFactory.builder().build());
+  }
+
+  @Bean
+  LanguageDetector languageDetector() {
+    return new LanguageDetector();
+  }
+
+  @Bean
+  SourceHealth sourceHealth() {
+    return new SourceHealth();
+  }
+
+  @Bean
+  SearchCache searchCache(StringRedisTemplate redis, ObjectMapper json, Resilience resilience) {
+    return new RedisSearchCache(redis, json, resilience);
+  }
+
+  @Bean
+  JdbcWebResultStore webResultStore(JdbcClient jdbc, QuotaKeys keys, ResultObserver catalog) {
+    return new JdbcWebResultStore(jdbc, keys, catalog);
+  }
+
+  @Bean
+  WebSearchQuota webSearchQuota(
+      QuotaCounter counter, QuotaKeys keys, RuntimeSettings runtime, SearchProperties search) {
+    SearchProperties.Quota quota = search.web().quota();
+    return new WebSearchQuota(
+        counter,
+        keys,
+        new DailyLimits(quota.guest().search(), quota.guest().guide()),
+        runtime.declareCap(
+            RuntimeSetting.SEARCH_WEB_GLOBAL_DAILY_CREDITS, quota.globalDailyCredits()));
+  }
+
+  @Bean
+  SearchPolicy searchPolicy(SearchProperties search, SearchRetentionProperties retention) {
+    SearchProperties.Quota quota = search.web().quota();
+    return new SearchPolicy(
+        new DailyLimits(quota.guest().search(), quota.guest().guide()),
+        search.staleFor(),
+        search.translation().ttl(),
+        retention.liveWebResults());
+  }
+
+  @Bean
+  ListSources listSources(
+      List<DescribedSource> sources,
+      SourceHealth health,
+      RecordedOutcomes recorded,
+      Resilience resilience,
+      WebSearchQuota quota,
+      DiscoveredResources discovered,
+      Clock clock) {
+    return new ListSources(sources, health, recorded, resilience, quota, discovered, clock);
+  }
+
+  @Bean
+  Ranking ranking(VitalityPolicy vitality, SearchProperties properties, ResultRatings ratings) {
+    RankingWeights measured = new RankingWeights();
+    // UC-001 BR-023: the weight of the rating is the one weight the configuration sets.
+    RankingWeights weights =
+        new RankingWeights(
+            measured.getExactTitle(),
+            measured.getTitle(),
+            measured.getAudience(),
+            measured.getPathType(),
+            measured.getTypeHint(),
+            measured.getPopularity(),
+            measured.getLaneWindow(),
+            measured.getUnmaintained(),
+            properties.ranking().ratingWeight());
+    return new Ranking(Ranking.FUSION_K, weights, vitality, ratings);
+  }
+
+  @Bean
+  SearchResources federatedSearch(
+      List<SearchSource> sources,
+      SearchCache cache,
+      ResultObserver observer,
+      ExecutorService searchExecutor,
+      Clock clock,
+      MeterRegistry registry,
+      SourceHealth health,
+      LanguageDetector languages,
+      ObjectProvider<QueryTranslator> translator,
+      Resilience resilience,
+      JdbcWebResultStore webResults,
+      WebSearchQuota quota,
+      QuotaKeys keys,
+      SearchProperties search,
+      SearchRetentionProperties retention,
+      CategoryMatcher categories,
+      Ranking ranking,
+      VitalityPolicy vitality,
+      ShadowLibraries shadowLibraries) {
+    List<SearchSource> ordered =
+        sources.stream()
+            .sorted(
+                Comparator.comparingInt((SearchSource s) -> s.getDescriptor().getPriority())
+                    .thenComparing(s -> s.getDescriptor().getId()))
+            .toList();
+    if (!keys.hasSecret()
+        && ordered.stream()
+            .anyMatch(s -> s.getDescriptor().getMetered() && s.getDescriptor().getEnabled())) {
+      throw new IllegalStateException(
+          "SA_QUOTA_KEY_SECRET must be set while a metered web source (live web) is enabled");
+    }
+    return new SearchResources(
+        ordered,
+        cache,
+        observer,
+        searchExecutor,
+        clock,
+        search.staleFor(),
+        search.perSourceLimit(),
+        new MicrometerSearchMetrics(registry, List.of(health)),
+        new ai.searchavo.search.QueryAnalyzer(),
+        new ai.searchavo.search.ResultMerger(new ai.searchavo.search.QueryAnalyzer(), categories),
+        ranking,
+        languages,
+        translator.getIfAvailable(() -> QueryTranslator.NONE),
+        search.translateTimeout(),
+        resilience,
+        webResults,
+        quota,
+        new WebFreshness(
+            search.web().freshTimeBound(), search.web().freshGeneral(), retention.liveWebResults()),
+        vitality,
+        shadowLibraries);
+  }
+}

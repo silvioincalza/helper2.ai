@@ -77,7 +77,7 @@ same for every visitor.
    A refused example (a duplicate, a broken rule, an unreadable draft) keeps the item open, and the review page says
    why. It is then checked like any example. The model never writes to the pool, and nothing it writes is shown
    before a person accepts it and the check passes it. The prompt's label is the hash of the rendered prompt
-   (`d6e72a95`), pinned by a test: a new wording shows up there first.
+   (`9c6f90fd`), pinned by a test: a new wording shows up there first.
 7. **AI-drafted examples are marked.** The rule: an example a model drafted is AI-written text, also after a person
    accepted or edited it. Its label and query are what the model wrote; its path is a model's pick among two values,
    a classification. An accepted draft is human-reviewed text, but the
