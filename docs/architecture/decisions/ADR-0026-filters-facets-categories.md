@@ -292,6 +292,6 @@ categories: [flow](../diagrams/flow-0026-category-filter.svg) · [sequence](../d
 
 ## Backlog
 
-- Features: [F3.5](https://github.com/silvioincalza/helper2.ai/issues/51) Filters, facets, categories, works-with flags.
+- Features: [F3.5](https://github.com/silvioincalza/searchavo.ai/issues/51) Filters, facets, categories, works-with flags.
 - Open issues that change this decision:
-  - [#239](https://github.com/silvioincalza/helper2.ai/issues/239) S3.5.5 `CategoryMatcher` measured on 150 labelled resources
+  - [#239](https://github.com/silvioincalza/searchavo.ai/issues/239) S3.5.5 `CategoryMatcher` measured on 150 labelled resources

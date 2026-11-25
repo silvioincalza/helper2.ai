@@ -332,8 +332,8 @@ release branches, the canary and version tags: [flow](../diagrams/flow-0045-rele
 
 ## Backlog
 
-- Features: [F10.3](https://github.com/silvioincalza/helper2.ai/issues/109) Release branches, versions, canary. Decides [#506](https://github.com/silvioincalza/helper2.ai/issues/506)
+- Features: [F10.3](https://github.com/silvioincalza/searchavo.ai/issues/109) Release branches, versions, canary. Decides [#506](https://github.com/silvioincalza/searchavo.ai/issues/506)
   S10.3.2 (every release and patch runs on staging before the prod approval).
 - Open issues that change this decision:
-  - [#352](https://github.com/silvioincalza/helper2.ai/issues/352) S10.7.1 V2026.11.3, the first release of the new repository, on prod
-  - [#452](https://github.com/silvioincalza/helper2.ai/issues/452) T10.7.1 release-prepare and release make the first release of a repository
+  - [#352](https://github.com/silvioincalza/searchavo.ai/issues/352) S10.7.1 V2026.11.3, the first release of the new repository, on prod
+  - [#452](https://github.com/silvioincalza/searchavo.ai/issues/452) T10.7.1 release-prepare and release make the first release of a repository

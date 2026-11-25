@@ -78,13 +78,13 @@ retrieved, with a quote that code has checked word for word.
 
 | ID | Criterion | Verified by |
 |---|---|---|
-| SC-1 | One query returns aggregated results from every enabled source that responded within its timeout | API integration tests; UI component tests (Vitest + Testing Library, API mocked) for results, the partial line and empty/all-failed states. The browser journey is not automated: [S10.12.1](https://github.com/silvioincalza/helper2.ai/issues/357) |
-| SC-2 | Every configured source appears in the status list with a truthful outcome | Orchestrator unit tests; UI component tests for the source status panel (every outcome in words). The browser journey is not automated: [S10.12.1](https://github.com/silvioincalza/helper2.ai/issues/357) |
-| SC-3 | Asking the guide never loses query/filters | UI component tests: the URL keeps `q`, `ask` and filters; closing the answer keeps the search; back/forward restore the box; retry and replacing a running question. The browser journey is not automated: [S10.12.1](https://github.com/silvioincalza/helper2.ai/issues/357) |
+| SC-1 | One query returns aggregated results from every enabled source that responded within its timeout | API integration tests; UI component tests (Vitest + Testing Library, API mocked) for results, the partial line and empty/all-failed states. The browser journey is not automated: [S10.12.1](https://github.com/silvioincalza/searchavo.ai/issues/357) |
+| SC-2 | Every configured source appears in the status list with a truthful outcome | Orchestrator unit tests; UI component tests for the source status panel (every outcome in words). The browser journey is not automated: [S10.12.1](https://github.com/silvioincalza/searchavo.ai/issues/357) |
+| SC-3 | Asking the guide never loses query/filters | UI component tests: the URL keeps `q`, `ask` and filters; closing the answer keeps the search; back/forward restore the box; retry and replacing a running question. The browser journey is not automated: [S10.12.1](https://github.com/silvioincalza/searchavo.ai/issues/357) |
 | SC-4 | No invented dates/popularity; unknowns labeled | domain tests + UI tests |
 | SC-5 | Every published AI-extracted fact links to evidence; unsupported → unverified/review | enrichment validator tests |
 | SC-6 | Search works with cache down, LLM down, one or more sources down | resilience tests |
-| SC-7 | Keyboard-only and screen-reader users can complete UC-001, UC-005, UC-007, UC-009 and UC-012 | axe smoke tests in jsdom (color contrast excluded), focus and live-region component tests + manual checklist ([S7.6.2](https://github.com/silvioincalza/helper2.ai/issues/324)) |
+| SC-7 | Keyboard-only and screen-reader users can complete UC-001, UC-005, UC-007, UC-009 and UC-012 | axe smoke tests in jsdom (color contrast excluded), focus and live-region component tests + manual checklist ([S7.6.2](https://github.com/silvioincalza/searchavo.ai/issues/324)) |
 
 ## Test strategy
 

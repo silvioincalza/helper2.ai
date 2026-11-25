@@ -2,7 +2,7 @@ package ai.searchavo.site.pages
 
 object LlmsTxt {
 
-  const val SOURCE_CODE = "https://github.com/silvioincalza/helper2.ai"
+  const val SOURCE_CODE = "https://github.com/silvioincalza/searchavo.ai"
 
   fun of(base: String): String =
     """

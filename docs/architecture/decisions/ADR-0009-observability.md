@@ -248,6 +248,6 @@ the guide work long before that, and what makes the wait feel long is the first 
 [flow](../diagrams/flow-0009-observability.svg) · [sequence](../diagrams/sequence-0009-observability.svg)
 
 ## Backlog
-- Decides: [F1.8](https://github.com/silvioincalza/helper2.ai/issues/27), [S1.8.3](https://github.com/silvioincalza/helper2.ai/issues/174) (the data store exporters), [S1.8.8](https://github.com/silvioincalza/helper2.ai/issues/884) (the log line of an unavailable source).
+- Decides: [F1.8](https://github.com/silvioincalza/searchavo.ai/issues/27), [S1.8.3](https://github.com/silvioincalza/searchavo.ai/issues/174) (the data store exporters), [S1.8.8](https://github.com/silvioincalza/searchavo.ai/issues/884) (the log line of an unavailable source).
 - Open issues that change it:
-  - [S4.9.1](https://github.com/silvioincalza/helper2.ai/issues/285): the guide latency targets confirmed on prod data.
+  - [S4.9.1](https://github.com/silvioincalza/searchavo.ai/issues/285): the guide latency targets confirmed on prod data.

@@ -253,5 +253,5 @@ Tracked privately (S9.6.3).
 [flow](../diagrams/flow-0019-known-targets.svg) · [sequence](../diagrams/sequence-0019-known-targets.svg)
 
 ## Backlog
-- Decides: [F2.9](https://github.com/silvioincalza/helper2.ai/issues/39).
+- Decides: [F2.9](https://github.com/silvioincalza/searchavo.ai/issues/39).
 - Open issues that change it: none.

@@ -309,8 +309,8 @@ reaches the cluster with an address from the platform's private ranges.
 
 ## Backlog
 
-- Features: [F5.1](https://github.com/silvioincalza/helper2.ai/issues/73) Anonymous-first, GitHub sign-in, minimal profile, [F6.1](https://github.com/silvioincalza/helper2.ai/issues/81) Back office as its own app, admin host over WireGuard.
+- Features: [F5.1](https://github.com/silvioincalza/searchavo.ai/issues/73) Anonymous-first, GitHub sign-in, minimal profile, [F6.1](https://github.com/silvioincalza/searchavo.ai/issues/81) Back office as its own app, admin host over WireGuard.
 - Open issues that change this decision:
-  - [#179](https://github.com/silvioincalza/helper2.ai/issues/179) S1.10.3 My session not to be evicted when the cache fills
-  - [#294](https://github.com/silvioincalza/helper2.ai/issues/294) S5.6.1 To sign in without GitHub
-  - [#295](https://github.com/silvioincalza/helper2.ai/issues/295) S5.7.1 To choose between Keycloak and plain Spring Security sign-in
+  - [#179](https://github.com/silvioincalza/searchavo.ai/issues/179) S1.10.3 My session not to be evicted when the cache fills
+  - [#294](https://github.com/silvioincalza/searchavo.ai/issues/294) S5.6.1 To sign in without GitHub
+  - [#295](https://github.com/silvioincalza/searchavo.ai/issues/295) S5.7.1 To choose between Keycloak and plain Spring Security sign-in

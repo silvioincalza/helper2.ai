@@ -158,6 +158,6 @@ used up. The counts must hold across 3 replicas, store no address and no query t
 
 ## Backlog
 
-- Features: [F3.6](https://github.com/silvioincalza/helper2.ai/issues/52) Live web: store first, daily quota per feature.
+- Features: [F3.6](https://github.com/silvioincalza/searchavo.ai/issues/52) Live web: store first, daily quota per feature.
 - Open issues that change this decision:
-  - [#293](https://github.com/silvioincalza/helper2.ai/issues/293) S5.5.1 10 web searches and 10 AI answers a day instead of 3
+  - [#293](https://github.com/silvioincalza/searchavo.ai/issues/293) S5.5.1 10 web searches and 10 AI answers a day instead of 3

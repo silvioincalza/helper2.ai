@@ -277,7 +277,7 @@ Home, the ticker, a search and the guide: [flow](../diagrams/flow-0040-design-sy
 
 ## Backlog
 
-- Features: [F7.2](https://github.com/silvioincalza/helper2.ai/issues/88) Design system.
+- Features: [F7.2](https://github.com/silvioincalza/searchavo.ai/issues/88) Design system.
 - Open issues that change this decision:
-  - [#316](https://github.com/silvioincalza/helper2.ai/issues/316) S7.2.3 The open points of design system version 1 closed
-  - [#325](https://github.com/silvioincalza/helper2.ai/issues/325) S7.6.3 The WCAG 2.2.2 risk of the home lists decided in writing
+  - [#316](https://github.com/silvioincalza/searchavo.ai/issues/316) S7.2.3 The open points of design system version 1 closed
+  - [#325](https://github.com/silvioincalza/searchavo.ai/issues/325) S7.6.3 The WCAG 2.2.2 risk of the home lists decided in writing

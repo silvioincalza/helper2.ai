@@ -350,10 +350,10 @@ search: [flow](../diagrams/flow-0046-search-evaluation-harness.svg) · [sequence
 
 ## Backlog
 
-- Features: [F10.4](https://github.com/silvioincalza/helper2.ai/issues/110) Evaluation of guide and search.
+- Features: [F10.4](https://github.com/silvioincalza/searchavo.ai/issues/110) Evaluation of guide and search.
 - Open issues that change this decision:
-  - [#348](https://github.com/silvioincalza/helper2.ai/issues/348) S10.4.2 The first ten results of the new snapshot set graded
-  - [#349](https://github.com/silvioincalza/helper2.ai/issues/349) S10.4.3 Guide relevance judged by a second person
-  - [#357](https://github.com/silvioincalza/helper2.ai/issues/357) S10.12.1 The main journeys automated in a browser
-  - [#607](https://github.com/silvioincalza/helper2.ai/issues/607) S10.4.5 A guide judge on staging that scores the claims the verify step checked
-  - [#883](https://github.com/silvioincalza/helper2.ai/issues/883) S10.4.7 The guide judge on prod, on its own daily cap
+  - [#348](https://github.com/silvioincalza/searchavo.ai/issues/348) S10.4.2 The first ten results of the new snapshot set graded
+  - [#349](https://github.com/silvioincalza/searchavo.ai/issues/349) S10.4.3 Guide relevance judged by a second person
+  - [#357](https://github.com/silvioincalza/searchavo.ai/issues/357) S10.12.1 The main journeys automated in a browser
+  - [#607](https://github.com/silvioincalza/searchavo.ai/issues/607) S10.4.5 A guide judge on staging that scores the claims the verify step checked
+  - [#883](https://github.com/silvioincalza/searchavo.ai/issues/883) S10.4.7 The guide judge on prod, on its own daily cap

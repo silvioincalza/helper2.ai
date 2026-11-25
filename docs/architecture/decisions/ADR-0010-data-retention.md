@@ -157,5 +157,5 @@ Tracked privately (S9.6.3).
 [flow](../diagrams/flow-0010-data-retention.svg) · [sequence](../diagrams/sequence-0010-data-retention.svg)
 
 ## Backlog
-- Decides: [F1.9](https://github.com/silvioincalza/helper2.ai/issues/28).
+- Decides: [F1.9](https://github.com/silvioincalza/searchavo.ai/issues/28).
 - Open issues that change it: none.

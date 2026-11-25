@@ -261,5 +261,5 @@ and a snippet copied into an AI client's config file runs on the user's machine.
 
 ## Backlog
 
-- Features: [F4.4](https://github.com/silvioincalza/helper2.ai/issues/67) Setup guide ("Set it up") with checked steps.
+- Features: [F4.4](https://github.com/silvioincalza/searchavo.ai/issues/67) Setup guide ("Set it up") with checked steps.
 - Open issues that change this decision: none.

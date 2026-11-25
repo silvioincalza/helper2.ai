@@ -543,15 +543,15 @@ The supply-chain checks run in CI only, with no runtime path, so they have no se
 
 ## Backlog
 
-- Features: [F10.2](https://github.com/silvioincalza/helper2.ai/issues/108) CI/CD and supply chain: signed images by digest, SBOM, scans.
+- Features: [F10.2](https://github.com/silvioincalza/searchavo.ai/issues/108) CI/CD and supply chain: signed images by digest, SBOM, scans.
 - Open issues that change this decision:
-  - [#355](https://github.com/silvioincalza/helper2.ai/issues/355) S10.10.1 The deployer token minted per deploy
-  - [#357](https://github.com/silvioincalza/helper2.ai/issues/357) S10.12.1 The main journeys automated in a browser
-  - [#412](https://github.com/silvioincalza/helper2.ai/issues/412) S10.2.4 The chart check without the waits of its self-test
-  - [#413](https://github.com/silvioincalza/helper2.ai/issues/413) S10.2.5 The Actions caches of the repository under their limit
-  - [#414](https://github.com/silvioincalza/helper2.ai/issues/414) S10.2.6 The report-only npm audit out of the frontend checks
-  - [#415](https://github.com/silvioincalza/helper2.ai/issues/415) S10.2.7 The Prometheus rule tests in less than a minute
-  - [#416](https://github.com/silvioincalza/helper2.ai/issues/416) S10.2.8 A Gradle job reaches its first task in seconds
-  - [#417](https://github.com/silvioincalza/helper2.ai/issues/417) S10.2.9 The library tests declare the evaluation sets they read
-  - [#418](https://github.com/silvioincalza/helper2.ai/issues/418) S10.2.10 A backend change does not rebuild the web image
-  - [#420](https://github.com/silvioincalza/helper2.ai/issues/420) S10.2.12 The frontend tests of the whole package apart from the bundle tests
+  - [#355](https://github.com/silvioincalza/searchavo.ai/issues/355) S10.10.1 The deployer token minted per deploy
+  - [#357](https://github.com/silvioincalza/searchavo.ai/issues/357) S10.12.1 The main journeys automated in a browser
+  - [#412](https://github.com/silvioincalza/searchavo.ai/issues/412) S10.2.4 The chart check without the waits of its self-test
+  - [#413](https://github.com/silvioincalza/searchavo.ai/issues/413) S10.2.5 The Actions caches of the repository under their limit
+  - [#414](https://github.com/silvioincalza/searchavo.ai/issues/414) S10.2.6 The report-only npm audit out of the frontend checks
+  - [#415](https://github.com/silvioincalza/searchavo.ai/issues/415) S10.2.7 The Prometheus rule tests in less than a minute
+  - [#416](https://github.com/silvioincalza/searchavo.ai/issues/416) S10.2.8 A Gradle job reaches its first task in seconds
+  - [#417](https://github.com/silvioincalza/searchavo.ai/issues/417) S10.2.9 The library tests declare the evaluation sets they read
+  - [#418](https://github.com/silvioincalza/searchavo.ai/issues/418) S10.2.10 A backend change does not rebuild the web image
+  - [#420](https://github.com/silvioincalza/searchavo.ai/issues/420) S10.2.12 The frontend tests of the whole package apart from the bundle tests

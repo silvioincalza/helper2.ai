@@ -391,7 +391,7 @@ the three deployables: [flow](../diagrams/flow-0043-three-deployables.svg) ·
 
 ## Backlog
 
-- Features: [F6.1](https://github.com/silvioincalza/helper2.ai/issues/81) Back office as its own app, admin host over WireGuard, [F10.1](https://github.com/silvioincalza/helper2.ai/issues/107) Helm chart and three deployables.
+- Features: [F6.1](https://github.com/silvioincalza/searchavo.ai/issues/81) Back office as its own app, admin host over WireGuard, [F10.1](https://github.com/silvioincalza/searchavo.ai/issues/107) Helm chart and three deployables.
 - Open issues that change this decision:
-  - [#178](https://github.com/silvioincalza/helper2.ai/issues/178) S1.10.2 To know when per-replica limits hurt
-  - [#353](https://github.com/silvioincalza/helper2.ai/issues/353) S10.8.1 Prod recoverable and watched before the release
+  - [#178](https://github.com/silvioincalza/searchavo.ai/issues/178) S1.10.2 To know when per-replica limits hurt
+  - [#353](https://github.com/silvioincalza/searchavo.ai/issues/353) S10.8.1 Prod recoverable and watched before the release

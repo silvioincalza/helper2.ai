@@ -546,10 +546,10 @@ LinkedIn: [flow](../diagrams/flow-0012-linkedin-via-tavily.svg) · [sequence](..
 live web events: [flow](../diagrams/flow-0012-live-web-events-scout.svg) · [sequence](../diagrams/sequence-0012-live-web-events-scout.svg)
 
 ## Backlog
-- Decides: [F2.2](https://github.com/silvioincalza/helper2.ai/issues/32).
+- Decides: [F2.2](https://github.com/silvioincalza/searchavo.ai/issues/32).
 - Open issues that change it:
-  - [S2.2.6](https://github.com/silvioincalza/helper2.ai/issues/191): the `linkedin-scout`, `course-scout` and live web events collectors fixed.
-  - [S2.13.1](https://github.com/silvioincalza/helper2.ai/issues/218): source requests and more registries.
-  - [S2.14.1](https://github.com/silvioincalza/helper2.ai/issues/219): live collectors for hackathons, meetups, talks and workshops.
-  - [S2.3.9](https://github.com/silvioincalza/helper2.ai/issues/843): a list page that discovery finds is split into its items; an added web page is read (point 6).
-  - [S9.6.1](https://github.com/silvioincalza/helper2.ai/issues/340): each source's terms read again for commercial use.
+  - [S2.2.6](https://github.com/silvioincalza/searchavo.ai/issues/191): the `linkedin-scout`, `course-scout` and live web events collectors fixed.
+  - [S2.13.1](https://github.com/silvioincalza/searchavo.ai/issues/218): source requests and more registries.
+  - [S2.14.1](https://github.com/silvioincalza/searchavo.ai/issues/219): live collectors for hackathons, meetups, talks and workshops.
+  - [S2.3.9](https://github.com/silvioincalza/searchavo.ai/issues/843): a list page that discovery finds is split into its items; an added web page is read (point 6).
+  - [S9.6.1](https://github.com/silvioincalza/searchavo.ai/issues/340): each source's terms read again for commercial use.

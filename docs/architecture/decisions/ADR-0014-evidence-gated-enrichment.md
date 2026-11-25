@@ -527,6 +527,6 @@ writing about a resource: [flow](../diagrams/flow-0014-writing-about-a-resource.
 [architecture: index](../diagrams/architecture-index.svg)
 
 ## Backlog
-- Decides: [F2.4](https://github.com/silvioincalza/helper2.ai/issues/34).
+- Decides: [F2.4](https://github.com/silvioincalza/searchavo.ai/issues/34).
 - Open issues that change it:
-  - [S2.4.6](https://github.com/silvioincalza/helper2.ai/issues/203): a gap round for resources enriched before it existed.
+  - [S2.4.6](https://github.com/silvioincalza/searchavo.ai/issues/203): a gap round for resources enriched before it existed.

@@ -10,7 +10,7 @@ repository or the platform. **(workflow)** marks a step a workflow does by itsel
 root, with `gh` signed in as the owner; the `make` and `kubectl` ones need the mesh up and the cluster's kubeconfig.
 
 ```bash
-R=silvioincalza/helper2.ai
+R=silvioincalza/searchavo.ai
 ```
 
 ## What a release does to prod's data
@@ -48,9 +48,9 @@ Each line is checked once. A release run does not check them.
 | The OpenBao roles `deploy`, `deploy-staging` and `deploy-prod` accept this repository; `deploy-prod` reads `ci/prod`, `ci/harbor-pull` and `ci/harbor` | a green push run of `cd` proves `deploy` and `deploy-staging`; `deploy-prod` is proved by the first prod job | **(Owner)** RUNBOOK-new-repository.md §8, [CI.md, Security model](CI.md#security-model) |
 | `ci/prod` holds prod's `app.env` and the `deployer` kubeconfig; the off-site backup Secret is on prod | `make -C deploy/k8s ENV=prod credentials`, `make -C deploy/k8s ENV=prod backup-credentials` | **(Owner)** RUNBOOK-new-repository.md §9 |
 | Staging's and prod's `app.env` in OpenBao hold `SA_DATABASE_MONITOR_PASSWORD` and `SA_REDIS_MONITOR_PASSWORD` (two new values of `openssl rand -hex 32`), staging's before the merge that adds them; the cluster's Alloy keeps the `pg_` and `redis_` metric names of `searchavo-*` pods | `scripts/env-align.sh --dry-run deploy/k8s/app.env.example deploy/k8s/<env>/app.env` lists neither; `make -C deploy/k8s ENV=<env> credentials`; the exporters' series in Prometheus | **(Owner)** [ADR 0009](../../docs/architecture/decisions/ADR-0009-observability.md) §7; the allow-list in the platform repo |
-| Prod can be recovered and is watched: a tested restore, the off-site copy, the exporters and the eviction alert, the DNS records, `SA_SETUP_GITHUB_TOKEN` | [S10.8.1](https://github.com/silvioincalza/helper2.ai/issues/353), [S1.8.3](https://github.com/silvioincalza/helper2.ai/issues/174) | **(Owner)** per step |
-| The ad networks' rules are read before a prod ad setting is filled | [S8.4.1](https://github.com/silvioincalza/helper2.ai/issues/332) | **(Owner)** |
-| The Privacy and Terms pages: the points for a lawyer are answered, or the owner releases with them open | [F9.3](https://github.com/silvioincalza/helper2.ai/issues/102) | **(Owner)** |
+| Prod can be recovered and is watched: a tested restore, the off-site copy, the exporters and the eviction alert, the DNS records, `SA_SETUP_GITHUB_TOKEN` | [S10.8.1](https://github.com/silvioincalza/searchavo.ai/issues/353), [S1.8.3](https://github.com/silvioincalza/searchavo.ai/issues/174) | **(Owner)** per step |
+| The ad networks' rules are read before a prod ad setting is filled | [S8.4.1](https://github.com/silvioincalza/searchavo.ai/issues/332) | **(Owner)** |
+| The Privacy and Terms pages: the points for a lawyer are answered, or the owner releases with them open | [F9.3](https://github.com/silvioincalza/searchavo.ai/issues/102) | **(Owner)** |
 
 The environment `prod` comes first. GitHub creates a missing environment by itself when a job names it, with no
 reviewer: the prod job would then start with no approval.
@@ -106,7 +106,7 @@ Before every release. Nothing here changes prod.
 
 7. **[CHANGELOG.md](../../CHANGELOG.md) has the entry of the version**, on the commit to release.
 8. **For the first release only: the load-test baseline is recorded**
-   ([S10.11.1](https://github.com/silvioincalza/helper2.ai/issues/356)), run against staging, never prod, with the two
+   ([S10.11.1](https://github.com/silvioincalza/searchavo.ai/issues/356)), run against staging, never prod, with the two
    simulations of `backend/loadtest` ([the stack](../../docs/architecture/stack.md)).
 
 ## 3. The release
@@ -119,7 +119,7 @@ release, and the rollout replaces the pods one at a time. Only a release with `c
 | 1 | **(Owner)** | Run `release-prepare` from `main`. A release: no input, or `commit`. A patch: `patch-of` with the line `YYYY.N`, after its fixes are merged into `release/YYYY.N` | The run summary names the version and the branch; the version pull request `release-bump/YYYY.N.P` is open | Nothing reached prod. Run it again: it finishes a branch a run left half-way |
 | 2 | **(Owner)** | Merge the version pull request with a merge commit (`gh pr merge <n> --merge`). The ruleset of `release/**` wants `ci-ok` on it: when the pull request shows no check, start CI on its branch with `gh workflow run ci.yml -R $R --ref release-bump/YYYY.N.P` | **(workflow)** the push runs `cd` on the release branch: CI, the images built, signed and scanned. `gh run list -R $R --workflow cd.yml --branch release/YYYY.N --limit 1` is green | Fix the branch by pull request into `release/YYYY.N`; each push builds again |
 | 3 | **(Owner)** | Run `release` from `main` with `version`. `headline` for a breaking change. `canary` unticked only for the maintenance window of check 5. `notes_since` only when the release below holds no commit of `main` ([ADR 0045](../../docs/architecture/decisions/ADR-0045-releases-and-versions.md) §9): after v2026.11.10 it is `notes-base/2026.11.10`, the commit of `main` v2026.11.10 took | **(workflow)** jobs `check` and `built` are green: the branch, the version rule, the seven files, staging ran the commit a `.0` is cut from, the CD run of the branch passed | Nothing reached prod and no tag exists. Fix what the error names, run `release` again |
-| 4 | **(Owner)** | Read the summary of `check` (version, commit, the commit it is cut from), then approve the job `prod`: [the release runs](https://github.com/silvioincalza/helper2.ai/actions/workflows/release.yml) → the run → Review deployments | The job `prod / deploy` starts on the self-hosted runner | Reject: nothing reached prod |
+| 4 | **(Owner)** | Read the summary of `check` (version, commit, the commit it is cut from), then approve the job `prod`: [the release runs](https://github.com/silvioincalza/searchavo.ai/actions/workflows/release.yml) → the run → Review deployments | The job `prod / deploy` starts on the self-hosted runner | Reject: nothing reached prod |
 | 5a | **(workflow)** | A release whose migration folder differs from the release prod runs: the dump of prod's database, `make release-dump`, the Job `pg-backup-release-YYYY-N-P` from `pg-backup`. A rerun of the version keeps the dump of the Job that finished, taken before the first canary | The run summary names the dump `searchavo-<UTC date>T<UTC time>Z.sql.gz` and the restore command | The job fails before the canary: nothing reached prod, no tag, the version is free. Read the Job's logs (`-c dump`, `-c upload`) |
 | 5 | **(workflow)** | The canary: its migrate Job on prod's database, one public app pod and one web pod, reached only with the run's header. Then the smoke test through `https://searchavo.ai`, with the header and without | The run summary says the canary passed and is removed | The canary is removed and the job fails. Prod runs the release before. No tag anywhere, the version is still free. A migration the canary ran stays in the schema |
 | 6 | **(workflow)** | The version tag `YYYY.N.P` in Harbor, on the three images of the commit | The step log says `tagged …` for each image | From here a failure uses the version up: see section 5 |
@@ -261,7 +261,7 @@ last deployed revision; by hand it is `make -C deploy/k8s ENV=prod rollback`. Ne
 ## The first use: v2026.11.3
 
 `v2026.11.3` is the first release of this repository
-([S10.7.1](https://github.com/silvioincalza/helper2.ai/issues/352)). What is special about it:
+([S10.7.1](https://github.com/silvioincalza/searchavo.ai/issues/352)). What is special about it:
 
 - **Prod keeps its data, after one step by hand.** Prod runs `2026.11.2`, and its database ran an earlier
   `V1__schema.sql`: the one of this repository has two indexes fewer (`resource_updated_idx`,

@@ -261,7 +261,7 @@ another person's words.
 - **Invisible Unicode watermark in the text**: breaks copy and paste, search and screen readers, and anyone can
   strip it.
 - **Signed provenance manifest per answer** (C2PA-style): the strongest proof of origin, but no common tooling for
-  text yet, and it needs key management. Open ([#284](https://github.com/silvioincalza/helper2.ai/issues/284)).
+  text yet, and it needs key management. Open ([#284](https://github.com/silvioincalza/searchavo.ai/issues/284)).
 - **Only the visible labels**: meets Art. 50(1), not Art. 50(2).
 - **Classing fields by hand, without a test**: a renamed or new field would slip through a prompt rewrite.
 - **Mark the subjects as AI-written**: they are the asker's words, kept only when the question contains them.
@@ -340,7 +340,7 @@ Tracked privately (S9.6.3).
 
 ## Backlog
 
-- Features: [F4.3](https://github.com/silvioincalza/helper2.ai/issues/66) AI-written text marked (Art. 50) and research trail.
+- Features: [F4.3](https://github.com/silvioincalza/searchavo.ai/issues/66) AI-written text marked (Art. 50) and research trail.
 - Open issues that change this decision:
-  - [#273](https://github.com/silvioincalza/helper2.ai/issues/273) S4.3.5 Tracked privately (legal)
-  - [#284](https://github.com/silvioincalza/helper2.ai/issues/284) S4.8.1 Each AI answer signed with its model, time and AI-written fields
+  - [#273](https://github.com/silvioincalza/searchavo.ai/issues/273) S4.3.5 Tracked privately (legal)
+  - [#284](https://github.com/silvioincalza/searchavo.ai/issues/284) S4.8.1 Each AI answer signed with its model, time and AI-written fields

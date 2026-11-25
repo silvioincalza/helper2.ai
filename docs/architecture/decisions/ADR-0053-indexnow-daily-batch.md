@@ -83,6 +83,6 @@ The other layers are not touched.
 
 ## Backlog
 
-- Features: [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89) Pages for crawlers, SEO, policy endpoint;
-  story [S7.3.7](https://github.com/silvioincalza/helper2.ai/issues/817).
+- Features: [F7.3](https://github.com/silvioincalza/searchavo.ai/issues/89) Pages for crawlers, SEO, policy endpoint;
+  story [S7.3.7](https://github.com/silvioincalza/searchavo.ai/issues/817).
 - Open issues that change this decision: none.

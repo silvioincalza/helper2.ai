@@ -313,6 +313,6 @@ Related: [flow 0022](../diagrams/flow-0022-federated-search.svg) (the source pol
 The weekly live check (§13) is a scheduled test run, not a runtime path, so the diagrams leave it out.
 
 ## Backlog
-- Decides: [F1.5](https://github.com/silvioincalza/helper2.ai/issues/24).
+- Decides: [F1.5](https://github.com/silvioincalza/searchavo.ai/issues/24).
 - Open issues that change it:
-  - [S1.10.2](https://github.com/silvioincalza/helper2.ai/issues/178): per-replica cooldowns, circuit breakers and bulkheads, reopened only on evidence.
+  - [S1.10.2](https://github.com/silvioincalza/searchavo.ai/issues/178): per-replica cooldowns, circuit breakers and bulkheads, reopened only on evidence.

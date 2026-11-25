@@ -44,7 +44,7 @@ GitHub, Hugging Face, npm, Hacker News and arXiv get the query's content words, 
 
 Each source's terms are read for a site that shows ads and takes gifts, one source at a time. The reading and
 its legal points are tracked privately (S9.6.1, S9.6.3). The credits a source's terms ask for are shown on the Sources
-page ([S9.6.2](https://github.com/silvioincalza/helper2.ai/issues/434)).
+page ([S9.6.2](https://github.com/silvioincalza/searchavo.ai/issues/434)).
 
 **Discovery categories** ([ADR 0013](decisions/ADR-0013-discovery.md)): one `discovery-<id>` source each, grouped by
 family on the Sources page. Health and legal keep only results with their own words (`require-keyword`), with a Live web

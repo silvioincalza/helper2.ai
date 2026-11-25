@@ -81,7 +81,7 @@ an unprivileged user with rootless podman. No ambient credentials: no kubeconfig
 
 | Role | Bound `sub` | Can read |
 |---|---|---|
-| `deploy` | `repo:silvioincalza@644958/helper2.ai@1457242485:ref:refs/heads/main` or `…:ref:refs/heads/release/*`, `ref_protected` true | `ci/harbor` (registry push credentials), sign with the Transit key `searchavo-images`; denied `ci/staging`, `ci/prod` |
+| `deploy` | `repo:silvioincalza@644958/searchavo.ai@1457242485:ref:refs/heads/main` or `…:ref:refs/heads/release/*`, `ref_protected` true | `ci/harbor` (registry push credentials), sign with the Transit key `searchavo-images`; denied `ci/staging`, `ci/prod` |
 | `deploy-staging` | `…:environment:staging` | `ci/staging`, `ci/harbor-pull` |
 | `deploy-prod` | `…:environment:prod` (after the approval) | `ci/prod`, `ci/harbor-pull`, and `ci/harbor` to add the release's version tag to its image |
 

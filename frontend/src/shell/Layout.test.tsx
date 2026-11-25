@@ -113,7 +113,7 @@ describe('layout', () => {
     expect(version).toHaveTextContent(`v${pkg.version}`);
     expect(version).toHaveAttribute(
       'href',
-      `https://github.com/silvioincalza/helper2.ai/releases/tag/v${pkg.version}`,
+      `https://github.com/silvioincalza/searchavo.ai/releases/tag/v${pkg.version}`,
     );
     expect(version).toHaveAttribute('target', '_blank');
   });
@@ -125,12 +125,12 @@ describe('layout', () => {
     const footer = screen.getByRole('contentinfo');
     expect(footer).toHaveTextContent(`© ${new Date().getFullYear()} Silvio Incalza`);
     const repo = within(footer).getByRole('link', { name: /GitHub/ });
-    expect(repo).toHaveAttribute('href', 'https://github.com/silvioincalza/helper2.ai');
+    expect(repo).toHaveAttribute('href', 'https://github.com/silvioincalza/searchavo.ai');
     expect(repo).toHaveAccessibleName('Source code of searchavo.ai on GitHub (opens in a new tab)');
     const license = within(footer).getByRole('link', { name: /Apache-2.0/ });
     expect(license).toHaveAttribute(
       'href',
-      'https://github.com/silvioincalza/helper2.ai/blob/main/LICENSE',
+      'https://github.com/silvioincalza/searchavo.ai/blob/main/LICENSE',
     );
     for (const link of [repo, license]) {
       expect(link).toHaveAttribute('target', '_blank');

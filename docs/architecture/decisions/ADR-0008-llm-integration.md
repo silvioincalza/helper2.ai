@@ -166,6 +166,6 @@ Without a configured model the application must still work.
 Model tiers change no flow: a call goes the same way, only the model id differs. The diagrams stay as they are.
 
 ## Backlog
-- Decides: [F1.7](https://github.com/silvioincalza/helper2.ai/issues/26).
+- Decides: [F1.7](https://github.com/silvioincalza/searchavo.ai/issues/26).
 - Open issues that change it:
-  - [S1.11.1](https://github.com/silvioincalza/helper2.ai/issues/180): a closed `llm` module with a small public API.
+  - [S1.11.1](https://github.com/silvioincalza/searchavo.ai/issues/180): a closed `llm` module with a small public API.

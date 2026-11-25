@@ -304,6 +304,6 @@ the policy endpoint: [flow](../diagrams/flow-0041-policy-endpoint.svg) · [seque
 
 ## Backlog
 
-- Features: [F7.3](https://github.com/silvioincalza/helper2.ai/issues/89) Pages for crawlers, SEO, policy endpoint;
-  story [S7.3.8](https://github.com/silvioincalza/helper2.ai/issues/818) the link preview image.
+- Features: [F7.3](https://github.com/silvioincalza/searchavo.ai/issues/89) Pages for crawlers, SEO, policy endpoint;
+  story [S7.3.8](https://github.com/silvioincalza/searchavo.ai/issues/818) the link preview image.
 - Open issues that change this decision: none.

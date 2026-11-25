@@ -708,7 +708,7 @@ the settings of both apps: [flow](../diagrams/flow-0038-settings-of-both-apps.sv
 
 ## Backlog
 
-- Features: [F6.2](https://github.com/silvioincalza/helper2.ai/issues/82) Review queue and actions (bulk, evidence, fix before accept), [F6.3](https://github.com/silvioincalza/helper2.ai/issues/83) Enrichment queue: requeue, skip, move to top.
+- Features: [F6.2](https://github.com/silvioincalza/searchavo.ai/issues/82) Review queue and actions (bulk, evidence, fix before accept), [F6.3](https://github.com/silvioincalza/searchavo.ai/issues/83) Enrichment queue: requeue, skip, move to top.
 - Open issues that change this decision:
-  - [#308](https://github.com/silvioincalza/helper2.ai/issues/308) S6.5.1 Every setting on `/admin/settings`
-  - [#309](https://github.com/silvioincalza/helper2.ai/issues/309) S6.6.1 To edit the curated list in the back office
+  - [#308](https://github.com/silvioincalza/searchavo.ai/issues/308) S6.5.1 Every setting on `/admin/settings`
+  - [#309](https://github.com/silvioincalza/searchavo.ai/issues/309) S6.6.1 To edit the curated list in the back office

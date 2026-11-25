@@ -10,210 +10,225 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [T1.11.3 The roadmap page lists the open stories of today](https://github.com/silvioincalza/helper2.ai/issues/786)
+- [T1.11.3 The roadmap page lists the open stories of today](https://github.com/silvioincalza/searchavo.ai/issues/786)
 
 ### Next
 
-- [S1.10.3 My session not to be evicted when the cache fills](https://github.com/silvioincalza/helper2.ai/issues/179)
+- [S1.10.3 My session not to be evicted when the cache fills](https://github.com/silvioincalza/searchavo.ai/issues/179)
 
 ### Later
 
-- [S1.11.39 The two guide tests that failed once under heavy load pass on every run](https://github.com/silvioincalza/helper2.ai/issues/800)
+- [S1.11.39 The two guide tests that failed once under heavy load pass on every run](https://github.com/silvioincalza/searchavo.ai/issues/800)
 
 ### Accepted
 
-- [S1.10.1 To know when the per-replica guide single flight costs money](https://github.com/silvioincalza/helper2.ai/issues/177)
-- [S1.10.2 To know when per-replica limits hurt](https://github.com/silvioincalza/helper2.ai/issues/178)
+- [S1.10.1 To know when the per-replica guide single flight costs money](https://github.com/silvioincalza/searchavo.ai/issues/177)
+- [S1.10.2 To know when per-replica limits hurt](https://github.com/silvioincalza/searchavo.ai/issues/178)
 
 ## E2 Scout and catalog
 
 ### Now
 
-- [S2.10.4 Duplicate resources measured before any fuzzy merge](https://github.com/silvioincalza/helper2.ai/issues/482)
+- [S2.10.4 Duplicate resources measured before any fuzzy merge](https://github.com/silvioincalza/searchavo.ai/issues/482)
 
 ### Next
 
-- [S2.2.6 The `linkedin-scout`, `course-scout` and live web events collectors fixed](https://github.com/silvioincalza/helper2.ai/issues/191)
-- [S2.3.6 The cause of a GitHub GraphQL answer without data named by the awesome-list collector](https://github.com/silvioincalza/helper2.ai/issues/428)
-- [S2.3.9 A web page that lists AI resources is split into its items, and each item is checked](https://github.com/silvioincalza/helper2.ai/issues/843)
-- [S2.3.27 A list that is gone does not name a candidate accepted later](https://github.com/silvioincalza/helper2.ai/issues/1013)
-- [S2.10.3 A source record to stay with its resource](https://github.com/silvioincalza/helper2.ai/issues/360)
-- [S2.10.6 A refused package join on the admin review list, and accepting it joins](https://github.com/silvioincalza/helper2.ai/issues/490)
-- [S2.11.3 Every source and collector to state its vitality facts](https://github.com/silvioincalza/helper2.ai/issues/215)
-- [S2.11.7 Likes and downloads of Hugging Face models, Spaces and npm packages are read again on a schedule](https://github.com/silvioincalza/helper2.ai/issues/976)
+- [S2.2.6 The `linkedin-scout`, `course-scout` and live web events collectors fixed](https://github.com/silvioincalza/searchavo.ai/issues/191)
+- [S2.3.6 The cause of a GitHub GraphQL answer without data named by the awesome-list collector](https://github.com/silvioincalza/searchavo.ai/issues/428)
+- [S2.3.9 A web page that lists AI resources is split into its items, and each item is checked](https://github.com/silvioincalza/searchavo.ai/issues/843)
+- [S2.3.27 A list that is gone does not name a candidate accepted later](https://github.com/silvioincalza/searchavo.ai/issues/1013)
+- [S2.10.3 A source record to stay with its resource](https://github.com/silvioincalza/searchavo.ai/issues/360)
+- [S2.10.6 A refused package join on the admin review list, and accepting it joins](https://github.com/silvioincalza/searchavo.ai/issues/490)
+- [S2.11.3 Every source and collector to state its vitality facts](https://github.com/silvioincalza/searchavo.ai/issues/215)
+- [S2.11.7 Likes and downloads of Hugging Face models, Spaces and npm packages are read again on a schedule](https://github.com/silvioincalza/searchavo.ai/issues/976)
 
 ### Later
 
-- [S2.2.14 A LinkedIn post about an event is NEWS, and its short links are resolved](https://github.com/silvioincalza/helper2.ai/issues/546)
-- [S2.3.5 Each row of `discovery_host` to show how many candidates it kept and dropped in the last 30 days](https://github.com/silvioincalza/helper2.ai/issues/197)
-- [S2.3.12 A PyPI package a list links to is read by its name](https://github.com/silvioincalza/helper2.ai/issues/850)
-- [S2.3.13 A Hugging Face dataset or Space a list links to is read by its id](https://github.com/silvioincalza/helper2.ai/issues/851)
-- [S2.3.19 Proposal: a rating from the comments on directories](https://github.com/silvioincalza/helper2.ai/issues/974)
-- [S2.4.6 Resources enriched before the gap round to get one](https://github.com/silvioincalza/helper2.ai/issues/203)
-- [S2.7.2 BigQuery reached without a long-lived key](https://github.com/silvioincalza/helper2.ai/issues/207)
-- [S2.10.7 An official package without a scope to join the repository its provenance names](https://github.com/silvioincalza/helper2.ai/issues/493)
-- [S2.11.5 A fork ahead of an archived parent treated as the living project, and repositories on other hosts visited](https://github.com/silvioincalza/helper2.ai/issues/803)
-- [S2.11.8 A PyPI package takes its popularity from its public repository](https://github.com/silvioincalza/helper2.ai/issues/977)
-- [S2.13.1 To ask for a new source from the Sources page](https://github.com/silvioincalza/helper2.ai/issues/218)
-- [S2.14.1 Hackathons, meetups, talks and workshops found automatically](https://github.com/silvioincalza/helper2.ai/issues/219)
-- [S2.15.1 PHP, Swift, C, C++, Elixir and Dart as platforms](https://github.com/silvioincalza/helper2.ai/issues/220)
+- [S2.2.14 A LinkedIn post about an event is NEWS, and its short links are resolved](https://github.com/silvioincalza/searchavo.ai/issues/546)
+- [S2.3.5 Each row of `discovery_host` to show how many candidates it kept and dropped in the last 30 days](https://github.com/silvioincalza/searchavo.ai/issues/197)
+- [S2.3.12 A PyPI package a list links to is read by its name](https://github.com/silvioincalza/searchavo.ai/issues/850)
+- [S2.3.13 A Hugging Face dataset or Space a list links to is read by its id](https://github.com/silvioincalza/searchavo.ai/issues/851)
+- [S2.3.19 Proposal: a rating from the comments on directories](https://github.com/silvioincalza/searchavo.ai/issues/974)
+- [S2.4.6 Resources enriched before the gap round to get one](https://github.com/silvioincalza/searchavo.ai/issues/203)
+- [S2.7.2 BigQuery reached without a long-lived key](https://github.com/silvioincalza/searchavo.ai/issues/207)
+- [S2.10.7 An official package without a scope to join the repository its provenance names](https://github.com/silvioincalza/searchavo.ai/issues/493)
+- [S2.11.5 A fork ahead of an archived parent treated as the living project, and repositories on other hosts visited](https://github.com/silvioincalza/searchavo.ai/issues/803)
+- [S2.11.8 A PyPI package takes its popularity from its public repository](https://github.com/silvioincalza/searchavo.ai/issues/977)
+- [S2.13.1 To ask for a new source from the Sources page](https://github.com/silvioincalza/searchavo.ai/issues/218)
+- [S2.14.1 Hackathons, meetups, talks and workshops found automatically](https://github.com/silvioincalza/searchavo.ai/issues/219)
+- [S2.15.1 PHP, Swift, C, C++, Elixir and Dart as platforms](https://github.com/silvioincalza/searchavo.ai/issues/220)
 
 ## E3 Search
 
 ### Now
 
-- [S3.3.9 The embedder keeps search queries in budget while both catalogs are embedded](https://github.com/silvioincalza/helper2.ai/issues/906)
+- [S3.3.9 The embedder keeps search queries in budget while both catalogs are embedded](https://github.com/silvioincalza/searchavo.ai/issues/906)
 
 ### Next
 
-- [S3.1.6 A result card whose link and text come from one source](https://github.com/silvioincalza/helper2.ai/issues/559)
-- [S3.3.2 The embedding indexer to send texts in batches again](https://github.com/silvioincalza/helper2.ai/issues/231)
-- [S3.3.6 Production embeds with the model in the cluster](https://github.com/silvioincalza/helper2.ai/issues/892)
-- [S3.5.5 `CategoryMatcher` measured on 150 labelled resources](https://github.com/silvioincalza/helper2.ai/issues/239)
-- [S3.8.3 Function words read in the language of the question](https://github.com/silvioincalza/helper2.ai/issues/574)
-- [S3.10.2 A strong Space on the first page](https://github.com/silvioincalza/helper2.ai/issues/249)
-- [S3.12.1 Ranking weights chosen by the kind of query](https://github.com/silvioincalza/helper2.ai/issues/251)
-- [S3.12.2 A recency term for time-bound searches](https://github.com/silvioincalza/helper2.ai/issues/252)
-- [S3.12.4 Two ranking rules decided on graded data](https://github.com/silvioincalza/helper2.ai/issues/254)
-- [T3.0 Owner task: one labelling session after the release, about 2–3 hours](https://github.com/silvioincalza/helper2.ai/issues/221)
+- [S3.1.6 A result card whose link and text come from one source](https://github.com/silvioincalza/searchavo.ai/issues/559)
+- [S3.3.2 The embedding indexer to send texts in batches again](https://github.com/silvioincalza/searchavo.ai/issues/231)
+- [S3.3.6 Production embeds with the model in the cluster](https://github.com/silvioincalza/searchavo.ai/issues/892)
+- [S3.5.5 `CategoryMatcher` measured on 150 labelled resources](https://github.com/silvioincalza/searchavo.ai/issues/239)
+- [S3.8.3 Function words read in the language of the question](https://github.com/silvioincalza/searchavo.ai/issues/574)
+- [S3.10.2 A strong Space on the first page](https://github.com/silvioincalza/searchavo.ai/issues/249)
+- [S3.12.1 Ranking weights chosen by the kind of query](https://github.com/silvioincalza/searchavo.ai/issues/251)
+- [S3.12.2 A recency term for time-bound searches](https://github.com/silvioincalza/searchavo.ai/issues/252)
+- [S3.12.4 Two ranking rules decided on graded data](https://github.com/silvioincalza/searchavo.ai/issues/254)
+- [T3.0 Owner task: one labelling session after the release, about 2–3 hours](https://github.com/silvioincalza/searchavo.ai/issues/221)
 
 ### Later
 
-- [S3.6.7 A shadow library behind a redirect, a shortener or a bare IP address is left out too](https://github.com/silvioincalza/helper2.ai/issues/637)
-- [S3.7.3 The open steps of the home examples done](https://github.com/silvioincalza/helper2.ai/issues/245)
-- [S3.11.1 A search to answer from the catalog and call a live source only when the catalog is too old or too thin](https://github.com/silvioincalza/helper2.ai/issues/250)
-- [S3.13.1 Papers ranked by citations](https://github.com/silvioincalza/helper2.ai/issues/255)
-- [S3.14.1 Search by meaning to match English resources](https://github.com/silvioincalza/helper2.ai/issues/256)
+- [S3.6.7 A shadow library behind a redirect, a shortener or a bare IP address is left out too](https://github.com/silvioincalza/searchavo.ai/issues/637)
+- [S3.7.3 The open steps of the home examples done](https://github.com/silvioincalza/searchavo.ai/issues/245)
+- [S3.11.1 A search to answer from the catalog and call a live source only when the catalog is too old or too thin](https://github.com/silvioincalza/searchavo.ai/issues/250)
+- [S3.13.1 Papers ranked by citations](https://github.com/silvioincalza/searchavo.ai/issues/255)
+- [S3.14.1 Search by meaning to match English resources](https://github.com/silvioincalza/searchavo.ai/issues/256)
 
 ## E4 AI guide
 
 ### Now
 
-- [S4.3.5 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/273)
+- [S4.3.5 Tracked privately (legal)](https://github.com/silvioincalza/searchavo.ai/issues/273)
 
 ### Next
 
-- [S4.1.12 AI picks when only the plan call fails](https://github.com/silvioincalza/helper2.ai/issues/854)
-- [S4.5.2 `H2_GUIDE_MODEL_STREAM=ON` and `OFF` compared on staging](https://github.com/silvioincalza/helper2.ai/issues/279)
-- [S4.7.2 Tracked privately (security)](https://github.com/silvioincalza/helper2.ai/issues/283)
-- [S4.9.1 The guide latency targets confirmed](https://github.com/silvioincalza/helper2.ai/issues/285)
+- [S4.1.12 AI picks when only the plan call fails](https://github.com/silvioincalza/searchavo.ai/issues/854)
+- [S4.5.2 `H2_GUIDE_MODEL_STREAM=ON` and `OFF` compared on staging](https://github.com/silvioincalza/searchavo.ai/issues/279)
+- [S4.7.2 Tracked privately (security)](https://github.com/silvioincalza/searchavo.ai/issues/283)
+- [S4.9.1 The guide latency targets confirmed](https://github.com/silvioincalza/searchavo.ai/issues/285)
 
 ### Later
 
-- [S4.6.2 The similar-question threshold checked on live traffic](https://github.com/silvioincalza/helper2.ai/issues/281)
-- [S4.8.1 Each AI answer signed with its model, time and AI-written fields](https://github.com/silvioincalza/helper2.ai/issues/284)
+- [S4.6.2 The similar-question threshold checked on live traffic](https://github.com/silvioincalza/searchavo.ai/issues/281)
+- [S4.8.1 Each AI answer signed with its model, time and AI-written fields](https://github.com/silvioincalza/searchavo.ai/issues/284)
 
 ## E5 Identity and the signed-in user
 
 ### Next
 
-- [S5.5.1 10 web searches and 10 AI answers a day instead of 3](https://github.com/silvioincalza/helper2.ai/issues/293)
+- [S5.5.1 10 web searches and 10 AI answers a day instead of 3](https://github.com/silvioincalza/searchavo.ai/issues/293)
 
 ### Later
 
-- [S5.6.1 To sign in without GitHub](https://github.com/silvioincalza/helper2.ai/issues/294)
+- [S5.6.1 To sign in without GitHub](https://github.com/silvioincalza/searchavo.ai/issues/294)
 
 ### Parked
 
-- [S5.7.1 To choose between Keycloak and plain Spring Security sign-in](https://github.com/silvioincalza/helper2.ai/issues/295)
+- [S5.7.1 To choose between Keycloak and plain Spring Security sign-in](https://github.com/silvioincalza/searchavo.ai/issues/295)
 
 ## E6 Back office
 
 ### Next
 
-- [S6.2.16 The research agent measured on 100 decided items, fast and reasoning model](https://github.com/silvioincalza/helper2.ai/issues/588)
-- [S6.2.26 The start-all dialog says how many items are new and how many are already researched](https://github.com/silvioincalza/helper2.ai/issues/644)
-- [S6.2.33 Research that catches the rejects it still keeps](https://github.com/silvioincalza/helper2.ai/issues/835)
-- [S6.5.1 Every setting on `/admin/settings`](https://github.com/silvioincalza/helper2.ai/issues/308)
+- [S6.2.16 The research agent measured on 100 decided items, fast and reasoning model](https://github.com/silvioincalza/searchavo.ai/issues/588)
+- [S6.2.26 The start-all dialog says how many items are new and how many are already researched](https://github.com/silvioincalza/searchavo.ai/issues/644)
+- [S6.2.33 Research that catches the rejects it still keeps](https://github.com/silvioincalza/searchavo.ai/issues/835)
+- [S6.5.1 Every setting on `/admin/settings`](https://github.com/silvioincalza/searchavo.ai/issues/308)
 
 ### Later
 
-- [S6.6.1 To edit the curated list in the back office](https://github.com/silvioincalza/helper2.ai/issues/309)
+- [S6.6.1 To edit the curated list in the back office](https://github.com/silvioincalza/searchavo.ai/issues/309)
 
 ## E7 Site and frontend
 
 ### Next
 
-- [S7.2.3 The open points of design system version 1 closed](https://github.com/silvioincalza/helper2.ai/issues/316)
-- [S7.6.2 One manual accessibility pass on real browsers](https://github.com/silvioincalza/helper2.ai/issues/324)
-- [S7.6.3 The WCAG 2.2.2 risk of the home lists decided in writing](https://github.com/silvioincalza/helper2.ai/issues/325)
+- [S7.2.3 The open points of design system version 1 closed](https://github.com/silvioincalza/searchavo.ai/issues/316)
+- [S7.6.2 One manual accessibility pass on real browsers](https://github.com/silvioincalza/searchavo.ai/issues/324)
+- [S7.6.3 The WCAG 2.2.2 risk of the home lists decided in writing](https://github.com/silvioincalza/searchavo.ai/issues/325)
 
 ### Later
 
-- [S7.7.1 The UI in my language](https://github.com/silvioincalza/helper2.ai/issues/326)
-- [S7.8.1 TypeScript 7 and ESLint 10](https://github.com/silvioincalza/helper2.ai/issues/327)
+- [S7.7.1 The UI in my language](https://github.com/silvioincalza/searchavo.ai/issues/326)
+- [S7.8.1 TypeScript 7 and ESLint 10](https://github.com/silvioincalza/searchavo.ai/issues/327)
 
 ## E8 Money and consent
 
 ### Now
 
-- [S8.4.1 The ad networks' rules checked before any prod setting is filled](https://github.com/silvioincalza/helper2.ai/issues/332)
-- [S8.6.3 The three AdSense ad units set on prod, after Google approves the site](https://github.com/silvioincalza/helper2.ai/issues/872)
+- [S8.4.1 The ad networks' rules checked before any prod setting is filled](https://github.com/silvioincalza/searchavo.ai/issues/332)
+- [S8.6.3 The three AdSense ad units set on prod, after Google approves the site](https://github.com/silvioincalza/searchavo.ai/issues/872)
 
 ### Later
 
-- [S8.5.1 A 10 CHF subscription for more calls](https://github.com/silvioincalza/helper2.ai/issues/333)
+- [S8.5.1 A 10 CHF subscription for more calls](https://github.com/silvioincalza/searchavo.ai/issues/333)
 
 ## E9 Legal and compliance
 
 ### Now
 
-- [S9.3.1 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/337)
+- [S9.3.1 Tracked privately (legal)](https://github.com/silvioincalza/searchavo.ai/issues/337)
 
 ### Next
 
-- [S9.1.3 The Privacy page names jsDelivr as a recipient of package names](https://github.com/silvioincalza/helper2.ai/issues/433)
-- [S9.4.1 An imprint and a contact address](https://github.com/silvioincalza/helper2.ai/issues/338)
-- [S9.6.1 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/340)
-- [S9.6.2 The credits the source terms ask for are shown on the Sources page](https://github.com/silvioincalza/helper2.ai/issues/434)
-- [S9.6.3 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/435)
-- [S9.7.1 Tracked privately (legal)](https://github.com/silvioincalza/helper2.ai/issues/341)
+- [S9.1.3 The Privacy page names jsDelivr as a recipient of package names](https://github.com/silvioincalza/searchavo.ai/issues/433)
+- [S9.4.1 An imprint and a contact address](https://github.com/silvioincalza/searchavo.ai/issues/338)
+- [S9.6.1 Tracked privately (legal)](https://github.com/silvioincalza/searchavo.ai/issues/340)
+- [S9.6.2 The credits the source terms ask for are shown on the Sources page](https://github.com/silvioincalza/searchavo.ai/issues/434)
+- [S9.6.3 Tracked privately (legal)](https://github.com/silvioincalza/searchavo.ai/issues/435)
+- [S9.7.1 Tracked privately (legal)](https://github.com/silvioincalza/searchavo.ai/issues/341)
 
 ## E10 Release and operations
 
 ### Now
 
-- [S10.3.8 v2026.11.9 on prod: the embedder in the cluster, and main's work since v2026.11.8](https://github.com/silvioincalza/helper2.ai/issues/909)
-- [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/helper2.ai/issues/353)
-- [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/helper2.ai/issues/356)
+- [S10.3.8 v2026.11.9 on prod: the embedder in the cluster, and main's work since v2026.11.8](https://github.com/silvioincalza/searchavo.ai/issues/909)
+- [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/searchavo.ai/issues/353)
+- [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/searchavo.ai/issues/356)
 
 ### Next
 
-- [S10.2.4 The chart check without the waits of its self-test](https://github.com/silvioincalza/helper2.ai/issues/412)
-- [S10.2.5 The Actions caches of the repository under their limit](https://github.com/silvioincalza/helper2.ai/issues/413)
-- [S10.2.9 The library tests declare the evaluation sets they read](https://github.com/silvioincalza/helper2.ai/issues/417)
-- [S10.2.17 The HTTP deadline test that reads a fast response without a flake](https://github.com/silvioincalza/helper2.ai/issues/501)
-- [S10.4.2 The first ten results of the new snapshot set graded](https://github.com/silvioincalza/helper2.ai/issues/348)
-- [S10.7.1 V2026.11.3, the first release of the new repository, on prod](https://github.com/silvioincalza/helper2.ai/issues/352)
-- [S10.8.2 A way back for the database when a release goes back](https://github.com/silvioincalza/helper2.ai/issues/427)
-- [S10.9.1 The new repository with the replayed history and the GitHub Project](https://github.com/silvioincalza/helper2.ai/issues/354)
+- [S10.2.4 The chart check without the waits of its self-test](https://github.com/silvioincalza/searchavo.ai/issues/412)
+- [S10.2.5 The Actions caches of the repository under their limit](https://github.com/silvioincalza/searchavo.ai/issues/413)
+- [S10.2.9 The library tests declare the evaluation sets they read](https://github.com/silvioincalza/searchavo.ai/issues/417)
+- [S10.2.17 The HTTP deadline test that reads a fast response without a flake](https://github.com/silvioincalza/searchavo.ai/issues/501)
+- [S10.4.2 The first ten results of the new snapshot set graded](https://github.com/silvioincalza/searchavo.ai/issues/348)
+- [S10.7.1 V2026.11.3, the first release of the new repository, on prod](https://github.com/silvioincalza/searchavo.ai/issues/352)
+- [S10.8.2 A way back for the database when a release goes back](https://github.com/silvioincalza/searchavo.ai/issues/427)
+- [S10.9.1 The new repository with the replayed history and the GitHub Project](https://github.com/silvioincalza/searchavo.ai/issues/354)
 
 ### Later
 
-- [S10.2.6 The report-only npm audit out of the frontend checks](https://github.com/silvioincalza/helper2.ai/issues/414)
-- [S10.2.7 The Prometheus rule tests in less than a minute](https://github.com/silvioincalza/helper2.ai/issues/415)
-- [S10.2.8 A Gradle job reaches its first task in seconds](https://github.com/silvioincalza/helper2.ai/issues/416)
-- [S10.2.10 A backend change does not rebuild the web image](https://github.com/silvioincalza/helper2.ai/issues/418)
-- [S10.2.12 The frontend tests of the whole package apart from the bundle tests](https://github.com/silvioincalza/helper2.ai/issues/420)
-- [S10.4.3 Guide relevance judged by a second person](https://github.com/silvioincalza/helper2.ai/issues/349)
-- [S10.10.1 The deployer token minted per deploy](https://github.com/silvioincalza/helper2.ai/issues/355)
-- [S10.12.1 The main journeys automated in a browser](https://github.com/silvioincalza/helper2.ai/issues/357)
+- [S10.2.6 The report-only npm audit out of the frontend checks](https://github.com/silvioincalza/searchavo.ai/issues/414)
+- [S10.2.7 The Prometheus rule tests in less than a minute](https://github.com/silvioincalza/searchavo.ai/issues/415)
+- [S10.2.8 A Gradle job reaches its first task in seconds](https://github.com/silvioincalza/searchavo.ai/issues/416)
+- [S10.2.10 A backend change does not rebuild the web image](https://github.com/silvioincalza/searchavo.ai/issues/418)
+- [S10.2.12 The frontend tests of the whole package apart from the bundle tests](https://github.com/silvioincalza/searchavo.ai/issues/420)
+- [S10.4.3 Guide relevance judged by a second person](https://github.com/silvioincalza/searchavo.ai/issues/349)
+- [S10.10.1 The deployer token minted per deploy](https://github.com/silvioincalza/searchavo.ai/issues/355)
+- [S10.12.1 The main journeys automated in a browser](https://github.com/silvioincalza/searchavo.ai/issues/357)
 
 ## E11 Spec-driven docs with the AI Unified Process
 
 ### Next
 
-- [S11.1.3 Decision rights for coding assistants](https://github.com/silvioincalza/helper2.ai/issues/926)
-- [S11.2.1 A vision in the AI Unified Process template](https://github.com/silvioincalza/helper2.ai/issues/927)
-- [S11.2.2 Requirements that match the vision and the use cases](https://github.com/silvioincalza/helper2.ai/issues/928)
-- [S11.2.3 A glossary the docs and the code use](https://github.com/silvioincalza/helper2.ai/issues/929)
-- [S11.3.1 An entity model that matches the schema](https://github.com/silvioincalza/helper2.ai/issues/930)
-- [S11.3.2 Use case specifications ready for approval](https://github.com/silvioincalza/helper2.ai/issues/931)
-- [S11.3.3 ADRs with a status and the requirements they serve](https://github.com/silvioincalza/helper2.ai/issues/932)
+- [S11.1.3 Decision rights for coding assistants](https://github.com/silvioincalza/searchavo.ai/issues/926)
+- [S11.2.1 A vision in the AI Unified Process template](https://github.com/silvioincalza/searchavo.ai/issues/927)
+- [S11.2.2 Requirements that match the vision and the use cases](https://github.com/silvioincalza/searchavo.ai/issues/928)
+- [S11.2.3 A glossary the docs and the code use](https://github.com/silvioincalza/searchavo.ai/issues/929)
+- [S11.3.1 An entity model that matches the schema](https://github.com/silvioincalza/searchavo.ai/issues/930)
+- [S11.3.2 Use case specifications ready for approval](https://github.com/silvioincalza/searchavo.ai/issues/931)
 
 ### Later
 
-- [S11.3.4 Business processes for the multi-step flows](https://github.com/silvioincalza/helper2.ai/issues/933)
-- [S11.4.1 Test cases for the approved use cases](https://github.com/silvioincalza/helper2.ai/issues/934)
-- [S11.4.2 Code and tests name the use cases they build](https://github.com/silvioincalza/helper2.ai/issues/935)
-- [S11.5.1 User guide, acceptance and release notes from the specification](https://github.com/silvioincalza/helper2.ai/issues/936)
+- [S11.3.4 Business processes for the multi-step flows](https://github.com/silvioincalza/searchavo.ai/issues/933)
+- [S11.4.1 Test cases for the approved use cases](https://github.com/silvioincalza/searchavo.ai/issues/934)
+- [S11.4.2 Code and tests name the use cases they build](https://github.com/silvioincalza/searchavo.ai/issues/935)
+- [S11.5.1 User guide, acceptance and release notes from the specification](https://github.com/silvioincalza/searchavo.ai/issues/936)
+
+## E12 Rename helper2.ai to searchavo.ai
+
+### Now
+
+- [S12.1.1 DNS and mail for searchavo.ai and searchavo.com, with a temporary redirect to helper2.ai](https://github.com/silvioincalza/searchavo.ai/issues/1070)
+
+### Next
+
+- [S12.1.2 Infrastructure for searchavo.ai added beside the helper2.ai one](https://github.com/silvioincalza/searchavo.ai/issues/1071)
+- [S12.1.5 Staging runs on searchavo.incalza.me with the searchavo names](https://github.com/silvioincalza/searchavo.ai/issues/1074)
+- [S12.1.6 Production moves to searchavo.ai, and helper2.ai redirects to it](https://github.com/silvioincalza/searchavo.ai/issues/1075)
+
+### Later
+
+- [S12.1.7 Old helper2 resources removed, and the GitHub repository renamed to searchavo.ai](https://github.com/silvioincalza/searchavo.ai/issues/1076)

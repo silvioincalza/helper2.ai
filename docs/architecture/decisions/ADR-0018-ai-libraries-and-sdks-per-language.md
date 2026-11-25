@@ -184,10 +184,10 @@ link at deps.dev), semantic-kernel (only its Java packages inside the cap), spri
   back-link cannot tell it apart. The admin sees it before accepting.
 
 ### Known limits
-- The frozen eval snapshots hold no package terms: the effect on search is not measured until a new snapshot set is recorded and graded ([S10.4.2](https://github.com/silvioincalza/helper2.ai/issues/348)).
+- The frozen eval snapshots hold no package terms: the effect on search is not measured until a new snapshot set is recorded and graded ([S10.4.2](https://github.com/silvioincalza/searchavo.ai/issues/348)).
 - Bulk accept does not cover resource candidates: each is accepted one by one.
 - An item the topic leaders opened first is indexed without packages: a later `github-sdks` record does not join it.
-- PHP, Dart, R and Swift have no package source: ecosyste.ms is not used yet ([S2.15.1](https://github.com/silvioincalza/helper2.ai/issues/220)).
+- PHP, Dart, R and Swift have no package source: ecosyste.ms is not used yet ([S2.15.1](https://github.com/silvioincalza/searchavo.ai/issues/220)).
 - SDKs inside monorepos (AWS Bedrock runtime, Azure OpenAI) and repositories with no AI word (cohere-python) are not found.
 
 ### STRIDE
@@ -226,6 +226,6 @@ Tracked privately (S9.6.3).
 [flow](../diagrams/flow-0018-package-catalog.svg) · [sequence](../diagrams/sequence-0018-package-catalog.svg)
 
 ## Backlog
-- Decides: [F2.8](https://github.com/silvioincalza/helper2.ai/issues/38).
+- Decides: [F2.8](https://github.com/silvioincalza/searchavo.ai/issues/38).
 - Open issues that change it:
-  - [S2.15.1](https://github.com/silvioincalza/helper2.ai/issues/220): PHP, Swift, C, C++, Elixir and Dart as platforms.
+  - [S2.15.1](https://github.com/silvioincalza/searchavo.ai/issues/220): PHP, Swift, C, C++, Elixir and Dart as platforms.

@@ -677,10 +677,10 @@ intents: [flow](../diagrams/flow-0031-guide-intents.svg) · [sequence](../diagra
 
 ## Backlog
 
-- Features: [F4.1](https://github.com/silvioincalza/helper2.ai/issues/64) Guide pipeline: intents, plan, retrieve, choose, evidence gate, reason check;
-  [F10.4](https://github.com/silvioincalza/helper2.ai/issues/110) Evaluation of guide and search: the `searchavo.guide.quote_origin` meter (S10.4.6).
+- Features: [F4.1](https://github.com/silvioincalza/searchavo.ai/issues/64) Guide pipeline: intents, plan, retrieve, choose, evidence gate, reason check;
+  [F10.4](https://github.com/silvioincalza/searchavo.ai/issues/110) Evaluation of guide and search: the `searchavo.guide.quote_origin` meter (S10.4.6).
 - Open issues that change this decision:
-  - [#283](https://github.com/silvioincalza/helper2.ai/issues/283) S4.7.2 Tracked privately (security)
-  - [#285](https://github.com/silvioincalza/helper2.ai/issues/285) S4.9.1 The guide latency targets confirmed
-  - [#854](https://github.com/silvioincalza/helper2.ai/issues/854) S4.1.12 AI picks when only the plan call fails
-  - [#357](https://github.com/silvioincalza/helper2.ai/issues/357) S10.12.1 The main journeys automated in a browser
+  - [#283](https://github.com/silvioincalza/searchavo.ai/issues/283) S4.7.2 Tracked privately (security)
+  - [#285](https://github.com/silvioincalza/searchavo.ai/issues/285) S4.9.1 The guide latency targets confirmed
+  - [#854](https://github.com/silvioincalza/searchavo.ai/issues/854) S4.1.12 AI picks when only the plan call fails
+  - [#357](https://github.com/silvioincalza/searchavo.ai/issues/357) S10.12.1 The main journeys automated in a browser

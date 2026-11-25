@@ -235,5 +235,5 @@ the daily gap cap counts gap calls ([0014](ADR-0014-evidence-gated-enrichment.md
 [flow](../diagrams/flow-0011-scout-runner.svg) · [sequence](../diagrams/sequence-0011-scout-runner.svg)
 
 ## Backlog
-- Decides: [F2.1](https://github.com/silvioincalza/helper2.ai/issues/31).
+- Decides: [F2.1](https://github.com/silvioincalza/searchavo.ai/issues/31).
 - Open issues that change it: none.
