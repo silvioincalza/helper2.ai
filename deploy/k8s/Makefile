@@ -463,7 +463,7 @@ HELM_ROLLBACK = $(if $(filter false,$(ROLLBACK_UNHEALTHY_GIVEN)),,--rollback-on-
 deploy: check-env release-ready env-secret ## env-secret, then helm upgrade ENV to TAG (default: current commit), wait, roll back on failure; then the status check, and back to the revision deployed before when it fails (neither rollback with ROLLBACK_UNHEALTHY=false, on the command line of one deploy)
 	set -euo pipefail; \
 	before=$$(./check-release.sh deployed-revision $(NS)); \
-	helm upgrade --install $(HELM_ARGS) --server-side=true --force-conflicts --wait --wait-for-jobs --timeout 12m --rollback-on-failure --history-max 3; \
+	helm upgrade --install $(HELM_ARGS) --server-side=true --force-conflicts --wait --wait-for-jobs --timeout 12m $(HELM_ROLLBACK) --history-max 3; \
 	./check-release.sh --or-roll-back-to "$(ROLLBACK_TARGET)" $(NS) $(SMOKE_URLS)
 
 env-secret: check-env ## write ENV's app.env into the Secrets searchavo-credentials and searchavo-app-env (checked first by check-app-env.sh)
