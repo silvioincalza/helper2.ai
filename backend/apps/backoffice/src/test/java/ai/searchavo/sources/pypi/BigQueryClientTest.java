@@ -31,7 +31,7 @@ class BigQueryClientTest {
   static final String ONE_ROW =
       """
       {"kind": "bigquery#queryResponse", "jobComplete": true, %s,
-       "jobReference": {"projectId": "helper2ai", "jobId": "job-1", "location": "US"},
+       "jobReference": {"projectId": "searchavoai", "jobId": "job-1", "location": "US"},
        "totalRows": "1",
        "rows": [{"f": [{"v": "torch-tools"},
                        {"v": [{"v": "Topic :: Scientific/Engineering :: Artificial Intelligence"}]},
@@ -61,7 +61,7 @@ class BigQueryClientTest {
     return new BigQueryClient(
         http,
         tokens,
-        "helper2ai",
+        "searchavoai",
         SourceFixtures.CLOCK,
         URI.create(server.baseUrl() + "/bigquery/v2"),
         5_000_000_000L);
@@ -69,7 +69,7 @@ class BigQueryClientTest {
 
   @Test
   void aQueryIsSentWithItsParametersAndACostCapAndItsRowsAreRead() {
-    server.route("/bigquery/v2/projects/helper2ai/queries", FixtureServer.Reply.ok(ONE_ROW));
+    server.route("/bigquery/v2/projects/searchavoai/queries", FixtureServer.Reply.ok(ONE_ROW));
 
     List<Map<String, Object>> rows =
         client()
@@ -84,7 +84,7 @@ class BigQueryClientTest {
         .containsEntry(
             "classifiers", List.of("Topic :: Scientific/Engineering :: Artificial Intelligence"))
         .containsEntry("upload_time", "1762689600000000");
-    int query = server.requests.indexOf("/bigquery/v2/projects/helper2ai/queries");
+    int query = server.requests.indexOf("/bigquery/v2/projects/searchavoai/queries");
     JsonNode body = new ObjectMapper().readTree(server.requestBodies.get(query));
     assertThat(body.path("query").asString()).isEqualTo("SELECT 1 WHERE upload_time >= @since");
     assertThat(body.path("useLegacySql").asBoolean(true)).isFalse();
@@ -100,27 +100,28 @@ class BigQueryClientTest {
   @Test
   void aJobThatIsNotDoneIsAskedForAgainUntilItIs() {
     server.route(
-        "/bigquery/v2/projects/helper2ai/queries",
+        "/bigquery/v2/projects/searchavoai/queries",
         FixtureServer.Reply.ok(
             """
             {"jobComplete": false,
-             "jobReference": {"projectId": "helper2ai", "jobId": "job-1", "location": "US"}}
+             "jobReference": {"projectId": "searchavoai", "jobId": "job-1", "location": "US"}}
             """));
-    server.route("/bigquery/v2/projects/helper2ai/queries/job-1", FixtureServer.Reply.ok(ONE_ROW));
+    server.route(
+        "/bigquery/v2/projects/searchavoai/queries/job-1", FixtureServer.Reply.ok(ONE_ROW));
 
     List<Map<String, Object>> rows = client().query("SELECT 1", List.of(), 100);
 
     assertThat(rows).extracting(r -> r.get("name")).containsExactly("torch-tools");
     assertThat(server.requests)
-        .anyMatch(r -> r.startsWith("/bigquery/v2/projects/helper2ai/queries/job-1?location=US"));
+        .anyMatch(r -> r.startsWith("/bigquery/v2/projects/searchavoai/queries/job-1?location=US"));
   }
 
   @Test
   void morePagesAreReadUpToTheRowCap() {
     String firstPage = ONE_ROW.replace("\"totalRows\": \"1\",", "\"pageToken\": \"p2\",");
-    server.route("/bigquery/v2/projects/helper2ai/queries", FixtureServer.Reply.ok(firstPage));
+    server.route("/bigquery/v2/projects/searchavoai/queries", FixtureServer.Reply.ok(firstPage));
     server.route(
-        "/bigquery/v2/projects/helper2ai/queries/job-1", FixtureServer.Reply.ok(firstPage));
+        "/bigquery/v2/projects/searchavoai/queries/job-1", FixtureServer.Reply.ok(firstPage));
 
     List<Map<String, Object>> rows = client().query("SELECT 1", List.of(), 3);
 
@@ -131,7 +132,7 @@ class BigQueryClientTest {
   @Test
   void aQueryOverTheCostCapIsAFailedRun() {
     server.route(
-        "/bigquery/v2/projects/helper2ai/queries",
+        "/bigquery/v2/projects/searchavoai/queries",
         new FixtureServer.Reply(
             400,
             """
