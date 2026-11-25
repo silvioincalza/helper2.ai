@@ -274,6 +274,14 @@ has succeeded for 8 days (it too needs one successful run first: run the first o
 `kubectl -n searchavo create job --from=cronjob/pg-restore-check pg-restore-check-now`, then
 `kubectl -n searchavo logs job/pg-restore-check-now -c check` (and `-c fetch` with the off-site copy).
 
+**Move** (replaces the whole database of ENV with a copy of another namespace's, in the same environment):
+`make -C deploy/k8s ENV=<env> move FROM=helper2-<env>` streams `pg_dump --no-owner` from `postgres-0` of `FROM` into
+`postgres-0` of `searchavo-<env>` in one transaction, then compares the exact row count of every table on both
+sides. It refuses an app, back office, canary or migrate Job that still runs in either namespace, a move from
+staging to prod or back, and a namespace typed wrong. The default privileges the dump grants for the source
+database's own role are granted for `searchavo`. A stream that stops halfway never commits; the source is only
+read. The apps of both stay stopped: bring up ENV with a deploy of the release that runs on this schema.
+
 **Restore** (replaces the whole database; the app is down in the meantime). The dump is plain SQL with
 `CREATE EXTENSION vector` and Flyway's history, so the app starts on it as usual:
 
