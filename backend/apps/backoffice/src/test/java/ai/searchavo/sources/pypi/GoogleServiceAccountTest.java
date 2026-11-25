@@ -14,7 +14,7 @@ class GoogleServiceAccountTest {
     GoogleServiceAccount account =
         GoogleServiceAccount.fromBase64Json(GoogleKeys.base64(GoogleKeys.keyJson(GOOGLE)));
 
-    assertThat(account.clientEmail()).isEqualTo("scout@helper2ai.iam.gserviceaccount.com");
+    assertThat(account.clientEmail()).isEqualTo("scout@searchavoai.iam.gserviceaccount.com");
     assertThat(account.privateKeyId()).isEqualTo("key-1");
     assertThat(account.privateKey().getEncoded())
         .isEqualTo(GoogleKeys.PAIR.getPrivate().getEncoded());
@@ -26,7 +26,7 @@ class GoogleServiceAccountTest {
         GoogleServiceAccount.fromBase64Json(GoogleKeys.base64(GoogleKeys.keyJson(GOOGLE)));
 
     assertThat(account.toString())
-        .contains("scout@helper2ai.iam.gserviceaccount.com")
+        .contains("scout@searchavoai.iam.gserviceaccount.com")
         .doesNotContain("PRIVATE")
         .doesNotContain("modulus");
   }

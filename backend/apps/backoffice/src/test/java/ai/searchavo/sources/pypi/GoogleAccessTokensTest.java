@@ -79,7 +79,8 @@ class GoogleAccessTokensTest {
     JsonNode claims = decode(jwt[1]);
     assertThat(header.path("alg").asString()).isEqualTo("RS256");
     assertThat(header.path("kid").asString()).isEqualTo("key-1");
-    assertThat(claims.path("iss").asString()).isEqualTo("scout@helper2ai.iam.gserviceaccount.com");
+    assertThat(claims.path("iss").asString())
+        .isEqualTo("scout@searchavoai.iam.gserviceaccount.com");
     assertThat(claims.path("aud").asString()).isEqualTo("https://oauth2.googleapis.com/token");
     assertThat(claims.path("scope").asString()).isEqualTo(GoogleAccessTokens.SCOPE);
     assertThat(claims.path("iat").asLong()).isEqualTo(NOW.getEpochSecond());

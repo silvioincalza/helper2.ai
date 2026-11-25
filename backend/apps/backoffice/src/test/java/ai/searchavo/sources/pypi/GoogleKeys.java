@@ -19,9 +19,9 @@ final class GoogleKeys {
                 .encodeToString(PAIR.getPrivate().getEncoded())
             + "\n-----END PRIVATE KEY-----\n";
     return """
-    {"type": "service_account", "project_id": "helper2ai",
+    {"type": "service_account", "project_id": "searchavoai",
      "private_key_id": "key-1", "private_key": "%s",
-     "client_email": "scout@helper2ai.iam.gserviceaccount.com",
+     "client_email": "scout@searchavoai.iam.gserviceaccount.com",
      "token_uri": "%s"}
     """
         .formatted(pem.replace("\n", "\\n"), tokenUri);

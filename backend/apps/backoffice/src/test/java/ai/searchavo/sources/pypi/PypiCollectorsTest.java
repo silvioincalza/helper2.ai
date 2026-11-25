@@ -38,14 +38,14 @@ class PypiCollectorsTest {
   void onWithAKeyAndAProjectItIsOn() {
     String key = GoogleKeys.base64(GoogleKeys.keyJson(GoogleServiceAccount.TOKEN_URI.toString()));
 
-    assertThat(create(true, key, "helper2ai").getDescriptor().getEnabled()).isTrue();
+    assertThat(create(true, key, "searchavoai").getDescriptor().getEnabled()).isTrue();
   }
 
   @Test
   void onWithoutAKeyOrAProjectStopsStartup() {
     String key = GoogleKeys.base64(GoogleKeys.keyJson(GoogleServiceAccount.TOKEN_URI.toString()));
 
-    assertThatThrownBy(() -> create(true, null, "helper2ai"))
+    assertThatThrownBy(() -> create(true, null, "searchavoai"))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("SA_PYPI_BIGQUERY_KEY");
     assertThatThrownBy(() -> create(true, key, " "))
@@ -55,7 +55,7 @@ class PypiCollectorsTest {
 
   @Test
   void onWithABrokenKeyStopsStartupWithoutShowingTheKey() {
-    assertThatThrownBy(() -> create(true, "c2VjcmV0LXZhbHVl", "helper2ai"))
+    assertThatThrownBy(() -> create(true, "c2VjcmV0LXZhbHVl", "searchavoai"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageNotContaining("c2VjcmV0LXZhbHVl")
         .hasMessageNotContaining("secret-value");
