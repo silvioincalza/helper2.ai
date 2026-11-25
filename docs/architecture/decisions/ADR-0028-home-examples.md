@@ -163,7 +163,7 @@ same for every visitor.
 | Data | Covered: origin `AI_DRAFTED` and model on the row; the draft in the review item. |
 | Guardrails | Covered: title and description in their own tags with `< >` masked, attributes without quotes, the data rule in the prompt (OWASP LLM01); JSON answer, the example rules, duplicates, the human accept, the quality check; output is never rendered as HTML (LLM05). |
 | Observability | Covered: model call metrics (`example-drafts`), budget gauge, audit entry per run. |
-| Evaluation | Deferred, safe: every draft is judged twice (a person, then the check); the accept rate shows prompt quality. The prompt's label is pinned; the eval of the prompt on staging is open ([#245](https://github.com/silvioincalza/helper2.ai/issues/245)). |
+| Evaluation | Deferred, safe: every draft is judged twice (a person, then the check); the accept rate shows prompt quality. The prompt's label is pinned; the eval of the prompt on staging is open ([#245](https://github.com/silvioincalza/searchavo.ai/issues/245)). |
 | Deployment | Covered: two settings, no chart change. |
 | Security & Identity | Covered: ADMIN only, admin host, CSRF, audit. |
 | Human-in-the-loop | Covered: nothing reaches the pool without an accept. |
@@ -178,6 +178,6 @@ Tracked privately (S9.6.3).
 
 ## Backlog
 
-- Features: [F3.7](https://github.com/silvioincalza/helper2.ai/issues/53) Home examples from a checked pool.
+- Features: [F3.7](https://github.com/silvioincalza/searchavo.ai/issues/53) Home examples from a checked pool.
 - Open issues that change this decision:
-  - [#245](https://github.com/silvioincalza/helper2.ai/issues/245) S3.7.3 The open steps of the home examples done
+  - [#245](https://github.com/silvioincalza/searchavo.ai/issues/245) S3.7.3 The open steps of the home examples done

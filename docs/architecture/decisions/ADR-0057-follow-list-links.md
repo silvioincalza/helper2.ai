@@ -328,8 +328,8 @@ What exists to follow a link:
 [flow](../diagrams/flow-0057-follow-list-links.svg) · [sequence](../diagrams/sequence-0057-follow-list-links.svg)
 
 ## Backlog
-- Decides: [S2.3.20](https://github.com/silvioincalza/helper2.ai/issues/980), in
-  [F2.3](https://github.com/silvioincalza/helper2.ai/issues/33).
+- Decides: [S2.3.20](https://github.com/silvioincalza/searchavo.ai/issues/980), in
+  [F2.3](https://github.com/silvioincalza/searchavo.ai/issues/33).
 - The status code of `PageStatusReader` decides that a web page list is gone at its site:
-  [S2.3.24](https://github.com/silvioincalza/helper2.ai/issues/998), in
+  [S2.3.24](https://github.com/silvioincalza/searchavo.ai/issues/998), in
   [0023](ADR-0023-catalog-full-text-index.md) point 17.

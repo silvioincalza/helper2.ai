@@ -53,7 +53,7 @@ describe('mission, privacy and terms pages', () => {
     const issues = screen.getByRole('link', {
       name: 'Open an issue on GitHub (opens in a new tab)',
     });
-    expect(issues).toHaveAttribute('href', 'https://github.com/silvioincalza/helper2.ai/issues');
+    expect(issues).toHaveAttribute('href', 'https://github.com/silvioincalza/searchavo.ai/issues');
     expect(issues).toHaveAttribute('target', '_blank');
     expect(issues).toHaveAttribute('rel', 'noopener noreferrer');
   });

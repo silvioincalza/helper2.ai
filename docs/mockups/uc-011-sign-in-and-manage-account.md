@@ -4,7 +4,7 @@ Screen notes for UC-011: what the page shows, step by step and in each state. Th
 
 ## Sign in
 
-Anyone can sign in, to keep saved items on the account. The daily limits are per address, the same signed in or not (a larger limit for signed-in users is open: [S5.5.1](https://github.com/silvioincalza/helper2.ai/issues/293)). Nothing needs an account: search, the guide and saving in the browser work signed out. Administrators use the same sign-in on the back office host ([ADR 0036](../architecture/decisions/ADR-0036-identity-and-the-admin-host.md)).
+Anyone can sign in, to keep saved items on the account. The daily limits are per address, the same signed in or not (a larger limit for signed-in users is open: [S5.5.1](https://github.com/silvioincalza/searchavo.ai/issues/293)). Nothing needs an account: search, the guide and saving in the browser work signed out. Administrators use the same sign-in on the back office host ([ADR 0036](../architecture/decisions/ADR-0036-identity-and-the-admin-host.md)).
 
 1. Signed out, the header shows **Sign in** on every page (nothing when no provider is configured). It opens the sign-in page (`/signin`): why to sign in (saved items and settings on every device), then **Continue with GitHub**, one button per configured provider. The Saved page offers the provider buttons directly. Opened directly, the page returns to Home after sign-in; signed in, it links to the account; on a site with no provider it says sign-in is not offered here.
 2. The page the user was on is kept in this tab. After the provider, the user comes back to that page, signed in; saved items merge ([UC-012](uc-012-save-resources.md)).

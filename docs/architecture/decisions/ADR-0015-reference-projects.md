@@ -128,7 +128,7 @@ names that relationships pointed at were in no catalog resource: PyTorch 29 time
 
 ### Known limits
 - Models (Whisper, SAM, rerankers) are not covered: no collector reads the most liked models per `pipeline_tag`.
-- Seminal papers are not covered: no source is sorted by citations ([S3.13.1](https://github.com/silvioincalza/helper2.ai/issues/255)).
+- Seminal papers are not covered: no source is sorted by citations ([S3.13.1](https://github.com/silvioincalza/searchavo.ai/issues/255)).
 - A reference project no topic reaches is not found: there is no seed list for it.
 
 ### STRIDE
@@ -167,4 +167,4 @@ Tracked privately (S9.6.3).
 [flow](../diagrams/flow-0015-reference-projects-for-review.svg) · [sequence](../diagrams/sequence-0015-reference-projects-for-review.svg)
 
 ## Backlog
-- Decides: [F2.5](https://github.com/silvioincalza/helper2.ai/issues/35).
+- Decides: [F2.5](https://github.com/silvioincalza/searchavo.ai/issues/35).

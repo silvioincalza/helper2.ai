@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO=${REPO:-silvioincalza/helper2.ai}
+REPO=${REPO:-silvioincalza/searchavo.ai}
 SITE=${SITE:-https://searchavo.ai}
 PUBLISHER=${PUBLISHER:-ca-pub-4688630163076563}
 UNIT_RESOURCE=${UNIT_RESOURCE-9345575694}

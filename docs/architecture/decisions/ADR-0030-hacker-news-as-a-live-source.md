@@ -58,7 +58,7 @@ the package catalog collector (GitHub + deps.dev, [0018](ADR-0018-ai-libraries-a
 ## Alternatives considered
 
 - **OpenAlex** for papers with a citation sort (CC0, about $0.001 a search, free key with $1 a day): finds the
-  Shazeer 2017 MoE paper, LoRA and QLoRA at the top. Open ([#255](https://github.com/silvioincalza/helper2.ai/issues/255)), after this measurement.
+  Shazeer 2017 MoE paper, LoRA and QLoRA at the top. Open ([#255](https://github.com/silvioincalza/searchavo.ai/issues/255)), after this measurement.
 - **Semantic Scholar**: best paper relevance, but needs a key, and its data can be CC BY-NC. Not used.
 - **Libraries.io, deps.dev, ecosyste.ms** as live sources: no useful free-text search, or share-alike data. Out.
 - **PyPI**: no search API; a daily BigQuery snapshot through the Scout is the clean way. Separate decision.
@@ -117,7 +117,7 @@ Tracked privately (S9.6.3).
 
 ## Backlog
 
-- Features: [F3.9](https://github.com/silvioincalza/helper2.ai/issues/55) Hacker News as a live source.
+- Features: [F3.9](https://github.com/silvioincalza/searchavo.ai/issues/55) Hacker News as a live source.
 - Open issues that change this decision:
-  - [#255](https://github.com/silvioincalza/helper2.ai/issues/255) S3.13.1 Papers ranked by citations
-  - [#348](https://github.com/silvioincalza/helper2.ai/issues/348) S10.4.2 The first ten results of the new snapshot set graded
+  - [#255](https://github.com/silvioincalza/searchavo.ai/issues/255) S3.13.1 Papers ranked by citations
+  - [#348](https://github.com/silvioincalza/searchavo.ai/issues/348) S10.4.2 The first ten results of the new snapshot set graded

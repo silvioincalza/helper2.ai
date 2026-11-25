@@ -100,7 +100,7 @@ so the cache must be optional: when Redis is down, the app still works, only slo
 [flow](../diagrams/flow-0005-redis-disposable-cache.svg) · [sequence](../diagrams/sequence-0005-redis-disposable-cache.svg)
 
 ## Backlog
-- Decides: [F1.4](https://github.com/silvioincalza/helper2.ai/issues/23).
+- Decides: [F1.4](https://github.com/silvioincalza/searchavo.ai/issues/23).
 - Open issues that change it:
-  - [S1.8.3](https://github.com/silvioincalza/helper2.ai/issues/174): a Redis exporter and an alert on evicted keys.
-  - [S1.10.3](https://github.com/silvioincalza/helper2.ai/issues/179): sessions and counters kept when the cache fills.
+  - [S1.8.3](https://github.com/silvioincalza/searchavo.ai/issues/174): a Redis exporter and an alert on evicted keys.
+  - [S1.10.3](https://github.com/silvioincalza/searchavo.ai/issues/179): sessions and counters kept when the cache fills.

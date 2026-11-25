@@ -289,7 +289,7 @@ post when a search finds it.
 [flow](../diagrams/flow-0055-directory-lists.svg) · [sequence](../diagrams/sequence-0055-directory-lists.svg)
 
 ## Backlog
-- Decides: [S2.3.15](https://github.com/silvioincalza/helper2.ai/issues/970),
-  [S2.3.16](https://github.com/silvioincalza/helper2.ai/issues/971),
-  [S2.3.17](https://github.com/silvioincalza/helper2.ai/issues/972), in
-  [F2.3](https://github.com/silvioincalza/helper2.ai/issues/33).
+- Decides: [S2.3.15](https://github.com/silvioincalza/searchavo.ai/issues/970),
+  [S2.3.16](https://github.com/silvioincalza/searchavo.ai/issues/971),
+  [S2.3.17](https://github.com/silvioincalza/searchavo.ai/issues/972), in
+  [F2.3](https://github.com/silvioincalza/searchavo.ai/issues/33).

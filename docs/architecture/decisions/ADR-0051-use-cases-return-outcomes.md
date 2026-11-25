@@ -194,8 +194,8 @@ Some use cases already answer with a sealed type (`AddHomeExample.Outcome`, `Edi
 
 ## Backlog
 
-- Features: [F1.11](https://github.com/silvioincalza/helper2.ai/issues/30) (use cases return an outcome, and the web
-  layer maps it to a problem, [S1.11.22](https://github.com/silvioincalza/helper2.ai/issues/726)).
+- Features: [F1.11](https://github.com/silvioincalza/searchavo.ai/issues/30) (use cases return an outcome, and the web
+  layer maps it to a problem, [S1.11.22](https://github.com/silvioincalza/searchavo.ai/issues/726)).
   The `admin` use cases and the transactions without `noRollbackFor`:
-  [T1.11.2](https://github.com/silvioincalza/helper2.ai/issues/742).
+  [T1.11.2](https://github.com/silvioincalza/searchavo.ai/issues/742).
 - Open issues that change this decision: none.

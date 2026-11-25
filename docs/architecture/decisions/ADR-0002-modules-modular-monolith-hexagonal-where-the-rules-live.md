@@ -339,8 +339,8 @@ to reach into the other's code.
 Modules, ports and adapters: one view per module group, [context](../diagrams/architecture-context.svg) · [search](../diagrams/architecture-search.svg) · [guide](../diagrams/architecture-guide.svg) · [index](../diagrams/architecture-index.svg) · [setup](../diagrams/architecture-setup.svg) · [review research](../diagrams/architecture-review-research.svg) · [platform](../diagrams/architecture-platform.svg).
 
 ## Backlog
-- Decides: [F1.1](https://github.com/silvioincalza/helper2.ai/issues/20),
-  [F1.11](https://github.com/silvioincalza/helper2.ai/issues/30) (the closed LLM layer,
-  [S1.11.1](https://github.com/silvioincalza/helper2.ai/issues/180); controllers that answer with views owned by
-  the use cases, [S1.11.2](https://github.com/silvioincalza/helper2.ai/issues/181)).
+- Decides: [F1.1](https://github.com/silvioincalza/searchavo.ai/issues/20),
+  [F1.11](https://github.com/silvioincalza/searchavo.ai/issues/30) (the closed LLM layer,
+  [S1.11.1](https://github.com/silvioincalza/searchavo.ai/issues/180); controllers that answer with views owned by
+  the use cases, [S1.11.2](https://github.com/silvioincalza/searchavo.ai/issues/181)).
 - Open issues that change it: none.

@@ -131,8 +131,8 @@ never break keyword search.
 
 ## Backlog
 
-- Features: [F3.3](https://github.com/silvioincalza/helper2.ai/issues/49) Vector search: pgvector + NVIDIA embeddings.
+- Features: [F3.3](https://github.com/silvioincalza/searchavo.ai/issues/49) Vector search: pgvector + NVIDIA embeddings.
 - Open issues that change this decision:
-  - [#178](https://github.com/silvioincalza/helper2.ai/issues/178) S1.10.2 To know when per-replica limits hurt
-  - [#231](https://github.com/silvioincalza/helper2.ai/issues/231) S3.3.2 The embedding indexer to send texts in batches again
-  - [#256](https://github.com/silvioincalza/helper2.ai/issues/256) S3.14.1 Search by meaning to match English resources
+  - [#178](https://github.com/silvioincalza/searchavo.ai/issues/178) S1.10.2 To know when per-replica limits hurt
+  - [#231](https://github.com/silvioincalza/searchavo.ai/issues/231) S3.3.2 The embedding indexer to send texts in batches again
+  - [#256](https://github.com/silvioincalza/searchavo.ai/issues/256) S3.14.1 Search by meaning to match English resources

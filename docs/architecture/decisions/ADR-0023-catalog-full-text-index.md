@@ -502,8 +502,8 @@ names and awesome lists: [flow](../diagrams/flow-0023-search-inside-awesome-list
 
 ## Backlog
 
-- Features: [F3.2](https://github.com/silvioincalza/helper2.ai/issues/48) Catalog full-text index, awesome-list words.
+- Features: [F3.2](https://github.com/silvioincalza/searchavo.ai/issues/48) Catalog full-text index, awesome-list words.
 - Open issues that change this decision:
-  - [#254](https://github.com/silvioincalza/helper2.ai/issues/254) S3.12.4 Two ranking rules decided on graded data
-  - [#256](https://github.com/silvioincalza/helper2.ai/issues/256) S3.14.1 Search by meaning to match English resources
-  - [#326](https://github.com/silvioincalza/helper2.ai/issues/326) S7.7.1 The UI in my language
+  - [#254](https://github.com/silvioincalza/searchavo.ai/issues/254) S3.12.4 Two ranking rules decided on graded data
+  - [#256](https://github.com/silvioincalza/searchavo.ai/issues/256) S3.14.1 Search by meaning to match English resources
+  - [#326](https://github.com/silvioincalza/searchavo.ai/issues/326) S7.7.1 The UI in my language

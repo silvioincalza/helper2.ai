@@ -50,15 +50,15 @@ self_test() {
 A migration drops the old table.
 
 ## What's Changed
-* fix(guide): quotes by @silvioincalza in https://github.com/silvioincalza/helper2.ai/pull/1002
-* fix(scout): a cap is a cap by @silvioincalza in https://github.com/silvioincalza/helper2.ai/pull/1016
-* chore: notes of release-merge by @silvioincalza in https://github.com/silvioincalza/helper2.ai/pull/1040
+* fix(guide): quotes by @silvioincalza in https://github.com/silvioincalza/searchavo.ai/pull/1002
+* fix(scout): a cap is a cap by @silvioincalza in https://github.com/silvioincalza/searchavo.ai/pull/1016
+* chore: notes of release-merge by @silvioincalza in https://github.com/silvioincalza/searchavo.ai/pull/1040
 * a line that names /pull/1015 in its text and ends elsewhere
 
 ## New Contributors
-* @someone made their first contribution in https://github.com/silvioincalza/helper2.ai/pull/1002
+* @someone made their first contribution in https://github.com/silvioincalza/searchavo.ai/pull/1002
 
-**Full Changelog**: https://github.com/silvioincalza/helper2.ai/compare/v2026.11.9...v2026.11.10
+**Full Changelog**: https://github.com/silvioincalza/searchavo.ai/compare/v2026.11.9...v2026.11.10
 EOF_WANT
   )
   got=$(
@@ -66,20 +66,20 @@ EOF_WANT
 A migration drops the old table.
 
 ## What's Changed
-* fix(guide): quotes by @silvioincalza in https://github.com/silvioincalza/helper2.ai/pull/1002
-* chore(release): main into release/2026.11 for v2026.11.10 by @silvioincalza in https://github.com/silvioincalza/helper2.ai/pull/1015
-* fix(scout): a cap is a cap by @silvioincalza in https://github.com/silvioincalza/helper2.ai/pull/1016
-* chore(release): #1016 into release/2026.11 for v2026.11.10 by @silvioincalza in https://github.com/silvioincalza/helper2.ai/pull/1017
-* chore(release): version 2026.11.10 by @github-actions[bot] in https://github.com/silvioincalza/helper2.ai/pull/1019
-* chore(release): v2026.11.10 back into main by @github-actions[bot] in https://github.com/silvioincalza/helper2.ai/pull/1026
-* chore: notes of release-merge by @silvioincalza in https://github.com/silvioincalza/helper2.ai/pull/1040
+* fix(guide): quotes by @silvioincalza in https://github.com/silvioincalza/searchavo.ai/pull/1002
+* chore(release): main into release/2026.11 for v2026.11.10 by @silvioincalza in https://github.com/silvioincalza/searchavo.ai/pull/1015
+* fix(scout): a cap is a cap by @silvioincalza in https://github.com/silvioincalza/searchavo.ai/pull/1016
+* chore(release): #1016 into release/2026.11 for v2026.11.10 by @silvioincalza in https://github.com/silvioincalza/searchavo.ai/pull/1017
+* chore(release): version 2026.11.10 by @github-actions[bot] in https://github.com/silvioincalza/searchavo.ai/pull/1019
+* chore(release): v2026.11.10 back into main by @github-actions[bot] in https://github.com/silvioincalza/searchavo.ai/pull/1026
+* chore: notes of release-merge by @silvioincalza in https://github.com/silvioincalza/searchavo.ai/pull/1040
 * a line that names /pull/1015 in its text and ends elsewhere
 
 ## New Contributors
-* @someone made their first contribution in https://github.com/silvioincalza/helper2.ai/pull/1002
-* @github-actions[bot] made their first contribution in https://github.com/silvioincalza/helper2.ai/pull/1019
+* @someone made their first contribution in https://github.com/silvioincalza/searchavo.ai/pull/1002
+* @github-actions[bot] made their first contribution in https://github.com/silvioincalza/searchavo.ai/pull/1019
 
-**Full Changelog**: https://github.com/silvioincalza/helper2.ai/compare/v2026.11.9...v2026.11.10
+**Full Changelog**: https://github.com/silvioincalza/searchavo.ai/compare/v2026.11.9...v2026.11.10
 EOF_NOTES
   )
   if [[ $got == "$want" ]]; then

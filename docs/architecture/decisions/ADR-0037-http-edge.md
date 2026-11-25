@@ -140,8 +140,8 @@ must load the app on a direct visit, and a new release must reach browsers at on
 
 ## Backlog
 
-- Features: [F5.4](https://github.com/silvioincalza/helper2.ai/issues/76) HTTP edge: rate limits, CSRF, CSP, caching.
+- Features: [F5.4](https://github.com/silvioincalza/searchavo.ai/issues/76) HTTP edge: rate limits, CSRF, CSP, caching.
 - Open issues that change this decision:
-  - [#174](https://github.com/silvioincalza/helper2.ai/issues/174) S1.8.3 Postgres and Redis exporters in the Helm chart and an alert on Redis evicted keys
-  - [#179](https://github.com/silvioincalza/helper2.ai/issues/179) S1.10.3 My session not to be evicted when the cache fills
-  - [#356](https://github.com/silvioincalza/helper2.ai/issues/356) S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second
+  - [#174](https://github.com/silvioincalza/searchavo.ai/issues/174) S1.8.3 Postgres and Redis exporters in the Helm chart and an alert on Redis evicted keys
+  - [#179](https://github.com/silvioincalza/searchavo.ai/issues/179) S1.10.3 My session not to be evicted when the cache fills
+  - [#356](https://github.com/silvioincalza/searchavo.ai/issues/356) S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second

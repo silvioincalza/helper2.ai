@@ -328,7 +328,7 @@ AdSense and Google's consent tool: [flow](../diagrams/flow-0042-adsense.svg) · 
 
 ## Backlog
 
-- Features: [F8.1](https://github.com/silvioincalza/helper2.ai/issues/95) Gifts: GitHub Sponsors and Stripe Payment Link, [F8.2](https://github.com/silvioincalza/helper2.ai/issues/96) Google Analytics after consent, [F8.3](https://github.com/silvioincalza/helper2.ai/issues/97) AdSense on resource pages.
+- Features: [F8.1](https://github.com/silvioincalza/searchavo.ai/issues/95) Gifts: GitHub Sponsors and Stripe Payment Link, [F8.2](https://github.com/silvioincalza/searchavo.ai/issues/96) Google Analytics after consent, [F8.3](https://github.com/silvioincalza/searchavo.ai/issues/97) AdSense on resource pages.
 - Open issues that change this decision:
-  - [#332](https://github.com/silvioincalza/helper2.ai/issues/332) S8.4.1 The ad networks' rules checked before any prod setting is filled
-  - [#333](https://github.com/silvioincalza/helper2.ai/issues/333) S8.5.1 A 10 CHF subscription for more calls
+  - [#332](https://github.com/silvioincalza/searchavo.ai/issues/332) S8.4.1 The ad networks' rules checked before any prod setting is filled
+  - [#333](https://github.com/silvioincalza/searchavo.ai/issues/333) S8.5.1 A 10 CHF subscription for more calls

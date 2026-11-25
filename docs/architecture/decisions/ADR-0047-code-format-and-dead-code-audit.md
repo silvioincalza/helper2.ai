@@ -135,5 +135,5 @@ sequence diagram.
 
 ## Backlog
 
-- Features: [F10.5](https://github.com/silvioincalza/helper2.ai/issues/111) Code format and dead-code audit.
+- Features: [F10.5](https://github.com/silvioincalza/searchavo.ai/issues/111) Code format and dead-code audit.
 - Open issues that change this decision: none.

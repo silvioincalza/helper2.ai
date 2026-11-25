@@ -221,7 +221,7 @@ the recent-answers cache: [flow](../diagrams/flow-0039-frontend-recent-answers-c
 
 ## Backlog
 
-- Features: [F7.1](https://github.com/silvioincalza/helper2.ai/issues/87) One box, state in the URL, recent-answers cache.
+- Features: [F7.1](https://github.com/silvioincalza/searchavo.ai/issues/87) One box, state in the URL, recent-answers cache.
 - Open issues that change this decision:
-  - [#324](https://github.com/silvioincalza/helper2.ai/issues/324) S7.6.2 One manual accessibility pass on real browsers
-  - [#357](https://github.com/silvioincalza/helper2.ai/issues/357) S10.12.1 The main journeys automated in a browser
+  - [#324](https://github.com/silvioincalza/searchavo.ai/issues/324) S7.6.2 One manual accessibility pass on real browsers
+  - [#357](https://github.com/silvioincalza/searchavo.ai/issues/357) S10.12.1 The main journeys automated in a browser

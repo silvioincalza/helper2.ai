@@ -138,6 +138,6 @@ query per search that is not in the 7-day query vector cache.
 
 ## Backlog
 
-- Features: [F3.3](https://github.com/silvioincalza/helper2.ai/issues/49) Vector search: pgvector + NVIDIA embeddings.
+- Features: [F3.3](https://github.com/silvioincalza/searchavo.ai/issues/49) Vector search: pgvector + NVIDIA embeddings.
 - Open issues that change this decision:
-  - [#892](https://github.com/silvioincalza/helper2.ai/issues/892) S3.3.6 Production embeds with the model in the cluster
+  - [#892](https://github.com/silvioincalza/searchavo.ai/issues/892) S3.3.6 Production embeds with the model in the cluster

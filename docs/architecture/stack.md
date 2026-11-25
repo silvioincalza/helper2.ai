@@ -90,12 +90,12 @@ What each layer covers, and where a new test goes. The tests of each area are li
 | Contract | The API against `api/public.yaml`, `api/admin.yaml` and `api/common.yaml`: every response of the API tests is validated against the OpenAPI schema; `SchemaContractTest` holds the database schema to the domain enums; `ModularityTest` holds the module rules. | The API test of the endpoint; a new enum value in `SchemaContractTest`; a new table in `TableOwnersTest`. |
 | Live | One smoke test per source adapter against the real API (`@Tag("live")`). A test whose key is missing is skipped, and the run prints it as `SKIPPED`. The keys are read from the environment (`SA_GITHUB_TOKEN`, `SA_HF_TOKEN`, `SA_LIVE_WEB_API_KEY`, `SA_NEBIUS_API_KEY`), never from the repository's `.env`. Not part of `test`: `./gradlew liveTest`, and the weekly `live` workflow. Every `liveTest` asked for runs its tests: the task is never up to date and never stored in or taken from the build cache. | Next to the adapter, `*LiveTest`. |
 | Evaluation, performance, load | Relevance of search and of the guide on fixed sets ([eval/README.md](../../eval/README.md)), latency on a seeded catalog (`perfTest`), Gatling load tests by hand. Not part of `test`. | `backend/apps/public/src/test` under `eval`, `backend/loadtest`. |
-| Browser end to end | **Not built.** No browser journey is automated and no tool is installed; frontend tests run in jsdom. Backlog: [S10.12.1](https://github.com/silvioincalza/helper2.ai/issues/357). | — |
+| Browser end to end | **Not built.** No browser journey is automated and no tool is installed; frontend tests run in jsdom. Backlog: [S10.12.1](https://github.com/silvioincalza/searchavo.ai/issues/357). | — |
 
 Not covered by automated tests:
 
 - Browser end-to-end tests: not built, and no tool is installed until the journeys are written
-  ([S10.12.1](https://github.com/silvioincalza/helper2.ai/issues/357)). The guide journey is covered by `GuideApiIT` (API) and
+  ([S10.12.1](https://github.com/silvioincalza/searchavo.ai/issues/357)). The guide journey is covered by `GuideApiIT` (API) and
   `HomeGuide.test.tsx` (UI).
 - Live source checks from production: `liveTest` runs from a GitHub runner, not from the cluster's egress.
 

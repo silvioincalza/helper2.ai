@@ -404,7 +404,7 @@ Shared cache lookups: [flow 0023](../diagrams/flow-0023-language-aware-search.sv
 [sequence 0024](../diagrams/sequence-0024-vector-search-pgvector.svg); purge: [flow 0010](../diagrams/flow-0010-data-retention.svg).
 
 ## Backlog
-- Decides: [F1.3](https://github.com/silvioincalza/helper2.ai/issues/22).
+- Decides: [F1.3](https://github.com/silvioincalza/searchavo.ai/issues/22).
 - Open issues that change it:
-  - [S1.3.6](https://github.com/silvioincalza/helper2.ai/issues/156): the four indexes no query uses are removed from `V1__schema.sql`.
-  - [S10.11.1](https://github.com/silvioincalza/helper2.ai/issues/356): the load test that sizes the pool, the catalog bulkheads and `max_connections`.
+  - [S1.3.6](https://github.com/silvioincalza/searchavo.ai/issues/156): the four indexes no query uses are removed from `V1__schema.sql`.
+  - [S10.11.1](https://github.com/silvioincalza/searchavo.ai/issues/356): the load test that sizes the pool, the catalog bulkheads and `max_connections`.

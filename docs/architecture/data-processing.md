@@ -9,7 +9,7 @@ visitors read; this page is its evidence, and the two change in the same pull re
 
 Each US company that receives data, and GitHub, looked up by name on the official list
 ([dataprivacyframework.gov/list](https://www.dataprivacyframework.gov/list), active participants) on 2026-11-14
-([S9.5.1](https://github.com/silvioincalza/helper2.ai/issues/339)). "All three" means the EU-U.S. Data Privacy Framework,
+([S9.5.1](https://github.com/silvioincalza/searchavo.ai/issues/339)). "All three" means the EU-U.S. Data Privacy Framework,
 the Swiss-U.S. Data Privacy Framework and the UK Extension, each `Active`.
 
 | Recipient | What it receives | Entry on the list | Privacy page | Match |
@@ -33,7 +33,7 @@ Every line of the Privacy page that names the list matches it.
 news feeds of AI companies, `huggingface/ai-deadlines` and `tech-conferences/conference-data` (confs.tech) are read by our server with a plain `GET` that carries nothing
 about a visitor. IndexNow (api.indexnow.org) receives, once a day from the back office, the public addresses of the resource pages that changed, and shares them with the search engines that take part (Microsoft Bing and others); nothing about a visitor goes, and the Privacy page names it under "Who receives data". The research assistant's `check_url` sends a plain `HEAD` from our server to a public address a review item
 names, with nothing about a visitor. jsDelivr (Volentio JSD Limited, United Kingdom) receives the public name of an npm package when the
-setup guide reads its README; the Privacy page does not name it yet ([S9.1.3](https://github.com/silvioincalza/helper2.ai/issues/433)).
+setup guide reads its README; the Privacy page does not name it yet ([S9.1.3](https://github.com/silvioincalza/searchavo.ai/issues/433)).
 
 Sites a link of a directory list leads to receive, from the back office, a status request of our own server when
 the link redirects ([ADR 0057](decisions/ADR-0057-follow-list-links.md)): a `HEAD` (a `GET` with no body read when

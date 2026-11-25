@@ -119,7 +119,7 @@ The index query must also stay well inside its 3 s timeout on the production cat
      nothing about the Spaces yet.
    A query that names a thing (navigational, MCP server) needs the strong title boosts; a query that describes a need
    (everyday, home examples, typos) does better with weak ones. Weights chosen by the kind of query are open
-   ([#251](https://github.com/silvioincalza/helper2.ai/issues/251)), measured on a new recording so they are not tuned on the queries they are tested on.
+   ([#251](https://github.com/silvioincalza/searchavo.ai/issues/251)), measured on a new recording so they are not tuned on the queries they are tested on.
 8. **Both kinds of user find a result on top** (`Ranking.withLanesOnTop`). A result is in a lane: *use it now*
    (`USE_AI`) or *build with it* (`BUILD_WITH_AI`). The lane is the result's audience when it states one of the two;
    otherwise the type decides: a `PRODUCT` is to use, a model, MCP server, library, skill, agent, prompt or dataset
@@ -175,7 +175,7 @@ The index query must also stay well inside its 3 s timeout on the production cat
 - A count its source no longer states still counts in the popularity of its resource, until a newer read states
   another value ([0020](ADR-0020-resource-vitality.md), Known limits).
 - Only GitHub stars are read again on a schedule. A like or a download count is as old as the last time a collector
-  or a search found its resource ([S2.11.7](https://github.com/silvioincalza/helper2.ai/issues/976)).
+  or a search found its resource ([S2.11.7](https://github.com/silvioincalza/searchavo.ai/issues/976)).
 - A live hit is written back to the catalog (observed). Once it has settled, 24 h after its first discovery
   ([0022](ADR-0022-federated-search.md) §9), `searchavo-index` and `searchavo-semantic` can find it again, each a vote of its
   own: a result seen early gains votes, and the order of its query changes once on that day. The frozen eval
@@ -188,9 +188,9 @@ The index query must also stay well inside its 3 s timeout on the production cat
 
 ## Backlog
 
-- Features: [F3.4](https://github.com/silvioincalza/helper2.ai/issues/50) Ranking: RRF, bounded popularity, two lanes ("use now" / "build with it").
+- Features: [F3.4](https://github.com/silvioincalza/searchavo.ai/issues/50) Ranking: RRF, bounded popularity, two lanes ("use now" / "build with it").
 - Open issues that change this decision:
-  - [#251](https://github.com/silvioincalza/helper2.ai/issues/251) S3.12.1 Ranking weights chosen by the kind of query
-  - [#252](https://github.com/silvioincalza/helper2.ai/issues/252) S3.12.2 A recency term for time-bound searches
-  - [#253](https://github.com/silvioincalza/helper2.ai/issues/253) S3.12.3 The same order for the same query a few minutes later
-  - [#254](https://github.com/silvioincalza/helper2.ai/issues/254) S3.12.4 Two ranking rules decided on graded data
+  - [#251](https://github.com/silvioincalza/searchavo.ai/issues/251) S3.12.1 Ranking weights chosen by the kind of query
+  - [#252](https://github.com/silvioincalza/searchavo.ai/issues/252) S3.12.2 A recency term for time-bound searches
+  - [#253](https://github.com/silvioincalza/searchavo.ai/issues/253) S3.12.3 The same order for the same query a few minutes later
+  - [#254](https://github.com/silvioincalza/searchavo.ai/issues/254) S3.12.4 Two ranking rules decided on graded data

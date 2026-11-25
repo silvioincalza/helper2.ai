@@ -230,7 +230,7 @@ What changes against [0031](ADR-0031-guide-pipeline.md) and [0008](ADR-0008-llm-
 | 8 | Browser & Computer Use | Covered: none. |
 | 9 | Guardrails | Covered: the whole answer goes through the converter, the evidence gate and the reason check; no partial text is shown. |
 | 10 | Observability | Covered: `searchavo.llm.call` around the whole stream, `searchavo.llm.tokens_unknown`, `thinking_fallback{reason}`; Spring AI's chat model observation still runs. Gap, deferred: no timer for the first chunk. |
-| 11 | Evaluation | Covered: the guide eval runs against either mode; the wire tests run in both. A staging run `ON` against `OFF` is open ([#279](https://github.com/silvioincalza/helper2.ai/issues/279)). |
+| 11 | Evaluation | Covered: the guide eval runs against either mode; the wire tests run in both. A staging run `ON` against `OFF` is open ([#279](https://github.com/silvioincalza/searchavo.ai/issues/279)). |
 | 12 | Deployment | Covered: one variable, Helm value `app.guideModelStream`, default `OFF`, `ON` in `values-prod.yaml`; rollback is `OFF`. |
 | 13 | Security & Identity | Covered: same key, no new secret. |
 | 14 | Human-in-the-Loop | Covered: unchanged; the progress line tells the person what the system does. |
@@ -253,6 +253,6 @@ What changes against [0031](ADR-0031-guide-pipeline.md) and [0008](ADR-0008-llm-
 
 ## Backlog
 
-- Features: [F4.5](https://github.com/silvioincalza/helper2.ai/issues/68) Model calls as a stream (setting).
+- Features: [F4.5](https://github.com/silvioincalza/searchavo.ai/issues/68) Model calls as a stream (setting).
 - Open issues that change this decision:
-  - [#279](https://github.com/silvioincalza/helper2.ai/issues/279) S4.5.2 `SA_GUIDE_MODEL_STREAM=ON` and `OFF` compared on staging
+  - [#279](https://github.com/silvioincalza/searchavo.ai/issues/279) S4.5.2 `SA_GUIDE_MODEL_STREAM=ON` and `OFF` compared on staging

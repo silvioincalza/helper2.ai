@@ -148,6 +148,6 @@ diagram.
 
 ## Backlog
 
-- Features: [F1.11](https://github.com/silvioincalza/helper2.ai/issues/30)
-  ([S1.11.20](https://github.com/silvioincalza/helper2.ai/issues/722): features do not import each other's files).
+- Features: [F1.11](https://github.com/silvioincalza/searchavo.ai/issues/30)
+  ([S1.11.20](https://github.com/silvioincalza/searchavo.ai/issues/722): features do not import each other's files).
 - Open issues that change this decision: none.

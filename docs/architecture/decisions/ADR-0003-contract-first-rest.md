@@ -112,5 +112,5 @@ every source has a status), and these rules must be visible in one place that bo
 [flow](../diagrams/flow-0003-contract-first-rest-api.svg) · [sequence](../diagrams/sequence-0003-contract-first-rest-api.svg)
 
 ## Backlog
-- Decides: [F1.2](https://github.com/silvioincalza/helper2.ai/issues/21).
+- Decides: [F1.2](https://github.com/silvioincalza/searchavo.ai/issues/21).
 - Open issues that change it: none.

@@ -368,8 +368,8 @@ What each page adds to the rules above.
 
 The first three are in the API (`newThisWeek`, `limits`, `total`); Home uses them. The rest are drawn on the
 boards and not in the API yet. They are in the backlog:
-[S5.6.1](https://github.com/silvioincalza/helper2.ai/issues/294) and
-[S7.2.3](https://github.com/silvioincalza/helper2.ai/issues/316).
+[S5.6.1](https://github.com/silvioincalza/searchavo.ai/issues/294) and
+[S7.2.3](https://github.com/silvioincalza/searchavo.ai/issues/316).
 
 | Feature | Where | API change |
 |---|---|---|

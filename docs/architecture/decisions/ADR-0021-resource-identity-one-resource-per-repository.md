@@ -209,9 +209,9 @@ first. And an id that is shown, saved in a bookmark or linked from a review item
 [flow](../diagrams/flow-0021-resource-identity.svg) · [sequence](../diagrams/sequence-0021-resource-identity.svg)
 
 ## Backlog
-- Decides: [F2.10](https://github.com/silvioincalza/helper2.ai/issues/40), S2.10.5 (each MCP server of a
+- Decides: [F2.10](https://github.com/silvioincalza/searchavo.ai/issues/40), S2.10.5 (each MCP server of a
   collection repository, and a stranger's package, as a result of its own), S2.10.9 (the curated join list).
 - Open issues that change it:
-  - [S2.10.3](https://github.com/silvioincalza/helper2.ai/issues/360): a source record stays with its resource.
+  - [S2.10.3](https://github.com/silvioincalza/searchavo.ai/issues/360): a source record stays with its resource.
   - S2.10.6: a refused package join on the admin review list, and accepting it joins.
   - S2.10.7: an official package without a scope joins the repository its provenance names.

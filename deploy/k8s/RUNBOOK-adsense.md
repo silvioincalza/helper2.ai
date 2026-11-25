@@ -3,7 +3,7 @@
 How the Google ads start on prod, step by step, and how to stop them.
 [ADR 0042](../../docs/architecture/decisions/ADR-0042-monetisation.md) says why each rule is there, and
 [RUNBOOK-release.md](RUNBOOK-release.md) is the release itself. Story:
-[S8.6.3](https://github.com/silvioincalza/helper2.ai/issues/872).
+[S8.6.3](https://github.com/silvioincalza/searchavo.ai/issues/872).
 
 **(Owner)** marks a step only the owner can do. Commands run from the repository root, with `gh` signed in as the
 owner.
@@ -38,7 +38,7 @@ Each line must be true. The script asks for the three that only the AdSense acco
 | Auto ads and overlay formats are off | AdSense > Ads > By site: searchavo.ai shows "OFF" | **(Owner)** |
 | The European regulations message is published | AdSense > Privacy and messaging > European regulations: the message "searchavo.ai consent" is "Published", with "Consent" and "Do not consent" the same size | **(Owner)** |
 | Consent mode is on for Google Analytics, when the prod Analytics ID is set | The same page, Settings. Without it Google Analytics stays off for every visitor in Europe | **(Owner)** |
-| The ad networks' rules are read | [S8.4.1](https://github.com/silvioincalza/helper2.ai/issues/332) | **(Owner)** |
+| The ad networks' rules are read | [S8.4.1](https://github.com/silvioincalza/searchavo.ai/issues/332) | **(Owner)** |
 | The Privacy and Terms text is confirmed by a lawyer, or the owner releases with the points open | The lawyer brief | **(Owner)** |
 
 ## 2. The pull request

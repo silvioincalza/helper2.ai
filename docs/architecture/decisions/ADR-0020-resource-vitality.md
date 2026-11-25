@@ -164,7 +164,7 @@ the product: the next source does not get it.
    after" filter keeps it.
 10. **MCP Registry.** A server whose latest version has the status `deprecated` is stated as `deprecated` and the
     Scout does not index it. A `deleted` one is withdrawn. A server deprecated after it was indexed stays
-    in the catalog until the sweep of [S2.11.4](https://github.com/silvioincalza/helper2.ai/issues/216).
+    in the catalog until the sweep of [S2.11.4](https://github.com/silvioincalza/searchavo.ai/issues/216).
 
 11. **Admission: one rule says what the Scout indexes without a person** (`AdmissionPolicy`, package
     `ai.searchavo.scout.admission`, pure domain code). A collector states what it found; it does not decide what enters
@@ -268,14 +268,14 @@ the product: the next source does not get it.
   0.000. The fork and Space rules are not in the snapshots either.
 
 ### Known limits
-- The effect of the rank penalty on nDCG is not measured: the eval snapshots hold no dates ([S2.11.3](https://github.com/silvioincalza/helper2.ai/issues/215)).
+- The effect of the rank penalty on nDCG is not measured: the eval snapshots hold no dates ([S2.11.3](https://github.com/silvioincalza/searchavo.ai/issues/215)).
 - The sweep visits GitHub only: a record that links a repository on another host (GitLab, Codeberg) is not visited
   and has no `visitedAt`.
 - An archived repository stays a result until the sweep reaches it: up to one full round.
 - The sweep reads again only the stars of GitHub. Likes and downloads of Hugging Face and the downloads of npm are as
   old as the last time a collector or a search found the resource
-  ([S2.11.7](https://github.com/silvioincalza/helper2.ai/issues/976)); a PyPI package has no count
-  ([S2.11.8](https://github.com/silvioincalza/helper2.ai/issues/977)).
+  ([S2.11.7](https://github.com/silvioincalza/searchavo.ai/issues/976)); a PyPI package has no count
+  ([S2.11.8](https://github.com/silvioincalza/searchavo.ai/issues/977)).
 - A count its source no longer states stays on the record, with its date, until a newer read states another
   value. No writer removes a count.
 - The date of a count is the clock of the instance that read it. Two reads of one count a few moments apart, on
@@ -289,7 +289,7 @@ the product: the next source does not get it.
   `outcome="failed"` and a log line.
 - The lock holds for the length of one batch. With two back office replicas and a short batch, both could sweep
   inside one interval; the chart runs one.
-- Hugging Face `gated`, npm `deprecated`, PyPI `yanked` and a product homepage that no longer answers are not read ([S2.11.3](https://github.com/silvioincalza/helper2.ai/issues/215)).
+- Hugging Face `gated`, npm `deprecated`, PyPI `yanked` and a product homepage that no longer answers are not read ([S2.11.3](https://github.com/silvioincalza/searchavo.ai/issues/215)).
 
 ### AI architecture check
 - Covered: Tool & API (adapters state facts), Data (no schema change; the facts are stored in `extra.vitality`), Guardrails (dead
@@ -305,8 +305,8 @@ the product: the next source does not get it.
 [sequence](../diagrams/sequence-0020-resource-vitality.svg)
 
 ## Backlog
-- Decides: [F2.11](https://github.com/silvioincalza/helper2.ai/issues/41).
+- Decides: [F2.11](https://github.com/silvioincalza/searchavo.ai/issues/41).
 - Open issues that change it:
-  - [S2.11.3](https://github.com/silvioincalza/helper2.ai/issues/215): every source and collector states its vitality facts.
-  - [S2.11.7](https://github.com/silvioincalza/helper2.ai/issues/976): likes and downloads of Hugging Face and npm are read again on a schedule.
-  - [S2.11.8](https://github.com/silvioincalza/helper2.ai/issues/977): a PyPI package takes its popularity from its public repository.
+  - [S2.11.3](https://github.com/silvioincalza/searchavo.ai/issues/215): every source and collector states its vitality facts.
+  - [S2.11.7](https://github.com/silvioincalza/searchavo.ai/issues/976): likes and downloads of Hugging Face and npm are read again on a schedule.
+  - [S2.11.8](https://github.com/silvioincalza/searchavo.ai/issues/977): a PyPI package takes its popularity from its public repository.

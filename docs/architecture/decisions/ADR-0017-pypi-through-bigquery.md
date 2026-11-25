@@ -69,7 +69,7 @@ one week of AI packages and 11.59 GB for the whole table.
 - **Google's BigQuery Java client:** more features, but gRPC and protobuf for one query.
 - **PyPI's JSON API or Simple index:** no search, no topic filter; the index lists names only.
 - **libraries.io:** a search API, but a key, rate limits and its own terms.
-- **Workload Identity Federation** (no long-lived key): needs an identity provider Google trusts ([S2.7.2](https://github.com/silvioincalza/helper2.ai/issues/207)).
+- **Workload Identity Federation** (no long-lived key): needs an identity provider Google trusts ([S2.7.2](https://github.com/silvioincalza/searchavo.ai/issues/207)).
 
 ## Consequences
 - Python libraries with the AI topic join the catalog, most of them merged with their GitHub project.
@@ -81,7 +81,7 @@ one week of AI packages and 11.59 GB for the whole table.
 - PyPI rows are never deleted, so a removed package is not withdrawn from the catalog by this source.
 - A candidate held back by the daily review cap on a page that is not the last of its pass is offered again only when
   the package has a new upload.
-- A long-lived service account key exists. It is the only way without a Google identity federation ([S2.7.2](https://github.com/silvioincalza/helper2.ai/issues/207)).
+- A long-lived service account key exists. It is the only way without a Google identity federation ([S2.7.2](https://github.com/silvioincalza/searchavo.ai/issues/207)).
 
 ### STRIDE
 - **Spoofing:** HTTPS to `oauth2.googleapis.com` and `bigquery.googleapis.com` only; the key file cannot change the
@@ -118,6 +118,6 @@ Tracked privately (S9.6.3).
 [sequence](../diagrams/sequence-0017-pypi-through-bigquery.svg)
 
 ## Backlog
-- Decides: [F2.7](https://github.com/silvioincalza/helper2.ai/issues/37).
+- Decides: [F2.7](https://github.com/silvioincalza/searchavo.ai/issues/37).
 - Open issues that change it:
-  - [S2.7.2](https://github.com/silvioincalza/helper2.ai/issues/207): BigQuery reached without a long-lived key.
+  - [S2.7.2](https://github.com/silvioincalza/searchavo.ai/issues/207): BigQuery reached without a long-lived key.

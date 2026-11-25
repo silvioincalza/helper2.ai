@@ -539,8 +539,8 @@ the answer cache: [flow](../diagrams/flow-0032-guide-answer-cache.svg) · [seque
 
 ## Backlog
 
-- Features: [F4.2](https://github.com/silvioincalza/helper2.ai/issues/65) Cost guard and answer cache, [F4.6](https://github.com/silvioincalza/helper2.ai/issues/69) Similar-question reuse of answers.
+- Features: [F4.2](https://github.com/silvioincalza/searchavo.ai/issues/65) Cost guard and answer cache, [F4.6](https://github.com/silvioincalza/searchavo.ai/issues/69) Similar-question reuse of answers.
 - Open issues that change this decision:
-  - [#177](https://github.com/silvioincalza/helper2.ai/issues/177) S1.10.1 To know when the per-replica guide single flight costs money
-  - [#281](https://github.com/silvioincalza/helper2.ai/issues/281) S4.6.2 The similar-question threshold checked on live traffic
-  - [#293](https://github.com/silvioincalza/helper2.ai/issues/293) S5.5.1 10 web searches and 10 AI answers a day instead of 3
+  - [#177](https://github.com/silvioincalza/searchavo.ai/issues/177) S1.10.1 To know when the per-replica guide single flight costs money
+  - [#281](https://github.com/silvioincalza/searchavo.ai/issues/281) S4.6.2 The similar-question threshold checked on live traffic
+  - [#293](https://github.com/silvioincalza/searchavo.ai/issues/293) S5.5.1 10 web searches and 10 AI answers a day instead of 3

@@ -222,9 +222,9 @@ and how many web credits the day has used. Two sources can describe the same res
 
 ## Backlog
 
-- Features: [F3.1](https://github.com/silvioincalza/helper2.ai/issues/47) Federated search: parallel fan-out, deadlines, partial results, source status, [F3.10](https://github.com/silvioincalza/helper2.ai/issues/56) Hugging Face Spaces found by meaning.
+- Features: [F3.1](https://github.com/silvioincalza/searchavo.ai/issues/47) Federated search: parallel fan-out, deadlines, partial results, source status, [F3.10](https://github.com/silvioincalza/searchavo.ai/issues/56) Hugging Face Spaces found by meaning.
 - Open issues that change this decision:
-  - [#559](https://github.com/silvioincalza/helper2.ai/issues/559) S3.1.6 A result card whose link and text come from one source
-  - [#178](https://github.com/silvioincalza/helper2.ai/issues/178) S1.10.2 To know when per-replica limits hurt
-  - [#249](https://github.com/silvioincalza/helper2.ai/issues/249) S3.10.2 A strong Space on the first page
-  - [#250](https://github.com/silvioincalza/helper2.ai/issues/250) S3.11.1 A search to answer from the catalog and call a live source only when the catalog is too old or too thin
+  - [#559](https://github.com/silvioincalza/searchavo.ai/issues/559) S3.1.6 A result card whose link and text come from one source
+  - [#178](https://github.com/silvioincalza/searchavo.ai/issues/178) S1.10.2 To know when per-replica limits hurt
+  - [#249](https://github.com/silvioincalza/searchavo.ai/issues/249) S3.10.2 A strong Space on the first page
+  - [#250](https://github.com/silvioincalza/searchavo.ai/issues/250) S3.11.1 A search to answer from the catalog and call a live source only when the catalog is too old or too thin

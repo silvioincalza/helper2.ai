@@ -225,7 +225,7 @@ The web pods run `web.replicas` replicas, the public app `app.replicas` and the 
 in one of the two apps: the Scout, the collectors, the embedding indexer and the catalog jobs in the back
 office, the guide, account and search retention in the public app. Each runs on one replica at a time (lock
 table `shedlock` in Postgres for the back office, `public_app_lock` for the public app); rate limits and sign-in sessions are in Redis. What is still per replica:
-[F1.10](https://github.com/silvioincalza/helper2.ai/issues/29).
+[F1.10](https://github.com/silvioincalza/searchavo.ai/issues/29).
 
 **Never `helm uninstall`:** it deletes the Postgres and Redis StatefulSets and the Secret. Their PVCs
 (`data-postgres-0`, and `data-redis-0` with Redis's append-only file) are not owned by the release and stay; the backup PVC has `helm.sh/resource-policy: keep`.

@@ -561,7 +561,7 @@ No new table for deep search, no new dependency.
 
 ### Known limits
 - Each product that discovery finds (consumer tools, hosting, prompt libraries) waits for an admin: the weekly review load and the share accepted decide each category's `min-score` and the categories.
-- A link of a list entry to a PyPI package ([S2.3.12](https://github.com/silvioincalza/helper2.ai/issues/850)), a Hugging Face dataset or a Space ([S2.3.13](https://github.com/silvioincalza/helper2.ai/issues/851)) gives nothing: no reader confirms these by id. A paper outside the AI categories of the arXiv source is not kept. A package read from a list has no downloads and no date of its last release: the latest-version document states neither. A package that joins its repository is linked to its list on the run that read it; a later run of the same pass links it only when the repository is an entry too. A model the Hub renamed is linked to its list only on the run that read it. A second link of an entry is often its docs or its demo: the rules of product pages skip most, the others reach review with the link's own words as title.
+- A link of a list entry to a PyPI package ([S2.3.12](https://github.com/silvioincalza/searchavo.ai/issues/850)), a Hugging Face dataset or a Space ([S2.3.13](https://github.com/silvioincalza/searchavo.ai/issues/851)) gives nothing: no reader confirms these by id. A paper outside the AI categories of the arXiv source is not kept. A package read from a list has no downloads and no date of its last release: the latest-version document states neither. A package that joins its repository is linked to its list on the run that read it; a later run of the same pass links it only when the repository is an entry too. A model the Hub renamed is linked to its list only on the run that read it. A second link of an entry is often its docs or its demo: the rules of product pages skip most, the others reach review with the link's own words as title.
 - Deep search in awesome lists skips product sites on plain http, on an IDN (punycode) name or linked only through HTML. A list linked under a plain heading whose name does not say "awesome" is not followed. A category given by a list heading stays until the resource's categories are assigned again. All seed lists are read every pass, even when the first ones fill the entry cap.
 - No weekly alert watches the Scout's credits (`searchavo_live_web_credits_total{feature=~"scout-discovery|scout-linkedin"}`).
 - An added web page: the type rule counts every linked line of the Markdown the page reader gives, navigation and footer links too, so a page with a long menu can pass it; its entries and links follow the rules of a README; a page that keeps failing costs up to 3 credits in a row before it waits `SA_SCOUT_AWESOME_WEB_PAGES_EVERY`; `robots.txt` is not read by us: the page reader's operator fetches the page.
@@ -623,10 +623,10 @@ deep search in awesome lists: [flow](../diagrams/flow-0013-awesome-deep-search.s
 discovery hosts: [flow](../diagrams/flow-0013-discovery-hosts.svg) · [sequence](../diagrams/sequence-0013-discovery-hosts.svg)
 
 ## Backlog
-- Decides: [F2.3](https://github.com/silvioincalza/helper2.ai/issues/33).
+- Decides: [F2.3](https://github.com/silvioincalza/searchavo.ai/issues/33).
 - Open issues that change it:
-  - [S2.3.5](https://github.com/silvioincalza/helper2.ai/issues/197): kept and dropped candidates per `discovery_host` row, one-step move, public-suffix check.
+  - [S2.3.5](https://github.com/silvioincalza/searchavo.ai/issues/197): kept and dropped candidates per `discovery_host` row, one-step move, public-suffix check.
   - [0055](ADR-0055-directory-lists.md) decides the lists of directory hosts and the article links of a list.
-  - [S2.3.9](https://github.com/silvioincalza/helper2.ai/issues/843): a list page that discovery finds is split into its items and each item is checked; a web page an administrator added is read (point 15).
-  - [S2.3.12](https://github.com/silvioincalza/helper2.ai/issues/850): a PyPI package a list links to is read by its name.
-  - [S2.3.13](https://github.com/silvioincalza/helper2.ai/issues/851): a Hugging Face dataset or Space a list links to is read by its id.
+  - [S2.3.9](https://github.com/silvioincalza/searchavo.ai/issues/843): a list page that discovery finds is split into its items and each item is checked; a web page an administrator added is read (point 15).
+  - [S2.3.12](https://github.com/silvioincalza/searchavo.ai/issues/850): a PyPI package a list links to is read by its name.
+  - [S2.3.13](https://github.com/silvioincalza/searchavo.ai/issues/851): a Hugging Face dataset or Space a list links to is read by its id.

@@ -268,5 +268,5 @@ recognises are written from how such pages commonly print a rating, and are not 
 [flow](../diagrams/flow-0056-directory-rating.svg) · [sequence](../diagrams/sequence-0056-directory-rating.svg)
 
 ## Backlog
-- Decides: [S2.3.18](https://github.com/silvioincalza/helper2.ai/issues/973), in
-  [F2.3](https://github.com/silvioincalza/helper2.ai/issues/33).
+- Decides: [S2.3.18](https://github.com/silvioincalza/searchavo.ai/issues/973), in
+  [F2.3](https://github.com/silvioincalza/searchavo.ai/issues/33).

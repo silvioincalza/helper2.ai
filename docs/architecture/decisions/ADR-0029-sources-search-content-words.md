@@ -77,7 +77,7 @@ models first (whisperkit before Whisper, 8 Nov 2026).
 - Descriptive queries reach GitHub and Hugging Face again; navigational queries ("ollama") are unchanged.
 - The terms lists are code. A word added to them changes every search, so it goes through the eval gate.
 - Typos are not fixed: "speach to text" names no task, so Whisper is still not found.
-- arXiv's relevance has no citation signal, so seminal papers stay hard to find (open: OpenAlex, [#255](https://github.com/silvioincalza/helper2.ai/issues/255)).
+- arXiv's relevance has no citation signal, so seminal papers stay hard to find (open: OpenAlex, [#255](https://github.com/silvioincalza/searchavo.ai/issues/255)).
 
 ### Measurement
 
@@ -167,7 +167,7 @@ No change to the Privacy page: the same processors get the query, now with fewer
 
 ## Backlog
 
-- Features: [F3.8](https://github.com/silvioincalza/helper2.ai/issues/54) Sources search content words only.
+- Features: [F3.8](https://github.com/silvioincalza/searchavo.ai/issues/54) Sources search content words only.
 - Open issues that change this decision:
-  - [#255](https://github.com/silvioincalza/helper2.ai/issues/255) S3.13.1 Papers ranked by citations
-  - [#348](https://github.com/silvioincalza/helper2.ai/issues/348) S10.4.2 The first ten results of the new snapshot set graded
+  - [#255](https://github.com/silvioincalza/searchavo.ai/issues/255) S3.13.1 Papers ranked by citations
+  - [#348](https://github.com/silvioincalza/searchavo.ai/issues/348) S10.4.2 The first ten results of the new snapshot set graded

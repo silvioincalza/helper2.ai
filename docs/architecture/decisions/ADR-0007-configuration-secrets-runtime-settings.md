@@ -328,7 +328,7 @@ settings files: [flow](../diagrams/flow-0007-settings-files.svg). The files are 
 call path of their own, so they have no sequence diagram; the startup binding is in the first sequence.
 
 ## Backlog
-- Decides: [F1.6](https://github.com/silvioincalza/helper2.ai/issues/25), [F6.4](https://github.com/silvioincalza/helper2.ai/issues/84).
+- Decides: [F1.6](https://github.com/silvioincalza/searchavo.ai/issues/25), [F6.4](https://github.com/silvioincalza/searchavo.ai/issues/84).
 - Open issues that change it:
-  - [S6.5.1](https://github.com/silvioincalza/helper2.ai/issues/308): every setting on `/admin/settings`.
-  - [S10.10.1](https://github.com/silvioincalza/helper2.ai/issues/355): the deployer token minted per deploy.
+  - [S6.5.1](https://github.com/silvioincalza/searchavo.ai/issues/308): every setting on `/admin/settings`.
+  - [S10.10.1](https://github.com/silvioincalza/searchavo.ai/issues/355): the deployer token minted per deploy.

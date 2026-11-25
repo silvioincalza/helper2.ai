@@ -136,5 +136,5 @@ Tracked privately (S9.6.3).
 [sequence](../diagrams/sequence-0016-news-feeds.svg)
 
 ## Backlog
-- Decides: [F2.6](https://github.com/silvioincalza/helper2.ai/issues/36).
+- Decides: [F2.6](https://github.com/silvioincalza/searchavo.ai/issues/36).
 - Open issues that change it: none.
