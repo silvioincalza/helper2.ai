@@ -24,8 +24,8 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    restarts: `--appendonly yes`, `--appendfsync everysec`, no RDB snapshots (`--save ""`). In the chart Redis is a
    single-replica StatefulSet with `/data` on a ReadWriteOnce PersistentVolumeClaim (`redis.storage`, 1 Gi;
    `redis.storageClassName`, empty = the cluster default). Redis is never a system of record: losing the volume
-   only costs cache misses. Connection: `H2_REDIS_HOST`, `H2_REDIS_PORT`
-   (6379), `H2_REDIS_PASSWORD`; command timeout 250 ms, connect timeout 500 ms. The Redis health
+   only costs cache misses. Connection: `SA_REDIS_HOST`, `SA_REDIS_PORT`
+   (6379), `SA_REDIS_PASSWORD`; command timeout 250 ms, connect timeout 500 ms. The Redis health
    indicator is off, so a Redis outage never takes the app out of the readiness rotation.
 2. **Source responses.** `RedisSearchCache` implements the `SearchCache` port for sources in `LIVE` mode, except a
    metered source (Tavily), whose result sets live in PostgreSQL ([0027](ADR-0027-live-web-store-first-daily-quota.md)).
@@ -33,12 +33,12 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    for sources that read it, the guide's web query and the date window. No raw query text is stored in a key. Values use the
    versioned `SourceHitCodec`; an unknown version is a miss.
 3. **Fresh and stale windows.** An entry younger than the source's `cacheTtl` (30 minutes by default,
-   6 hours for arXiv) answers without a live call. Every entry lives for `H2_SEARCH_STALE_FOR` (24 hours).
+   6 hours for arXiv) answers without a live call. Every entry lives for `SA_SEARCH_STALE_FOR` (24 hours).
    When the live call fails, times out, is rate-limited, is in cooldown or is refused by the source's open circuit,
    an entry inside that window is served as `STALE_CACHE`, with the failure stated in the source status.
 4. **Circuit breaker.** Every Redis call of the search cache, the budget counter, the web-search quota, the rate
    limiter, the outbound throttle and the session reads runs under the one `redis` policy ([0006](ADR-0006-outbound-calls-and-resilience.md)):
-   once half of the last calls (at least 3) failed, the circuit opens for 30 seconds (`H2_RESILIENCE_REDIS_OPEN_FOR`)
+   once half of the last calls (at least 3) failed, the circuit opens for 30 seconds (`SA_RESILIENCE_REDIS_OPEN_FOR`)
    and callers get their fallback at once, without a Redis call. Then 2 trial calls decide whether it closes again.
    A search cache error or refusal adds the notice `CACHE_UNAVAILABLE`, and the sources are called live. A session
    read that fails or is refused finds no session ([0036](ADR-0036-identity-and-the-admin-host.md)).
@@ -59,14 +59,14 @@ so the cache must be optional: when Redis is down, the app still works, only slo
    sessions have their own fallback while Redis is down; the web-search quota allows no live call then.
 
 ### Code
-- `backend/libs/core/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`, `SourceHitCodec.java` — source cache.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — fresh/stale rules, `cacheKey`.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/resilience/` (`Resilience`, policy `redis` in `application.yaml`) —
+- `backend/libs/core/src/main/java/ai/searchavo/search/cache/RedisSearchCache.java`, `SourceHitCodec.java` — source cache.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SearchResources.kt` — fresh/stale rules, `cacheKey`.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/resilience/` (`Resilience`, policy `redis` in `application.yaml`) —
   fail-fast guard ([0006](ADR-0006-outbound-calls-and-resilience.md)).
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/internal/RedisCallCounter.java`, `backend/libs/platform/src/main/java/ai/helper2/platform/llm/DailyBudget.java` — counters.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/quota/RedisQuotaCounter.java` — daily web-search counters.
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideCost.kt` (`ClientQuota`) — the per-client guide quota.
-- `deploy/helm/helper2/templates/redis.yaml` (StatefulSet, AOF, PVC), `compose.yaml` — Redis settings;
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/llm/internal/RedisCallCounter.java`, `backend/libs/platform/src/main/java/ai/searchavo/platform/llm/DailyBudget.java` — counters.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/quota/RedisQuotaCounter.java` — daily web-search counters.
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/GuideCost.kt` (`ClientQuota`) — the per-client guide quota.
+- `deploy/helm/searchavo/templates/redis.yaml` (StatefulSet, AOF, PVC), `compose.yaml` — Redis settings;
   `deploy/k8s/Makefile` (`chart-check`) fails when the rendered Redis has no AOF or no PVC.
 
 ## Alternatives considered

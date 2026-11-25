@@ -29,10 +29,10 @@ every source has a status), and these rules must be visible in one place that bo
    features never share an interface: `/me/bookmarks` has the tag `bookmarks` and `/me/preferences` the tag
    `preferences`, not `me`; the home lists, the resource detail and the issue reports of the catalog have a tag each
    (`home-lists`, `resource-detail`, `issue-reports`).
-   - The library `libs/core` generates `common.yaml` alone, once: interfaces in `ai.helper2.api.common`
-     (`SearchApi`, `SourcesApi`, `CategoriesApi`), DTOs in `ai.helper2.api.common.model`. It also holds the
+   - The library `libs/core` generates `common.yaml` alone, once: interfaces in `ai.searchavo.api.common`
+     (`SearchApi`, `SourcesApi`, `CategoriesApi`), DTOs in `ai.searchavo.api.common.model`. It also holds the
      controllers of those three paths, so both apps serve them with the same classes.
-   - Each app generates only its own paths, into `ai.helper2.api.generated` and `ai.helper2.api.generated.model`.
+   - Each app generates only its own paths, into `ai.searchavo.api.generated` and `ai.searchavo.api.generated.model`.
      `bundleContract` joins the files the app serves into one (`build/openapi/contract.yaml`, the components of
      `common.yaml` copied in under their own names), and writes a second file for the generator
      (`build/openapi/generation.yaml`): the same, without the paths of `common.yaml`.
@@ -50,7 +50,7 @@ every source has a status), and these rules must be visible in one place that bo
    (`ContractValidator`).
 5. **Errors as problem+json, with Spring's own `ProblemDetail`.** `platform.ApiExceptionHandler` answers with Request for
    Comments (RFC) 9457 problem details (`application/problem+json`, `spring.mvc.problemdetails.enabled`). Every problem
-   has a type from `platform.ProblemType`: the `type` URI `https://helper2.ai/problems/<code>` and the same stable
+   has a type from `platform.ProblemType`: the `type` URI `https://searchavo.ai/problems/<code>` and the same stable
    `code` as an extension member, so a client reacts to the code, never to the title text. A use case throws
    `ApiProblem` with its type (`NotFoundException` and `BadRequestException` are two of them); the errors Spring answers
    on its own get a type by their status. Client mistakes are 400 with a fixed text and an unknown resource is 404;
@@ -70,16 +70,16 @@ every source has a status), and these rules must be visible in one place that bo
 
 ### Code
 - `api/public.yaml`, `api/admin.yaml`, `api/common.yaml` — the contract.
-- `backend/build-logic/src/main/kotlin/helper2.spring-app.gradle.kts` (tasks `bundleContract`, `openApiGenerate`) — an app's generation and its mappings.
-- `backend/build-logic/src/main/kotlin/ai/helper2/buildlogic/SpringContract.kt` — the generator options, and the shared names (`sharedModelClasses`).
-- `backend/build-logic/src/main/kotlin/ai/helper2/buildlogic/BundleContract.kt` — joins the files, one meaning per name; the generation file without the shared paths.
+- `backend/build-logic/src/main/kotlin/searchavo.spring-app.gradle.kts` (tasks `bundleContract`, `openApiGenerate`) — an app's generation and its mappings.
+- `backend/build-logic/src/main/kotlin/ai/searchavo/buildlogic/SpringContract.kt` — the generator options, and the shared names (`sharedModelClasses`).
+- `backend/build-logic/src/main/kotlin/ai/searchavo/buildlogic/BundleContract.kt` — joins the files, one meaning per name; the generation file without the shared paths.
 - `backend/libs/core/build.gradle.kts` — generates `common.yaml` once.
-- `backend/libs/core/src/main/java/ai/helper2/api/package-info.java` — open module for generated types.
-- `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java`, `SourcesController.java`, `CategoriesController.java`, `CardMapper.java` — the shared paths.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/ApiExceptionHandler.java`, `ProblemType.java`, `ApiProblem.java`, `Problems.java` — problem details.
-- `backend/libs/core/src/main/java/ai/helper2/api/ContractEnumConverters.java` — enum binding.
-- `backend/apps/public/src/test/java/ai/helper2/api/ContractValidator.java` — response validation in tests.
-- `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java` — the stream, events named by `GuideStreamEventDto`.
+- `backend/libs/core/src/main/java/ai/searchavo/api/package-info.java` — open module for generated types.
+- `backend/libs/core/src/main/java/ai/searchavo/search/web/SearchController.java`, `SourcesController.java`, `CategoriesController.java`, `CardMapper.java` — the shared paths.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/ApiExceptionHandler.java`, `ProblemType.java`, `ApiProblem.java`, `Problems.java` — problem details.
+- `backend/libs/core/src/main/java/ai/searchavo/api/ContractEnumConverters.java` — enum binding.
+- `backend/apps/public/src/test/java/ai/searchavo/api/ContractValidator.java` — response validation in tests.
+- `backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideStreamController.java` — the stream, events named by `GuideStreamEventDto`.
 - `frontend/package.json` (script `gen:api`), `frontend/src/api/client.ts` — generated types, `ApiError`, step events from the contract.
 
 ## Alternatives considered
@@ -87,7 +87,7 @@ every source has a status), and these rules must be visible in one place that bo
   depends on a running backend to get its types.
 - GraphQL — one more runtime and query language for a small, fixed set of screens.
 - Zalando Problem (`problem-spring-web`) for the errors — Spring has RFC 9457 support built in (`ProblemDetail`), and
-  the library's Jackson module is for Jackson 2, while helper2 runs Jackson 3. One more dependency for what the
+  the library's Jackson module is for Jackson 2, while searchavo runs Jackson 3. One more dependency for what the
   framework does.
 - Hand-written TypeScript types — they drift; nothing fails when they do.
 - The shared web adapters as one source folder compiled into each app, against each app's own copy of the shared

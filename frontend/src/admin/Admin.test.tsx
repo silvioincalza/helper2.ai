@@ -154,7 +154,7 @@ const overview = (over: Partial<AdminOverview> = {}): AdminOverview => ({
     paused: 0,
   },
   overridesActive: 0,
-  grafanaUrl: 'https://grafana.example/d/helper2',
+  grafanaUrl: 'https://grafana.example/d/searchavo',
   ...over,
 });
 
@@ -555,21 +555,21 @@ describe('Feature: deciding review items', () => {
 });
 
 describe('Feature: the back office in the terminal style', () => {
-  it('Scenario: the review queue says `$ helper2 review --open · N`, with N the open items on the server', async () => {
+  it('Scenario: the review queue says `$ searchavo review --open · N`, with N the open items on the server', async () => {
     mockApi({
       'GET /me': () => ADMIN,
       'GET /admin/review-items': () => ({ items: [item], total: 4 }),
     });
     renderAdmin('/admin/review');
     await screen.findByRole('table', { name: 'Review queue' });
-    expect(getCommandLine('$ helper2 review --open · 4')).toBeInTheDocument();
+    expect(getCommandLine('$ searchavo review --open · 4')).toBeInTheDocument();
   });
 
-  it('Scenario: the Scout runs say `$ helper2 scouts --runs · N`, and Run now per source stays', async () => {
+  it('Scenario: the Scout runs say `$ searchavo scouts --runs · N`, and Run now per source stays', async () => {
     mockApi({ 'GET /me': () => ADMIN, 'GET /admin/scout-runs': () => [run] });
     renderAdmin('/admin/runs');
     expect(await screen.findByRole('button', { name: 'Run github now' })).toBeInTheDocument();
-    expect(getCommandLine('$ helper2 scouts --runs · 1')).toBeInTheDocument();
+    expect(getCommandLine('$ searchavo scouts --runs · 1')).toBeInTheDocument();
   });
 });
 

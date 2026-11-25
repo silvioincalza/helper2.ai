@@ -1,10 +1,10 @@
 # Sequence: a streamed guide question that is not cached, with every Server-Sent Event the browser receives
-# and the :keep-alive comments sent every H2_GUIDE_HEARTBEAT (15 s) while the question runs.
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java (askGuideStream, Events),
-#   backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/AskGuide.kt (AskGuide.ask/answer), guide/steps/QuestionReader.kt, PickAnswer.kt,
+# and the :keep-alive comments sent every SA_GUIDE_HEARTBEAT (15 s) while the question runs.
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideStreamController.java (askGuideStream, Events),
+#   backend/apps/public/src/main/kotlin/ai/searchavo/guide/usecase/AskGuide.kt (AskGuide.ask/answer), guide/steps/QuestionReader.kt, PickAnswer.kt,
 #   ReasonCheckStep.kt, guide/Guide.kt (GuideValidator), guide/QuoteOrigins.kt, guide/QuoteRecords.kt,
-#   backend/apps/public/src/main/java/ai/helper2/guide/internal/GuideConfiguration.java (quoteRecords → Resources.recordsOf),
-#   backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (plan, choose, verifyReasons).
+#   backend/apps/public/src/main/java/ai/searchavo/guide/internal/GuideConfiguration.java (quoteRecords → Resources.recordsOf),
+#   backend/apps/public/src/main/java/ai/searchavo/guide/internal/SpringAiGuideModel.java (plan, choose, verifyReasons).
 #   Prompts: backend/apps/public/src/main/resources/prompts/guide/plan.txt, choose.txt, verify-reasons.txt, security.txt,
 #   need-input.txt, quote-rule.txt.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0031-ai-guide-evidence-gate.d2 && d2 sequence-0031-ai-guide-evidence-gate.d2 sequence-0031-ai-guide-evidence-gate.svg
@@ -27,7 +27,7 @@ db: "PostgreSQL\nsource_record" {class: data}
 browser -> ctrl: "POST /api/v1/guide/stream\n{request}"
 ctrl -> browser: "200 text/event-stream\n(no-store, X-Accel-Buffering: no)"
 ctrl -> svc: "ask(request, path, events, client)\non a virtual thread\n(events feed a Sinks.Many)"
-ctrl -> hb: "merge: every 15 s\n(H2_GUIDE_HEARTBEAT)"
+ctrl -> hb: "merge: every 15 s\n(SA_GUIDE_HEARTBEAT)"
 svc -> model: "plan(request, path)"
 model -> tf: "fast model, plan.txt" {class: ai-call}
 tf -> model: "searchQuery, constraints,\nwantsReading, webQuery"

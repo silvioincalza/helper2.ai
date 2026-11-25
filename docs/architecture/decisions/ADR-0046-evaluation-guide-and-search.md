@@ -46,9 +46,9 @@ repository. Relevance needs a human judgement per result, and judging every resu
    - gets a CSRF token from `GET /api/v1/me`, then sends each query to `POST /api/v1/guide/stream` exactly as
      written, never with a suffix, with the audience `path` its case names, and reads the answer from its last event (`answer`, or `error` counted as a failed
      question);
-   - runs against a backend started with `H2_GUIDE_CACHE_TTL=PT1S` (staging), so every answer is a real model call
+   - runs against a backend started with `SA_GUIDE_CACHE_TTL=PT1S` (staging), so every answer is a real model call
      and a rerun of the set is never served from the answer cache;
-   - waits 7 s between questions (`H2_EVAL_PAUSE_MS`), below the guide's 10-per-minute limit, and keeps to 25 live
+   - waits 7 s between questions (`SA_EVAL_PAUSE_MS`), below the guide's 10-per-minute limit, and keeps to 25 live
      GitHub searches in any 60 s (GitHub allows 30 a minute per token), counted from the source list of every answer
      and search it receives;
    - prints each source's status per question and lists in the report every source that did not succeed;
@@ -124,11 +124,11 @@ repository. Relevance needs a human judgement per result, and judging every resu
    ([0008](ADR-0008-llm-integration.md)): 3 to 6 calls from the guide's daily cap. The core set costs about
    63, the full set of 60 about 180 (540 with `--repeat 3`), the intent cases up to 78 (a case asked back stops after
    the plan), the adversarial set 39; the setup set costs up to 30 calls (a `tool-guide` and a `tool-guide-verify` call per resource). Each question also counts against
-   the client's daily questions (`H2_GUIDE_CLIENT_DAILY_QUESTIONS`), so the backend under test sets a quota that
+   the client's daily questions (`SA_GUIDE_CLIENT_DAILY_QUESTIONS`), so the backend under test sets a quota that
    covers the sets it runs.
 9. **Nightly run on staging.** `.github/workflows/guide-eval.yml` runs every night at 01:41 UTC, after the daily caps
    reset, and by hand; never on a pull request. It runs the core set (`--core --min-pass 0.8`) and the adversarial
-   set, against the staging URL in the repository variable `H2_STAGING_URL` only, never prod (without it the job does
+   set, against the staging URL in the repository variable `SA_STAGING_URL` only, never prod (without it the job does
    not run, so the workflow carries no host of its own):
    - 34 questions, about 102 model calls; the run may cost at most 150. The intent cases do not fit and stay a run by
      hand;
@@ -207,7 +207,7 @@ repository. Relevance needs a human judgement per result, and judging every resu
     committed: it is recorded on staging before the first release, after the 10 navigational queries are graded. The baseline
     names the snapshots and judgements it was measured on (fingerprints); with other snapshots or labels, or with no
     snapshots, no labels or no baseline at all, the gate is skipped with a message, never failed.
-    `H2_EVAL_WRITE_BASELINE=true` stores a new baseline. The default `test` task excludes both tags.
+    `SA_EVAL_WRITE_BASELINE=true` stores a new baseline. The default `test` task excludes both tags.
     The snapshots hold third-party data and are not in the repository, so CI cannot run the gate. What CI runs
     is `RankingBaselineTest`, in the default `test` task: the baseline also names the ranking code it was
     measured with (a fingerprint of `Ranking.kt`, `ResultMerger.kt`, `QueryAnalyzer.kt` and `Vitality.kt`, white
@@ -234,16 +234,16 @@ repository. Relevance needs a human judgement per result, and judging every resu
       every model input of the guide. One call per claim and evaluator, thinking off, 16 output tokens.
     - **Verdicts.** The first word of the answer counts: `yes` is `pass`, `no` is `fail`, anything else `unclear`. A
       failed call is `error`, a spent cap `skipped`. A failed call never stops the next one.
-    - **Model and cap.** `H2_GUIDE_JUDGE_MODEL` names the judge model, a different model than the one that writes and
-      verifies; empty keeps the judge off. `H2_GUIDE_JUDGE_DAILY_CALLS` (default 300) is its own daily cap
+    - **Model and cap.** `SA_GUIDE_JUDGE_MODEL` names the judge model, a different model than the one that writes and
+      verifies; empty keeps the judge off. `SA_GUIDE_JUDGE_DAILY_CALLS` (default 300) is its own daily cap
       (`DailyBudget` "guide-judge") and `llm-chat-guide-judge` its own circuit breaker, so the judge never spends the
       guide's cap and a judge outage never opens the guide's breaker. Staging and prod set `nvidia/Nemotron-3-Ultra-550b-a55b`
       (Nebius, United States) and a cap of 300: on staging the core set, about 130 calls, and a rerun; in prod the
       claims of the day's first real answers, until the cap is spent.
-    - **Results.** The meter `helper2.guide.judge{kind, evaluator, verdict, verify, prompt}` counts each verdict, with
+    - **Results.** The meter `searchavo.guide.judge{kind, evaluator, verdict, verify, prompt}` counts each verdict, with
       the verify step's verdict next to it (`supported`, `removed`, `not_checked`, `unchecked`). No tag holds text. The
       guide row of the Grafana dashboard shows the verdicts and the share of claims where verify and the fact judge
-      agree. The judge's calls are in `helper2.llm.call` and `helper2.llm.tokens` under the steps `judge-fact` and
+      agree. The judge's calls are in `searchavo.llm.call` and `searchavo.llm.tokens` under the steps `judge-fact` and
       `judge-relevance`.
     - **Prompts.** The evaluators keep Spring AI's own prompts. `SpringAiGuideJudgeTest` pins the label of each one
       rendered on a fixed claim (fact `3a78745f`, relevance `ea2869f0`), and the meter carries it, so a Spring AI
@@ -255,31 +255,31 @@ answer on its own thread, the search harness offline in a test task. The two seq
 ### Code
 
 The guide:
-- `.github/workflows/guide-eval.yml` — the nightly run on staging; `deploy/helm/helper2/values-staging.yaml`
-  (`app.guideCacheTtl`, `app.dailyLimits`, `app.guideJudge`) — what staging runs with; `deploy/helm/helper2/values-prod.yaml`
+- `.github/workflows/guide-eval.yml` — the nightly run on staging; `deploy/helm/searchavo/values-staging.yaml`
+  (`app.guideCacheTtl`, `app.dailyLimits`, `app.guideJudge`) — what staging runs with; `deploy/helm/searchavo/values-prod.yaml`
   (`app.guideJudge`) — the judge in prod.
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideJudge.kt` (`GuideJudge`, `ClaimKind`),
-  `guide/steps/ReasonCheckStep.kt` (the hand-over), `backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideJudge.java`
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/GuideJudge.kt` (`GuideJudge`, `ClaimKind`),
+  `guide/steps/ReasonCheckStep.kt` (the hand-over), `backend/apps/public/src/main/java/ai/searchavo/guide/internal/SpringAiGuideJudge.java`
   (the evaluators, verdicts and meter), `GuideConfiguration.guideJudge`, `guide/config/GuideProperties.Judge`;
-  `SpringAiGuideJudgeTest`; the guide row of `deploy/grafana/helper2.json`.
+  `SpringAiGuideJudgeTest`; the guide row of `deploy/grafana/searchavo.json`.
 - `scripts/eval-guide.mjs` — the guide runner, pass rate and report writer; `scripts/eval-setup.mjs` — the setup
   runner; `scripts/eval-lib.mjs` — session token, resource id, judgements, P@k and nDCG@k shared by both, and the
   guide run's stop rule (`guideRunStop`); `scripts/eval-lib.test.mjs` — its tests (`node --test`, run by CI).
 - `eval/guide-queries.json`, `guide-intents.json`, `guide-adversarial.json`, `guide-qrels.tsv`,
   `guide-similar.json`, `guide-similar-vectors.json`, `setup-resources.json` — the fixed sets and the judgements;
   `eval/README.md` — grades, how to judge, the clean baseline and how to read a run.
-- `backend/apps/public/src/test/kotlin/ai/helper2/eval/GuideSimilarEvaluation.kt`, `GuideSimilarEvaluationTest.kt`,
+- `backend/apps/public/src/test/kotlin/ai/searchavo/eval/GuideSimilarEvaluation.kt`, `GuideSimilarEvaluationTest.kt`,
   `GuideSimilarRecorder.kt` — the similar-question sweep.
 - `eval/guide-run.md`, `eval/guide-adversarial-run.md` — the latest runs; `eval/guide-intents-run.md` and
   `eval/setup-run.md` are written by `--intents` and `eval-setup.mjs` and committed after a run (neither is
   committed yet).
 
 Search:
-- `backend/apps/public/src/test/kotlin/ai/helper2/eval/` — `SearchSnapshot.kt` (snapshot, recording, replay), `RankingVariants.kt` (the ranking variants of the report),
+- `backend/apps/public/src/test/kotlin/ai/searchavo/eval/` — `SearchSnapshot.kt` (snapshot, recording, replay), `RankingVariants.kt` (the ranking variants of the report),
   `SearchEvaluation.kt` (scores, ablation, pool, report, TREC export), `RelevanceMetrics.kt`, `CutoffSweep.kt`,
   `SearchSnapshotRecorder.kt` (`eval-record`), `SearchRelevanceEvalTest.kt` (`eval`, gate), `EvalFiles.kt`;
   `HomeExampleQueriesTest.kt`, `EverydayQueriesTest.kt` — the two groups sent with a path.
-- `backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts` — tasks `evalRecord` and `evalTest`;
+- `backend/build-logic/src/main/kotlin/searchavo.kotlin-library.gradle.kts` — tasks `evalRecord` and `evalTest`;
   `test` excludes both tags.
 - `eval/search-queries.json`, `eval/semantic-gold.json`, `eval/search-qrels.tsv`,
   `eval/README.md` (how to record, judge and compare).
@@ -330,7 +330,7 @@ Search:
 
 ### Known limits
 
-- `H2_LLM_MAX_RETRIES` above 0 adds attempts that no budget counts. Thinking off makes the chooser return fewer picks. A guide step cut while thinking answers with thinking off, and the answer does not say so: `GuideModelInfo` and the `guide timings` line name the models, not the thinking of each step; only `helper2.llm.thinking_fallback{step}` and a WARN line do. The first, cut call is paid in full (tokens, time, one budget unit) before the second starts; no alert yet on a high fallback rate, which means the step's token limit is too low for thinking.
+- `SA_LLM_MAX_RETRIES` above 0 adds attempts that no budget counts. Thinking off makes the chooser return fewer picks. A guide step cut while thinking answers with thinking off, and the answer does not say so: `GuideModelInfo` and the `guide timings` line name the models, not the thinking of each step; only `searchavo.llm.thinking_fallback{step}` and a WARN line do. The first, cut call is paid in full (tokens, time, one budget unit) before the second starts; no alert yet on a high fallback rate, which means the step's token limit is too low for thinking.
 - 60 guide questions is still a small sample, and the nightly run keeps 21 of them; the script measures the stream's last event, not the browser; an ungraded pick counts as not relevant; the candidates of a question with no answer come from its search terms sent again to `/api/v1/search`, not from the guide's own 24 (the answer carries only 3), so they are close, not exact; the hand-written notes describe the previous run until updated. The nightly run leaves out the intent cases; staging visitors share what it leaves of 150 guide calls a day; it needs the staging address reachable from GitHub's runners.
 - The judge reads a bare yes or no: a judge model that explains first counts as `unclear`. Spring AI's prompts are
   short and not written for hostile text; the escaping keeps our tags, not the judge's own instructions, safe, and a

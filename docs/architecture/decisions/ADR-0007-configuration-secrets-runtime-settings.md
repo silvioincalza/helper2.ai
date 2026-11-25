@@ -14,7 +14,7 @@ many tuning values. The same names must work on a laptop, in the demo compose fi
 names (`REDIS_PORT`, `DATABASE_URL`) clash with variables that Kubernetes or other tools set. Secrets must never live
 in Git or in GitHub settings, and the deploy must not need a person to copy them.
 
-Every limit is an `H2_` variable. To lower the guide's daily model calls during an abuse spike, or to give the Scout
+Every limit is an `SA_` variable. To lower the guide's daily model calls during an abuse spike, or to give the Scout
 more enrichment calls for one day after a fresh database, I would change the env Secret and deploy: a few minutes, a
 restart of every replica, and the change is in no audit trail. The Settings page
 ([0038](ADR-0038-back-office-and-review.md)) shows the values, but cannot change them. Most settings must stay
@@ -23,39 +23,39 @@ are different: they only say how much we spend, and the right number changes wit
 
 ## Decision
 ### Variables, profiles and secrets
-1. **One prefix.** Every variable the apps read from outside starts with `H2_`, profiles included:
-   `spring.profiles.active: ${H2_PROFILES:}`. The yaml files (§19) map each one to a property with a safe
-   default (for example `H2_COOKIE_SECURE=true`, `H2_FORWARD_HEADERS_STRATEGY=none`, `H2_METRICS_PUBLIC=false`,
-   `H2_SCOUT_ENABLED=false`). Search and rate-limit settings follow the same rule (`H2_SEARCH_STALE_FOR`,
-   `H2_SEARCH_PER_SOURCE_LIMIT`, `H2_SEARCH_TRANSLATE_TIMEOUT_MS`, `H2_RATE_LIMIT_*`).
-   A token whose quota two features would share has one variable per feature: `H2_GITHUB_TOKEN` for the sources
-   and the Scout, `H2_SETUP_GITHUB_TOKEN` for the setup guide's README fetches
+1. **One prefix.** Every variable the apps read from outside starts with `SA_`, profiles included:
+   `spring.profiles.active: ${SA_PROFILES:}`. The yaml files (§19) map each one to a property with a safe
+   default (for example `SA_COOKIE_SECURE=true`, `SA_FORWARD_HEADERS_STRATEGY=none`, `SA_METRICS_PUBLIC=false`,
+   `SA_SCOUT_ENABLED=false`). Search and rate-limit settings follow the same rule (`SA_SEARCH_STALE_FOR`,
+   `SA_SEARCH_PER_SOURCE_LIMIT`, `SA_SEARCH_TRANSLATE_TIMEOUT_MS`, `SA_RATE_LIMIT_*`).
+   A token whose quota two features would share has one variable per feature: `SA_GITHUB_TOKEN` for the sources
+   and the Scout, `SA_SETUP_GITHUB_TOKEN` for the setup guide's README fetches
    ([0034](ADR-0034-setup-guide.md)). An empty token means anonymous calls, never another feature's token.
    Every pod sets `enableServiceLinks: false`, so Kubernetes adds no service variables of its own.
-2. **Profiles.** `llm-nebius` turns on the model provider (needs `H2_NEBIUS_API_KEY`); `oauth-github` turns
-   on sign-in (needs `H2_GITHUB_OAUTH_CLIENT_ID` and `_SECRET`); `dev` starts compose and allows
+2. **Profiles.** `llm-nebius` turns on the model provider (needs `SA_NEBIUS_API_KEY`); `oauth-github` turns
+   on sign-in (needs `SA_GITHUB_OAUTH_CLIENT_ID` and `_SECRET`); `dev` starts compose and allows
    `http://localhost`; `demo` uses fixture sources and no Scout. Staging and prod run `llm-nebius,oauth-github`
    (`app.springProfiles`, shared by both apps).
 3. **Local runs.** The apps import the repository-root `.env` (Git-ignored, template `.env.example`); real
    environment variables win. Tests replace the import, so a developer's keys never reach a test run.
-4. **Secrets live in OpenBao.** Mount `helper2/kv`, path `ci/<env>`, fields `app_env` (the whole env file)
+4. **Secrets live in OpenBao.** Mount `searchavo/kv`, path `ci/<env>`, fields `app_env` (the whole env file)
    and `kubeconfig` (the namespace's deployer). The owner writes them with `make ENV=<env> credentials`
-   after a login with role `helper2-operator`; the target first checks that the deployer may do what a deploy
+   after a login with role `searchavo-operator`; the target first checks that the deployer may do what a deploy
    needs. Other entries: `ci/harbor` (image push robot), `ci/harbor-pull` (pull only, to verify images) and
    `backup/r2` (the off-site backup's access key, endpoint, bucket and encryption password, written to the
    cluster from the workstation with `make backup-credentials`; continuous integration (CI) never reads it).
 5. **The path to the pods.** The deploy job logs in to OpenBao with the job's GitHub OpenID Connect (OIDC)
    token ([0044](ADR-0044-ci-cd-and-supply-chain.md)), writes `app_env` to `<env>/app.env` (`umask 077`),
    and runs `make deploy`. Its first step, `make env-secret`, checks the file with `check-app-env.sh`: `KEY=value`
-   lines and `#` comments only, every key matches `^H2_[A-Z0-9_]+$` and is set once, no line starts or ends in a space
+   lines and `#` comments only, every key matches `^SA_[A-Z0-9_]+$` and is set once, no line starts or ends in a space
    or tab (kubectl keeps a trailing space in the value), the database owner's and both app roles' passwords have 32+
    characters of base64 or base64url and differ, and the three Redis passwords (default user, `h2_public`,
    `h2_backoffice`) have 32+ letters and digits and differ. Then kubectl (server-side apply) writes two Secrets:
-   `helper2-credentials` with the passwords ([0004](ADR-0004-persistence-and-the-schema.md)), and
-   `helper2-app-env` with every other key. Helm never sees a value: the chart renders no Secret, so the release
-   history (3 revisions) holds none. Both apps read `helper2-app-env` with `envFrom` and only their own passwords
-   from `helper2-credentials` by key; Postgres, Redis, the backup job and the migrate Job read single keys too. No
-   workload loads `helper2-credentials` whole. The job deletes the file and the kubeconfig at the end, even on
+   `searchavo-credentials` with the passwords ([0004](ADR-0004-persistence-and-the-schema.md)), and
+   `searchavo-app-env` with every other key. Helm never sees a value: the chart renders no Secret, so the release
+   history (3 revisions) holds none. Both apps read `searchavo-app-env` with `envFrom` and only their own passwords
+   from `searchavo-credentials` by key; Postgres, Redis, the backup job and the migrate Job read single keys too. No
+   workload loads `searchavo-credentials` whole. The job deletes the file and the kubeconfig at the end, even on
    failure.
 6. **Restart on change.** The chart cannot see a Secret change, so `make deploy` passes hashes:
    `envSecret.revision` (of the file) becomes `checksum/env-revision` on both app pods, and
@@ -67,51 +67,51 @@ are different: they only say how much we spend, and the right number changes wit
    management port 8081) are set in the chart's Deployments, per environment through `values-<env>.yaml`.
 8. **Typed settings.** The code reads configuration only through immutable `@ConfigurationProperties`
    records: one per module, or per clear concern, in that module's `config` package, under
-   `helper2.<module>`. The open `platform` module uses concern prefixes such as `helper2.llm`.
-   `helper2.retention` is shared, with one record per module for its own periods. No `@Value`, no
+   `searchavo.<module>`. The open `platform` module uses concern prefixes such as `searchavo.llm`.
+   `searchavo.retention` is shared, with one record per module for its own periods. No `@Value`, no
    `Environment.getProperty`: an architecture test in each app (`ConfigurationAccessTest`, the rule written once in
-   `ConfigurationAccessRules`) fails the build on either. One exception: `DiscoveryCollectorRegistrar` registers one bean per entry of `helper2.categories`
+   `ConfigurationAccessRules`) fails the build on either. One exception: `DiscoveryCollectorRegistrar` registers one bean per entry of `searchavo.categories`
    before any bean exists, so it binds that list through Spring Boot's `Binder` (`CategoriesProperties.bind`, the
    same record the bean binds) and checks it in code (`DiscoveryCategories`)
    ([0013](ADR-0013-discovery.md)).
    Records are `@Validated`, use `Duration`, `DataSize`, `URI` and lists, and mask secrets in `toString`
    (`Secrets.mask`). Spring binds and validates them before the context is ready, so a bad value stops
-   startup with its name. Defaults live in one place, the yaml files (§19), next to the `H2_` name that
+   startup with its name. Defaults live in one place, the yaml files (§19), next to the `SA_` name that
    overrides them. Records carry none. A schedule takes its timing from its record too: it is a
    `SchedulingConfigurer` that registers its task with the record's cron or durations (`DailyJobs` with
    `RetentionSchedule`, `HomeExampleCheckSchedule` with `ExamplesProperties`, `ScoutSchedule` with
    `ScoutProperties`), so no `@Scheduled` reads a placeholder (`ConfigurationAccessTest` fails on one). Only
    `@ConditionalOnProperty` and `@ConditionalOnExpression` still use placeholders, and only for keys a record owns. Env names never follow a record path: the yaml mapping is the
-   contract, so renaming a field never renames an `H2_` variable. The database password has no default
+   contract, so renaming a field never renames an `SA_` variable. The database password has no default
    in the base document; only the `dev` profile has the local one from `compose.yaml`.
-9. **Nine limits and one switch change at runtime.** For the settings in `RuntimeSetting` (§10), the `H2_` value is the
+9. **Nine limits and one switch change at runtime.** For the settings in `RuntimeSetting` (§10), the `SA_` value is the
    default, not a ceiling: an administrator can change it from the back office, between 0 and a maximum in code.
    The record still binds the value at startup; the module reads the limit through a supplier (§14). Every other
    setting changes only with a deploy.
 
 ### Runtime settings
 10. **An allow-list in code.** `platform.settings.RuntimeSetting` is the list: Scout enrichments per run
-    (`H2_SCOUT_MAX_ENRICHMENTS`, at most 3,000), enrichment calls a day (`H2_SCOUT_DAILY_ENRICHMENT_CALLS`, 3,000),
-    gap rounds a day (`H2_SCOUT_GAP_DAILY_CALLS`, 2,000), the guide's model calls a day
-    (`H2_GUIDE_DAILY_MODEL_CALLS`, 3,000), translations a day (`H2_SEARCH_DAILY_TRANSLATIONS`, 2,000), Tavily
-    credits a day for all of Helper2 (`H2_LIVE_WEB_DAILY_CREDITS`, 3,000), Tavily credits a day for the Scout's
-    searches (`H2_SCOUT_DAILY_CREDITS`, 3,000), Tavily Extract credits a day for product pages
-    (`H2_SCOUT_PAGE_READER_DAILY_CREDITS`, 3,000), research model calls a day
-    (`H2_RESEARCH_DAILY_MODEL_CALLS`, 20,000). Each limit has a key, a unit, a line of help and
+    (`SA_SCOUT_MAX_ENRICHMENTS`, at most 3,000), enrichment calls a day (`SA_SCOUT_DAILY_ENRICHMENT_CALLS`, 3,000),
+    gap rounds a day (`SA_SCOUT_GAP_DAILY_CALLS`, 2,000), the guide's model calls a day
+    (`SA_GUIDE_DAILY_MODEL_CALLS`, 3,000), translations a day (`SA_SEARCH_DAILY_TRANSLATIONS`, 2,000), Tavily
+    credits a day for all of Searchavo (`SA_LIVE_WEB_DAILY_CREDITS`, 3,000), Tavily credits a day for the Scout's
+    searches (`SA_SCOUT_DAILY_CREDITS`, 3,000), Tavily Extract credits a day for product pages
+    (`SA_SCOUT_PAGE_READER_DAILY_CREDITS`, 3,000), research model calls a day
+    (`SA_RESEARCH_DAILY_MODEL_CALLS`, 20,000). Each limit has a key, a unit, a line of help and
     that absolute maximum. One switch is in the same list as kind `SWITCH`: the Google ads
-    (`ads.enabled`, `H2_ADS_ENABLED`, `true` or `false`: [0042](ADR-0042-monetisation.md) §1). A switch is
+    (`ads.enabled`, `SA_ADS_ENABLED`, `true` or `false`: [0042](ADR-0042-monetisation.md) §1). A switch is
     stored like a limit (1 or 0 in `runtime_setting`), goes through the same review, version, audit and refresh,
     and is shown, sent and audited as `true` or `false`: its own list on the page ("Switches you can change") and in
     the API (`switches`, `PUT /api/v1/admin/runtime-switches/{key}` with `{"on": true}`, and `/reset`). A module
     declares it with `declareSwitch` and reads a `BooleanSupplier`. The overview counts limits only. Nothing else can
-    change at runtime: no secret, no `H2_ADMINS`, no model id, prompt, token
+    change at runtime: no secret, no `SA_ADMINS`, no model id, prompt, token
     limit, ranking weight, rate limit, nor the Tavily quotas per visitor.
-11. **The `H2_` value is the default, not a ceiling.** The minimum is 0, which turns the use off. The maximum is in
+11. **The `SA_` value is the default, not a ceiling.** The minimum is 0, which turns the use off. The maximum is in
     code; going above it needs a pull request. A value outside 0 to the maximum is refused by the server (400) and
     blocked in the form. A default above the maximum stops startup with the variable's name. Every runtime setting is
-    a finite number: an empty `H2_LIVE_WEB_DAILY_CREDITS` (no cap) applies as the code maximum, 3,000 credits a
+    a finite number: an empty `SA_LIVE_WEB_DAILY_CREDITS` (no cap) applies as the code maximum, 3,000 credits a
     day. So "Reset to default" never removes the global Tavily cap. The Scout's two credit limits have
-    a default below their maximum: `H2_SCOUT_DAILY_CREDITS` and `H2_SCOUT_PAGE_READER_DAILY_CREDITS` are 1,000
+    a default below their maximum: `SA_SCOUT_DAILY_CREDITS` and `SA_SCOUT_PAGE_READER_DAILY_CREDITS` are 1,000
     credits a day each, and an administrator can raise each to 3,000. The default is far above a normal day, so
     it does not hold the Scout back; it stops a fault that would spend without end. A page read also takes a credit of the global cap, so the
     global cap bounds the page reads too; the Scout's searches count on the global counter but are stopped only
@@ -123,7 +123,7 @@ are different: they only say how much we spend, and the right number changes wit
     A trigger refuses every UPDATE. Not Redis: Redis is a disposable cache ([0005](ADR-0005-redis-as-a-disposable-cache.md)),
     and a lost override would raise a limit without anyone knowing.
 13. **One snapshot per replica.** `RuntimeSettings` keeps an immutable snapshot in an `AtomicReference`, in both
-    apps. A thread of its own checks the newest version every `H2_RUNTIME_SETTINGS_REFRESH` (20 s, 5 to 60 s) and
+    apps. A thread of its own checks the newest version every `SA_RUNTIME_SETTINGS_REFRESH` (20 s, 5 to 60 s) and
     reads the settings again only when it changed. Hot paths read the snapshot only, never the database. The replica
     that made the change reads it right after the commit. A store that cannot answer leaves the last snapshot. When
     that read after the commit fails, the change stays stored and the admin's request succeeds: the replica logs a
@@ -145,23 +145,23 @@ are different: they only say how much we spend, and the right number changes wit
     lists the last 10 changes; Restore goes through the same review. The overview says how many limits are changed.
     API: `GET /api/v1/admin/runtime-settings`, `PUT /api/v1/admin/runtime-settings/{key}`,
     `POST /api/v1/admin/runtime-settings/{key}/reset`, ADMIN only, on the back office, CSRF on writes.
-18. **Retention.** A change is kept 24 months (`H2_RETENTION_RUNTIME_SETTINGS`, `P730D`); each setting's newest
+18. **Retention.** A change is kept 24 months (`SA_RETENTION_RUNTIME_SETTINGS`, `P730D`); each setting's newest
     change stays, because it is the value in force. The back office app purges the older ones daily
-    (`helper2.retention.cron`, UTC), on one replica at a time (a cluster lock).
+    (`searchavo.retention.cron`, UTC), on one replica at a time (a cluster lock).
 
 ### Settings files
-19. **One shared file, one small file per app.** `helper2-shared.yaml`, in the `platform` library, holds every
+19. **One shared file, one small file per app.** `searchavo-shared.yaml`, in the `platform` library, holds every
     setting both apps read with the same value (about 930 keys), with the profile documents. Each app's
     `application.yaml` holds only what is its own: its name, its session and cookie values, the settings of the
     modules only it runs (guide, setup, pages and monetisation in the public app; admin, the Scout's run and the page
     reader in the back office) and its own values under a profile. A setting both apps read is written once.
 20. **The app's file wins.** The first document of an app's `application.yaml` has one key,
-    `spring.config.import: classpath:helper2-shared.yaml`. Spring puts an imported file above the document that
+    `spring.config.import: classpath:searchavo-shared.yaml`. Spring puts an imported file above the document that
     imports it and below the documents after it. So, weakest first: the shared file's documents in their order, then
     the app's own documents in their order. A profile changes which documents count, not their order: an app's
     document with no profile is still above a shared `dev` document, so an app's file never sets, outside a profile,
-    a key that a shared profile document sets. An `H2_` variable fills its placeholder wherever the key is written.
-    The `.env` import (§3) is in the shared file's first document: `.env` holds `H2_` names only (§1), so every app
+    a key that a shared profile document sets. An `SA_` variable fills its placeholder wherever the key is written.
+    The `.env` import (§3) is in the shared file's first document: `.env` holds `SA_` names only (§1), so every app
     reads it the same way.
 21. **Tests keep it so.** `SharedSettingsTest` fails when an app's first document has more than the import, when both
     apps' files write the same key with the same value (it belongs in the shared file), when an app's file hides a
@@ -172,58 +172,58 @@ are different: they only say how much we spend, and the right number changes wit
     running configuration with it, so a change of a setting shows in the pull request as the line it changes in each
     app. The test loads the files without the machine's environment, so no secret can reach a recorded file. To
     record again: delete the file and run the test once; it writes the file and fails, the second run passes.
-    `EnvGuidesTest` fails when an `H2_` variable the yaml files read is not a key of `.env.example`, when it is
+    `EnvGuidesTest` fails when an `SA_` variable the yaml files read is not a key of `.env.example`, when it is
     neither a key of `deploy/k8s/app.env.example` nor set by the chart's templates, and when a guide has a key no
     app reads. The few names that are meant to differ are a list in the test, each with its reason.
 
 ### Code
 Variables, profiles and secrets:
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml` — the settings both apps share: `H2_` variables,
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml` — the settings both apps share: `SA_` variables,
   defaults, profiles; `backend/apps/public/src/main/resources/application.yaml`,
   `backend/apps/backoffice/src/main/resources/application.yaml` — the import and each app's own settings.
-- `backend/libs/platform/src/test/java/ai/helper2/platform/config/SharedSettingsTest.java`,
-  `backend/apps/public/src/test/java/ai/helper2/config/PublicConfigurationSnapshotTest.java`,
-  `backend/apps/backoffice/src/test/java/ai/helper2/config/BackOfficeConfigurationSnapshotTest.java` with
+- `backend/libs/platform/src/test/java/ai/searchavo/platform/config/SharedSettingsTest.java`,
+  `backend/apps/public/src/test/java/ai/searchavo/config/PublicConfigurationSnapshotTest.java`,
+  `backend/apps/backoffice/src/test/java/ai/searchavo/config/BackOfficeConfigurationSnapshotTest.java` with
   `backend/apps/*/src/test/resources/configuration/*.txt`;
-  `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/ResolvedConfiguration.java`,
+  `backend/libs/platform/src/testFixtures/java/ai/searchavo/testing/ResolvedConfiguration.java`,
   `ConfigurationSnapshot.java` — the settings files' tests (§21).
-- `backend/{libs,apps}/*/src/main/java/ai/helper2/<module>/config/*Properties.java` — the typed settings;
-  `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Secrets.kt` — masks secrets in `toString`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/DiscoveryCollectorRegistrar.java` — the
+- `backend/{libs,apps}/*/src/main/java/ai/searchavo/<module>/config/*Properties.java` — the typed settings;
+  `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/Secrets.kt` — masks secrets in `toString`.
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/config/scout/DiscoveryCollectorRegistrar.java` — the
   one `Binder` exception.
-- `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/architecture/ConfigurationAccessRules.java` — the
-  no-`@Value` rule; `backend/apps/public/src/test/java/ai/helper2/architecture/ConfigurationAccessTest.java`,
-  `backend/apps/backoffice/src/test/java/ai/helper2/architecture/ConfigurationAccessTest.java` — the rule run on each app;
-  `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/ConfigBinding.java` — binding tests on the real yaml.
+- `backend/libs/platform/src/testFixtures/java/ai/searchavo/testing/architecture/ConfigurationAccessRules.java` — the
+  no-`@Value` rule; `backend/apps/public/src/test/java/ai/searchavo/architecture/ConfigurationAccessTest.java`,
+  `backend/apps/backoffice/src/test/java/ai/searchavo/architecture/ConfigurationAccessTest.java` — the rule run on each app;
+  `backend/libs/platform/src/testFixtures/java/ai/searchavo/testing/ConfigBinding.java` — binding tests on the real yaml.
 - `.env.example`, `deploy/k8s/app.env.example` — templates;
-  `backend/libs/platform/src/test/java/ai/helper2/platform/config/EnvGuidesTest.java` — they name every variable.
+  `backend/libs/platform/src/test/java/ai/searchavo/platform/config/EnvGuidesTest.java` — they name every variable.
 - `deploy/k8s/Makefile` (`credentials`, `backup-credentials`, `env-secret`, `deploy`), `deploy/k8s/check-app-env.sh`,
   `deploy/k8s/check-env-overrides.sh` — write, check and use the secrets.
 - `.github/actions/bao-login/action.yml`, `.github/workflows/deploy.yml` — OIDC login, `app_env` to file.
-- `deploy/helm/helper2/values.yaml` (`envSecret`, `credentialsSecret`, `redis.auth`),
-  `templates/_helpers.tpl` (`helper2.envSecret`, `helper2.credentialsSecret`, `helper2.redisPasswordFrom`,
-  `helper2.redisAuthRevision`), `templates/app.yaml`, `templates/backoffice.yaml`, `templates/redis.yaml` — pod
+- `deploy/helm/searchavo/values.yaml` (`envSecret`, `credentialsSecret`, `redis.auth`),
+  `templates/_helpers.tpl` (`searchavo.envSecret`, `searchavo.credentialsSecret`, `searchavo.redisPasswordFrom`,
+  `searchavo.redisAuthRevision`), `templates/app.yaml`, `templates/backoffice.yaml`, `templates/redis.yaml` — pod
   environment, restart annotations.
 
 Runtime settings:
-- `backend/libs/platform/src/main/java/ai/helper2/platform/settings/` — `RuntimeSetting.java` (the allow-list),
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/settings/` — `RuntimeSetting.java` (the allow-list),
   `RuntimeSettings.java` (the snapshot), `RuntimeSettingStore.java`, `JdbcRuntimeSettingStore.java`,
   `RuntimeSettingsConfiguration.java` (the refresh thread).
-- `backend/apps/backoffice/src/main/java/ai/helper2/platform/settings/RuntimeSettingsPurgeSchedule.java` — the purge.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/config/RuntimeSettingsProperties.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/platform/settings/RuntimeSettingsPurgeSchedule.java` — the purge.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/config/RuntimeSettingsProperties.java`,
   `PlatformRetentionProperties.java`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`runtime_setting`, `admin_audit`).
-- `backend/apps/backoffice/src/main/java/ai/helper2/admin/usecase/GetRuntimeSettings.java`, `ChangeRuntimeSetting.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/admin/usecase/GetRuntimeSettings.java`, `ChangeRuntimeSetting.java`,
   `ResetRuntimeSetting.java`; `admin/web/RuntimeSettingsController.java`; `admin/config/AdminUseCaseConfiguration.java`,
   `SettingsReloadAfterCommit.java`.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/llm/DailyBudget.java`, `BudgetLedger.java`,
-  `CallCounter.java` (limits by supplier); `backend/libs/core/src/main/kotlin/ai/helper2/search/WebSearch.kt`
-  (`WebSearchQuota`), `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt`.
-- Declarations: `backend/apps/public/src/main/java/ai/helper2/guide/internal/GuideConfiguration.java`,
-  `backend/libs/core/src/main/java/ai/helper2/search/internal/TranslationConfiguration.java`,
-  `backend/libs/core/src/main/java/ai/helper2/search/config/SearchConfiguration.java`,
-  `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutConfiguration.java`.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/AuditTrail.java`, `identity/AuditLog.java` (before, after,
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/llm/DailyBudget.java`, `BudgetLedger.java`,
+  `CallCounter.java` (limits by supplier); `backend/libs/core/src/main/kotlin/ai/searchavo/search/WebSearch.kt`
+  (`WebSearchQuota`), `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/RunScout.kt`.
+- Declarations: `backend/apps/public/src/main/java/ai/searchavo/guide/internal/GuideConfiguration.java`,
+  `backend/libs/core/src/main/java/ai/searchavo/search/internal/TranslationConfiguration.java`,
+  `backend/libs/core/src/main/java/ai/searchavo/search/config/SearchConfiguration.java`,
+  `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/ScoutConfiguration.java`.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/AuditTrail.java`, `identity/AuditLog.java` (before, after,
   reason).
 - `api/admin.yaml` — `RuntimeSettings`, `RuntimeSettingState`, `RuntimeSettingChange`, `RuntimeSettingReset`;
   `AuditEntry` and `AdminOverview` fields.
@@ -246,7 +246,7 @@ Runtime settings:
   mixed with our own settings under no common prefix.
 - `@Value` in the code — scattered, not validated, defaults copied next to the yaml ones.
 - One global properties class — crosses module boundaries.
-- Relaxed binding of `H2_*` straight to records — cannot give one token to several sources, would rename
+- Relaxed binding of `SA_*` straight to records — cannot give one token to several sources, would rename
   about 45 variables in OpenBao, and every field would become settable from outside.
 - A checksum of the existing Redis Secret read with Helm's `lookup` — needs read access to Secrets at deploy time
   and renders nothing in `helm template` (CI); a controller that restarts pods on Secret changes (Reloader) — one
@@ -278,7 +278,7 @@ and what a person must keep in mind.
 
 ## Consequences
 ### Variables, profiles and secrets
-- One search for `H2_` finds every setting. A missing or misspelled prefix is easy to spot in review.
+- One search for `SA_` finds every setting. A missing or misspelled prefix is easy to spot in review.
 - No secret is stored in GitHub: the deploy reads OpenBao after a login that is bound to the repository and the
   job's environment.
 - No app process holds the database owner's or Redis' default password, and a leaked app password opens neither
@@ -301,15 +301,15 @@ and what a person must keep in mind.
   what and why.
 - Every replica applies a change within about 20 seconds. Until then two replicas can apply two limits: the shared
   counters keep the total right, only the cut-off moves by those seconds.
-- The Settings page's read-only groups show the value now for these six settings, and the `H2_` value as the default.
+- The Settings page's read-only groups show the value now for these six settings, and the `SA_` value as the default.
 - Raising a maximum is a code change, reviewed like any other.
 - Emergency stop: a 0 reaches every replica within about 20 seconds (the replica that made the change at once). A
-  pod whose first read of the store fails (database down) runs on the `H2_` defaults until the store answers. To
-  stop a use for sure through an outage, also set the `H2_` value to 0 and deploy.
+  pod whose first read of the store fails (database down) runs on the `SA_` defaults until the store answers. To
+  stop a use for sure through an outage, also set the `SA_` value to 0 and deploy.
 - Reloads run one at a time on a replica (the refresh thread and the replica's own reload after a change), and a
   read never overwrites a snapshot that another read applied while it ran. So an older snapshot never overwrites a newer
   one, and a store whose version went back (restored from a backup) wins: what it holds now applies.
-- The env value is still read at startup. A new `H2_` value with an override in place changes the default only.
+- The env value is still read at startup. A new `SA_` value with an override in place changes the default only.
 
 ### Known limits
 - The Kubernetes Secret is base64 in the cluster: namespace access means secret access.
@@ -319,7 +319,7 @@ and what a person must keep in mind.
 - A change has no Grafana annotation, so a dashboard does not show when a limit moved.
 - A limit raised for one day stays until someone resets it: an expiry ("until midnight UTC") would need one more column.
 - The six maximums are first guesses (2.5 to 5 times the prod values); revisit them after a month of use.
-- A new `H2_` default with an override in place changes nothing until the override is reset.
+- A new `SA_` default with an override in place changes nothing until the override is reset.
 
 ## Diagrams
 Variables and secrets: [flow](../diagrams/flow-0007-configuration-and-secrets.svg) · [sequence](../diagrams/sequence-0007-configuration-and-secrets.svg) ·

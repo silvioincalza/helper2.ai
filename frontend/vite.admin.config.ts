@@ -6,7 +6,7 @@ const backOffice = 'http://localhost:8090';
 
 function adminFallback(): Plugin {
   return {
-    name: 'helper2-admin-fallback',
+    name: 'searchavo-admin-fallback',
     apply: 'serve',
     configureServer: (server) => {
       server.middlewares.use((req, _res, next) => {

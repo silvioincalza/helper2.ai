@@ -5,7 +5,7 @@
 **Use Case ID:** UC-015  
 **Use Case Name:** Read Mission, Privacy and Terms  
 **Primary Actor:** Visitor  
-**Goal:** Understand what helper2.ai is for, what data it keeps and for how long, and which terms apply, with the numbers the code really applies  
+**Goal:** Understand what searchavo.ai is for, what data it keeps and for how long, and which terms apply, with the numbers the code really applies  
 **Trigger:** The visitor opens Mission, Privacy or Terms from the footer  
 **Status:** Approved  
 
@@ -56,4 +56,4 @@ The retention periods shown are the ones the daily purge applies (UC-029 BR-002,
 
 ### BR-003: Backups
 
-The privacy page states that backups are kept 7 days by default (`H2_RETENTION_BACKUPS`).
+The privacy page states that backups are kept 7 days by default (`SA_RETENTION_BACKUPS`).

@@ -73,18 +73,18 @@ link at deps.dev), semantic-kernel (only its Java packages inside the cap), spri
      first, 100 a page. 16 topics (the topic leaders' list without speech-recognition and structured-output, plus
      openai, anthropic, gemini, ollama, openai-api, sdk) and 9 languages with their own floor:
      `Java:1000, Kotlin:1000, Python:5000, TypeScript:5000, JavaScript:5000, Go:1000, Rust:1000, C#:1000, Ruby:1000`
-     (`H2_SCOUT_SDKS_TOPICS`, `H2_SCOUT_SDKS_LANGUAGES`);
-   - then every provider org: `org:{o} stars:>=300 fork:false archived:false` (`H2_SCOUT_SDKS_ORGS`, 18 orgs).
-   - 162 queries a pass, 20 a run (`H2_SCOUT_SDKS_QUERIES_PER_RUN`), so 9 runs; the cursor is the index of the next
-     query. A pass every 7 days. It runs only with `H2_GITHUB_TOKEN`.
-   - **Pages.** A query reads up to 3 pages of 100 (`H2_SCOUT_SDKS_PAGES_PER_QUERY`), and stops at a short page or
+     (`SA_SCOUT_SDKS_TOPICS`, `SA_SCOUT_SDKS_LANGUAGES`);
+   - then every provider org: `org:{o} stars:>=300 fork:false archived:false` (`SA_SCOUT_SDKS_ORGS`, 18 orgs).
+   - 162 queries a pass, 20 a run (`SA_SCOUT_SDKS_QUERIES_PER_RUN`), so 9 runs; the cursor is the index of the next
+     query. A pass every 7 days. It runs only with `SA_GITHUB_TOKEN`.
+   - **Pages.** A query reads up to 3 pages of 100 (`SA_SCOUT_SDKS_PAGES_PER_QUERY`), and stops at a short page or
      at `total_count` (GitHub's cap is 1,000). Results left unread count in
-     `helper2.scout.sdks.unread{reason=beyond-pages}`; an answer with `incomplete_results` in `reason=incomplete`.
+     `searchavo.scout.sdks.unread{reason=beyond-pages}`; an answer with `incomplete_results` in `reason=incomplete`.
      Live, `topic:llm language:Python stars:>=5000` has 228 results and `org:microsoft stars:>=300` 723: the first
      is read whole, the second to its 300 most-starred repos.
    - **Rate limit.** The token is shared with the topic leaders, the awesome lists and the live GitHub source.
-     Searches are 2 s apart (`H2_SCOUT_SDKS_SEARCH_PAUSE`). When `X-RateLimit-Remaining` falls to 10
-     (`H2_SCOUT_SDKS_RATE_LIMIT_RESERVE`), the run stops after that query and returns the next query's index as the
+     Searches are 2 s apart (`SA_SCOUT_SDKS_SEARCH_PAUSE`). When `X-RateLimit-Remaining` falls to 10
+     (`SA_SCOUT_SDKS_RATE_LIMIT_RESERVE`), the run stops after that query and returns the next query's index as the
      cursor: a partial batch, not a failure.
    - **Held back.** When the daily cap held items back at the end of a pass, the runner gives the cursor
      `held-back`; the collector starts the plan again from the first query.
@@ -95,7 +95,7 @@ link at deps.dev), semantic-kernel (only its Java packages inside the cap), spri
    source record (`ReviewQueue.repositoryListed`). The last one covers a Python repo indexed through PyPI
    ([0017](ADR-0017-pypi-through-bigquery.md)), whose resource lives at the pypi.org page and names the repo as its
    repository: it takes no review slot (`SdkReviewRoomIT`). Of the rest, official repos come first, and only as many as
-   the day's cap leaves (`H2_SCOUT_SDKS_PER_DAY`, 500, minus the items `github-sdks` opened today) are looked up and
+   the day's cap leaves (`SA_SCOUT_SDKS_PER_DAY`, 500, minus the items `github-sdks` opened today) are looked up and
    proposed; the others count in `reason=over-daily-cap` and come back next pass.
 4. **deps.dev names the packages.** For each repo (kept in memory for the run interval, at most 5,000 repos):
    - `GET /v3/projects/github.com%2F{owner}%2F{repo}:packageversions`. A 404 (a plain-text "project not found") is
@@ -107,7 +107,7 @@ link at deps.dev), semantic-kernel (only its Java packages inside the cap), spri
      a plain name must be a repo-name guess, start with one (`candle-core`), or be the owner's prefix and a guess
      (`google-genai` for `googleapis/python-genai`);
    - order: the repo's own registry first, then the most releases, then the shortest name; keep 3
-     (`H2_SCOUT_SDKS_PACKAGES_PER_REPO`);
+     (`SA_SCOUT_SDKS_PACKAGES_PER_REPO`);
    - for each, the default version (`GetPackage`, `GetVersion`): version, publish date, licences, source repo. A
      package counts only when its latest version points back to the same repo. A failed lookup drops only that
      package; only a failed project call drops the repo's packages (it is still proposed, with none).
@@ -142,15 +142,15 @@ link at deps.dev), semantic-kernel (only its Java packages inside the cap), spri
     Sources page and reads the catalog.
 
 ### Code
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubSdkCollector.java`, `SdkSearchPlan.java`, `SdkFacts.java`, `SdkSearchTerms.java`
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/depsdev/` (`DepsDevClient`, `PackageFinder`, `PackageSelection`, `NameGuesses`, `Ecosystem`, `PackageVersion`, `RegistryPackage`)
-- `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ResourceCandidateJson.java` (`package` per finder, read from the opening finder)
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/IndexAcceptedCandidate.kt` (`PackageFacts`)
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogWriter.java` (`refreshPackageTerms`)
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/github/scout/GitHubSdkCollector.java`, `SdkSearchPlan.java`, `SdkFacts.java`, `SdkSearchTerms.java`
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/depsdev/` (`DepsDevClient`, `PackageFinder`, `PackageSelection`, `NameGuesses`, `Ecosystem`, `PackageVersion`, `RegistryPackage`)
+- `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/ResourceCandidateJson.java` (`package` per finder, read from the opening finder)
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/IndexAcceptedCandidate.kt` (`PackageFacts`)
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcCatalogWriter.java` (`refreshPackageTerms`)
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` (`resource.package_terms`, `search_vector`)
-- `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorDescriptors.java`, `CollectorProperties.java` (`GitHubSdks`)
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java` (`depsDevClient`, `reviewRoom`)
-- `backend/apps/public/src/main/java/ai/helper2/sources/config/scout/ScoutSourceDescriptors.java`
+- `backend/libs/core/src/main/java/ai/searchavo/sources/config/CollectorDescriptors.java`, `CollectorProperties.java` (`GitHubSdks`)
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/config/scout/CollectorsConfiguration.java` (`depsDevClient`, `reviewRoom`)
+- `backend/apps/public/src/main/java/ai/searchavo/sources/config/scout/ScoutSourceDescriptors.java`
 
 ## Alternatives considered
 - **A: extend the topic leaders with a language list.** One collector less, but 18 % of the known SDKs, and one
@@ -212,9 +212,9 @@ link at deps.dev), semantic-kernel (only its Java packages inside the cap), spri
 | 7 | Data | Covered: one column (`resource.package_terms`) in V1, derived from the records; `package` in the record's `extra`; provenance per package (deps.dev relation and the back-link check). |
 | 8 | Browser & Computer Use | Deferred, safe: no page is fetched. |
 | 9 | Guardrails | Covered: AI word list, star floors, no forks or archived repos, look-alike guard, back-link check, SPDX check, a person decides. |
-| 10 | Observability | Covered: run records as for other collectors; `helper2.scout.sdks.unread` by reason; a deps.dev failure counts as `helper2.source.items.dropped{reason=packages-unavailable}`. |
+| 10 | Observability | Covered: run records as for other collectors; `searchavo.scout.sdks.unread` by reason; a deps.dev failure counts as `searchavo.source.items.dropped{reason=packages-unavailable}`. |
 | 11 | Evaluation | Covered: lib11–lib14 with grades; the frozen replay cannot show package terms, a new recording is needed. |
-| 12 | Deployment | Covered: settings with defaults in both apps, no chart change. Rollback: `H2_SOURCE_GITHUB_SDKS_ENABLED=false`. |
+| 12 | Deployment | Covered: settings with defaults in both apps, no chart change. Rollback: `SA_SOURCE_GITHUB_SDKS_ENABLED=false`. |
 | 13 | Security & Identity | Covered: no new secret; the GitHub token stays in OpenBao and off the deps.dev client. |
 | 14 | Human-in-the-Loop | Covered: every repo waits for a person; official repos with a confirmed package come first. |
 | 15 | Cost & Reliability | Covered: no credits; GitHub searches spaced and stopped on a low token; deps.dev only for new repos; separate circuit for deps.dev. |

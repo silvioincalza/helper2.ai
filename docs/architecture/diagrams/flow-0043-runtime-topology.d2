@@ -1,7 +1,7 @@
-# Flowchart: what one Helm render of deploy/helm/helper2 decides from its values: the checks that fail the render,
+# Flowchart: what one Helm render of deploy/helm/searchavo decides from its values: the checks that fail the render,
 # then which workloads, PodDisruptionBudget and network policy rules it adds. Hosted values: values-staging.yaml,
 # values-prod.yaml. The resulting topology is drawn in infrastructure.d2.
-# Source of truth: deploy/k8s/check-app-env.sh, deploy/helm/helper2/templates/_helpers.tpl, app.yaml, postgres.yaml, redis.yaml,
+# Source of truth: deploy/k8s/check-app-env.sh, deploy/helm/searchavo/templates/_helpers.tpl, app.yaml, postgres.yaml, redis.yaml,
 #   backup.yaml, migrate.yaml, web.yaml, networkpolicy.yaml, values.yaml, values-staging.yaml, values-prod.yaml.
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0043-runtime-topology.d2 && d2 flow-0043-runtime-topology.d2 flow-0043-runtime-topology.svg
 
@@ -14,7 +14,7 @@ render: "make ENV=<env> deploy:\nenv-secret, then\nhelm upgrade --install" {clas
 checks: "Checks (check-app-env.sh, _helpers.tpl)" {
   class: group
   direction: down
-  keys: "Every app.env key\nmatches ^H2_[A-Z0-9_]+\$; the owner's and\nboth app roles' passwords 32+ chars\nof base64, all different?" {class: decision}
+  keys: "Every app.env key\nmatches ^SA_[A-Z0-9_]+\$; the owner's and\nboth app roles' passwords 32+ chars\nof base64, all different?" {class: decision}
   redis: "redis.auth.enabled: existingSecret,\nor the three Redis passwords\n(default user, h2_public, h2_backoffice)\n32+ letters and digits, all different?" {class: decision}
   fail: "Render fails,\nnothing applied" {class: fail}
   keys -> redis: yes {class: hot}
@@ -22,7 +22,7 @@ checks: "Checks (check-app-env.sh, _helpers.tpl)" {
   redis -> fail: no
 }
 
-always: "Always: helper2-web, helper2 and helper2-backoffice Deployments (RollingUpdate maxSurge 1,\nmaxUnavailable 0, spread by hostname), the migrate Job of the release, postgres and redis\nStatefulSets (one replica, RWO volume; postgres: startup probe up to 10 min, then liveness;\nredis: liveness after 30 s), ServiceAccount helper2 without token,\ningress-web, ingress-postgres(-migrate), ingress-redis" {class: app}
+always: "Always: searchavo-web, searchavo and searchavo-backoffice Deployments (RollingUpdate maxSurge 1,\nmaxUnavailable 0, spread by hostname), the migrate Job of the release, postgres and redis\nStatefulSets (one replica, RWO volume; postgres: startup probe up to 10 min, then liveness;\nredis: liveness after 30 s), ServiceAccount searchavo without token,\ningress-web, ingress-postgres(-migrate), ingress-redis" {class: app}
 
 options: Per-environment values {
   class: group

@@ -5,7 +5,7 @@
 **Use Case ID:** UC-002  
 **Use Case Name:** Check Source Coverage  
 **Primary Actor:** Visitor  
-**Goal:** Understand which sources helper2.ai searches, what each covers and how well each works right now, so the visitor can judge the results  
+**Goal:** Understand which sources searchavo.ai searches, what each covers and how well each works right now, so the visitor can judge the results  
 **Trigger:** The visitor opens the Sources page  
 **Status:** Approved  
 
@@ -26,7 +26,7 @@
 5. System shows for each called source its response time, and for an enabled source whose calls are paused after repeated failures, since when it is paused or that it is trying again.
 6. System shows for the metered web source the web credits all visitors used today and the daily cap.
 7. System shows for each source how many resources it brought to the catalog in the last 7 days.
-8. Visitor reads the list and the statement that helper2.ai searches only the listed sources.
+8. Visitor reads the list and the statement that searchavo.ai searches only the listed sources.
 
 ## Alternative Flows
 

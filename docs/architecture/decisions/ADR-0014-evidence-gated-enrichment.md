@@ -44,9 +44,9 @@ place to say that.
    `LLM_UNAVAILABLE` and `FAILED`) has the same fingerprint, there is no model call and nothing is recorded: a new star
    count or version costs no call, and a `REJECTED` answer is not asked for again on the same text. `RunScout` gives the
    slot back to the run's enrichment budget ([0011](ADR-0011-scout-runner.md)).
-3. **Daily cap.** Each call takes one unit of the enrichment budget `H2_SCOUT_DAILY_ENRICHMENT_CALLS` (500 a UTC day),
-   apart from the guide's. Gauge `helper2.scout.enrichment.budget.remaining`.
-4. **The call.** `SpringAiEnrichmentModel`: the reasoning model, thinking off, `H2_NEBIUS_ENRICH_MAX_TOKENS` (8192),
+3. **Daily cap.** Each call takes one unit of the enrichment budget `SA_SCOUT_DAILY_ENRICHMENT_CALLS` (500 a UTC day),
+   apart from the guide's. Gauge `searchavo.scout.enrichment.budget.remaining`.
+4. **The call.** `SpringAiEnrichmentModel`: the reasoning model, thinking off, `SA_NEBIUS_ENRICH_MAX_TOKENS` (8192),
    prompt `prompts/scout/enrich.txt`. The prompt's version is the hash of the rendered system prompt
    (`ModelCallMetrics.promptVersion`, [0008](ADR-0008-llm-integration.md) §9): the same value is stored with
    every run (`enrichment_run.prompt_version`), tags the meters and shows in the settings. A test pins the version
@@ -172,8 +172,8 @@ place to say that.
    catalog now holds). Admins use
    `GET /api/v1/admin/review-items` (newest first, filtered by status, `page` and `size` up to 100, with the total) and
    `PUT /api/v1/admin/review-items/{id}/resolution` (`ACCEPTED` or `REJECTED`); the decision's SQL is in
-   `catalog/internal/JdbcReviewDecisions`. Gauge `helper2.review.open_items` counts `OPEN` items; the alert
-   `Helper2ReviewBacklog` fires when more than 50 wait for a day.
+   `catalog/internal/JdbcReviewDecisions`. Gauge `searchavo.review.open_items` counts `OPEN` items; the alert
+   `SearchavoReviewBacklog` fires when more than 50 wait for a day.
 
 ### The evidence ladder
    **A candidate whose target arrives later is linked by code.** At the end of every Scout run
@@ -184,7 +184,7 @@ place to say that.
    linked by its name". `ACCEPTED` stays a person's decision. Left for a person: a self-declared relationship, a target
    an admin renamed or linked, a name with no match or more than one. One SQL statement
    (`JdbcRelationshipTargets.linkOpenCandidates`); the name rule is one fragment shared with the run's own lookup
-   (`TargetNames`). Counter `helper2.scout.targets.linked`. The same step first confirms the open candidates that name a
+   (`TargetNames`). Counter `searchavo.scout.targets.linked`. The same step first confirms the open candidates that name a
    known vendor (point 6): `VERIFIED`, `target_kind = 'VENDOR'`, item `SUPERSEDED` with the note "The target is a
    known vendor"; the title stays as the model wrote it until the resource's next run.
 10. **When it climbs.** After the first run, inside the same `EnrichResource` attempt, when the run is `PARTIAL` or
@@ -232,7 +232,7 @@ place to say that.
       matter.
     - Owner and name are URI template variables. At most 512 KB. Policy `collector-gap-evidence` (circuit breaker and
       retry, like a collector). A missing README is no text; any other failure leaves the first run as it is. A redirect
-      to another host is refused and counts as a failure. Reading a README needs `H2_GITHUB_TOKEN` (without it GitHub
+      to another host is refused and counts as a failure. Reading a README needs `SA_GITHUB_TOKEN` (without it GitHub
       allows 60 calls an hour); a model card needs no token.
     - The licence the GitHub API or the card states is a source fact, so a README that says something else is
       `CONFLICTING`. The README is read in two parts (`UntrustedPageText.split`):
@@ -259,7 +259,7 @@ place to say that.
 15. **Reading pages** (port `PageReader`, adapter `sources/evidence/LiveWebPageReader`, "page reader" in the product,
     `page-reader`): Tavily Extract `POST /extract`, `extract_depth` basic, `format` markdown (the links are needed), no
     images, no favicon. One call for the home page, one for the linked pages. Policy `collector-gap-web`. Off without
-    `H2_LIVE_WEB_API_KEY` or with `H2_SOURCE_PAGE_READER_ENABLED=false`. Tavily's written OK for Extract arrived on 6
+    `SA_LIVE_WEB_API_KEY` or with `SA_SOURCE_PAGE_READER_ENABLED=false`. Tavily's written OK for Extract arrived on 6
     Nov 2026.
 16. **Cleaning** (`UntrustedPageText`, for a README and for a page, before the model or the validator sees it):
     the first 64 KB only; zero-width, direction and tag characters removed first; Unicode NFKC; HTML comments, scripts,
@@ -283,25 +283,25 @@ place to say that.
     The text itself is not stored: only the 20–300-character excerpts the validator accepted. The detail page names the
     source of such a quote: `owner/repo · README`, `owner/model · model card`, the vendor's page.
 19. **Budgets and cost.**
-    - Model calls 2 and 3 take the gap cap `H2_SCOUT_GAP_DAILY_CALLS` (400), a share of the 500 enrichment calls, not
+    - Model calls 2 and 3 take the gap cap `SA_SCOUT_GAP_DAILY_CALLS` (400), a share of the 500 enrichment calls, not
       on top (both caps count them): at least 100 calls a day stay for first runs. A gap cap above the enrichment cap
       has no effect. A step is taken only when there is text to send; when none is left today, or with `0` (off),
       nothing is read either. The per-run enrichment budget ([0011](ADR-0011-scout-runner.md)) counts resources, not gap
-      calls: a run can make up to its budget plus the gap calls left today. Gauge `helper2.scout.gap.budget.remaining`.
-    - Extract credits: `helper2.scout.evidence.daily-page-read-credits` (`H2_SCOUT_PAGE_READER_DAILY_CREDITS`), a
+      calls: a run can make up to its budget plus the gap calls left today. Gauge `searchavo.scout.gap.budget.remaining`.
+    - Extract credits: `searchavo.scout.evidence.daily-page-read-credits` (`SA_SCOUT_PAGE_READER_DAILY_CREDITS`), a
       runtime setting of [0007](ADR-0007-configuration-secrets-runtime-settings.md) §10, 1,000 by default. Each
       credit also counts on the global Tavily credit counter of live search
-      ([0027](ADR-0027-live-web-store-first-daily-quota.md), `H2_LIVE_WEB_DAILY_CREDITS`), and on
-      `helper2.live-web.credits{feature=scout-evidence}`. When the global counter cannot answer, no page is read. Gauge
-      `helper2.scout.evidence.credits.remaining`.
+      ([0027](ADR-0027-live-web-store-first-daily-quota.md), `SA_LIVE_WEB_DAILY_CREDITS`), and on
+      `searchavo.live-web.credits{feature=scout-evidence}`. When the global counter cannot answer, no page is read. Gauge
+      `searchavo.scout.evidence.credits.remaining`.
     - **The one exception to "no page text stored".** The cleaned text of a product's pages (what `UntrustedPageText`
       left) is kept in Redis only, under a SHA-256 of the accepted page's URL, for `page-text-ttl`
-      (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`, PT24H; more than P1D stops startup of both apps). One record binds the two
+      (`SA_SCOUT_EVIDENCE_PAGE_TEXT_TTL`, PT24H; more than P1D stops startup of both apps). One record binds the two
       periods, `ScoutEvidenceProperties` (catalog); the back office reads them from `ScoutPolicy`. Only to retry: when the model is down or
       the gap cap is spent, the next attempt within the day reads the cache and pays no credit. The raw page is never
       kept, and the text never goes to Postgres, logs or metrics. A cache that cannot be read or written does not stop
       the run: the read is a miss, and a warning names the class of the failure, never the URL or the text.
-    - A page a saved run read is not read again for 30 days (`page-read-ttl`, `H2_SCOUT_EVIDENCE_PAGE_READ_TTL`): the
+    - A page a saved run read is not read again for 30 days (`page-read-ttl`, `SA_SCOUT_EVIDENCE_PAGE_READ_TTL`): the
       shared cache (`ai_cache`, name `scout-page-read`) keeps a hash of the URL and a hash of its text, never the text.
       It is written only after the run is saved: a failed model call leaves no entry, so the page can be read again once
       the 24-hour text is gone.
@@ -350,16 +350,16 @@ place to say that.
     (`POST /api/v1/admin/enrichment-recheck`, audit action `RECHECK_ENRICHMENT`), under the same lock: while a Scout
     run holds it, the call answers 409 `run-in-progress` ("A Scout run is in progress. Try again later."), changes
     nothing and writes no audit entry. Idempotent: a second run changes
-    nothing. Log line and counter `helper2.scout.recheck{result=checked|fields_rejected|claims_dropped|runs_requested}`.
+    nothing. Log line and counter `searchavo.scout.recheck{result=checked|fields_rejected|claims_dropped|runs_requested}`.
     A prompt with new rules gets a new marker (`RecheckEnrichments.TASK`), so the re-check runs once for it.
     The runs stored under the label `enrich-v12` carry the version of the prompt that label named:
     `V2026.11.8.1__prompt_version_is_the_prompt_hash.sql` writes `128470b5` on them, so they are not older than
     the prompt. Runs under any other label stay older.
 
 ### What people see
-24. **Observability.** Counter `helper2.scout.fields{type,field,state,step}` per target and judgement field of the kept
+24. **Observability.** Counter `searchavo.scout.fields{type,field,state,step}` per target and judgement field of the kept
     run: `state` = `verified`, `ai_estimated`, `rejected` or `unknown`; `step` = `source`, `records`, `readme` or
-    `pages`. Counter `helper2.scout.gap{source,outcome}`: sources `github-readme`, `hf-model-card`, `official-page`; outcomes
+    `pages`. Counter `searchavo.scout.gap{source,outcome}`: sources `github-readme`, `hf-model-card`, `official-page`; outcomes
     `filled`, `not_better`, `no_text`, `source_failed`, `model_failed`, `skipped_cap`, and for pages `skipped_seen`,
     `not_allowed`, and `cached` when a retry used the 24-hour text.
 25. **The page.** The resource page has a "Fields" panel: each field shows its value and where it comes from ("From the
@@ -372,39 +372,39 @@ place to say that.
 links, adds or renames an ABOUT target in the review list ([0038](ADR-0038-back-office-and-review.md)).
 
 ### Code
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/EnrichResource.kt` — the attempt, the ladder,
-  `helper2.scout.fields`.
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Enrichment.kt` — proposal and result types,
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/EnrichResource.kt` — the attempt, the ladder,
+  `searchavo.scout.fields`.
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/Enrichment.kt` — proposal and result types,
   `EnrichmentInput.type`, `Material.anchorRecordId`, `supportsClaims`, `FINGERPRINT_EPOCH`; `EvidenceValidator.kt` —
   stating words, `PricingWords`, `ClaimCheck`, judgement fields, self-declared rules, fields and kinds by type, the
   ABOUT cap; `FieldsByType.kt`.
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/GapRound.kt` — `GapTargets`, `GapKind`,
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/GapRound.kt` — `GapTargets`, `GapKind`,
   `UntrustedPageText`, ports `ExtraEvidence`, `GapBudget`; `OfficialPages.kt` — `FieldTargets`, `PageTargets`,
   `PageScope` (its address rule is `shared/WebAddresses.kt`), `OfficialLinks`, `OfficialPages`, ports `PageReader`, `ExtractBudget`, `PageLedger`, `PageTextCache`,
   `DomainRoots`.
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RecheckEnrichments.kt` — the re-check, port
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/RecheckEnrichments.kt` — the re-check, port
   `StoredAnswers`; `scout/internal/CatalogStoredAnswers.java` (the stored answers through `StoredEnrichments`, the
   done mark of the task through the catalog's `JobMarkers`).
-- `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java` (`PROMPT`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/SpringAiEnrichmentModel.java` (`PROMPT`,
   `promptVersion`, material kind), `CatalogEnrichmentStore.java`, `ScoutConfiguration.java` (budgets,
   `officialPages`), `RedisPageTextCache.java`, `PageReaderCreditBudget.java`, `SharedCachePageLedger.java`.
 - `backend/apps/backoffice/src/main/resources/prompts/scout/enrich.txt`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/evidence/ReadmeEvidence.java`, `LiveWebPageReader.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/evidence/ReadmeEvidence.java`, `LiveWebPageReader.java`,
   `PublicSuffixDomains.java`; beans in `sources/config/scout/CollectorsConfiguration.java`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/enrichment/EnrichmentCandidates.java`, `EnrichmentResults.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/enrichment/EnrichmentCandidates.java`, `EnrichmentResults.java`,
   `StoredEnrichments.java` (named interface `enrichment`); `catalog/internal/JdbcEnrichmentCandidates.java` (each source
   text with its source id, external id and repository link; accepted products first), `JdbcEnrichmentResults.java`
   (origins, evidence with its own URL, the stored type), `JdbcResourceDetailReads.java` (the detail page's reads).
-- `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java`, `catalog/internal/JdbcReviewDecisions.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/ReviewQueue.java`, `catalog/internal/JdbcReviewDecisions.java`,
   `catalog/usecase/ListReviewItems.java`, `GetReviewItem.java`, `ResolveReviewItem.java`;
-  `backend/apps/backoffice/src/main/java/ai/helper2/admin/web/ReviewController.java`.
-- `backend/libs/kernel/src/main/kotlin/ai/helper2/shared/Vocabulary.kt` — `ValueOrigin.AI_ESTIMATED`, `SELF_DECLARED`.
+  `backend/apps/backoffice/src/main/java/ai/searchavo/admin/web/ReviewController.java`.
+- `backend/libs/kernel/src/main/kotlin/ai/searchavo/shared/Vocabulary.kt` — `ValueOrigin.AI_ESTIMATED`, `SELF_DECLARED`.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `enrichment_run` (`extra_evidence`), origins,
   relationship kind ABOUT, `job_marker`; `api/common.yaml`, `api/public.yaml` — `ValueOrigin`, `Relationship.origin`,
   `SummaryClaim.selfDeclared`, kind ABOUT.
 - `frontend/src/features/resource/FieldStates.tsx`, `frontend/src/features/resource/ResourcePage.tsx`, `frontend/src/lib/aiMark.ts`,
   `evidenceSource.ts`, `frontend/src/features/resource/EvidenceList.tsx`, `frontend/src/admin/ScoutRunsPage.tsx`.
-- `deploy/monitoring/helper2-rules.yaml` — `Helper2ReviewBacklog`.
+- `deploy/monitoring/searchavo-rules.yaml` — `SearchavoReviewBacklog`.
 - Tests: `SpringAiEnrichmentModelTest` (`aNewWordingOfThePromptIsANewVersionAndMakesTheStoredRunsStale`), `EnrichResourceTest`,
   `GapRoundTest`, `EnrichResourceGapRoundTest`, `ReadmeEvidenceTest`, `FieldTargetsTest`, `EvidenceValidatorLadderTest`,
   `EvidenceValidatorWritingTest`, `OfficialPagesTest`, `EnrichResourceLadderTest` (adversarial pages),
@@ -450,7 +450,7 @@ links, adds or renames an ABOUT target in the review list ([0038](ADR-0038-back-
   fields or unreviewed AI relationships from two runs, and the review queue only asks about the newest run.
 - Product pages get prices, platforms and use cases with a quote and a link, marked as what the vendor says. Fewer
   unproven fields and fewer review items, at most 400 extra model calls a day, inside the 500.
-- The cost is bounded per run (`H2_SCOUT_MAX_ENRICHMENTS`: 20 by default, 200 in the Helm chart) and per day (500);
+- The cost is bounded per run (`SA_SCOUT_MAX_ENRICHMENTS`: 20 by default, 200 in the Helm chart) and per day (500);
   unchanged text costs nothing and does not use up a slot of the run. Extract credits stop at the page-read limit of the day
   (1,000 by default, ≤ 2 credits a product), inside the global cap. See [costs](../costs.md).
 - A new prompt does not re-enrich the catalog: the code re-check cleans the stored answers once; only resources that
@@ -474,7 +474,7 @@ links, adds or renames an ABOUT target in the review list ([0038](ADR-0038-back-
   so. The cached text is small (a product has at most 4 pages of 6,000 characters each, about 24 KB; the 400 gap rounds
   of a day bound it to under 10 MB) next to the 128 MB Redis that also holds sessions and counters.
 - The page step can be turned off on the Settings page (page-read credits 0) or with
-  `H2_SOURCE_PAGE_READER_ENABLED=false`, without a release. The demo profile has no README or page adapter, so it has no ladder.
+  `SA_SOURCE_PAGE_READER_ENABLED=false`, without a release. The demo profile has no README or page adapter, so it has no ladder.
 - AI Act Art. 50: an AI-extracted, self-declared or AI-estimated value, and an ABOUT link, are labelled in the UI and in
   the API (`origin`).
 
@@ -509,7 +509,7 @@ links, adds or renames an ABOUT target in the review list ([0038](ADR-0038-back-
 | 7 | Data | Covered: `enrichment_run`, origins, `summary_claim.self_declared`, `job_marker` in V1; evidence anchored to its record ([0010](ADR-0010-data-retention.md)). |
 | 8 | Browser & Computer Use | Covered: none; Tavily reads the page, we never run a browser. |
 | 9 | Guardrails | Covered: the evidence gate, stating words, claim checks, fields by type, URL scope, cleaning, caps on relationships, source facts win. |
-| 10 | Observability | Covered: `helper2.scout.fields`, `helper2.scout.gap`, `helper2.scout.recheck`, budget gauges, credits; no page text in logs. |
+| 10 | Observability | Covered: `searchavo.scout.fields`, `searchavo.scout.gap`, `searchavo.scout.recheck`, budget gauges, credits; no page text in logs. |
 | 11 | Evaluation | Gap: adversarial unit tests only; no fill-rate eval set exists (it needs real runs first). The pinned prompt test catches an unlabelled wording change. |
 | 12 | Deployment | Covered: config only, on by default, off without a key; the page step off without a release. |
 | 13 | Security & Identity | Covered: GitHub token and Tavily key from OpenBao; no new secret. |

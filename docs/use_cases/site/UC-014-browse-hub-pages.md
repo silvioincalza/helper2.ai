@@ -5,7 +5,7 @@
 **Use Case ID:** UC-014  
 **Use Case Name:** Browse Hub Pages  
 **Primary Actor:** Visitor, Search Engine  
-**Goal:** Find the newest resources of one type, and let search engines find every page of helper2.ai worth indexing  
+**Goal:** Find the newest resources of one type, and let search engines find every page of searchavo.ai worth indexing  
 **Trigger:** The visitor opens a hub page from the footer or from a search engine result, or a search engine reads the site  
 **Status:** Approved  
 
@@ -113,7 +113,7 @@ The crawler rules keep crawlers out of the sign-in, sign-out and back office add
 
 ### BR-006: Not Indexing a Site
 
-A site configured not to be indexed (`H2_NOINDEX`) serves no sitemap and no site summary, and every page asks not to be indexed.
+A site configured not to be indexed (`SA_NOINDEX`) serves no sitemap and no site summary, and every page asks not to be indexed.
 
 ### BR-007: Pages Not to Be Indexed
 

@@ -9,7 +9,7 @@
 **Requirements:** C-011, C-014
 
 ## Context
-Helper2.ai is built and run by one person. It must call public application programming interfaces (APIs) and a Large Language Model (LLM),
+Searchavo.ai is built and run by one person. It must call public application programming interfaces (APIs) and a Large Language Model (LLM),
 keep a catalog in a database, and serve a web page. It runs on the owner's own Kubernetes cluster.
 The stack must be well known, typed end to end, and cheap to operate: one commit, one tag, one deploy.
 
@@ -41,12 +41,12 @@ The stack must be well known, typed end to end, and cheap to operate: one commit
    backend on 8080. `compose.yaml` starts Postgres and Redis; the `dev` profile starts them for the app.
 
 ### Code
-- `backend/settings.gradle.kts`, `backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts`, `backend/*/*/build.gradle.kts` — projects, versions, toolchain, plugins.
+- `backend/settings.gradle.kts`, `backend/build-logic/src/main/kotlin/searchavo.kotlin-library.gradle.kts`, `backend/*/*/build.gradle.kts` — projects, versions, toolchain, plugins.
 - `frontend/package.json`, `frontend/vite.config.ts` — frontend versions, dev proxy, version constant.
 - `deploy/Dockerfile` — two-stage build, Java Runtime Environment (JRE), JVM flags.
 - `deploy/web.Dockerfile`, `deploy/web/nginx.conf` — the SPA's files and their caching.
-- `backend/apps/public/src/main/java/ai/helper2/site/pages/web/PageRoutes.java` — client routes get the shell.
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml` — virtual threads, static mappings off.
+- `backend/apps/public/src/main/java/ai/searchavo/site/pages/web/PageRoutes.java` — client routes get the shell.
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml` — virtual threads, static mappings off.
 - `compose.yaml` — local Postgres and Redis.
 
 ## Alternatives considered

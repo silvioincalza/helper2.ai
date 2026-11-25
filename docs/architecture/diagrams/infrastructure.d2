@@ -1,4 +1,4 @@
-# Runtime infrastructure of the hosted helper2 on Kubernetes, the full picture in zones: how a request gets in,
+# Runtime infrastructure of the hosted searchavo on Kubernetes, the full picture in zones: how a request gets in,
 # what runs in production's namespace (the applications, the one embedder, the stores, the jobs), staging beside
 # it, what the applications call outside, how an image is delivered, and where backups, metrics and traces go.
 # One line per relation, between zones where it can be. Ports, sizes, secrets and policies are in four views:
@@ -6,9 +6,9 @@
 #   infrastructure-secrets.d2 (who holds which password),
 #   infrastructure-delivery.d2 (how an image gets to the cluster, and the canary of a release),
 #   infrastructure-data.d2 (backups and monitoring).
-# Source of truth: deploy/helm/helper2 (values*.yaml, templates/*.yaml), deploy/k8s/Makefile,
+# Source of truth: deploy/helm/searchavo (values*.yaml, templates/*.yaml), deploy/k8s/Makefile,
 #   .github/workflows/cd.yml, deploy.yml, the platform repo outside this repo (DNS, tunnel, ingress-nginx,
-#   the Ingresses helper2-public and helper2-admin).
+#   the Ingresses searchavo-public and searchavo-admin).
 # Render: cd docs/architecture/diagrams && d2 fmt infrastructure.d2 && d2 infrastructure.d2 infrastructure.svg
 
 ...@style
@@ -37,20 +37,20 @@ cluster: KUBERNETES {
 
   nginx: "ingress-nginx\n(its own namespace)" {class: app}
 
-  prod: "ns helper2-prod · ingress + egress denied by default" {
+  prod: "ns searchavo-prod · ingress + egress denied by default" {
     class: group
 
     apps: APPLICATIONS {
       class: group
-      web: "helper2-web · 2 pods\nthe web app's files" {class: app}
+      web: "searchavo-web · 2 pods\nthe web app's files" {class: app}
       java: "call the stores, the embedder and the outside" {
         class: group
-        app: "helper2 · 3 pods\npublic site and API" {class: app}
-        bo: "helper2-backoffice · 1 pod\nadmin, Scout, catalog jobs,\nembedding indexer" {class: app}
+        app: "searchavo · 3 pods\npublic site and API" {class: app}
+        bo: "searchavo-backoffice · 1 pod\nadmin, Scout, catalog jobs,\nembedding indexer" {class: app}
       }
     }
 
-    embedder: "helper2-embedder · 1 pod\nNVIDIA embedding model on CPU\nfor production and staging\nno Ingress, no egress (ADR 0054)" {class: ai}
+    embedder: "searchavo-embedder · 1 pod\nNVIDIA embedding model on CPU\nfor production and staging\nno Ingress, no egress (ADR 0054)" {class: ai}
 
     stores: STORES {
       class: group
@@ -75,7 +75,7 @@ cluster: KUBERNETES {
     jobs -> stores.postgres: "as the owner"
   }
 
-  staging: "ns helper2-staging" {
+  staging: "ns searchavo-staging" {
     class: group
     all: "the same chart, 1 pod each\nno embedder, no backup" {class: app}
   }

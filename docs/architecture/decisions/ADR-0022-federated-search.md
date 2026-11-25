@@ -10,10 +10,10 @@
 
 ## Context
 
-Helper2.ai answers a search from several sources: public application programming interfaces (APIs) (GitHub, Hugging Face, npm, arXiv, Tavily, and when switched on Hacker News, [0030](ADR-0030-hacker-news-as-a-live-source.md)) and its own catalog.
+Searchavo.ai answers a search from several sources: public application programming interfaces (APIs) (GitHub, Hugging Face, npm, arXiv, Tavily, and when switched on Hacker News, [0030](ADR-0030-hacker-news-as-a-live-source.md)) and its own catalog.
 Each API has its own speed, rate limit and failure modes. One slow or failing source must not block the others, and
 a source that is down must not cost every search its full deadline.
-Users must see which sources answered, which did not, and why. Helper2.ai does not search the whole web,
+Users must see which sources answered, which did not, and why. Searchavo.ai does not search the whole web,
 so the list of sources must be disclosed, with how each one is doing: how fast it answers, whether it is paused,
 and how many web credits the day has used. Two sources can describe the same resource and can disagree on a fact.
 
@@ -22,12 +22,12 @@ and how many web credits the day has used. Two sources can describe the same res
 1. **One port.** Every source implements `SearchSource` with a `SourceDescriptor`: id, name, short name, external, mode
    (`LIVE`, `INDEXED`, `CURATED`, `DEMO`), timeout, cache time to live (TTL), `enabled`, `priority`, `usesWebQuery`,
    `usesTranslation`, `metered`. Search sources and their priority (lower wins on display text): `curated` 10, `github` 20,
-   `hf-models` 30, `hf-spaces` 35, `npm` 40, `arxiv` 45, `hacker-news` 47, `live-web` 48, `helper2-index` 50, `helper2-semantic` 55
+   `hf-models` 30, `hf-spaces` 35, `npm` 40, `arxiv` 45, `hacker-news` 47, `live-web` 48, `searchavo-index` 50, `searchavo-semantic` 55
    (only with an embedding key, [0024](ADR-0024-vector-search.md)). `GET /api/v1/sources` lists them.
    The short name (`shortName`, 1 to 12 characters, e.g. `HF models`, `Web scout`) is the name under the source's dot
    on the home radar ([0040](ADR-0040-design-system.md)); the descriptor refuses a missing or
-   longer one, so a new source cannot start without it. `external` is false for Helper2's own sources
-   (`helper2-index`, `helper2-semantic`, `curated`) and true for every source run by someone else. The radar and its
+   longer one, so a new source cannot start without it. `external` is false for Searchavo's own sources
+   (`searchavo-index`, `searchavo-semantic`, `curated`) and true for every source run by someone else. The radar and its
    source count show only external sources, and read this flag, not a list of ids.
 2. **Parallel fan-out.** `SearchResources.search` starts each source on the `searchExecutor`
    (one virtual thread per task). A disabled source is reported as `SKIPPED` with `SkipReason.DISABLED`
@@ -38,8 +38,8 @@ and how many web credits the day has used. Two sources can describe the same res
    200 characters, inside GitHub's 256-character and 5-operator limits. Only letters, digits, spaces and inner
    hyphens are sent, so a qualifier (`user:`, `repo:`), a quote or a leading `-` in the text is a plain word.
 3. **Own deadline per source.** The deadline and the reported latency count from the source's own start.
-   Timeouts: `github`, `hf-models`, `hf-spaces`, `npm`, `hacker-news` 2500 ms; `arxiv` 3 s; `live-web` `H2_SOURCE_LIVE_WEB_TIMEOUT` (6 s);
-   `helper2-index` `H2_SOURCE_INDEX_TIMEOUT` (3 s); `helper2-semantic` `H2_SOURCE_SEMANTIC_TIMEOUT` (3 s); `curated` 1000 ms.
+   Timeouts: `github`, `hf-models`, `hf-spaces`, `npm`, `hacker-news` 2500 ms; `arxiv` 3 s; `live-web` `SA_SOURCE_LIVE_WEB_TIMEOUT` (6 s);
+   `searchavo-index` `SA_SOURCE_INDEX_TIMEOUT` (3 s); `searchavo-semantic` `SA_SOURCE_SEMANTIC_TIMEOUT` (3 s); `curated` 1000 ms.
    On timeout the task is canceled and the outcome is `TIMED_OUT`.
 4. **Cache for LIVE sources.** The fresh and stale windows of [0005](ADR-0005-redis-as-a-disposable-cache.md) apply: a fresh entry
    is served as `CACHE` with no live call, and after a failure an entry inside the stale window is served as `STALE_CACHE`.
@@ -77,13 +77,13 @@ and how many web credits the day has used. Two sources can describe the same res
    last update = most recent; the others stay as alternatives. Published and event dates are `CONFLICTING` when two
    sources state different days ([0026](ADR-0026-filters-facets-categories.md)).
 9. **Catalog link** ([0004](ADR-0004-persistence-and-the-schema.md)). One read for first-discovered dates; only hits fetched
-   live now are handed to `ResultObserver.record`, which queues the write (`helper2.catalog.observation-queue`, 256).
-   A resource a search observed answers the catalog's searches (`helper2-index`, `helper2-semantic`) only once it has
-   settled: its first discovery is at least `helper2.catalog.observed-settles-after` (24 h) old
+   live now are handed to `ResultObserver.record`, which queues the write (`searchavo.catalog.observation-queue`, 256).
+   A resource a search observed answers the catalog's searches (`searchavo-index`, `searchavo-semantic`) only once it has
+   settled: its first discovery is at least `searchavo.catalog.observed-settles-after` (24 h) old
    (`JdbcCatalogSearch`). So the search that wrote a row and the searches of the next hours see the same catalog:
    the row is not a second vote for the live hit it came from, and it takes no place of the catalog's 30 from an
    older row. A resource the Scout indexed or an admin curated answers at once.
-10. Each source returns at most `H2_SEARCH_PER_SOURCE_LIMIT` (30) hits. The response has `Cache-Control: no-store`.
+10. Each source returns at most `SA_SEARCH_PER_SOURCE_LIMIT` (30) hits. The response has `Cache-Control: no-store`.
 11. **Sources page numbers.** `GET /api/v1/sources` (`ListSources`) lists every disclosed source by priority, with:
     - `lastOutcome`, `lastCheckedAt`: the newer of this replica's last search (`SourceHealth`) and the Scout's last
       run (`RecordedOutcomes`); when the database cannot answer, this replica's only.
@@ -101,11 +101,11 @@ and how many web credits the day has used. Two sources can describe the same res
       and the global cap, from Redis ([0027](ADR-0027-live-web-store-first-daily-quota.md)); null on every other source and
       when Redis cannot answer. A visitor's own web searches left stay in the search and guide responses, and in
       `GET /api/v1/me` ([0036](ADR-0036-identity-and-the-admin-host.md)).
-    - `newThisWeek`: the catalog resources this source brought that Helper2 first discovered in the last 7 days (a
+    - `newThisWeek`: the catalog resources this source brought that Searchavo first discovered in the last 7 days (a
       rolling window, `ListSources.NEW_WINDOW`), for the home radar
       ([0040](ADR-0040-design-system.md)). For a source with records: the resources with a record
-      from it. `helper2-index` is the whole index, so it counts every indexed and observed resource.
-      `helper2-semantic` is the same index searched by meaning: null, no count of its own. Read through the
+      from it. `searchavo-index` is the whole index, so it counts every indexed and observed resource.
+      `searchavo-semantic` is the same index searched by meaning: null, no count of its own. Read through the
       catalog's `DiscoveredResources` port, on the index `resource_first_discovered_idx` (60,000 resources: 34 ms
       without it, 19 ms with it, median). Null when the database cannot answer.
 
@@ -138,27 +138,27 @@ and how many web credits the day has used. Two sources can describe the same res
 
 ### Code
 
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt` — the use case, top-down: analyse, fan out, merge, confirm,
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SearchResources.kt` — the use case, top-down: analyse, fan out, merge, confirm,
   rank, filter, page, coverage, notices.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchNotices.kt` — coverage and the notices of one search;
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SearchNotices.kt` — coverage and the notices of one search;
   `QueryTranslation.kt` — the bounded wait for the English words of a query ([0023](ADR-0023-catalog-full-text-index.md)).
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt` — one search over the sources: skip rules, fresh cache,
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SourceFanOut.kt` — one search over the sources: skip rules, fresh cache,
   quota, live call under the source policy, deadlines, cooldown, stale fallback (`Run`, `SourceAttempt`, `FanOutResult`).
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SourceCacheKeys.kt` — the cache key of one source query and the text it is
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SourceCacheKeys.kt` — the cache key of one source query and the text it is
   made of.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/ResultMerger.kt` — grouping, conflicts, freshness.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/Ports.kt`, `Model.kt` — ports, descriptors, statuses.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/SourceHealth.kt` — last outcome and recent response time per source.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/ListSources.kt` — the Sources page list with its live numbers.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java`, `JdbcResources.java` —
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/ResultMerger.kt` — grouping, conflicts, freshness.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/Ports.kt`, `Model.kt` — ports, descriptors, statuses.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/SourceHealth.kt` — last outcome and recent response time per source.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/ListSources.kt` — the Sources page list with its live numbers.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/CatalogResultObserver.java`, `JdbcResources.java` —
   `DiscoveredResources`, `discoveredSince`; `resource_first_discovered_idx` in `V1__schema.sql`.
-- `backend/libs/core/src/main/java/ai/helper2/search/config/SearchConfiguration.java` — executor, ordering, properties.
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml` (`resilience4j.*`) — the `source-<id>` policies.
-- `backend/libs/core/src/main/java/ai/helper2/search/cache/RedisSearchCache.java` — Redis adapter on the `redis` policy.
-- `backend/libs/core/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`, `search/WebSearch.kt` — the metered source's
+- `backend/libs/core/src/main/java/ai/searchavo/search/config/SearchConfiguration.java` — executor, ordering, properties.
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml` (`resilience4j.*`) — the `source-<id>` policies.
+- `backend/libs/core/src/main/java/ai/searchavo/search/cache/RedisSearchCache.java` — Redis adapter on the `redis` policy.
+- `backend/libs/core/src/main/java/ai/searchavo/search/internal/JdbcWebResultStore.java`, `search/WebSearch.kt` — the metered source's
   store and quota ([0027](ADR-0027-live-web-store-first-daily-quota.md)).
-- `backend/libs/core/src/main/java/ai/helper2/search/web/SearchController.java` — `GET /api/v1/search`; `SourcesController.java` — `GET /api/v1/sources`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogResultObserver.java` — `ResultObserver` implementation.
+- `backend/libs/core/src/main/java/ai/searchavo/search/web/SearchController.java` — `GET /api/v1/search`; `SourcesController.java` — `GET /api/v1/sources`.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/CatalogResultObserver.java` — `ResultObserver` implementation.
 
 ## Alternatives considered
 
@@ -185,7 +185,7 @@ and how many web credits the day has used. Two sources can describe the same res
   the settle rule: the three queries nobody had asked before changed once, between the first search and the second
   (5, 7 and 7 of the first ten results kept, `total` down by 14, 16 and 2), then gave nine identical answers; the
   three asked before never changed. No source timed out or answered differently: the rows the first search wrote
-  came back through `helper2-index` in the second.
+  came back through `searchavo-index` in the second.
 - The order of a query still changes once, about a day after its first search, when the rows it wrote settle and
   the catalog starts to answer with them; and whenever a live source answers differently after its cache entry
   runs out. `sources[]` says for each source whether the answer is live or cached, and since when.

@@ -31,15 +31,15 @@ dependency without a release, measured (state, refused calls), and testable with
 1. **One observed client for every remote API.** `platform.http.ObservedHttp` builds the Spring `RestClient` on
    Apache HttpClient 5 (5.6.5) with a connection pool (50 connections, 20 per host). Sources and Scout collectors use
    `ObservedHttp.restClientBuilder(timeout, observations, http)`. The pool sizes, the wait for a free connection and
-   the body cap are the four `helper2.http` settings (`HttpClientProperties`): values in the shared yaml with no `H2_`
+   the body cap are the four `searchavo.http` settings (`HttpClientProperties`): values in the shared yaml with no `SA_`
    variable, the same in every environment, changed by a pull request and shown read-only on the Settings page
    (group "Outbound HTTP", [0007](ADR-0007-configuration-secrets-runtime-settings.md) §8). It lives in `platform`, so the catalog module (embeddings)
    can use it too without depending on `sources`. `sources.support.HttpClients` adds only the base URL, the token and
    the error mapping. The client sends each request once (its automatic retries are off): retries belong to the
    caller's resilience policy (§14 to §22), where they are counted and bounded.
 2. **Timeouts and a total deadline.** The source's timeout is used once as the connect timeout and once as the
-   response timeout. Waiting for a free pooled connection is limited to 250 ms (`helper2.http.pool-wait`). Search source timeouts
-   are 2.5 s (GitHub, Hugging Face, npm), 3 s (arXiv) and 6 s (Tavily, `H2_SOURCE_LIVE_WEB_TIMEOUT`); Scout
+   response timeout. Waiting for a free pooled connection is limited to 250 ms (`searchavo.http.pool-wait`). Search source timeouts
+   are 2.5 s (GitHub, Hugging Face, npm), 3 s (arXiv) and 6 s (Tavily, `SA_SOURCE_LIVE_WEB_TIMEOUT`); Scout
    collectors use 10 s, 15 s or 20 s.
    The response timeout applies to each read, so a body that keeps trickling in never trips it. So every call also
    has a total deadline (`ObservedHttp.BoundedResponse`, `CappedStream`). Its clock starts once, before the request
@@ -49,7 +49,7 @@ dependency without a release, measured (state, refused calls), and testable with
    `Unavailable("deadline exceeded")`, transient like a timeout. The deadline is:
    - for search sources and the setup guide's fetches, the timeout (`restClientBuilder(timeout, …)`), so a search
      waits no longer than its timeout;
-   - for Scout collectors, `H2_SOURCE_<ID>_DEADLINE` (`hf-trending` `HF_TRENDING`, `live-web-scout`
+   - for Scout collectors, `SA_SOURCE_<ID>_DEADLINE` (`hf-trending` `HF_TRENDING`, `live-web-scout`
      `LIVE_WEB_SCOUT`, `course-scout` `COURSE_SCOUT`, `linkedin-scout` `LINKEDIN_SCOUT`, `live-web-events-scout`
      `LIVE_WEB_EVENTS_SCOUT`, `discovery` `DISCOVERY`, `page-reader` `PAGE_READER`, `github-awesome`
      `GITHUB_AWESOME`, `hf-provider-orgs` `HF_ORGS`, `ai-deadlines` `AI_DEADLINES`, `mcp-registry` `MCP`), by
@@ -60,13 +60,13 @@ dependency without a release, measured (state, refused calls), and testable with
    carries `Authorization` is not redirected to another scheme, host or port (HttpClient's `isRedirectAllowed`,
    kept by `NoDowngradeRedirects`): a token only ever reaches the configured host, and the unfollowed 3xx ends the
    call as `Unavailable`. A redirected `POST` (Tavily) is re-sent as a `GET` without the source's headers.
-4. **Identity and tokens.** Every call sends `User-Agent: Helper2.ai-metasearch/<version> (+https://helper2.ai/sources)`.
+4. **Identity and tokens.** Every call sends `User-Agent: Searchavo.ai-metasearch/<version> (+https://searchavo.ai/sources)`.
    The version is the build version from the boot jar's manifest (`2026.11.1`,
    [0045](ADR-0045-releases-and-versions.md)); `dev` when the app runs from classes.
-   A token, when set (`H2_GITHUB_TOKEN`, `H2_SETUP_GITHUB_TOKEN`, `H2_HF_TOKEN`, `H2_LIVE_WEB_API_KEY`), goes in
+   A token, when set (`SA_GITHUB_TOKEN`, `SA_SETUP_GITHUB_TOKEN`, `SA_HF_TOKEN`, `SA_LIVE_WEB_API_KEY`), goes in
    `Authorization: Bearer`.
 5. **Bounded bodies.** Source clients (`restClientBuilder`) read at most 2 MB of a response body
-   (`helper2.http.max-response-size`); a call may set its own cap with `ObservedHttp.maxResponseBytes`, as the awesome-list
+   (`searchavo.http.max-response-size`); a call may set its own cap with `ObservedHttp.maxResponseBytes`, as the awesome-list
    README fetch does (5 MB). A longer body stops the read and ends the call as `Unavailable("response too large")`.
 6. **Error mapping.** `HttpClients.getText` and `getJson` turn every failure into a `SourceFailure`:
    - 429, 403 with `x-ratelimit-remaining: 0`, or 503 with `Retry-After` → `RateLimited`, with the pause
@@ -76,14 +76,14 @@ dependency without a release, measured (state, refused calls), and testable with
    `Unavailable` is `transient` for a 503 and for a network error or timeout: the same call may succeed in a moment,
    so a Scout collector's policy retries it (§16); any other status or body is not.
 7. **One bad item is not a failed source.** `HttpClients.hits` maps each item on its own: an item whose mapping
-   throws is dropped and counted in `helper2.source.items.dropped{source, reason}` (reason = exception type, never
+   throws is dropped and counted in `searchavo.source.items.dropped{source, reason}` (reason = exception type, never
    source text), and the other items are returned. Mappers build links from source data with `CanonicalUrl` and
    `HttpClients.link`, never with a bare `URI.create`.
 8. **Outcomes in the search.** A `SourceFailure` becomes the source's outcome: `RateLimited` → `RATE_LIMITED`
    with a pause, `Unavailable` → `FAILED`. Deadlines, cancellation, cooldowns and the source's circuit breaker are
    decided in [0022](ADR-0022-federated-search.md); a stale cache entry can still answer
    ([0005](ADR-0005-redis-as-a-disposable-cache.md)).
-9. **arXiv pace across replicas.** arXiv allows one request every 3 seconds from all of Helper2. Before each call
+9. **arXiv pace across replicas.** arXiv allows one request every 3 seconds from all of Searchavo. Before each call
    `ArxivSource` takes the shared slot of `platform.resilience.OutboundThrottle`: `SET h2:v1:outbound:arxiv 1 NX PX 3000`
    in Redis (`RedisOutboundThrottle`, on the `redis` policy), so the key's expiry frees the slot on Redis' clock.
    Another replica holding the slot, or Redis down, means `RATE_LIMITED` (pause 3 s) without a call: the pace fails
@@ -101,13 +101,13 @@ dependency without a release, measured (state, refused calls), and testable with
     `Content-Length` (on a chunked body of 50 texts the API hangs until the read timeout). Its timeout is also the
     call's total deadline (`ObservedHttp.deadlineOnly`, placed under the buffering so it stops the buffered read).
     Timeouts: 3 s for queries, 30 s for indexing batches ([0024](ADR-0024-vector-search.md)).
-12. **Model calls** go through Spring AI's own client, with `H2_LLM_TIMEOUT` (40 s) and `H2_LLM_MAX_RETRIES`
+12. **Model calls** go through Spring AI's own client, with `SA_LLM_TIMEOUT` (40 s) and `SA_LLM_MAX_RETRIES`
     (0, so the SDK does not retry); see [0008](ADR-0008-llm-integration.md). They are observed by `ModelCallMetrics`,
     not by `ObservedHttp`.
 13. **Live check, weekly.** Every source and collector adapter has one `@Tag("live")` test against the real API
     (`*LiveTest` next to its adapter). Only `./gradlew liveTest` runs them, never `test`; a test whose key is not set
     is skipped. `.github/workflows/live.yml` runs `liveTest` every Monday on a GitHub-hosted runner with the
-    repository secrets `H2_GITHUB_TOKEN`, `H2_HF_TOKEN`, `H2_LIVE_WEB_API_KEY` and `H2_NEBIUS_API_KEY`. It is not
+    repository secrets `SA_GITHUB_TOKEN`, `SA_HF_TOKEN`, `SA_LIVE_WEB_API_KEY` and `SA_NEBIUS_API_KEY`. It is not
     part of CI or CD.
 
 **Calls to a host a page names.** Two calls go to hosts that no configuration names, so they do not use the shared
@@ -119,7 +119,7 @@ request runs in the policy `page-status` (the circuit of a collector, no retry).
 ### The resilience policies
 14. **Resilience4j 2.4.0** (`resilience4j-spring-boot4`, `resilience4j-micrometer`; circuit breaker, bulkhead,
     retry). The build pins the version of the Spring Boot 4 module explicitly (`resilience4jVersion` in
-    `helper2.kotlin-library.gradle.kts`), next to the bill of materials (BOM) import.
+    `searchavo.kotlin-library.gradle.kts`), next to the bill of materials (BOM) import.
 15. **One port, applied in code.** `platform.resilience.Resilience`: `call(policy, supplier)` and
     `run(policy, runnable)`. `Resilience4jPolicies` builds each call from the registries of the Spring Boot module
     with programmatic decorators: no annotations, no aspect-oriented proxies, so Kotlin use cases and Java adapters
@@ -129,18 +129,18 @@ request runs in the policy `page-status` (the circuit of a collector, no retry).
     other exception is the work's own. `require(policy)` fails when no instance has that name. `trySlot(policy)`
     takes one place in the policy's bulkhead for work that outlives one call and gives it back once, on `release()`;
     it is empty at once when the bulkhead is full.
-16. **Named policies** in `helper2-shared.yaml` (`resilience4j.*`, the same in both apps), every instance created at
+16. **Named policies** in `searchavo-shared.yaml` (`resilience4j.*`, the same in both apps), every instance created at
     startup:
 
     | Policy | Circuit breaker | Bulkhead (semaphore) | Retry |
     |---|---|---|---|
-    | `source-<id>` (github, hf-models, hf-spaces, npm, arxiv, live-web, helper2-index, helper2-semantic, curated) | count window 20, at least 10 calls, opens at 50% failed or slow (over 2 s; Tavily 5 s), open 30 s, 2 trial calls | 20 calls per replica, no wait; catalog sources 3 (the three of them and the shared caches' 2 stay below the database pool of 16) | none: the search deadline is the budget |
+    | `source-<id>` (github, hf-models, hf-spaces, npm, arxiv, live-web, searchavo-index, searchavo-semantic, curated) | count window 20, at least 10 calls, opens at 50% failed or slow (over 2 s; Tavily 5 s), open 30 s, 2 trial calls | 20 calls per replica, no wait; catalog sources 3 (the three of them and the shared caches' 2 stay below the database pool of 16) | none: the search deadline is the budget |
     | `collector-<id>` (hf-trending, live-web-scout, course-scout, discovery, linkedin-scout, live-web-events-scout, github-awesome, hf-provider-orgs, ai-deadlines, mcp-registry, gap-evidence, gap-web) | count window 10, at least 5 calls, 50%, open 1 min, 1 trial call | none: the Scout runs one collector at a time | 3 attempts, 1 s then ×2 with ±50% jitter, only on a transient failure |
     | `page-status` (the Scout's status request to a site a list link leads to, and to the site of a web page list whose read failed, [0057](ADR-0057-follow-list-links.md)) | as `collector-<id>`; an HTTP status is an answer, only a request with no answer counts | none | none: one try |
     | `redis` (search cache, budget counters, web-search quotas, rate limits, outbound throttle, session reads, the setup guide's fetch budget, the Scout's page text cache) | count window 10, at least 3 calls, 50%, open 30 s, 2 trial calls | none | none |
     | `db-cache` (shared caches of model answers in `ai_cache`: translations, query vectors, setup guide answers, guide answers, [0004](ADR-0004-persistence-and-the-schema.md)) | count window 10, at least 3 calls, 50% failed or slow (over 250 ms), open 30 s, 2 trial calls; each statement also stops after 1 s | 2 calls per replica, no wait: with the three catalog sources of 3, below the database pool of 16 | none: a miss costs one model call |
     | `llm-chat` (the other chat-model calls: query translation, setup guide, Scout enrichment, awesome-list classifier) | count window 10, at least 5 calls, 50%, open 30 s, 2 trial calls; only provider errors count (`ModelErrors.NotFromProvider` ignores a malformed answer and a spent budget) | none | none: every attempt is charged to a daily budget ([0008](ADR-0008-llm-integration.md)) |
-    | `llm-chat-guide-fast` (the AI guide's plan call, on the fast model) and `llm-chat-guide-reasoning` (its choose, verify, compare and explain calls, on the reasoning model), public app | as `llm-chat`, and a call over `H2_RESILIENCE_LLM_SLOW_CALL` (35 s, just under the 40 s model timeout, so only a call that nearly timed out counts) counts as slow: half the window failed or slow opens it. A call cancelled at its question's deadline, or stopped by the shorter timeout a question near its deadline gives it, is not the provider's failure and is not counted ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)). One circuit per guide model, so slow guide calls never refuse a translation or a setup guide, and an outage of one model never refuses the other's calls | none | none in resilience4j: the plan call itself is asked once more after a short provider outage ([0031](ADR-0031-guide-pipeline.md)) |
+    | `llm-chat-guide-fast` (the AI guide's plan call, on the fast model) and `llm-chat-guide-reasoning` (its choose, verify, compare and explain calls, on the reasoning model), public app | as `llm-chat`, and a call over `SA_RESILIENCE_LLM_SLOW_CALL` (35 s, just under the 40 s model timeout, so only a call that nearly timed out counts) counts as slow: half the window failed or slow opens it. A call cancelled at its question's deadline, or stopped by the shorter timeout a question near its deadline gives it, is not the provider's failure and is not counted ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)). One circuit per guide model, so slow guide calls never refuse a translation or a setup guide, and an outage of one model never refuses the other's calls | none | none in resilience4j: the plan call itself is asked once more after a short provider outage ([0031](ADR-0031-guide-pipeline.md)) |
     | `llm-embed` (embedding calls of search queries and guide questions) | as `llm-chat`, every failure counts | none | none |
     | `llm-embed-index` (the embedding indexer's calls) | as `llm-embed`; its own circuit, so the indexer's failed batches never refuse a visitor's query ([0024](ADR-0024-vector-search.md)); a text the provider refuses (400, 413, 422: `ModelErrors.RejectedInput`) does not count | none | none: the indexer sends a rejected batch one text at a time instead |
     | `guide` (guide questions) | none | 8 questions per replica, no wait, held per question with `trySlot` by `GuideLimits` from start to end or deadline ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)) | none |
@@ -152,12 +152,12 @@ request runs in the policy `page-status` (the circuit of a collector, no retry).
     instead ([0022](ADR-0022-federated-search.md)). A transient failure (`TransientSourceFailure`) is a 503, a
     network error or timeout (`SourceFailure.Unavailable` with `transient`, set by the HTTP mapping of §6), or a 429
     that asks for at most 10 s or names no pause; a 404, a malformed body or a longer pause is not retried.
-17. **Owner overrides without a release**, all optional: `H2_RESILIENCE_SOURCE_FAILURE_RATE` (50),
-    `H2_RESILIENCE_SOURCE_OPEN_FOR` (30s), `H2_RESILIENCE_SOURCE_MAX_CONCURRENT` (20),
-    `H2_RESILIENCE_CATALOG_MAX_CONCURRENT` (3), `H2_RESILIENCE_COLLECTOR_OPEN_FOR` (1m),
-    `H2_RESILIENCE_COLLECTOR_MAX_ATTEMPTS` (3), `H2_RESILIENCE_REDIS_OPEN_FOR` (30s),
-    `H2_RESILIENCE_DB_CACHE_OPEN_FOR` (30s), `H2_RESILIENCE_DB_CACHE_MAX_CONCURRENT` (2),
-    `H2_RESILIENCE_LLM_OPEN_FOR` (30s), `H2_RESILIENCE_LLM_SLOW_CALL` (35s, both guide circuits), `H2_GUIDE_MAX_CONCURRENT` (8).
+17. **Owner overrides without a release**, all optional: `SA_RESILIENCE_SOURCE_FAILURE_RATE` (50),
+    `SA_RESILIENCE_SOURCE_OPEN_FOR` (30s), `SA_RESILIENCE_SOURCE_MAX_CONCURRENT` (20),
+    `SA_RESILIENCE_CATALOG_MAX_CONCURRENT` (3), `SA_RESILIENCE_COLLECTOR_OPEN_FOR` (1m),
+    `SA_RESILIENCE_COLLECTOR_MAX_ATTEMPTS` (3), `SA_RESILIENCE_REDIS_OPEN_FOR` (30s),
+    `SA_RESILIENCE_DB_CACHE_OPEN_FOR` (30s), `SA_RESILIENCE_DB_CACHE_MAX_CONCURRENT` (2),
+    `SA_RESILIENCE_LLM_OPEN_FOR` (30s), `SA_RESILIENCE_LLM_SLOW_CALL` (35s, both guide circuits), `SA_GUIDE_MAX_CONCURRENT` (8).
 18. **No policy, no start.** `SearchResources` requires `source-<id>` for every enabled source and each collector
     requires `collector-<id>` when it is enabled, the model adapters require `llm-chat`, `llm-embed` or
     `llm-embed-index` (`LlmPolicies`), `GuideLimits` requires `guide` and `SharedCaches` requires `db-cache`, so a
@@ -166,7 +166,7 @@ request runs in the policy `page-status` (the circuit of a collector, no retry).
 19. **Each outbound request is sent once.** The Apache client's own retries are off (`ObservedHttp`, §1), so every
     attempt is one the circuit counts and the retry bounds.
 20. **Global limits stay in Redis.** Resilience4j's rate limiter counts in one Java virtual machine (JVM), so it
-    cannot keep a limit across 3 replicas. Limits that must hold for all of Helper2 are Redis keys: the per-client
+    cannot keep a limit across 3 replicas. Limits that must hold for all of Searchavo are Redis keys: the per-client
     inbound limits ([0037](ADR-0037-http-edge.md)), the daily model budgets
     ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)) and the arXiv pace (`OutboundThrottle`, §9).
 21. **No time limiter.** Search deadlines stay in `SearchResources` (one virtual thread per source, `Future.get`
@@ -181,54 +181,54 @@ request runs in the policy `page-status` (the circuit of a collector, no retry).
 
 ### Code
 The HTTP client:
-- `backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java` — pooled client, timeouts,
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/http/ObservedHttp.java` — pooled client, timeouts,
   redirects (`NoDowngradeRedirects`), body cap and deadline (`BoundedResponse`, `CappedStream`), User-Agent,
   observation and `uri` tag (`BoundedUriConvention`), one request per attempt.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/config/HttpClientProperties.java` — the four
-  `helper2.http` settings; `platform/http/HttpClientSettingsConfiguration.java` — their Settings page group;
-  `backend/libs/platform/src/testFixtures/java/ai/helper2/testing/TestHttp.java` — the client the tests build.
-- `backend/libs/core/src/main/java/ai/helper2/sources/support/HttpClients.java` — base URL, token, error mapping,
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/config/HttpClientProperties.java` — the four
+  `searchavo.http` settings; `platform/http/HttpClientSettingsConfiguration.java` — their Settings page group;
+  `backend/libs/platform/src/testFixtures/java/ai/searchavo/testing/TestHttp.java` — the client the tests build.
+- `backend/libs/core/src/main/java/ai/searchavo/sources/support/HttpClients.java` — base URL, token, error mapping,
   transient failures, per-item guard.
-- `backend/libs/core/src/main/java/ai/helper2/sources/config/LiveSourcesConfiguration.java` and
-  `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java` — one builder
+- `backend/libs/core/src/main/java/ai/searchavo/sources/config/LiveSourcesConfiguration.java` and
+  `backend/apps/backoffice/src/main/java/ai/searchavo/sources/config/scout/CollectorsConfiguration.java` — one builder
   per source and collector; collectors get their deadline (`collectorClient`).
-- `backend/libs/core/src/main/java/ai/helper2/sources/support/SourceSettings.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/sources/support/SourceSettings.java`,
   `sources/config/SourcesProperties.java` — `deadline`, twice the timeout by default.
-- `backend/libs/core/src/main/java/ai/helper2/sources/arxiv/ArxivSource.java`,
-  `backend/libs/platform/src/main/java/ai/helper2/platform/resilience/OutboundThrottle.java`, `RedisOutboundThrottle.java` —
+- `backend/libs/core/src/main/java/ai/searchavo/sources/arxiv/ArxivSource.java`,
+  `backend/libs/platform/src/main/java/ai/searchavo/platform/resilience/OutboundThrottle.java`, `RedisOutboundThrottle.java` —
   one arXiv call every 3 seconds across replicas.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SourceFanOut.kt` (`Run.collect`) — deadlines,
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SourceFanOut.kt` (`Run.collect`) — deadlines,
   outcomes, `source-<id>`, `CIRCUIT_OPEN` and `BUSY`.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/Model.kt` (`SourceFailure`, `SkipReason`) — failure types.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java` — embedding client on
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/Model.kt` (`SourceFailure`, `SkipReason`) — failure types.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/NvidiaEmbedder.java` — embedding client on
   `ObservedHttp`; `llm-embed` or `llm-embed-index`, given by `CatalogConfiguration.java`.
-- `backend/libs/core/src/test/java/ai/helper2/sources/*/*LiveTest.java`,
-  `backend/apps/backoffice/src/test/java/ai/helper2/sources/*/*LiveTest.java`, `.github/workflows/live.yml` — the
+- `backend/libs/core/src/test/java/ai/searchavo/sources/*/*LiveTest.java`,
+  `backend/apps/backoffice/src/test/java/ai/searchavo/sources/*/*LiveTest.java`, `.github/workflows/live.yml` — the
   weekly live check.
 
 The resilience policies:
-- `backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience.java`, `Resilience4jPolicies.java`,
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/resilience/Resilience.java`, `Resilience4jPolicies.java`,
   `CallRefused.java`, `ResilienceConfiguration.java` — the port and its Resilience4j adapter.
-- `backend/build-logic/src/main/kotlin/helper2.kotlin-library.gradle.kts` (`resilience4jVersion`) and the apps'
+- `backend/build-logic/src/main/kotlin/searchavo.kotlin-library.gradle.kts` (`resilience4jVersion`) and the apps'
   `build.gradle.kts` — the version.
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml` (`resilience4j.*`) — the policies; `backend/apps/public/src/main/resources/application.yaml` — the public app's own (`llm-chat-guide`, `setup-guide`).
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/**/*Collector.java`,
-  `backend/libs/core/src/main/java/ai/helper2/sources/support/TransientSourceFailure.java` — `collector-<id>` and
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml` (`resilience4j.*`) — the policies; `backend/apps/public/src/main/resources/application.yaml` — the public app's own (`llm-chat-guide`, `setup-guide`).
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/**/*Collector.java`,
+  `backend/libs/core/src/main/java/ai/searchavo/sources/support/TransientSourceFailure.java` — `collector-<id>` and
   what it retries.
-- `backend/libs/core/src/main/java/ai/helper2/search/cache/RedisSearchCache.java`,
-  `backend/libs/platform/src/main/java/ai/helper2/platform/llm/internal/RedisCallCounter.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/search/cache/RedisSearchCache.java`,
+  `backend/libs/platform/src/main/java/ai/searchavo/platform/llm/internal/RedisCallCounter.java`,
   `platform/quota/RedisQuotaCounter.java`, `platform/RedisRateLimiter.java`,
-  `backend/libs/core/src/main/java/ai/helper2/identity/config/SessionConfiguration.java` — `redis`.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCaches.java`, `JdbcSharedCache.java` — `db-cache`.
-- `backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java`,
-  `backend/libs/core/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java`,
-  `backend/apps/public/src/main/java/ai/helper2/setup/internal/SpringAiToolGuideModel.java`,
-  `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/SpringAiEnrichmentModel.java`,
-  `backend/apps/backoffice/src/main/java/ai/helper2/sources/classifier/SpringAiRepoClassifier.java` — `llm-chat`;
-  `backend/libs/platform/src/main/java/ai/helper2/platform/llm/LlmPolicies.java` (the names), `ModelErrors.java`
+  `backend/libs/core/src/main/java/ai/searchavo/identity/config/SessionConfiguration.java` — `redis`.
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/cache/SharedCaches.java`, `JdbcSharedCache.java` — `db-cache`.
+- `backend/apps/public/src/main/java/ai/searchavo/guide/internal/SpringAiGuideModel.java`,
+  `backend/libs/core/src/main/java/ai/searchavo/search/internal/SpringAiQueryTranslator.java`,
+  `backend/apps/public/src/main/java/ai/searchavo/setup/internal/SpringAiToolGuideModel.java`,
+  `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/SpringAiEnrichmentModel.java`,
+  `backend/apps/backoffice/src/main/java/ai/searchavo/sources/classifier/SpringAiRepoClassifier.java` — `llm-chat`;
+  `backend/libs/platform/src/main/java/ai/searchavo/platform/llm/LlmPolicies.java` (the names), `ModelErrors.java`
   (what counts for it), `ModelCallMetrics.java`.
-- `backend/apps/public/src/main/java/ai/helper2/guide/web/GuideLimits.java` — `guide`, held with `trySlot`.
-- `deploy/monitoring/helper2-rules.yaml` — `Helper2CircuitOpen`, `Helper2CallsNotPermitted`.
+- `backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideLimits.java` — `guide`, held with `trySlot`.
+- `deploy/monitoring/searchavo-rules.yaml` — `SearchavoCircuitOpen`, `SearchavoCallsNotPermitted`.
 - Tests: `HttpClientsMappingTest`, `TokenRedirectTest`, `ArxivSourceTest`, `RedisOutboundThrottleIT`,
   `ObservedHttpRedirectTest`, `ObservedHttpRetryTest`, `ObservedHttpObservationTest`, `ObservedHttpUserAgentTest`,
   `ObservedHttpDeadlineTest`, `SourcesPropertiesTest`, `CollectorRetryIT`, `NvidiaEmbedderTest`,
@@ -292,8 +292,8 @@ The resilience policies:
   search is keyword-only without waiting for the embedding timeout.
 - The guide's concurrency limit is one more named, metered bulkhead
   (`resilience4j.bulkhead.available.concurrent.calls{name="guide"}`).
-- The state of every circuit and every refused call is a meter and an alert (`Helper2CircuitOpen`,
-  `Helper2CallsNotPermitted`, [0009](ADR-0009-observability.md)).
+- The state of every circuit and every refused call is a meter and an alert (`SearchavoCircuitOpen`,
+  `SearchavoCallsNotPermitted`, [0009](ADR-0009-observability.md)).
 - The Sources page shows each enabled source's circuit and when it opened, as the answering replica sees it
   (`Resilience.circuit`, [0022](ADR-0022-federated-search.md)). Resilience4j keeps no opening time, so
   `Resilience4jPolicies` watches each circuit's state transitions on the circuit's own clock.

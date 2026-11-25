@@ -1,13 +1,13 @@
 # Sequence: the telemetry of one search in the cluster: one trace across threads, meters, logs,
 # the time to the first useful event of a guide question, the scrape on the management port and the dashboard read.
-# Source of truth: backend/libs/core/src/main/java/ai/helper2/search/config/SearchConfiguration.java, MicrometerSearchMetrics.java,
-#   backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/SearchResources.kt, backend/libs/platform/src/main/java/ai/helper2/platform/http/ObservedHttp.java,
-#   backend/libs/platform/src/main/resources/helper2-shared.yaml, deploy/helm/helper2/templates/app.yaml, networkpolicy.yaml,
-#   deploy/grafana/helper2.json; the guide block: backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java,
-#   deploy/monitoring/helper2-rules.yaml (Helper2GuideFirstUsefulSlow, Helper2RedisEvicting, Helper2ScoutCollectorStale); the Scout block:
-#   backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt,
-#   backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/LastSuccessGauges.java, JdbcScoutStore.java; the exporters:
-#   deploy/helm/helper2/templates/exporters.yaml, files/redis-users.acl.
+# Source of truth: backend/libs/core/src/main/java/ai/searchavo/search/config/SearchConfiguration.java, MicrometerSearchMetrics.java,
+#   backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/SearchResources.kt, backend/libs/platform/src/main/java/ai/searchavo/platform/http/ObservedHttp.java,
+#   backend/libs/platform/src/main/resources/searchavo-shared.yaml, deploy/helm/searchavo/templates/app.yaml, networkpolicy.yaml,
+#   deploy/grafana/searchavo.json; the guide block: backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideStreamController.java,
+#   deploy/monitoring/searchavo-rules.yaml (SearchavoGuideFirstUsefulSlow, SearchavoRedisEvicting, SearchavoScoutCollectorStale); the Scout block:
+#   backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/RunScout.kt,
+#   backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/LastSuccessGauges.java, JdbcScoutStore.java; the exporters:
+#   deploy/helm/searchavo/templates/exporters.yaml, files/redis-users.acl.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0009-observability.d2 && d2 sequence-0009-observability.d2 sequence-0009-observability.svg
 
 ...@style
@@ -15,8 +15,8 @@
 shape: sequence_diagram
 
 browser: Browser {class: person}
-app: "helper2 app\n(port 8080)" {class: app}
-bo: "helper2-backoffice\n(the Scout)" {class: app}
+app: "searchavo app\n(port 8080)" {class: app}
+bo: "searchavo-backoffice\n(the Scout)" {class: app}
 vt: "Virtual thread\n(ContextExecutorService)" {class: app}
 gh: "GitHub API" {class: ext}
 reg: "Micrometer registry" {class: app}
@@ -36,8 +36,8 @@ vt -> gh: "GET /search/repositories\ntraceparent: T, client span" {class: hot}
 gh -> vt: "200"
 vt -> reg: "http.client.requests{client_name, status}"
 vt -> app: "hits"
-app -> reg: "helper2.source.requests{source,outcome,served_from},\nhelper2.source.latency{source,outcome}"
-app -> reg: "helper2.cache.events{event},\nhelper2.search.requests{partial}, helper2.search.latency"
+app -> reg: "searchavo.source.requests{source,outcome,served_from},\nsearchavo.source.latency{source,outcome}"
+app -> reg: "searchavo.cache.events{event},\nsearchavo.search.requests{partial}, searchavo.search.latency"
 app -> stdout: "warn line if a source fails\n(traceId T, no query text)"
 app -> browser: "200"
 app -> alloy: "spans of T over OTLP/HTTP :4318"
@@ -47,7 +47,7 @@ guide: A guide question on the stream {
   browser -> app: "POST /api/v1/guide/stream" {class: hot}
   app -> browser: "event: planned, understood"
   app -> browser: "event: retrieved (or clarify):\nthe first useful event" {class: hot}
-  app -> reg: "helper2.guide.first_useful{intent}:\nrequest to that event, once"
+  app -> reg: "searchavo.guide.first_useful{intent}:\nrequest to that event, once"
   app -> browser: "event: chosen, validated, checked, answer"
 }
 
@@ -59,18 +59,18 @@ scrape: Every scrape {
   rexp -> redis: "INFO as h2_monitor\n(no key, no CONFIG)"
   redis -> rexp: "evicted_keys, used_memory"
   rexp -> alloy: "redis_evicted_keys_total\n(kept by the redis_ allow-list)"
-  prom -> prom: "Helper2RedisEvicting when it\nrose in the last 15 min" {class: hot}
+  prom -> prom: "SearchavoRedisEvicting when it\nrose in the last 15 min" {class: hot}
 }
 
 scout: The Scout's stale check {
-  bo -> reg: "start-up: helper2.scout.interval{source}\nfor every collector"
+  bo -> reg: "start-up: searchavo.scout.interval{source}\nfor every collector"
   alloy -> bo: "GET :8081/actuator/prometheus"
   bo -> pg: "SELECT newest SUCCEEDED scout_run\nper source (at most every 30 s)"
-  pg -> bo: "helper2.scout.last.success{source};\na run not due is SKIPPED and leaves it"
+  pg -> bo: "searchavo.scout.last.success{source};\na run not due is SKIPPED and leaves it"
   alloy -> prom: "remote write"
-  prom -> prom: "now - max last success over 9 d >\nmax(interval, 1 d) + 1 d → Helper2ScoutCollectorStale" {class: hot}
+  prom -> prom: "now - max last success over 9 d >\nmax(interval, 1 d) + 1 d → SearchavoScoutCollectorStale" {class: hot}
 }
 
-graf -> prom: "dashboard helper2: PromQL per environment;\nlatency: histogram_quantile over _bucket"
+graf -> prom: "dashboard searchavo: PromQL per environment;\nlatency: histogram_quantile over _bucket"
 prom -> graf: "series"
-prom -> prom: "rules: p95 of first useful > 8 s\nfor 15 min → Helper2GuideFirstUsefulSlow"
+prom -> prom: "rules: p95 of first useful > 8 s\nfor 15 min → SearchavoGuideFirstUsefulSlow"

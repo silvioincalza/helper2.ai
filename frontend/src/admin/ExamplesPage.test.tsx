@@ -102,7 +102,7 @@ describe('admin: home examples', () => {
       'PUT /admin/home-examples/22222222-2222-5222-8222-222222222222': () =>
         new Response(
           JSON.stringify({
-            type: 'https://helper2.ai/problems/invalid-request',
+            type: 'https://searchavo.ai/problems/invalid-request',
             title: 'Invalid request',
             status: 400,
             detail: 'query: no web addresses.',

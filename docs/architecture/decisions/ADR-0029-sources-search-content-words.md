@@ -54,10 +54,10 @@ models first (whisperkit before Whisper, 8 Nov 2026).
 
 ### Code
 
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt` (`contentTerms`, `contentTermsOf`,
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/QueryAnalyzer.kt` (`contentTerms`, `contentTermsOf`,
   word lists, "paper" type word), `Model.kt` (`SourceQuery.searchTerms`, `keywords`),
   `usecase/SearchResources.kt` (`searchTermsOf`).
-- `backend/libs/core/src/main/java/ai/helper2/sources/github/GitHubSource.java` (`searchText`),
+- `backend/libs/core/src/main/java/ai/searchavo/sources/github/GitHubSource.java` (`searchText`),
   `huggingface/HuggingFaceModelsSource.java`, `HubTasks.java`, `HuggingFaceSpacesSource.java`,
   `npm/NpmSource.java`, `arxiv/ArxivSource.java`, `support/HttpClients.java` (`hubListing` without empty `search`).
 - Tests: `QueryAnalyzerTest.kt`, `QueryTranslationTest.kt`, `GitHubSourceTest.java`, `HuggingFaceSourcesTest.java`,
@@ -106,7 +106,7 @@ both arms. Merge and ranking are the production ones, replayed by the checked re
   ungraded result counts as not relevant. 86 new results in the top 20 (17 queries) wait in the judging pool. The
   interval contains 0, so the decision is accepted only after they are graded and the gate is run again.
 
-Device words, live calls on 19 Nov 2026 for "Run LLMs locally on my laptop", which helper2.ai ranked with
+Device words, live calls on 19 Nov 2026 for "Run LLMs locally on my laptop", which searchavo.ai ranked with
 llms.txt plugins on top (`starlight-llms-txt`, `vitepress-plugin-llms`), `nomic-ai/gpt4all` at 25 and Ollama outside
 the first 40:
 

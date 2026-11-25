@@ -2,7 +2,7 @@
 # version, the canary and its smoke test, the version tag in Harbor, prod by version, the canary removed (ADR 0045).
 # Source of truth: .github/workflows/cd.yml (on push, staging), .github/workflows/deploy.yml (Resolve tag, Canary and
 #   smoke test, Version tag in Harbor, Deploy, Remove the canary), deploy/k8s/Makefile (image, canary, canary-smoke,
-#   retag, uncanary, deploy), deploy/k8s/check-release.sh (smoke), deploy/helm/helper2/templates/canary.yaml, .github/workflows/release.yml (used-up).
+#   retag, uncanary, deploy), deploy/k8s/check-release.sh (smoke), deploy/helm/searchavo/templates/canary.yaml, .github/workflows/release.yml (used-up).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0045-release-branches-and-version-tags.d2 && d2 flow-0045-release-branches-and-version-tags.d2 flow-0045-release-branches-and-version-tags.svg
 
 ...@style
@@ -25,7 +25,7 @@ e_order: "Fail: a rollback\nneeds rollback: true" {class: fail}
 verify: "Images of the commit signed\n(cosign, by digest)?" {class: decision}
 e_verify: "Fail: no deploy" {class: fail}
 withcanary: "canary ticked?" {class: decision}
-canary: "make canary: helper2-canary release,\nits migrate Job, 1 app + 1 web pod,\nIngress on X-Helper2-Canary = token" {class: app}
+canary: "make canary: searchavo-canary release,\nits migrate Job, 1 app + 1 web pod,\nIngress on X-Searchavo-Canary = token" {class: app}
 smoke: "make canary-smoke: with the header,\nthe page names YYYY.N.P within a minute,\nsources and search answer; without it too" {class: decision}
 e_smoke: "make uncanary; fail:\nno Harbor tag, prod unchanged" {class: fail}
 uncanary: "make uncanary: no canary\nduring the rollout" {class: app}

@@ -2,9 +2,9 @@
 
 | Term              | Definition | Avoid |
 |-------------------|------------|-------|
-| Resource          | One AI tool, model, MCP server, agent, agent skill, prompt, library, dataset, paper, course, event or news item that helper2.ai knows about. | |
-| Catalog           | The resources helper2.ai has stored, with their facts, evidence and relationships. | |
-| Source            | An external service helper2.ai reads resources from, such as GitHub, Hugging Face or arXiv; the set is disclosed on the Sources page. | Connector |
+| Resource          | One AI tool, model, MCP server, agent, agent skill, prompt, library, dataset, paper, course, event or news item that searchavo.ai knows about. | |
+| Catalog           | The resources searchavo.ai has stored, with their facts, evidence and relationships. | |
+| Source            | An external service searchavo.ai reads resources from, such as GitHub, Hugging Face or arXiv; the set is disclosed on the Sources page. | Connector |
 | Live Source       | A source that is asked at search time instead of being read into the catalog beforehand. | |
 | Search            | One query run across every enabled source and the catalog at once, merged into one result list. | Lookup |
 | Guide             | The AI that picks at most a few catalog resources for a need described in words, each with a checked quote and a reason. | Chatbot |

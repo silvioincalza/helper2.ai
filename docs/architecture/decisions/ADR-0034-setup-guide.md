@@ -18,7 +18,7 @@ and a snippet copied into an AI client's config file runs on the user's machine.
 
 ## Decision
 
-1. **A separate endpoint**, `GET /api/v1/resources/{id}/setup`, in its own module `ai.helper2.setup`, apart from
+1. **A separate endpoint**, `GET /api/v1/resources/{id}/setup`, in its own module `ai.searchavo.setup`, apart from
    the recommendation guide. Two use cases, `GetResourceSetup` and `GetToolGuide` (`setup/usecase`), are plain
    classes wired in `SetupUseCaseConfiguration` (`setup/config`) and held to the domain rules of the public app's
    `ModularityTest` (no Spring, no adapter). They find the resource in the catalog, take its MCP Registry name and the identifiers of its documents (`ToolRef`), and call the
@@ -27,7 +27,7 @@ and a snippet copied into an AI client's config file runs on the user's machine.
    entry is read by name (`GET /v0.1/servers/{name}/versions/latest`): remotes (Streamable HTTP or SSE, `https`
    only), packages run over stdio (npm, PyPI, OCI, NuGet) with their arguments, environment variables and headers.
    The answer lists where and when it was read. Nothing is stored in the database, so the Scout's change
-   detection is untouched. Answers (a missing entry too) are kept in memory for `H2_SETUP_CACHE_TTL` (an hour), at
+   detection is untouched. Answers (a missing entry too) are kept in memory for `SA_SETUP_CACHE_TTL` (an hour), at
    most 500 names, so page views do not become registry calls; failures are not kept. When the registry cannot be
    read, the README config example of point 8 answers; without one the endpoint says 503.
 3. **Launch from the registry type.** `runtimeHint` when the entry has one, else `npx -y pkg@v`, `uvx pkg==v`,
@@ -74,15 +74,15 @@ and a snippet copied into an AI client's config file runs on the user's machine.
    single inner hyphens), a repository name is never `.` or `..`, and each part of a Hugging Face id follows the
    Hub's rules (no leading or trailing `-` or `.`, no `--` or `..`). A link can therefore never reach another API
    path with the server's token.
-   - **Own GitHub token.** READMEs are read with the setup guide's own token, `H2_SETUP_GITHUB_TOKEN` (5,000 calls
-     an hour), never the Scout's `H2_GITHUB_TOKEN`. Without it, GitHub is read anonymously (60 calls an hour).
-   - **Hourly fetch budget.** Every document fetch takes one unit of `H2_SETUP_HOURLY_FETCHES` (1,000 per UTC
+   - **Own GitHub token.** READMEs are read with the setup guide's own token, `SA_SETUP_GITHUB_TOKEN` (5,000 calls
+     an hour), never the Scout's `SA_GITHUB_TOKEN`. Without it, GitHub is read anonymously (60 calls an hour).
+   - **Hourly fetch budget.** Every document fetch takes one unit of `SA_SETUP_HOURLY_FETCHES` (1,000 per UTC
      hour), counted in Redis across replicas under the `redis` policy
      ([0006](ADR-0006-outbound-calls-and-resilience.md)); when Redis cannot answer, each replica counts on its own.
-     Over the budget nothing is fetched, the answer is not cached, and `helper2.setup.fetches.refused` counts the
+     Over the budget nothing is fetched, the answer is not cached, and `searchavo.setup.fetches.refused` counts the
      refusal.
-   - **Document cache.** Documents are kept in memory per replica for `H2_SETUP_CACHE_TTL`, up to
-     `H2_SETUP_DOCUMENT_CACHE_MB` (32 MB) of text in all, the least recently used going first (Caffeine, weighed by
+   - **Document cache.** Documents are kept in memory per replica for `SA_SETUP_CACHE_TTL`, up to
+     `SA_SETUP_DOCUMENT_CACHE_MB` (32 MB) of text in all, the least recently used going first (Caffeine, weighed by
      length). A document is cut at 512 KB.
 10. **Step-by-step guide (model, checked).** `POST /resources/{id}/guide` sends the tool's own documents (GitHub
    README, npm README, Hugging Face model or Space card; the useful sections of long ones) to the fast model. For
@@ -101,7 +101,7 @@ and a snippet copied into an AI client's config file runs on the user's machine.
      (`ModelCallMetrics.promptVersion`): the meters, the cache key and the eval runs name it.
      `SpringAiToolGuideModelTest.theWordingOfThePromptIsPinnedToItsLabel` pins it, so a new wording changes the
      label in the same change: `0351bae3`.
-   - **Step texts: checked or source only, by setting.** `H2_SETUP_GUIDE_STEP_TEXT` (`StepTextMode`, bound in
+   - **Step texts: checked or source only, by setting.** `SA_SETUP_GUIDE_STEP_TEXT` (`StepTextMode`, bound in
      `SetupProperties.Guide.stepText`) picks one of two modes for the whole site:
      - `VERIFIED` (default): a second model call checks each step's text, as below. A new guide costs two model
        calls of the setup budget, one when no step passed the code checks. The user sees short AI instructions
@@ -125,7 +125,7 @@ and a snippet copied into an AI client's config file runs on the user's machine.
      writes and checks it again, so a failed check never stays as the guide of the next 7 days. The check never
      removes a step or a command (code checks those) and never makes a guide fail. The check prompt is part of the cache key
      (`configFingerprint`), so a new wording writes every guide again. A new guide costs two model calls of the
-     setup budget (`H2_SETUP_GUIDE_DAILY_MODEL_CALLS`), one when no step passed the code checks; in `SOURCE_ONLY`
+     setup budget (`SA_SETUP_GUIDE_DAILY_MODEL_CALLS`), one when no step passed the code checks; in `SOURCE_ONLY`
      always one.
    - **Marked in the API.** When steps are shown, `ToolGuide.aiContent` (`AiContentMarker`) names the provider, the
      model and the AI-written fields it holds: the step texts that are shown, and the code block's language name
@@ -158,21 +158,21 @@ and a snippet copied into an AI client's config file runs on the user's machine.
    `tool-guide` (table `ai_cache`, [0004](ADR-0004-persistence-and-the-schema.md)), keyed by a hash of resource,
    documents and prompt. A cached answer holds the checked steps and the documents' links and
    read dates, never a document's text. The endpoint takes no input but the resource id, shares the guide's rate
-   limit and has its own daily cap (`H2_SETUP_GUIDE_DAILY_MODEL_CALLS`, 500); an answer is kept for
-   `H2_SETUP_GUIDE_CACHE_TTL`. On a cache miss, `ToolGuides` guards the model call like the AI guide
-   ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)): a visitor gets `H2_SETUP_GUIDE_CLIENT_DAILY` (20) new guides a
-   UTC day and its network (IPv4 /24, IPv6 /56) `H2_SETUP_GUIDE_NETWORK_DAILY` (200) (`platform.quota.ClientDayQuota`,
+   limit and has its own daily cap (`SA_SETUP_GUIDE_DAILY_MODEL_CALLS`, 500); an answer is kept for
+   `SA_SETUP_GUIDE_CACHE_TTL`. On a cache miss, `ToolGuides` guards the model call like the AI guide
+   ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)): a visitor gets `SA_SETUP_GUIDE_CLIENT_DAILY` (20) new guides a
+   UTC day and its network (IPv4 /24, IPv6 /56) `SA_SETUP_GUIDE_NETWORK_DAILY` (200) (`platform.quota.ClientDayQuota`,
    `setup-client:` and `setup-network:<pseudonym of the day>`, the network checked first; past either, `LLM_UNAVAILABLE`
    with `unavailable` "quota", not cached; a guide the model could not write gives both back), the same guide asked
    twice at once is written once (`shared.SingleFlight`; the second asker waits and does not count), and at most
-   `H2_SETUP_GUIDE_MAX_CONCURRENT` (2) guides are written at once per replica (the `setup-guide` bulkhead; more get
+   `SA_SETUP_GUIDE_MAX_CONCURRENT` (2) guides are written at once per replica (the `setup-guide` bulkhead; more get
    "busy", not cached). So one visitor cannot spend the day's cap, and a written guide still opens for anyone.
    `GET /api/v1/me` says what a visitor has left (`limits.setupGuides`: the visitor's limit, and the lower of what the
    visitor and its network have left), read from the same counters without taking a turn (`ShowSetupGuidesLeft`,
    `ClientDayQuota.left`); null without a model. The resource page shows it under "Set it up" before the click. A database error or a lookup over its time limit is a miss. An entry that does not decode is logged and treated as a miss, and the next answer
    overwrites it, so it costs one model call, not one per request. Each model call runs under the `llm-chat` circuit
    ([0006](ADR-0006-outbound-calls-and-resilience.md)); a malformed answer is asked for once more. When both answers are not the
-   requested JSON, the "unavailable" answer is cached for `H2_SETUP_UNREADABLE_TTL` (10 minutes), so the same
+   requested JSON, the "unavailable" answer is cached for `SA_SETUP_UNREADABLE_TTL` (10 minutes), so the same
    resource does not spend two model calls on every request. A provider error, an open circuit or a spent
    budget is not cached: each recovers by itself. A guide whose step check could not run is not cached either
    (point 10, the step check). The user sees the same "unavailable" answer in every case but the
@@ -180,7 +180,7 @@ and a snippet copied into an AI client's config file runs on the user's machine.
    budget is not paced, so it opens only then; `ToolGuides.nextUtcDay`). The page shows it in the visitor's own time
    zone ("new ones are back at 19:00", "back tomorrow at 01:00"; `toolGuideNotice` in `SetupGuide.tsx`); without it,
    the text says "after 00:00 UTC".
-12. **Settings.** Every knob is an `H2_SETUP_*` variable in the `helper2.setup` block of `application.yaml`:
+12. **Settings.** Every knob is an `SA_SETUP_*` variable in the `searchavo.setup` block of `application.yaml`:
    `DOCUMENT_TIMEOUT` (10 s), `NPM_README_BASE_URL`, `CACHE_TTL`, `DOCUMENT_CACHE_MB`, `HOURLY_FETCHES`,
    `GITHUB_TOKEN` (empty), `GUIDE_DAILY_MODEL_CALLS`, `GUIDE_CLIENT_DAILY` (20), `GUIDE_NETWORK_DAILY` (200),
    `GUIDE_MAX_CONCURRENT` (2),
@@ -197,14 +197,14 @@ and a snippet copied into an AI client's config file runs on the user's machine.
 
 ### Code
 
-- `backend/apps/public/src/main/kotlin/ai/helper2/setup/` — domain: `Setup.kt`, `Launch.kt`, `Clients.kt`, `SetupGuides.kt`,
+- `backend/apps/public/src/main/kotlin/ai/searchavo/setup/` — domain: `Setup.kt`, `Launch.kt`, `Clients.kt`, `SetupGuides.kt`,
   `RunOptionRules.kt`, `Formats.kt`, `Materials.kt`, `ToolGuideAnswer.kt`, `ToolGuidePorts.kt`,
   `ToolGuideValidator.kt`, `ToolGuides.kt`, `StepTexts.kt`, `StepTextMode.kt`.
-- `backend/apps/public/src/main/java/ai/helper2/setup/usecase/` — `GetResourceSetup`, `GetToolGuide`, wired in
+- `backend/apps/public/src/main/java/ai/searchavo/setup/usecase/` — `GetResourceSetup`, `GetToolGuide`, wired in
   `setup/config/SetupUseCaseConfiguration`.
-- `backend/apps/public/src/main/java/ai/helper2/setup/internal/` — `RegistryMcpServerSpecs`, `HttpToolMaterials`,
+- `backend/apps/public/src/main/java/ai/searchavo/setup/internal/` — `RegistryMcpServerSpecs`, `HttpToolMaterials`,
   `HourlyFetchBudget`, `ReadmeMcpConfigs`, `SpringAiToolGuideModel`, `SharedToolGuideCache`, `SetupConfiguration`.
-- `backend/apps/public/src/main/java/ai/helper2/setup/web/SetupController.java` (`AI_WRITTEN_FIELDS`, `aiContent`),
+- `backend/apps/public/src/main/java/ai/searchavo/setup/web/SetupController.java` (`AI_WRITTEN_FIELDS`, `aiContent`),
   `backend/apps/public/src/main/resources/prompts/setup/tool-guide.txt`, `prompts/setup/verify-steps.txt`, `frontend/src/features/setup/SetupGuide.tsx`.
 - Tests: `SpringAiToolGuideModelTest` (tags, data rule, limits, labels, step check, model calls per guide in each mode), `SetupAiFieldsTest` (marker per
   shown text, both modes), `ToolGuidesTest` (confirmed and unconfirmed step texts, a check that could not run is not
@@ -223,7 +223,7 @@ and a snippet copied into an AI client's config file runs on the user's machine.
   the Scout's 5,000 calls, so a busy hour of "Set it up" slows the Scout. An own token (chosen) keeps the quotas apart.
 - **Free-form questions about a tool.** A text box answered from the tool's documents with the same checks. It turns
   the page into a chat with one README: a second prompt branch, user text in the cache key and the model input,
-  and an answer type no other part of Helper2 needs. The plain guide covers what the page is for.
+  and an answer type no other part of Searchavo needs. The plain guide covers what the page is for.
 - **Step texts: always checked, or a boolean flag.** One fixed mode leaves no way to halve the cost when the budget
   is tight. A boolean (`check-steps: true`) hides the second mode's behaviour behind "false". An enum (chosen) names
   both modes, and a third (for example a cheaper check model) adds a value, not a second flag.
@@ -241,12 +241,12 @@ and a snippet copied into an AI client's config file runs on the user's machine.
   snippets need no fetch budget.
 - The step texts cost a second model call per guide in `VERIFIED`; `SOURCE_ONLY` drops that cost and the AI step
   texts with it. One setting switches, with no deploy of new code.
-- One more secret to rotate (`H2_SETUP_GITHUB_TOKEN`, a read-only token for public repositories).
+- One more secret to rotate (`SA_SETUP_GITHUB_TOKEN`, a read-only token for public repositories).
 - Each client row links its own documentation, so every format can be re-checked at its source.
 
 ### Known limits
 
-- A guide question can answer up to 3 s after its 90 s deadline. The margin before the deadline (2 s) and the shortest model call (10 s) are fixed in the yaml; a call started with little time left takes a budget unit even when it runs out of time. The tool guide (`POST /resources/{id}/guide`) has no question deadline: it runs on the request thread, each of its model calls is bounded by `H2_LLM_TIMEOUT` alone, and nothing bounds the whole request; a failed call gives status `LLM_UNAVAILABLE`.
+- A guide question can answer up to 3 s after its 90 s deadline. The margin before the deadline (2 s) and the shortest model call (10 s) are fixed in the yaml; a call started with little time left takes a budget unit even when it runs out of time. The tool guide (`POST /resources/{id}/guide`) has no question deadline: it runs on the request thread, each of its model calls is bounded by `SA_LLM_TIMEOUT` alone, and nothing bounds the whole request; a failed call gives status `LLM_UNAVAILABLE`.
 - The time on the notices `GUIDE_BUDGET_SPENT`, `GUIDE_DAILY_QUOTA` and `GUIDE_NETWORK_QUOTA` and on the setup guide (`retryAt`) is when the next share opens, not a promise: other visitors can use it first. For `GUIDE_BUDGET_SPENT` it comes from what one replica knows of the count, so during a Redis outage two replicas can give different times.
 - The setup guide is only as good as the tool's own docs; past the hourly fetch budget an uncached resource gets no README snippet; client config formats change and need a re-check.
 

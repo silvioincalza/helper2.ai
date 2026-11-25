@@ -143,7 +143,7 @@ describe('Feature: a resource page shows its categories', () => {
 
     const section = await screen.findByRole('region', { name: 'Categories' });
     const coding = await within(section).findByRole('link', { name: 'Search in Coding' });
-    const href = new URL(coding.getAttribute('href')!, 'https://helper2.ai');
+    const href = new URL(coding.getAttribute('href')!, 'https://searchavo.ai');
     expect(href.pathname).toBe('/search');
     expect(href.searchParams.get('q')).toBe('Coding');
     expect(href.searchParams.getAll('category')).toEqual(['coding']);

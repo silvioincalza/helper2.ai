@@ -10,7 +10,7 @@
 
 ## Context
 
-The Helper2 index is PostgreSQL full text over the catalog ([0022](ADR-0022-federated-search.md)). Three things decide
+The Searchavo index is PostgreSQL full text over the catalog ([0022](ADR-0022-federated-search.md)). Three things decide
 whether a query finds a resource there:
 
 - **The language.** Users type in many languages; most sources and most catalog text are in English. An Italian query
@@ -73,20 +73,20 @@ whether a query finds a resource there:
    `websearch_to_tsquery(h2_ts_config(:lang), …)` next to `english` and `simple`. Stored text uses the stemmer of its
    own detected language in `search_vector`.
 5. **Translation in parallel** (`SearchResources`). For a non-English query the model call starts first. Sources with
-   `usesTranslation = false` start at the same time (`helper2-semantic`, which embeds the text as typed).
-   The other sources start when the translation is in, or after `H2_SEARCH_TRANSLATE_TIMEOUT_MS` (2500 ms).
+   `usesTranslation = false` start at the same time (`searchavo-semantic`, which embeds the text as typed).
+   The other sources start when the translation is in, or after `SA_SEARCH_TRANSLATE_TIMEOUT_MS` (2500 ms).
    Each source's deadline and latency count from its own start, so the wait never eats a source's budget.
 6. **Translator** (`SpringAiQueryTranslator` in `search.internal`, the search module's adapter of its port
-   `QueryTranslator`; model calls as in [0008](ADR-0008-llm-integration.md)): the fast model (`H2_NEBIUS_FAST_MODEL`), prompt
+   `QueryTranslator`; model calls as in [0008](ADR-0008-llm-integration.md)): the fast model (`SA_NEBIUS_FAST_MODEL`), prompt
    `prompts/search/translate-query.txt` (label `ecc182c3`, the hash of the rendered prompt, pinned by a test), at most 12
    words (`QueryTranslator.MAX_WORDS`), 400 output tokens, thinking off. The query is data: it goes between `<query>` tags
    through `UntrustedText` (cut to 500 characters, the guide's limit for a need), so it cannot close the tag. The language
    is a code from the detector's closed list; any other value is not sent.
-   Its own daily cap `H2_SEARCH_DAILY_TRANSLATIONS` (300 per day; days are in Coordinated Universal Time, UTC), separate from the guide's cap; gauge `helper2.search.translation.budget.remaining`. Answers are shared by
+   Its own daily cap `SA_SEARCH_DAILY_TRANSLATIONS` (300 per day; days are in Coordinated Universal Time, UTC), separate from the guide's cap; gauge `searchavo.search.translation.budget.remaining`. Answers are shared by
    every replica in the shared cache `translation` ([0004](ADR-0004-persistence-and-the-schema.md), table `ai_cache`):
    key a SHA-256 of the model, a version of the prompt and of the user message's shape (`cacheVersion`, so a new message format never serves old answers; the meters keep the prompt's label), the language and the normalised query (trimmed, spaces collapsed,
    lower case), value the English words cut by code to 12 words and 120 characters (`QueryTranslator.MAX_CHARS`,
-   counted in code points), whatever the model wrote, kept `H2_SEARCH_TRANSLATION_TTL` (24 h). A failed, empty or refused translation
+   counted in code points), whatever the model wrote, kept `SA_SEARCH_TRANSLATION_TTL` (24 h). A failed, empty or refused translation
    is not cached, and a database error or a lookup over its time limit is a miss, so a query any replica translated costs no model call on the others. On whenever a model is configured, off without one.
    The call runs under the `llm-chat` circuit ([0006](ADR-0006-outbound-calls-and-resilience.md)); the budget is taken inside it, so
    a call the open circuit refuses costs no translation.
@@ -179,7 +179,7 @@ whether a query finds a resource there:
    - **The rule.** After each batch the sweep hands the records GitHub did not find to `ForgetGoneLists`
      (`SweepRepositories.sweepOneBatch`). `JdbcGoneLists.forget` takes the ones that are the repository itself
      (`repository_url IS NULL`), are marked `gone` (two visits at least 24 hours apart, 0020 §7) and were not found
-     on `H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS` (3) visits in a row. It deletes the `awesome_list_entry` rows and
+     on `SA_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS` (3) visits in a row. It deletes the `awesome_list_entry` rows and
      the `awesome_list` row of each such list, and `ForgetGoneLists` refreshes the categories of the resources the
      list named, in one unit of work: a refresh that fails leaves the rows, and the next visit tries again.
    - **A candidate accepted later.** A list names a resource on accept ([0055](ADR-0055-directory-lists.md) point
@@ -217,13 +217,13 @@ whether a query finds a resource there:
      it again asks for three answers "gone" with nothing between them that says the page is there. A redirect to a
      page that says "not found" with status 200 keeps a dead list for good: the price of removing nothing by
      mistake.
-   - **The rule.** A page is gone when `gone_checks` reached `H2_SCOUT_AWESOME_WEB_PAGES_GONE_CHECKS` (3) and the
+   - **The rule.** A page is gone when `gone_checks` reached `SA_SCOUT_AWESOME_WEB_PAGES_GONE_CHECKS` (3) and the
      first of these checks is at least one day before the last (`GoneWebPages.CONFIRMED_AFTER`), so one bad hour
      of a site removes nothing. With a pass a day, that is the third failed read in a row: the weekly read and the
      tries of the two next days. The two counts mean
      the same on both sides: answers "gone" in a row from the source itself, at least 3 by default, over at least
      24 hours, started again by an answer that finds the list. On GitHub the day comes from the mark `gone`
-     (two visits 24 hours apart) and the count from `H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS`; for a web page
+     (two visits 24 hours apart) and the count from `SA_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS`; for a web page
      both are on the row of the list in `list_seed`. Each side has its own setting because each has its own rhythm:
      the sweep comes back in days, a failed read is tried again at the next pass.
    - **What goes.** `ForgetGoneWebList` (port `GoneWebLists`, `JdbcGoneWebLists.forget`) deletes, by the address
@@ -258,9 +258,9 @@ whether a query finds a resource there:
      (Known limits).
    - **When the page is back**, the read that gives it starts the count again, writes its last read and its rows,
      and takes the mark `gone` off the record of a curated page.
-   - **Metrics.** `helper2.scout.lists.gone.checks{outcome}`: `gone`, `found`, `redirect`, `other-status`, or the
+   - **Metrics.** `searchavo.scout.lists.gone.checks{outcome}`: `gone`, `found`, `redirect`, `other-status`, or the
      refusal of the status request (`robots`, `daily-cap`, `host-cap`, `timeout`, `host-check`, …).
-     `helper2.scout.lists.forgotten{kind}`: the lists that no longer name their resources, `web-page` or `github`
+     `searchavo.scout.lists.forgotten{kind}`: the lists that no longer name their resources, `web-page` or `github`
      (counted by the repository sweep from what `ForgetGoneLists` returns).
 
 ### Code
@@ -268,37 +268,37 @@ whether a query finds a resource there:
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `h2_unaccent`, `h2_ts_config`, `h2_name_words`,
   `search_vector`, `awesome_list`, `awesome_list_entry`.
   `V2026.11.9.2__list_index_without_period.sql` — no index on `updated_at` of the list tables: no purge reads it.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogSearch.java` — `plainWords`, `searchSql`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcCatalogSearch.java` — `plainWords`, `searchSql`,
   `searchFound`, the language stemmer in the index query; `JdbcAwesomeListIndex.java` — the list index;
   `CatalogSearchSource.java`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/AwesomeListText.java`, `AwesomeListIndex.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/AwesomeListText.java`, `AwesomeListIndex.java`,
   `usecase/IndexAwesomeLists.java`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/GoneLists.java`, `usecase/ForgetGoneLists.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/GoneLists.java`, `usecase/ForgetGoneLists.java`,
   `internal/JdbcGoneLists.java`, `internal/JdbcRepositoryVisits.java` (`recordNotFound`);
-  `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/SweepRepositories.kt` (`GoneListRule`),
+  `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/SweepRepositories.kt` (`GoneListRule`),
   `scout/config/ScoutProperties.java` (`RepositorySweep.goneListVisits`) — a list on GitHub gone at its source.
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GoneWebPages.java`, `WebPageLists.java`
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/github/scout/GoneWebPages.java`, `WebPageLists.java`
   (`readNow`), `GitHubAwesomeCollector.java` (`pageHit`); `scout/ListSeeds.kt` (`goneChecked`, `notGone`,
   `forgotten`, `GoneWebPageRule`, `GoneListSeeds`), `scout/usecase/ForgetGoneListSeed.kt`,
   `scout/internal/JdbcListSeedStore.java`;
-  `backend/libs/core/src/main/java/ai/helper2/catalog/GoneWebLists.java`, `usecase/ForgetGoneWebList.java`,
+  `backend/libs/core/src/main/java/ai/searchavo/catalog/GoneWebLists.java`, `usecase/ForgetGoneWebList.java`,
   `internal/JdbcGoneWebLists.java`; `V2026.11.10.2__list_seed_gone_checks.sql`,
   `V2026.11.11.1__remove_gone_list_seed_action.sql`;
   `sources/config/CollectorProperties.java` (`WebPages.goneChecks`) — a web page gone at its site.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/LanguageDetector.kt` — detection rules.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/QueryTranslation.kt` — `start`, `await`,
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/LanguageDetector.kt` — detection rules.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/QueryTranslation.kt` — `start`, `await`,
   `withTranslation`; `SearchResources.kt` — early and late sources (`startSources`); `Ports.kt` — `QueryTranslator`; `QueryAnalyzer.kt`.
-- `backend/libs/core/src/main/java/ai/helper2/search/internal/SpringAiQueryTranslator.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/search/internal/SpringAiQueryTranslator.java`,
   `TranslationConfiguration.java` — model call, budget, cache key; `src/main/resources/prompts/search/translate-query.txt`.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCache.java`, `JdbcSharedCache.java`.
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/AwesomeListParser.java`, `MarkdownText.java`,
-  `GitHubAwesomeCollector.java`; `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/Ports.kt` (`ListText`),
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/cache/SharedCache.java`, `JdbcSharedCache.java`.
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/github/scout/AwesomeListParser.java`, `MarkdownText.java`,
+  `GitHubAwesomeCollector.java`; `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/Ports.kt` (`ListText`),
   `Scout.kt` (`ListIndex`), `usecase/RunScout.kt` (`indexListsQuietly`).
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/Model.kt` (`ListMatch`, `foundIn`),
-  `backend/libs/core/src/main/java/ai/helper2/search/web/CardMapper.java`; `api/common.yaml` (`ResultCard.foundIn`).
-- `backend/libs/core/src/main/java/ai/helper2/catalog/ResourceDetail.java` (`FoundIn`, `ListEntry`), `AwesomeListEntries.java`,
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/Model.kt` (`ListMatch`, `foundIn`),
+  `backend/libs/core/src/main/java/ai/searchavo/search/web/CardMapper.java`; `api/common.yaml` (`ResultCard.foundIn`).
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/ResourceDetail.java` (`FoundIn`, `ListEntry`), `AwesomeListEntries.java`,
   `usecase/GetResourceDetail.java`, `internal/JdbcResourceDetailReads.java` (`naming`),
-  `backend/apps/public/src/main/java/ai/helper2/catalog/web/ResourceDetailController.java`; `api/public.yaml`
+  `backend/apps/public/src/main/java/ai/searchavo/catalog/web/ResourceDetailController.java`; `api/public.yaml`
   (`ResourceDetail.foundIn`, `FoundIn`, `FoundInList`).
 - `frontend/src/features/search/ResultRow.tsx`, `frontend/src/features/resource/FoundInLists.tsx`;
   `frontend/src/i18n/locales/en.json` (`results.foundIn`, `resource.foundIn`), `en.legal.json` (the Privacy page).
@@ -486,7 +486,7 @@ Tracked privately (S9.6.3).
   one row in `directory_list_entry` that no later read writes again. The catalog has no row for such a list, and
   the row in `list_seed` of a list discovery added is removed, so nothing says on accept that the list is gone.
 - A list that left the top lists of the collector's search and still exists keeps the rows of its last read.
-- With the repository sweep off (`H2_SCOUT_REPOSITORY_SWEEP_ENABLED=false`, or no GitHub token) no list is ever gone.
+- With the repository sweep off (`SA_SCOUT_REPOSITORY_SWEEP_ENABLED=false`, or no GitHub token) no list is ever gone.
 
 ### Open points
 

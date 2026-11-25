@@ -10,7 +10,7 @@
 
 ## Context
 
-Each source ranks its own hits. Helper2.ai must put them in one order that is repeatable and easy to explain.
+Each source ranks its own hits. Searchavo.ai must put them in one order that is repeatable and easy to explain.
 The catalog index must also rank its own rows. Text density alone is not relevance: for "MCP server Postgres"
 (MCP: Model Context Protocol) a full-text score puts short npm names ahead of `crystaldba/postgres-mcp` (3.4k stars).
 The index query must also stay well inside its 3 s timeout on the production catalog.
@@ -40,7 +40,7 @@ The index query must also stay well inside its 3 s timeout on the production cat
    in one query (newest value per kind and source). So `CatalogSearchSource` and `SemanticSearchSource` hits carry the
    same metrics a live hit carries.
 5. **Fusion across sources** (`Ranking.rank`, `k = 60`, `Ranking.FUSION_K`). Score = Σ over sources of `1 / (k + rank + 1)`, one vote
-   per source id. `helper2-index`, `helper2-semantic` and `curated` vote apart: on the eval set one vote for the
+   per source id. `searchavo-index`, `searchavo-semantic` and `curated` vote apart: on the eval set one vote for the
    three (best rank of the three) loses nDCG@10 (§7).
    Title boost: +0.02 when the title equals the query (`exactTitle`) or holds every word of the first variant
    (`title`; type words and small words like "to" and "for" removed). An exact title gets no more than that (§7). A word counts only as a whole title word; a word of 4
@@ -137,12 +137,12 @@ The index query must also stay well inside its 3 s timeout on the production cat
 
 ### Code
 
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/QueryAnalyzer.kt` — type hints, synonyms, required-word variants, lexicon.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/Ranking.kt` — fusion, boosts, bounded popularity, lanes on top, `RankingWeights`.
-- `backend/libs/core/src/main/java/ai/helper2/search/internal/RankingSettingsConfiguration.java` — the read-only "Ranking" group of the Settings page; `search/config/SearchConfiguration.java` — the `Ranking` bean.
-- `backend/apps/public/src/test/kotlin/ai/helper2/eval/RankingVariants.kt` — the weight variants the evaluation replays (§7).
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/JdbcCatalogSearch.java` — `searchSql`, `search`; `ResourceRows.java` — `withFacts`, `popularity`.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogSearchSource.java` — index rows as ranked hits.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/QueryAnalyzer.kt` — type hints, synonyms, required-word variants, lexicon.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/Ranking.kt` — fusion, boosts, bounded popularity, lanes on top, `RankingWeights`.
+- `backend/libs/core/src/main/java/ai/searchavo/search/internal/RankingSettingsConfiguration.java` — the read-only "Ranking" group of the Settings page; `search/config/SearchConfiguration.java` — the `Ranking` bean.
+- `backend/apps/public/src/test/kotlin/ai/searchavo/eval/RankingVariants.kt` — the weight variants the evaluation replays (§7).
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/JdbcCatalogSearch.java` — `searchSql`, `search`; `ResourceRows.java` — `withFacts`, `popularity`.
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/internal/CatalogSearchSource.java` — index rows as ranked hits.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — `search_vector`, trigram index, popularity trigger.
 
 ## Alternatives considered
@@ -177,7 +177,7 @@ The index query must also stay well inside its 3 s timeout on the production cat
 - Only GitHub stars are read again on a schedule. A like or a download count is as old as the last time a collector
   or a search found its resource ([S2.11.7](https://github.com/silvioincalza/helper2.ai/issues/976)).
 - A live hit is written back to the catalog (observed). Once it has settled, 24 h after its first discovery
-  ([0022](ADR-0022-federated-search.md) §9), `helper2-index` and `helper2-semantic` can find it again, each a vote of its
+  ([0022](ADR-0022-federated-search.md) §9), `searchavo-index` and `searchavo-semantic` can find it again, each a vote of its
   own: a result seen early gains votes, and the order of its query changes once on that day. The frozen eval
   snapshots cannot show this effect over time; one catalog vote costs nDCG@10 on them today
   ([ADR 0025](ADR-0025-ranking.md) §7).

@@ -1,7 +1,7 @@
 # Flowchart: what GET /api/v1/policy answers, and where each number comes from (ADR 0041).
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/site/policy/web/PolicyController.java,
-#   backend/libs/core/src/main/kotlin/ai/helper2/search/SearchPolicy.kt, guide/GuidePolicy.kt,
-#   backend/libs/core/src/main/java/ai/helper2/identity/AccountPolicy.java, catalog/CatalogPolicy.java,
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/site/policy/web/PolicyController.java,
+#   backend/libs/core/src/main/kotlin/ai/searchavo/search/SearchPolicy.kt, guide/GuidePolicy.kt,
+#   backend/libs/core/src/main/java/ai/searchavo/identity/AccountPolicy.java, catalog/CatalogPolicy.java,
 #   catalog/ScoutPolicy.java (libs/catalog, ADR 0043), platform/config/PlatformRetentionProperties.java, platform/config/CategoriesProperties.java,
 #   platform/RateLimitInterceptor.java, identity/security/PublicSecurityConfiguration.java.
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0041-policy-endpoint.d2 && d2 flow-0041-policy-endpoint.d2 flow-0041-policy-endpoint.svg
@@ -11,13 +11,13 @@
 direction: down
 
 request: "GET /api/v1/policy\n(no sign-in, no cookie needed)" {class: end}
-rate: "Under the public read limit\n(H2_RATE_LIMIT_RECENT_PER_MINUTE\nper client address)?" {class: decision}
+rate: "Under the public read limit\n(SA_RATE_LIMIT_RECENT_PER_MINUTE\nper client address)?" {class: decision}
 limited: "429 rate-limited,\nRetry-After" {class: fail}
 
 startup: "At startup" {
   class: group
   direction: down
-  config: "application.yaml + H2_ variables" {class: config}
+  config: "application.yaml + SA_ variables" {class: config}
   bind: "@ConfigurationProperties records\n(validated: a bad value stops startup)" {class: config}
   facts: "One policy value per owning module:\nsearch, guide, identity, catalog, scout;\nplatform: counter lifetimes, backups, categories" {class: data}
   config -> bind -> facts

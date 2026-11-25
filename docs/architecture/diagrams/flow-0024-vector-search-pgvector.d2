@@ -3,19 +3,19 @@
 # Shows the conditional activation, the cluster lock embedding-indexer (one batch per period across all
 # replicas), the batch selection, the pause after a rate limit, the query-vector
 # cache, the distance cut-off and the fusion by rank.
-# Source of truth: backend/libs/core/src/main/java/ai/helper2/catalog/internal/CatalogConfiguration.java (VectorSearch, IndexerSchedule),
-#   backend/libs/platform/src/main/java/ai/helper2/platform/ClusterLock.java,
-#   backend/libs/core/src/main/java/ai/helper2/catalog/usecase/IndexEmbeddings.java, NvidiaEmbedder.java, JdbcEmbeddingStore.java, JdbcCatalogSearch.java,
-#   backend/libs/core/src/main/java/ai/helper2/catalog/internal/SemanticSearchSource.java, QueryVectorCache.java,
-#   backend/libs/platform/src/main/java/ai/helper2/platform/cache/JdbcSharedCache.java.
+# Source of truth: backend/libs/core/src/main/java/ai/searchavo/catalog/internal/CatalogConfiguration.java (VectorSearch, IndexerSchedule),
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/ClusterLock.java,
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/usecase/IndexEmbeddings.java, NvidiaEmbedder.java, JdbcEmbeddingStore.java, JdbcCatalogSearch.java,
+#   backend/libs/core/src/main/java/ai/searchavo/catalog/internal/SemanticSearchSource.java, QueryVectorCache.java,
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/cache/JdbcSharedCache.java.
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0024-vector-search-pgvector.d2 && d2 flow-0024-vector-search-pgvector.d2 flow-0024-vector-search-pgvector.svg
 
 ...@style
 
 direction: down
 
-key: "H2_NVIDIA_API_KEY set?" {class: decision}
-off: "Keyword search only:\nno indexer, no helper2-semantic" {class: end}
+key: "SA_NVIDIA_API_KEY set?" {class: decision}
+off: "Keyword search only:\nno indexer, no searchavo-semantic" {class: end}
 key -> off: no
 
 indexer: "Indexer on each replica (thread embedding-indexer, every 5 s)" {

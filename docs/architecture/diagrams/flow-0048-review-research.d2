@@ -1,5 +1,5 @@
 # Flowchart: the admin starts research on review items; a worker runs the agent; the admin confirms each attribute.
-# Source of truth: backend/apps/backoffice/src/main/java/ai/helper2/research/usecase/StartResearch.java (start, all open),
+# Source of truth: backend/apps/backoffice/src/main/java/ai/searchavo/research/usecase/StartResearch.java (start, all open),
 #   RunResearch.java (budget, claim, loop, retry, cancel), FailStaleResearch.java, ../CheckResearch.java (status),
 #   ../internal/ResearchWorkers.java, ../internal/JdbcResearchRuns.java (claim, requeue).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0048-review-research.d2 && d2 flow-0048-review-research.d2 flow-0048-review-research.svg

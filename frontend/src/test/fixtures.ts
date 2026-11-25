@@ -58,7 +58,7 @@ export function makeCard(over: Partial<ResultCard> = {}): ResultCard {
     timeline: {
       published: known('2025-03-04T00:00:00Z'),
       updated: known('2026-09-01T00:00:00Z'),
-      discovered: known('2026-10-20T10:00:00Z', 'helper2'),
+      discovered: known('2026-10-20T10:00:00Z', 'searchavo'),
     },
     popularity: [
       { metric: 'GITHUB_STARS', value: 1234, sourceId: 'github', asOf: '2026-10-20T10:00:00Z' },
@@ -179,13 +179,13 @@ export const SOURCES: SourceInfo[] = [
   },
   {
     id: 'seed',
-    name: 'Helper2 seed',
+    name: 'Searchavo seed',
     shortName: 'Curated',
     external: false,
     mode: 'CURATED',
     enabled: true,
     metered: false,
-    homepage: 'https://helper2.ai',
+    homepage: 'https://searchavo.ai',
     termsUrl: null,
     attribution: null,
     resourceTypes: ['PRODUCT'],
@@ -243,7 +243,7 @@ export const HEALTH_SOURCES: SourceInfo[] = [
     mode: 'LIVE',
     enabled: true,
     metered: true,
-    homepage: 'https://helper2.ai/sources',
+    homepage: 'https://searchavo.ai/sources',
     termsUrl: null,
     attribution: null,
     resourceTypes: ['NEWS'],

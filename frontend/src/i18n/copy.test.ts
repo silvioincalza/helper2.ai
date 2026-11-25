@@ -20,8 +20,8 @@ const textOf = (key: string) => PUBLIC.find((t) => t.key === key)?.text;
 const keysWith = (list: Text[], pattern: RegExp) =>
   list.filter((t) => pattern.test(t.text)).map((t) => t.key);
 
-const COMMAND_LINE = /^helper2 [a-z]/;
-const BARE_NAME = /helper2(?![.\w@-])/;
+const COMMAND_LINE = /^searchavo [a-z]/;
+const BARE_NAME = /searchavo(?![.\w@-])/;
 
 const UK_SPELLING =
   /\b(\w+is(e|es|ed|ing|ation|ations)|analys(e|ed|es|ing)|licen[c]e\w*|\w*colour\w*|\w*favour\w*|behaviour\w*|catalogue\w*|centre\w*|labell\w+|cancell\w+|modell\w+|travell\w+|programme\w*|grey|whilst|amongst|judgement\w*|artefact\w*)\b/gi;
@@ -57,18 +57,18 @@ const ukWords = (text: string) =>
   [...text.matchAll(UK_SPELLING)].map((m) => m[0]).filter((w) => !SAME_IN_US.has(w.toLowerCase()));
 
 describe('Feature: one name, one spelling, plain words', () => {
-  it('Scenario: the product is helper2.ai, never with a capital H', () => {
-    expect(keysWith(ALL, /Helper2/)).toEqual([]);
+  it('Scenario: the product is searchavo.ai, never with a capital H', () => {
+    expect(keysWith(ALL, /Searchavo/)).toEqual([]);
   });
 
-  it('Scenario: a bare "helper2" is a command line, not the name of the product', () => {
+  it('Scenario: a bare "searchavo" is a command line, not the name of the product', () => {
     const bare = ALL.filter((t) => BARE_NAME.test(t.text) && !COMMAND_LINE.test(t.text));
     expect(bare.map((t) => t.key)).toEqual([]);
   });
 
-  it('Scenario: the browser tab says helper2.ai before the page sets its title', () => {
+  it('Scenario: the browser tab says searchavo.ai before the page sets its title', () => {
     const page = readFileSync(join(process.cwd(), 'index.html'), 'utf8');
-    expect(page).toContain('<title>helper2.ai</title>');
+    expect(page).toContain('<title>searchavo.ai</title>');
   });
 
   it('Scenario: every text is in US English', () => {
@@ -157,10 +157,10 @@ describe('Feature: one name, one spelling, plain words', () => {
     ['report.field', 'Which detail is wrong?'],
     [
       'results.errorBody',
-      'We could not reach the helper2.ai service. Nothing was searched. Check your connection, then try again.',
+      'We could not reach the searchavo.ai service. Nothing was searched. Check your connection, then try again.',
     ],
     ['account.radarMotion', 'Home page motion: radar and lists'],
-    ['results.fromCatalog', 'helper2.ai catalog'],
+    ['results.fromCatalog', 'searchavo.ai catalog'],
     ['consent.more', 'How we use analytics'],
   ])('Scenario: %s says what was agreed', (key, text) => {
     expect(textOf(key)).toBe(text);

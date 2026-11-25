@@ -1,9 +1,9 @@
 # Sequence: a search query and a catalog text embedded inside the cluster, by the one embedder of production's
 # namespace, which staging's apps call too (ADR 0054).
-# Source of truth: backend/libs/core/src/main/java/ai/helper2/catalog/internal/NvidiaEmbedder.java,
+# Source of truth: backend/libs/core/src/main/java/ai/searchavo/catalog/internal/NvidiaEmbedder.java,
 #   catalog/internal/SemanticSearchSource.java, catalog/usecase/IndexEmbeddings.java,
 #   deploy/embedder/embedding_api.py, deploy/embedder/server.py,
-#   deploy/helm/helper2/templates/embedder.yaml, templates/_helpers.tpl (helper2.embedderEnv).
+#   deploy/helm/searchavo/templates/embedder.yaml, templates/_helpers.tpl (searchavo.embedderEnv).
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0054-embedding-model-in-the-cluster.d2 && d2 sequence-0054-embedding-model-in-the-cluster.d2 sequence-0054-embedding-model-in-the-cluster.svg
 
 ...@style
@@ -11,10 +11,10 @@
 shape: sequence_diagram
 
 visitor: Visitor {class: person}
-pub: "helper2 public app\nof production\n(SemanticSearchSource)" {class: app}
-bo: "helper2 back office\nof production\n(IndexEmbeddings)" {class: app}
-stg: "staging's public app\nand back office\n(ns helper2-staging)" {class: app}
-emb: "helper2-embedder\n(Service :8080 in ns helper2-prod,\ninside the cluster only)" {class: ai}
+pub: "searchavo public app\nof production\n(SemanticSearchSource)" {class: app}
+bo: "searchavo back office\nof production\n(IndexEmbeddings)" {class: app}
+stg: "staging's public app\nand back office\n(ns searchavo-staging)" {class: app}
+emb: "searchavo-embedder\n(Service :8080 in ns searchavo-prod,\ninside the cluster only)" {class: ai}
 db: PostgreSQL {class: data}
 
 visitor -> pub: "search"

@@ -37,7 +37,7 @@ function HubList({ hub }: { hub: Hub }) {
         <div className="h2-term__bar">
           <h1>{name}</h1>
           <TermCommand
-            command={`helper2 browse ${hub.path}`}
+            command={`searchavo browse ${hub.path}`}
             total={items.length > 0 ? items.length : null}
           />
         </div>

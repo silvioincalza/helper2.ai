@@ -1,8 +1,8 @@
 # Sequence: the second model call that checks each kept reason against its own evidence.
-# Source of truth: backend/apps/public/src/main/kotlin/ai/helper2/guide/steps/ReasonCheckStep.kt (verdicts), guide/Guide.kt (GuideValidator.namesUnstatedSecret),
-#   backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (verifyReasons, call),
-#   backend/apps/public/src/main/java/ai/helper2/guide/web/GuideStreamController.java (Events.reasonsChecked),
-#   backend/apps/public/src/main/kotlin/ai/helper2/guide/GuideJudge.kt, guide/internal/SpringAiGuideJudge.java (judge).
+# Source of truth: backend/apps/public/src/main/kotlin/ai/searchavo/guide/steps/ReasonCheckStep.kt (verdicts), guide/Guide.kt (GuideValidator.namesUnstatedSecret),
+#   backend/apps/public/src/main/java/ai/searchavo/guide/internal/SpringAiGuideModel.java (verifyReasons, call),
+#   backend/apps/public/src/main/java/ai/searchavo/guide/web/GuideStreamController.java (Events.reasonsChecked),
+#   backend/apps/public/src/main/kotlin/ai/searchavo/guide/GuideJudge.kt, guide/internal/SpringAiGuideJudge.java (judge).
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0031-guide-reason-check.d2 && d2 sequence-0031-guide-reason-check.d2 sequence-0031-guide-reason-check.svg
 
 ...@style
@@ -32,4 +32,4 @@ events -> browser: "event: checked"
 svc -> judge: "judge(need, claims, verdicts):\nhands over and returns at once"
 judge -> jm: "own thread, own daily cap:\nFactCheckingEvaluator and\nRelevancyEvaluator per claim" {class: ai-call}
 jm -> judge: "yes / no"
-judge -> judge: "count helper2.guide.judge\n{kind, evaluator, verdict,\nverify, prompt}; never\nchanges the answer"
+judge -> judge: "count searchavo.guide.judge\n{kind, evaluator, verdict,\nverify, prompt}; never\nchanges the answer"

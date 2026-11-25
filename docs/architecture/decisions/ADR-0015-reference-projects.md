@@ -39,12 +39,12 @@ names that relationships pointed at were in no catalog resource: PyTorch 29 time
 
 ## Decision
 1. **The MCP Registry is read to the end.** The collector asks for `version=latest`, so every row counts. It reads
-   up to `items-per-run` (5,000, `H2_SCOUT_MCP_ITEMS_PER_RUN`) servers a run, when that is more than the run's own
+   up to `items-per-run` (5,000, `SA_SCOUT_MCP_ITEMS_PER_RUN`) servers a run, when that is more than the run's own
    budget. Registry entries are cheap to index: no page read and no model call of their own. A first pass
    takes about a week.
 2. **GitHub topic leaders, for review.** A collector, `github-topic-leaders`, searches GitHub once per topic for
    the most-starred repositories: `topic:{t} stars:>=3000 fork:false archived:false`, sorted by stars, 50 per
-   topic. 14 topics by default (`H2_SCOUT_TOPIC_LEADERS_TOPICS`): the AI topics, plus `machine-learning` and `deep-learning` so the frameworks under them (PyTorch, TensorFlow, scikit-learn) reach the review list. A pass runs every 7 days.
+   topic. 14 topics by default (`SA_SCOUT_TOPIC_LEADERS_TOPICS`): the AI topics, plus `machine-learning` and `deep-learning` so the frameworks under them (PyTorch, TensorFlow, scikit-learn) reach the review list. A pass runs every 7 days.
    - These leaders are not indexed by this search. Each one is proposed to the admin review list. The review list
      skips a repository already in the catalog or proposed before, whatever was decided then ([0013](ADR-0013-discovery.md)), so a
      leader decision 3 indexed opens no item.
@@ -56,14 +56,14 @@ names that relationships pointed at were in no catalog resource: PyTorch 29 time
    - At most `per-day` (25) new review items a UTC day ([0013](ADR-0013-discovery.md)). When the cap holds back a repository that is
      not in the catalog and was never proposed, the pass stays open: the next daily run searches again and opens
      the next 25. The pass closes, and its 7 days start, once a run holds nothing back.
-   - It runs only with `H2_GITHUB_TOKEN`: the searches of a pass need the token's rate limit.
+   - It runs only with `SA_GITHUB_TOKEN`: the searches of a pass need the token's rate limit.
    - Calls go through the policy `collector-github-topic-leaders` ([0006](ADR-0006-outbound-calls-and-resilience.md)).
 3. **An active leader is indexed without a review.** A second search per topic asks for the repositories a person
    would accept without reading: `topic:{t} stars:>=1000 pushed:>={today − 90 days} fork:false archived:false`,
    sorted by stars, 100 a page, up to 1,000 a topic (GitHub returns no more for one search).
    - The rule is the index floor of `github-topic-leaders` in the admission rule of the Scout
-     ([0020](ADR-0020-resource-vitality.md) §11): at least `H2_SCOUT_TOPIC_LEADERS_INDEX_MIN_STARS` (1,000)
-     stars and a push inside `H2_SCOUT_TOPIC_LEADERS_INDEX_PUSHED_WITHIN` (90 days). The search filter reads the same
+     ([0020](ADR-0020-resource-vitality.md) §11): at least `SA_SCOUT_TOPIC_LEADERS_INDEX_MIN_STARS` (1,000)
+     stars and a push inside `SA_SCOUT_TOPIC_LEADERS_INDEX_PUSHED_WITHIN` (90 days). The search filter reads the same
      two numbers: it is collection scope, it saves calls. `RunScout` asks the rule for every hit: a repository with
      no push date, or one the search returns against its filter, is not indexed.
    - **The topic alone is no proof.** A repository is indexed only when something beside the topic it was found under
@@ -71,7 +71,7 @@ names that relationships pointed at were in no catalog resource: PyTorch 29 time
      words the live GitHub search uses). On 11 Nov 2026, of the first 100 repositories of each search: `chatbot` 14
      with nothing else about AI (`python-telegram-bot`, 29,576 stars, a wrapper of the Telegram Bot API;
      `Red-DiscordBot`), `mcp` 3 (`drawdb`, a database diagram editor), `agents` 3, `rag` 1. Such a repository is
-     not indexed (counted `not-ai` in `helper2.source.items.dropped`); with 3,000 stars it is still proposed for
+     not indexed (counted `not-ai` in `searchavo.source.items.dropped`); with 3,000 stars it is still proposed for
      review, where a person decides.
    - A repository that passes is a hit of the source `github-topic-leaders`, mapped like a GitHub search hit
      (`GitHubRepositories.hit`): type by the fixed rules, licence, stars as popularity, created and pushed dates,
@@ -86,19 +86,19 @@ names that relationships pointed at were in no catalog resource: PyTorch 29 time
      the same page again and takes the rest. The review
      search of decision 2 runs once the indexing has read every topic. A pass the review cap held back asks only for
      the review list again.
-   - Searches are `H2_SCOUT_TOPIC_LEADERS_SEARCH_PAUSE` (2 s) apart: GitHub allows 30 searches a minute.
-   - `H2_SCOUT_TOPIC_LEADERS_INDEX_PER_TOPIC=0` turns the rule off: every leader waits for a person again.
+   - Searches are `SA_SCOUT_TOPIC_LEADERS_SEARCH_PAUSE` (2 s) apart: GitHub allows 30 searches a minute.
+   - `SA_SCOUT_TOPIC_LEADERS_INDEX_PER_TOPIC=0` turns the rule off: every leader waits for a person again.
 
 ### Code
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/github/scout/GitHubTopicLeadersCollector.java` (`Indexing`: the search scope, `Place`)
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/admission/Admission.kt` (`AdmissionPolicy`, the index floor)
-- `backend/libs/core/src/main/java/ai/helper2/sources/github/GitHubRepositories.java` (`hit`, shared with `GitHubSource`)
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/mcp/McpRegistryCollector.java`
-- `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorDescriptors.java`, `CollectorProperties.java`
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java`
-- `backend/apps/public/src/main/java/ai/helper2/sources/config/scout/ScoutSourceDescriptors.java`
-- `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ReviewQueueCandidateReview.java`, `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/RunScout.kt` (`cursorAfter`)
-- `backend/libs/core/src/main/java/ai/helper2/catalog/ReviewQueue.java` (`candidateKnown`)
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/github/scout/GitHubTopicLeadersCollector.java` (`Indexing`: the search scope, `Place`)
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/admission/Admission.kt` (`AdmissionPolicy`, the index floor)
+- `backend/libs/core/src/main/java/ai/searchavo/sources/github/GitHubRepositories.java` (`hit`, shared with `GitHubSource`)
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/mcp/McpRegistryCollector.java`
+- `backend/libs/core/src/main/java/ai/searchavo/sources/config/CollectorDescriptors.java`, `CollectorProperties.java`
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/config/scout/CollectorsConfiguration.java`
+- `backend/apps/public/src/main/java/ai/searchavo/sources/config/scout/ScoutSourceDescriptors.java`
+- `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/ReviewQueueCandidateReview.java`, `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/RunScout.kt` (`cursorAfter`)
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/ReviewQueue.java` (`candidateKnown`)
 
 ## Alternatives considered
 - **A curated seed file of reference projects.** Complete for the names on it and tiny, but it is one more list to
@@ -157,7 +157,7 @@ names that relationships pointed at were in no catalog resource: PyTorch 29 time
 | 11 | Evaluation | Covered: re-record the eval set after the first accepted batch; Recall@20 per group ([0046](ADR-0046-evaluation-guide-and-search.md)). |
 | 12 | Deployment | Covered: settings with defaults, no chart change. Rollback: disable the collector, or items-per-run 0. |
 | 13 | Security & Identity | Covered: no new secret, no new endpoint. |
-| 14 | Human-in-the-Loop | Partly, on purpose: an active leader with 1,000 stars is indexed with no person; every other leader waits for one. Off with `H2_SCOUT_TOPIC_LEADERS_INDEX_PER_TOPIC=0`. |
+| 14 | Human-in-the-Loop | Partly, on purpose: an active leader with 1,000 stars is indexed with no person; every other leader waits for one. Off with `SA_SCOUT_TOPIC_LEADERS_INDEX_PER_TOPIC=0`. |
 | 15 | Cost & Reliability | Covered: no credits; at most 154 GitHub calls a pass; registry calls bounded per run. Each indexed repository later costs one embedding and one enrichment. |
 
 ### Legal points

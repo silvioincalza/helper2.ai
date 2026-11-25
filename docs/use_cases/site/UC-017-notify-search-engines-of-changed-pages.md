@@ -74,7 +74,7 @@
 
 ### BR-001: Schedule
 
-The notification runs once a day at 05:47 UTC by default (`H2_INDEXNOW_CRON`), on one instance only.
+The notification runs once a day at 05:47 UTC by default (`SA_INDEXNOW_CRON`), on one instance only.
 
 ### BR-002: Changed Pages
 
@@ -82,7 +82,7 @@ A page is sent when it is worth indexing (UC-014 BR-003) and changed in the last
 
 ### BR-003: Key
 
-The key has 8 to 128 letters, digits or hyphens (`H2_INDEXNOW_KEY`). The site serves it as a text file named after the key, and only while the site is to be indexed.
+The key has 8 to 128 letters, digits or hyphens (`SA_INDEXNOW_KEY`). The site serves it as a text file named after the key, and only while the site is to be indexed.
 
 ### BR-004: On Only for an Indexed Site
 

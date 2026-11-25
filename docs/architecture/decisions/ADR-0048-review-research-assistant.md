@@ -35,11 +35,11 @@ tool answered, and must confirm every value before it reaches the catalog.
    There is no background job that researches the queue on its own. A run is a row in `review_research` with the status
    `QUEUED`, `RUNNING`, `DONE`, `FAILED` or `CANCELLED`. Workers on virtual threads take the oldest queued row with
    `FOR UPDATE SKIP LOCKED`, so two back office pods never run the same item, and a partial unique index allows one
-   queued or running run per item. The number of workers per pod is `H2_RESEARCH_CONCURRENCY` (4); the daily cap of
-   model calls is the runtime setting `research.dailyModelCalls` (`H2_RESEARCH_DAILY_MODEL_CALLS`, 3,000), and page
-   reads have their own cap (`H2_RESEARCH_DAILY_PAGE_READS`, 300). A worker claims a run only while 14 model calls,
+   queued or running run per item. The number of workers per pod is `SA_RESEARCH_CONCURRENCY` (4); the daily cap of
+   model calls is the runtime setting `research.dailyModelCalls` (`SA_RESEARCH_DAILY_MODEL_CALLS`, 3,000), and page
+   reads have their own cap (`SA_RESEARCH_DAILY_PAGE_READS`, 300). A worker claims a run only while 14 model calls,
    one run's most, are left today; otherwise the runs stay `QUEUED` and start when the budget resets. The back office
-   does not start with a daily cap of 1 to 13. While research is off (`H2_RESEARCH_ENABLED=false`), starting a run
+   does not start with a daily cap of 1 to 13. While research is off (`SA_RESEARCH_ENABLED=false`), starting a run
    answers 503 and queues nothing. A run that the budget stops half way goes
    back to `QUEUED` without its steps. A spent page-read cap does not stop a run: `read_page` answers with an error
    and the model goes on. A running run with no step for 5 minutes lost its worker and fails (`FailStaleResearch`). The admin can cancel a queued or running run and start it again. The tables come with
@@ -53,11 +53,11 @@ tool answered, and must confirm every value before it reaches the catalog.
    link-local and reserved addresses are refused, also when an IPv6 address carries one (IPv4-compatible, mapped,
    NAT64, 6to4; Teredo and 64:ff9b:1::/48 are refused whole), and so are the documentation ranges. `check_url` looks
    a host up once per hop, tries at most 2 of the addresses it checked, and stops the whole call, redirects included,
-   after `H2_RESEARCH_CHECK_URL_DEADLINE` (20 seconds). These tools check the addresses a name resolves to
+   after `SA_RESEARCH_CHECK_URL_DEADLINE` (20 seconds). These tools check the addresses a name resolves to
    (`PublicAddresses`); the name rules of the Scout's host check (`WebAddresses`, [0013](ADR-0013-discovery.md)
    §17) are not applied to them. A shadow library is never read
    (`ShadowLibraries`). `ResearchTool` is the research module's port: `catalog_lookup` lives in the module, the other
-   six in the sources module (`ai.helper2.sources.research`), which implements the port, as for the AI check. The
+   six in the sources module (`ai.searchavo.sources.research`), which implements the port, as for the AI check. The
    module runs SQL only on its own two tables; it reads the review queue and the catalog through the catalog's ports
    (`ReviewQueue`, `KnownTargets`).
 4. **Our loop, the model's tool calls.** The agent sends the tool definitions through Spring AI; its chat model
@@ -67,7 +67,7 @@ tool answered, and must confirm every value before it reaches the catalog.
    with any OpenAI-compatible model. After the 12th tool call the model gets one more call with no tools and is told
    to answer with what it has read. The run keeps its evidence instead of failing, and the check still drops every
    value it cannot cite. On that call the model must answer in the JSON schema of the answer when the provider
-   supports it (`H2_NEBIUS_NATIVE_SCHEMA`), so the answer can be read. A tool call past the 12th is not run: it is
+   supports it (`SA_NEBIUS_NATIVE_SCHEMA`), so the answer can be read. A tool call past the 12th is not run: it is
    stored with the error "not run". So is the same call made a second time, and a call past a tool's own limit for
    the run (`web_search`: 4); both still count among the 12. After two turns in which no call ran, the model gets the
    same last call with no tools at once. A model that still asks for a tool fails the run. A model that cannot call tools fails the eval and is not used. The prompt is
@@ -129,16 +129,16 @@ tool answered, and must confirm every value before it reaches the catalog.
    stream open. The use case `FollowResearchRun` reads the run and its steps after a sequence number and holds the
    rules: a run put back in the queue or started again is read from its first step, and the stream ends when the run
    has ended and every step is read. The two controllers call the research use cases, never the port `ResearchRuns`
-   (`ModularityTest`). A pod serves `H2_RESEARCH_MAX_STREAMS` (8) streams at a time and answers 429 beyond them. The page `/admin/review/research/{runId}` shows every step, request and response
+   (`ModularityTest`). A pod serves `SA_RESEARCH_MAX_STREAMS` (8) streams at a time and answers 429 beyond them. The page `/admin/review/research/{runId}` shows every step, request and response
    as plain text, filtered by kind or errors, and follows a running run on this stream. The queue rows read their
    status from `GET /admin/review-research?itemId=…`. A
    result carries `aiWritten: true`, the machine-readable AI marking.
-10. **Used and measured at the same time.** Research runs on prod, staging and locally (`H2_RESEARCH_ENABLED`,
+10. **Used and measured at the same time.** Research runs on prod, staging and locally (`SA_RESEARCH_ENABLED`,
     default true; `backoffice.researchEnabled` in the chart). The owner uses it on prod before the #588 eval has its
     100 items: the admin confirms every value before it reaches the catalog, and the daily caps
-    (`H2_RESEARCH_DAILY_MODEL_CALLS`, `H2_RESEARCH_DAILY_PAGE_READS`) bound the cost. The eval runs the agent on 100
-    items the admin has already decided, once with `H2_NEBIUS_FAST_MODEL` and once with
-    `H2_NEBIUS_REASONING_MODEL`. It reports verdict
+    (`SA_RESEARCH_DAILY_MODEL_CALLS`, `SA_RESEARCH_DAILY_PAGE_READS`) bound the cost. The eval runs the agent on 100
+    items the admin has already decided, once with `SA_NEBIUS_FAST_MODEL` and once with
+    `SA_NEBIUS_REASONING_MODEL`. It reports verdict
     agreement, accuracy per attribute, the share of `CONFIRMED` values that are right, time per item and tokens per
     item. The admin chooses the model and the bar from these numbers. In production every research result is kept next
     to the admin's final decision, so the same numbers are measured on live use. The labels are the admin's decisions

@@ -4,9 +4,9 @@
 # for a plan cut while thinking. SpringAiQueryTranslator,
 # SpringAiToolGuideModel, SpringAiEnrichmentModel, SpringAiRepoClassifier, SpringAiEventReader and
 # SpringAiExampleDrafter go through the same BudgetedChat with their own budget name and step tag.
-# Source of truth: backend/apps/public/src/main/java/ai/helper2/guide/internal/SpringAiGuideModel.java (plan, call),
-#   backend/libs/platform/src/main/java/ai/helper2/platform/llm/ (BudgetedChat, DailyBudget, internal/RedisCallCounter, CallOptions, ModelCallMetrics, ModelAnswers),
-#   backend/libs/platform/src/main/java/ai/helper2/platform/resilience/Resilience4jPolicies.java.
+# Source of truth: backend/apps/public/src/main/java/ai/searchavo/guide/internal/SpringAiGuideModel.java (plan, call),
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/llm/ (BudgetedChat, DailyBudget, internal/RedisCallCounter, CallOptions, ModelCallMetrics, ModelAnswers),
+#   backend/libs/platform/src/main/java/ai/searchavo/platform/resilience/Resilience4jPolicies.java.
 # Render: cd docs/architecture/diagrams && d2 fmt sequence-0008-llm-integration.d2 && d2 sequence-0008-llm-integration.d2 sequence-0008-llm-integration.svg
 
 ...@style

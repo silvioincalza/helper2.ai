@@ -9,7 +9,7 @@
 **Requirements:** C-006, C-016
 
 ## Context
-Helper2 keeps three kinds of data: what sources said (the catalog), what the Scout and the model did (run history,
+Searchavo keeps three kinds of data: what sources said (the catalog), what the Scout and the model did (run history,
 enrichment), and what people gave it (accounts, bookmarks, reports, review decisions, admin actions). Data
 minimisation (nFADP Art. 6(4), GDPR Art. 5(1)(e)) asks that each be kept only as long as it serves its purpose, and
 the privacy page must state those periods. Some data ages fast: a news item from Tavily is stale after weeks. A past
@@ -32,27 +32,27 @@ The periods are a product decision the owner may change; changing one must not n
    | Postgres `issue_report` | user reports | 12 months after their review was resolved, with that review item; open ones stay | catalog purge |
    | Postgres `scout_run` | Scout run history | 90 days after `started_at`; a `RUNNING` record stays | Scout purge |
    | Postgres `live_web_query_result` | Tavily result sets, keyed by an HMAC of the query ([0027](ADR-0027-live-web-store-first-daily-quota.md)) | 7 days after `fetched_at` | search purge |
-   | Postgres `ai_cache`, cache `translation` | English translations of non-English searches, keyed by a hash of the query | 24 h (`H2_SEARCH_TRANSLATION_TTL`) | read ignores it after `expires_at`; shared cache purge |
-   | Postgres `ai_cache`, cache `query-vector` | query vectors (embeddings) of searches, keyed by a hash of the query | 7 days (`H2_SEARCH_QUERY_VECTOR_TTL`) | read ignores it after `expires_at`; shared cache purge |
-   | Postgres `ai_cache`, cache `tool-guide` | setup guide answers (checked steps, document links), no user text | 7 days (`H2_SETUP_GUIDE_CACHE_TTL`), 10 minutes for an unreadable model answer (`H2_SETUP_UNREADABLE_TTL`) | read ignores it after `expires_at`; shared cache purge |
-   | Postgres `ai_cache`, cache `guide-answer` | guide answers, keyed by a hash of the question and the build ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)) | 24 h after the answer (`H2_GUIDE_CACHE_TTL`), 6 h for a dated question, never past its web results | read ignores it after `expires_at`; shared cache purge |
-   | Postgres `guide_similar_question` | the query embedding of a cached answer's question, and its reading group (a hash), only with `H2_GUIDE_SIMILAR_THRESHOLD` set ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)) | as long as its answer (`expires_at`) | read ignores it after `expires_at`; guide purge |
-   | Postgres `awesome_list_entry`, `awesome_list` | tsvectors of awesome-list entry lines and headings, heading paths (≤ 200 characters); no list text ([0023](ADR-0023-catalog-full-text-index.md)) | until the list or the resource goes; no period: the rows of a list are replaced when a pass reads the list again, and a list no longer read keeps the rows of its last read. The rows of a list on GitHub are deleted when GitHub does not find its repository on 3 visits in a row (`H2_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS`) and the repository is marked gone; the rows of a curated web page are deleted when its site answers 404 or 410 on 3 checks in a row (`H2_SCOUT_AWESOME_WEB_PAGES_GONE_CHECKS`) over at least a day ([0023](ADR-0023-catalog-full-text-index.md) point 17) | `ON DELETE CASCADE`, `JdbcAwesomeListIndex.replace`, `ForgetGoneLists`, `ForgetGoneWebList` |
-   | Postgres `directory_list_entry` | for each resource a list page of a directory host names: the address and the title of the page, the heading path (≤ 200 characters) ([0055](ADR-0055-directory-lists.md)) | until the resource goes; no period: the rows of a list are replaced when a pass reads the list again, and a list no longer read keeps the rows of its last read. The rows of a list page are deleted when its site answers 404 or 410 on 3 checks in a row (`H2_SCOUT_AWESOME_WEB_PAGES_GONE_CHECKS`) over at least a day ([0023](ADR-0023-catalog-full-text-index.md) point 17) | `ON DELETE CASCADE`, `JdbcDirectoryListIndex.replace`, `ForgetGoneWebList` |
+   | Postgres `ai_cache`, cache `translation` | English translations of non-English searches, keyed by a hash of the query | 24 h (`SA_SEARCH_TRANSLATION_TTL`) | read ignores it after `expires_at`; shared cache purge |
+   | Postgres `ai_cache`, cache `query-vector` | query vectors (embeddings) of searches, keyed by a hash of the query | 7 days (`SA_SEARCH_QUERY_VECTOR_TTL`) | read ignores it after `expires_at`; shared cache purge |
+   | Postgres `ai_cache`, cache `tool-guide` | setup guide answers (checked steps, document links), no user text | 7 days (`SA_SETUP_GUIDE_CACHE_TTL`), 10 minutes for an unreadable model answer (`SA_SETUP_UNREADABLE_TTL`) | read ignores it after `expires_at`; shared cache purge |
+   | Postgres `ai_cache`, cache `guide-answer` | guide answers, keyed by a hash of the question and the build ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)) | 24 h after the answer (`SA_GUIDE_CACHE_TTL`), 6 h for a dated question, never past its web results | read ignores it after `expires_at`; shared cache purge |
+   | Postgres `guide_similar_question` | the query embedding of a cached answer's question, and its reading group (a hash), only with `SA_GUIDE_SIMILAR_THRESHOLD` set ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)) | as long as its answer (`expires_at`) | read ignores it after `expires_at`; guide purge |
+   | Postgres `awesome_list_entry`, `awesome_list` | tsvectors of awesome-list entry lines and headings, heading paths (≤ 200 characters); no list text ([0023](ADR-0023-catalog-full-text-index.md)) | until the list or the resource goes; no period: the rows of a list are replaced when a pass reads the list again, and a list no longer read keeps the rows of its last read. The rows of a list on GitHub are deleted when GitHub does not find its repository on 3 visits in a row (`SA_SCOUT_REPOSITORY_SWEEP_GONE_LIST_VISITS`) and the repository is marked gone; the rows of a curated web page are deleted when its site answers 404 or 410 on 3 checks in a row (`SA_SCOUT_AWESOME_WEB_PAGES_GONE_CHECKS`) over at least a day ([0023](ADR-0023-catalog-full-text-index.md) point 17) | `ON DELETE CASCADE`, `JdbcAwesomeListIndex.replace`, `ForgetGoneLists`, `ForgetGoneWebList` |
+   | Postgres `directory_list_entry` | for each resource a list page of a directory host names: the address and the title of the page, the heading path (≤ 200 characters) ([0055](ADR-0055-directory-lists.md)) | until the resource goes; no period: the rows of a list are replaced when a pass reads the list again, and a list no longer read keeps the rows of its last read. The rows of a list page are deleted when its site answers 404 or 410 on 3 checks in a row (`SA_SCOUT_AWESOME_WEB_PAGES_GONE_CHECKS`) over at least a day ([0023](ADR-0023-catalog-full-text-index.md) point 17) | `ON DELETE CASCADE`, `JdbcDirectoryListIndex.replace`, `ForgetGoneWebList` |
    | Postgres `list_seed`, `list_seed_last_read` | the lists an administrator added (address, kind, who, when, why, the last try, the failed tries in a row, and for a web page the checks in a row that said it is gone with the time of the first); for an added web page, what its last read gave: headings, entries (a GitHub repository, its section, heading path ≤ 200 characters and entry text ≤ 500 characters), links (address, link words ≤ 100 characters, section, heading path, entry text), the two counts of the list rule and when it was read, and for a list page of a directory host what following its links gave: the link, the address found or nothing, the number of steps and whether code or the model decided ([0057](ADR-0057-follow-list-links.md) point 14); never the page text ([0012](ADR-0012-scout-collectors-and-events.md) point 6) | until an administrator removes the list; the last read is replaced at each read that gives a list and goes with its list (`ON DELETE CASCADE`). When the site of a web page says it is gone ([0023](ADR-0023-catalog-full-text-index.md) point 17), its last read is deleted, and so is the row of a list discovery added | `ManageListSeeds.remove`, `ListSeedStore.forgotten` |
    | Postgres `directory_rating` | the rating a directory host states for a resource one of its lists names: the host, the address of the list and of the page that states the figures, the average, its scale, the number of votes, the time of the read and of the last try; no review text and no name ([0056](ADR-0056-directory-rating.md)) | until the page is read again; until the list no longer names the resource; until the site of the list page says it is gone ([0023](ADR-0023-catalog-full-text-index.md) point 17); until the resource goes | replaced at each pass of the awesome-list collector; `ForgetGoneWebList`; `ON DELETE CASCADE` |
    | Postgres `source_cursor`, `scout_schedule`, `source`, `shedlock`, `public_app_lock` | one row per source, schedule or lock | overwritten in place | — |
    | Postgres `app_user` | GitHub numeric id, display name, last sign-in, the radar motion setting | until the user deletes it; 24 months after `last_signed_in_at` | `DeleteMyAccount`, account purge (public app) |
    | Postgres `bookmark` | resource id, title, link, type, saved at | until the user removes it or the account goes | `RemoveBookmark`, `ON DELETE CASCADE` |
    | Postgres `admin_audit` | admin id, action, target, time, outcome; for a setting change the value before and after and the reason | 24 months after `at`, never less (V1 refuses a younger delete, [0036](ADR-0036-identity-and-the-admin-host.md) §9) | audit purge (back office) |
-   | Postgres `runtime_setting` | setting key, value, admin id, time, reason ([0007](ADR-0007-configuration-secrets-runtime-settings.md)) | 24 months after `changed_at` (`H2_RETENTION_RUNTIME_SETTINGS`); each setting's newest change stays while it is in force | platform purge |
-   | Redis `h2:v1:src:*` | source responses, keyed by a hash of the query | 24 h (`H2_SEARCH_STALE_FOR`) | Redis TTL |
+   | Postgres `runtime_setting` | setting key, value, admin id, time, reason ([0007](ADR-0007-configuration-secrets-runtime-settings.md)) | 24 months after `changed_at` (`SA_RETENTION_RUNTIME_SETTINGS`); each setting's newest change stays while it is in force | platform purge |
+   | Redis `h2:v1:src:*` | source responses, keyed by a hash of the query | 24 h (`SA_SEARCH_STALE_FOR`) | Redis TTL |
    | Redis `h2:v1:budget:*` | daily model-call counts, per-client counts under a keyed hash of the address and the day ([0032](ADR-0032-guide-cost-guard-and-answer-cache.md)), and the random ids of the questions given back to them | 2 days | Redis TTL |
    | Redis `h2:v1:rate:*` | rate-limit windows, keyed by a keyed hash of the client address and the day ([0037](ADR-0037-http-edge.md)) | 1 minute or 1 hour (the window) | Redis TTL |
    | Redis `h2:v1:quota:*` | daily web searches per feature: every visitor under an HMAC of the address and the day, signed in or not; the global count ([0027](ADR-0027-live-web-store-first-daily-quota.md)) | 24 h after the first count | Redis TTL |
    | Redis `h2:v1:outbound:*` | one key per outside host while its next call must wait, no user data ([0006](ADR-0006-outbound-calls-and-resilience.md)) | the host's interval | Redis TTL |
    | Redis `h2:v1:setup:fetches:*` | the setup guide's README fetches of the hour, a count, no user data | 2 h | Redis TTL |
-   | Redis `h2:v1:scout:page-text:*` | cleaned text of a product's own pages, keyed by the page address ([0014](ADR-0014-evidence-gated-enrichment.md)) | at most 1 day (`H2_SCOUT_EVIDENCE_PAGE_TEXT_TTL`) | Redis TTL (back office) |
+   | Redis `h2:v1:scout:page-text:*` | cleaned text of a product's own pages, keyed by the page address ([0014](ADR-0014-evidence-gated-enrichment.md)) | at most 1 day (`SA_SCOUT_EVIDENCE_PAGE_TEXT_TTL`) | Redis TTL (back office) |
    | Redis `h2:v1:session:public:*`, `h2:v1:session:backoffice:*` | sign-in sessions (JSON, [0004](ADR-0004-persistence-and-the-schema.md)): the user id, the name shown and the roles; cookie `SESSION` on the public site, `__Host-SESSION` on the back office | 30 minutes idle, or sign-out (`server.servlet.session.timeout`, set in each app) | Spring Session expiry |
    | In-memory caches (setup materials and registry specs) | copies of the above | 1 h; bounded entries; lost on restart | TTL and size bound |
    | Browser `localStorage` | `h2.theme`, `h2.setup.client` (chosen AI client), `h2.bookmarks.v1` (bookmarks while signed out), `h2.consent` (the analytics answer) | until the user clears it; bookmarks move to the account at sign-in | the user's browser |
@@ -63,11 +63,11 @@ The periods are a product decision the owner may change; changing one must not n
    A resource is never purged while an issue report or a review item still points at it, nor (for an observed one)
    while a resource of a stronger origin links to it or an admin set one of its fields; reports and review items have their own periods, so such a
    resource goes in a later purge.
-2. **Every period is configuration.** `helper2.retention.*` in `helper2-shared.yaml`, each with an `H2_RETENTION_*`
+2. **Every period is configuration.** `searchavo.retention.*` in `searchavo-shared.yaml`, each with an `SA_RETENTION_*`
    variable and an ISO-8601 default: `OBSERVED_UNSEEN` P180D, `ENRICHMENT_RUNS` P90D, `RESOLVED_REVIEW_ITEMS`
    P180D, `RESOLVED_ISSUE_REPORTS` P365D, `WEB_NEWS` P180D, `SCOUT_RUNS` P90D, `PAST_EVENTS` P3650D,
    `INACTIVE_ACCOUNTS` P730D, `ADMIN_AUDIT` P730D, `TAVILY_RESULTS` P7D. Cached guide answers keep the expiry
-   their own time to live gives them (`H2_GUIDE_CACHE_TTL`). `H2_RETENTION_CRON` (default `0 17 3 * * *`, UTC) sets when the
+   their own time to live gives them (`SA_GUIDE_CACHE_TTL`). `SA_RETENTION_CRON` (default `0 17 3 * * *`, UTC) sets when the
    purges run.
 3. **One purge per owning module.** The module that owns a table deletes from it:
    `catalog.usecase.PurgeExpiredData` (review items, issue reports, enrichment runs, web news, past events,
@@ -79,9 +79,9 @@ The periods are a product decision the owner may change; changing one must not n
    `guide.usecase.PurgeExpiredData` (expired rows of the similar-question index, through the
    `SimilarQuestionRetention` port) and, in the open `platform` module that has no use cases,
    `platform.cache.SharedCacheRetention` (expired `ai_cache` rows). The period of an `ai_cache` row and of an indexed
-   question is the entry's own TTL, set when it is written, so it has no `H2_RETENTION_*` variable. Each module's
+   question is the entry's own TTL, set when it is written, so it has no `SA_RETENTION_*` variable. Each module's
    `*RetentionSchedule` gives one `DailyJob(name, task)` bean; `platform.DailyJobs` (a `SchedulingConfigurer`) runs
-   every one daily on the cron of the `RetentionSchedule` record (`helper2.retention.cron`, UTC) under its own
+   every one daily on the cron of the `RetentionSchedule` record (`searchavo.retention.cron`, UTC) under its own
    cluster lock `retention-<name>` (`retention-catalog`, `retention-scout`, `retention-accounts`, `retention-audit`,
    `retention-search`, `retention-guide`, `retention-shared-cache`, `retention-runtime-settings`,
    `ClusterLocks.keptAlive`), so one replica runs it. A failed purge is logged and the next day's run catches up;
@@ -98,27 +98,27 @@ The periods are a product decision the owner may change; changing one must not n
    and every foreign key a delete follows leads an index, so a cascade never scans a child table.
 
 ### Code
-- `backend/libs/platform/src/main/java/ai/helper2/platform/DailyJob.java`, `DailyJobs.java`, `ScheduledJob.java` — the
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/DailyJob.java`, `DailyJobs.java`, `ScheduledJob.java` — the
   daily run, its lock and its name in the scheduler.
-- `backend/libs/core/src/main/java/ai/helper2/catalog/usecase/PurgeExpiredData.java`, `catalog/internal/JdbcCatalogRetention.java`,
-  `backend/apps/backoffice/src/main/java/ai/helper2/catalog/schedule/CatalogRetentionSchedule.java` — catalog rules.
-- `backend/apps/backoffice/src/main/kotlin/ai/helper2/scout/usecase/PurgeExpiredData.kt`, `scout/Retention.kt`,
-  `backend/apps/backoffice/src/main/java/ai/helper2/scout/internal/ScoutRetentionSchedule.java`, `JdbcScoutStore.java` — Scout rule.
-- `backend/libs/core/src/main/java/ai/helper2/identity/usecase/PurgeInactiveAccounts.java`, `PurgeExpiredAuditEntries.java`,
+- `backend/libs/core/src/main/java/ai/searchavo/catalog/usecase/PurgeExpiredData.java`, `catalog/internal/JdbcCatalogRetention.java`,
+  `backend/apps/backoffice/src/main/java/ai/searchavo/catalog/schedule/CatalogRetentionSchedule.java` — catalog rules.
+- `backend/apps/backoffice/src/main/kotlin/ai/searchavo/scout/usecase/PurgeExpiredData.kt`, `scout/Retention.kt`,
+  `backend/apps/backoffice/src/main/java/ai/searchavo/scout/internal/ScoutRetentionSchedule.java`, `JdbcScoutStore.java` — Scout rule.
+- `backend/libs/core/src/main/java/ai/searchavo/identity/usecase/PurgeInactiveAccounts.java`, `PurgeExpiredAuditEntries.java`,
   `identity/Users.java`, `AuditLog.java`, `identity/internal/JdbcUsers.java`, `JdbcAuditLog.java`,
-  `backend/apps/public/src/main/java/ai/helper2/identity/schedule/AccountRetentionSchedule.java`,
-  `backend/apps/backoffice/src/main/java/ai/helper2/identity/schedule/AuditRetentionSchedule.java` — identity rules.
-- `backend/libs/core/src/main/kotlin/ai/helper2/search/usecase/PurgeExpiredData.kt`,
-  `backend/apps/public/src/main/java/ai/helper2/search/config/SearchRetentionSchedule.java`,
-  `backend/libs/core/src/main/java/ai/helper2/search/internal/JdbcWebResultStore.java`
+  `backend/apps/public/src/main/java/ai/searchavo/identity/schedule/AccountRetentionSchedule.java`,
+  `backend/apps/backoffice/src/main/java/ai/searchavo/identity/schedule/AuditRetentionSchedule.java` — identity rules.
+- `backend/libs/core/src/main/kotlin/ai/searchavo/search/usecase/PurgeExpiredData.kt`,
+  `backend/apps/public/src/main/java/ai/searchavo/search/config/SearchRetentionSchedule.java`,
+  `backend/libs/core/src/main/java/ai/searchavo/search/internal/JdbcWebResultStore.java`
   — search rule.
-- `backend/libs/platform/src/main/java/ai/helper2/platform/cache/SharedCacheRetention.java`, `SharedCacheConfiguration.java` — shared
+- `backend/libs/platform/src/main/java/ai/searchavo/platform/cache/SharedCacheRetention.java`, `SharedCacheConfiguration.java` — shared
   cache rule.
-- `backend/apps/public/src/main/kotlin/ai/helper2/guide/usecase/PurgeExpiredData.kt`,
-  `backend/apps/public/src/main/java/ai/helper2/guide/schedule/GuideRetentionSchedule.java`, `guide/internal/JdbcSimilarQuestionIndex.java`
+- `backend/apps/public/src/main/kotlin/ai/searchavo/guide/usecase/PurgeExpiredData.kt`,
+  `backend/apps/public/src/main/java/ai/searchavo/guide/schedule/GuideRetentionSchedule.java`, `guide/internal/JdbcSimilarQuestionIndex.java`
   — guide rule.
 - `backend/libs/schema/src/main/resources/db/migration/V1__schema.sql` — foreign keys and retention indexes.
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml` — `helper2.retention.*`.
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml` — `searchavo.retention.*`.
 - `frontend/src/i18n/locales/en.legal.json` — the privacy page's periods.
 
 ## Alternatives considered
@@ -136,7 +136,7 @@ The periods are a product decision the owner may change; changing one must not n
 - A purge never leaves a dangling row and never deletes a resource a reviewer still needs.
 - A past event has one period, whoever listed it. A curated event is one edition with fixed days, so it ages like
   an event the Scout found: "Next events" drops it the day after its last day, search and the catalog ten years later.
-  The ten years are `H2_RETENTION_PAST_EVENTS`; a shorter one applies to every origin.
+  The ten years are `SA_RETENTION_PAST_EVENTS`; a shorter one applies to every origin.
 - A seed runs again only when its file changes ([0004](ADR-0004-persistence-and-the-schema.md) §5). A
   research file that still lists an event ended more than ten years ago puts it back on that run, and the next purge
   deletes it again.

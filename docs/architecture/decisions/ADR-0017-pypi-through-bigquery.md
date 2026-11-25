@@ -37,7 +37,7 @@ one week of AI packages and 11.59 GB for the whole table.
    another type, as for npm. A package without a summary or without a GitHub repository goes to the review list as a
    candidate, at most `candidates-per-day` (20) new ones a day, and only if its newest upload is from the last 30
    days. An older one is left out and counted (`old-without-repo`), so the first fill does not flood the review list.
-4. **Our own Google sign-in.** `GoogleServiceAccount` reads the service account key (`H2_PYPI_BIGQUERY_KEY`, base64 of
+4. **Our own Google sign-in.** `GoogleServiceAccount` reads the service account key (`SA_PYPI_BIGQUERY_KEY`, base64 of
    the JSON key file) and refuses a key whose `token_uri` is not `https://oauth2.googleapis.com/token`, so a key file
    cannot send the sign-in anywhere else. `GoogleAccessTokens` signs a one-hour JWT (RS256, `kid` = the key id, scope
    `https://www.googleapis.com/auth/bigquery`) with the JDK and swaps it for an access token (OAuth 2.0 JWT bearer
@@ -45,21 +45,21 @@ one week of AI packages and 11.59 GB for the whole table.
 5. **BigQuery's REST API with our HTTP client.** `BigQueryClient` posts the query with named parameters to
    `jobs.query`, waits for an unfinished job with `getQueryResults` (at most 6 waits of 20 s), follows page tokens up
    to the row cap and reads timestamps as microseconds. Every query carries `maximumBytesBilled`
-   (`H2_SCOUT_PYPI_MAX_BYTES_BILLED`, 20 GB): BigQuery refuses a query that would read more, before it runs.
-6. **Off by default; startup checks the key.** `H2_SOURCE_PYPI_ENABLED` defaults to `false`. When it is on, the back
-   office does not start without `H2_PYPI_BIGQUERY_PROJECT` and a readable key; the error names the variable, never
+   (`SA_SCOUT_PYPI_MAX_BYTES_BILLED`, 20 GB): BigQuery refuses a query that would read more, before it runs.
+6. **Off by default; startup checks the key.** `SA_SOURCE_PYPI_ENABLED` defaults to `false`. When it is on, the back
+   office does not start without `SA_PYPI_BIGQUERY_PROJECT` and a readable key; the error names the variable, never
    its value. The public app only describes the source and never holds the key.
 7. **Resilience.** The policy `collector-pypi` (circuit breaker and retry of the `collector` base config,
    [0006](ADR-0006-outbound-calls-and-resilience.md)); the HTTP timeout is 60 s, above BigQuery's 20 s wait.
 
 ### Code
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/pypi/PypiCollector.java`, `PypiCollectors.java`,
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/pypi/PypiCollector.java`, `PypiCollectors.java`,
   `BigQueryClient.java`, `GoogleAccessTokens.java`, `GoogleServiceAccount.java`
-- `backend/apps/backoffice/src/main/java/ai/helper2/sources/config/scout/CollectorsConfiguration.java`
-- `backend/apps/public/src/main/java/ai/helper2/sources/config/scout/ScoutSourceDescriptors.java`
-- `backend/libs/core/src/main/java/ai/helper2/sources/config/CollectorDescriptors.java` (`pypi`),
+- `backend/apps/backoffice/src/main/java/ai/searchavo/sources/config/scout/CollectorsConfiguration.java`
+- `backend/apps/public/src/main/java/ai/searchavo/sources/config/scout/ScoutSourceDescriptors.java`
+- `backend/libs/core/src/main/java/ai/searchavo/sources/config/CollectorDescriptors.java` (`pypi`),
   `CollectorProperties.java` (`Pypi`)
-- `backend/libs/platform/src/main/resources/helper2-shared.yaml`, `backend/apps/backoffice/src/main/resources/application.yaml`
+- `backend/libs/platform/src/main/resources/searchavo-shared.yaml`, `backend/apps/backoffice/src/main/resources/application.yaml`
 - Tests: `PypiCollectorTest`, `PypiCollectorsTest`, `BigQueryClientTest`, `GoogleAccessTokensTest`,
   `GoogleServiceAccountTest`, `ResiliencePoliciesConfigIT`, `*PropertiesBindingTest`
 

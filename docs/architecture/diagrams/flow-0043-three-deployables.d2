@@ -2,7 +2,7 @@
 # Source of truth: backend/settings.gradle.kts, backend/apps/public, backend/apps/backoffice,
 #   backend/libs/* (core: the shared web adapters), api/common.yaml, api/public.yaml, api/admin.yaml,
 #   deploy/web.Dockerfile, deploy/web/nginx.conf,
-#   deploy/Dockerfile, deploy/backoffice.Dockerfile, deploy/helm/helper2/templates/ (web.yaml, app.yaml, backoffice.yaml),
+#   deploy/Dockerfile, deploy/backoffice.Dockerfile, deploy/helm/searchavo/templates/ (web.yaml, app.yaml, backoffice.yaml),
 #   the SchedulesIT of each app, the platform repo (Ingresses), outside this repo.
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0043-three-deployables.d2 && d2 flow-0043-three-deployables.d2 flow-0043-three-deployables.svg
 
@@ -29,9 +29,9 @@ public: "public app\nsearch, guide, setup, site pages\n(the shell from the web i
 bo: "back office app\nadmin API, admin web app,\nScout, collectors, enrichment" {class: app}
 
 req -> edge.host
-edge.path -> web: "yes\n(Service helper2-web)" {class: hot}
-edge.path -> public: "no\n(Service helper2)" {class: hot}
-edge.vpn -> bo: "yes\n(Service helper2-admin)"
+edge.path -> web: "yes\n(Service searchavo-web)" {class: hot}
+edge.path -> public: "no\n(Service searchavo)" {class: hot}
+edge.vpn -> bo: "yes\n(Service searchavo-admin)"
 
 jobs: Scheduled jobs {
   class: group

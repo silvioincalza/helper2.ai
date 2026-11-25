@@ -1,7 +1,7 @@
 # Flowchart: how Hacker News turns a query into hits (ADR 0030).
-# Source of truth: backend/libs/core/src/main/java/ai/helper2/sources/hackernews/HackerNewsSource.java (search, storySearch, aiStories),
-#   backend/libs/core/src/main/java/ai/helper2/sources/support/HttpClients.java (fetchSize, firstHits),
-#   backend/libs/core/src/main/java/ai/helper2/sources/support/Classification.java (AI_TERMS).
+# Source of truth: backend/libs/core/src/main/java/ai/searchavo/sources/hackernews/HackerNewsSource.java (search, storySearch, aiStories),
+#   backend/libs/core/src/main/java/ai/searchavo/sources/support/HttpClients.java (fetchSize, firstHits),
+#   backend/libs/core/src/main/java/ai/searchavo/sources/support/Classification.java (AI_TERMS).
 # Render: cd docs/architecture/diagrams && d2 fmt flow-0030-hacker-news.d2 && d2 flow-0030-hacker-news.d2 flow-0030-hacker-news.svg
 
 ...@style
@@ -9,7 +9,7 @@
 direction: down
 
 query: "SourceQuery.keywords\n(content words, ADR 0029)" {class: end}
-switch: "Source switched on?\n(H2_SOURCE_HACKER_NEWS_ENABLED,\ndefault true)" {class: decision}
+switch: "Source switched on?\n(SA_SOURCE_HACKER_NEWS_ENABLED,\ndefault true)" {class: decision}
 skipped: "SKIPPED (DISABLED)" {class: end}
 
 hn: "HackerNewsSource" {

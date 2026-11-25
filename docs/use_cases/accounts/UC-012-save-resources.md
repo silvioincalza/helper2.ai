@@ -97,7 +97,7 @@
 
 ### BR-001: Saving Without an Account
 
-A visitor who is not signed in saves resources in the browser only; they are not sent to helper2.ai until the visitor signs in.
+A visitor who is not signed in saves resources in the browser only; they are not sent to searchavo.ai until the visitor signs in.
 
 ### BR-002: At Most 500 Saved Resources
 

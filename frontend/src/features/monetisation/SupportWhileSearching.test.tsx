@@ -17,7 +17,7 @@ const OFF: Monetisation = {
 const SUPPORT: Monetisation = { ...OFF, githubSponsorsUrl: 'https://github.com/sponsors/someone' };
 const site = (monetisation: Monetisation) => () => ({ monetisation });
 const pause = (ms: number) => act(() => new Promise<void>((r) => setTimeout(r, ms)));
-const note = () => screen.queryByRole('complementary', { name: 'From helper2.ai' });
+const note = () => screen.queryByRole('complementary', { name: 'From searchavo.ai' });
 
 function slowSearch() {
   let answer: (() => void) | undefined;
@@ -28,7 +28,7 @@ function slowSearch() {
   return { handler, finish: () => answer?.() };
 }
 
-describe('Feature: a note from helper2.ai while a search loads (ADR 0042)', () => {
+describe('Feature: a note from searchavo.ai while a search loads (ADR 0042)', () => {
   it('Scenario: a slow first search shows the note with a link to Support, and the results replace it', async () => {
     const search = slowSearch();
     mockApi({ 'GET /site': site(SUPPORT), 'GET /search': search.handler });
@@ -36,11 +36,11 @@ describe('Feature: a note from helper2.ai while a search loads (ADR 0042)', () =
 
     const box = await screen.findByRole(
       'complementary',
-      { name: 'From helper2.ai' },
+      { name: 'From searchavo.ai' },
       { timeout: SUPPORT_WAIT_DELAY_MS + 2000 },
     );
     expect(box).toHaveTextContent('If it saves you time, you can help pay for it.');
-    expect(within(box).getByRole('link', { name: 'Support helper2.ai' })).toHaveAttribute(
+    expect(within(box).getByRole('link', { name: 'Support searchavo.ai' })).toHaveAttribute(
       'href',
       '/support',
     );
