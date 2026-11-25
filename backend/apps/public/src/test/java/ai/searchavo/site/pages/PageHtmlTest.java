@@ -205,7 +205,7 @@ class PageHtmlTest {
       assertThat(html(SHELL).render(head, "n0nce"))
           .contains(
               "<meta data-h2-head property=\"og:image\""
-                  + " content=\"https://searchavo.ai/assets/og-2.png\">")
+                  + " content=\"https://searchavo.ai/assets/og-3.png\">")
           .contains("<meta data-h2-head property=\"og:image:type\" content=\"image/png\">")
           .contains("<meta data-h2-head property=\"og:image:width\" content=\"1200\">")
           .contains("<meta data-h2-head property=\"og:image:height\" content=\"630\">")
