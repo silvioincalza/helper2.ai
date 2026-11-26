@@ -64,9 +64,9 @@ describe('mission, privacy and terms pages', () => {
     await screen.findByRole('heading', { level: 1, name: 'Privacy' });
     await settle();
     await waitFor(() => expect(document.title).toBe('Privacy · searchavo.ai'));
-    expect(screen.getByRole('link', { name: 'helper2ai@incalza.me' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'searchavo@incalza.me' })).toHaveAttribute(
       'href',
-      'mailto:helper2ai@incalza.me',
+      'mailto:searchavo@incalza.me',
     );
     const cookies = screen.getByRole('region', { name: 'Cookies and browser storage' });
     expect(cookies).toHaveTextContent('A session cookie (SESSION), only when you sign in');
@@ -143,9 +143,9 @@ describe('mission, privacy and terms pages', () => {
     await screen.findByRole('heading', { level: 1, name: 'Terms of use' });
     await settle();
     await waitFor(() => expect(document.title).toBe('Terms · searchavo.ai'));
-    expect(screen.getByRole('link', { name: 'helper2ai@incalza.me' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'searchavo@incalza.me' })).toHaveAttribute(
       'href',
-      'mailto:helper2ai@incalza.me',
+      'mailto:searchavo@incalza.me',
     );
     expect(
       screen.getByRole('region', { name: 'No guarantee on results and answers' }),
