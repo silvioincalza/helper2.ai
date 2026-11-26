@@ -173,7 +173,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/searchavo.ai/issues/353)
 - [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/searchavo.ai/issues/356)
 
 ### Next
