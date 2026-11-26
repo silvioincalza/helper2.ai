@@ -65,7 +65,6 @@
     "browse": "Browse by type"
   },
   "home": {
-    "name": "searchavo.ai",
     "title": "The metasearch for the AI ecosystem.",
     "lede": "Models, apps, MCP servers and papers from every corner of AI, in one search. Picks come with proof.",
     "hint": "Enter searches. Shift+Enter asks the guide for picks with proof.",

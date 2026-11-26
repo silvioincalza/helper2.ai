@@ -45,8 +45,16 @@
 .h2-hero__what {
   display: block;
 }
-.h2-home .h2-hero__name {
+.h2-home .h2-hero__avo {
   color: var(--accent-ink);
+}
+.h2-home .h2-hero__cursor {
+  display: inline-block;
+  width: 0.53em;
+  height: 0.14em;
+  margin-left: 0.08em;
+  background: var(--accent);
+  vertical-align: baseline;
 }
 .h2-home .h2-hero__lede {
   margin: 0;
