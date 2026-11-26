@@ -47,7 +47,7 @@ describe('home', () => {
     expect(await screen.findByText(/^5-10 of 13 sources at a time/)).toBeInTheDocument();
     expect(
       screen.getByText(
-        /^One search across the world of AI for models, apps, MCP servers and papers/,
+        /^Models, apps, MCP servers and papers from every corner of AI, in one search/,
       ),
     ).not.toHaveTextContent(/\d/);
     expect(screen.getByText(/Enter searches\. Shift\+Enter asks the guide/)).toBeInTheDocument();

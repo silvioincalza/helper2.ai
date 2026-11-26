@@ -13,8 +13,8 @@ class Pages(private val base: String) {
     PageHead(
       title = "$BRAND: the metasearch for the AI ecosystem",
       description =
-        "One search across the world of AI for models, apps, MCP servers and papers. " +
-          "Ask the guide for a pick with proof.",
+        "Models, apps, MCP servers and papers from every corner of AI, in one search. " +
+          "Picks come with proof.",
       canonicalPath = "/",
       robots = Robots.INDEX,
       jsonLd = listOf(website(), organization()),

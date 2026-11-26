@@ -109,7 +109,7 @@ describe('Feature: one name, one spelling, plain words', () => {
   it.each([
     [
       'home.lede',
-      'One search across the world of AI for models, apps, MCP servers and papers. Ask the guide for a pick with proof.',
+      'Models, apps, MCP servers and papers from every corner of AI, in one search. Picks come with proof.',
     ],
     ['home.hint', 'Enter searches. Shift+Enter asks the guide for picks with proof.'],
     ['nav.theme.switchTo', 'Switch to {{theme}} theme'],
