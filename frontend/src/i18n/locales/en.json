@@ -67,7 +67,7 @@
   "home": {
     "name": "searchavo.ai",
     "title": "The metasearch for the AI ecosystem.",
-    "lede": "One search across the world of AI for models, apps, MCP servers and papers. Ask the guide for a pick with proof.",
+    "lede": "Models, apps, MCP servers and papers from every corner of AI, in one search. Picks come with proof.",
     "hint": "Enter searches. Shift+Enter asks the guide for picks with proof.",
     "hintTouch": "Tap the star for picks with proof.",
     "examples": "Try:",
