@@ -173,7 +173,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Now
 
-- [S10.3.8 v2026.11.9 on prod: the embedder in the cluster, and main's work since v2026.11.8](https://github.com/silvioincalza/searchavo.ai/issues/909)
 - [S10.8.1 Prod recoverable and watched before the release](https://github.com/silvioincalza/searchavo.ai/issues/353)
 - [S10.11.1 Search and the guide's search-only path load-tested at 5 requests a second](https://github.com/silvioincalza/searchavo.ai/issues/356)
 
@@ -184,7 +183,6 @@ Replay is built and is closed by its pull request: it is not listed.
 - [S10.2.9 The library tests declare the evaluation sets they read](https://github.com/silvioincalza/searchavo.ai/issues/417)
 - [S10.2.17 The HTTP deadline test that reads a fast response without a flake](https://github.com/silvioincalza/searchavo.ai/issues/501)
 - [S10.4.2 The first ten results of the new snapshot set graded](https://github.com/silvioincalza/searchavo.ai/issues/348)
-- [S10.7.1 V2026.11.3, the first release of the new repository, on prod](https://github.com/silvioincalza/searchavo.ai/issues/352)
 - [S10.8.2 A way back for the database when a release goes back](https://github.com/silvioincalza/searchavo.ai/issues/427)
 - [S10.9.1 The new repository with the replayed history and the GitHub Project](https://github.com/silvioincalza/searchavo.ai/issues/354)
 
@@ -219,10 +217,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E12 Rename helper2.ai to searchavo.ai
 
-### Now
-
-- [S12.1.1 DNS and mail for searchavo.ai and searchavo.com, with a temporary redirect to helper2.ai](https://github.com/silvioincalza/searchavo.ai/issues/1070)
-
 ### Next
 
 - [S12.1.2 Infrastructure for searchavo.ai added beside the helper2.ai one](https://github.com/silvioincalza/searchavo.ai/issues/1071)
@@ -231,4 +225,4 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ### Later
 
-- [S12.1.7 Old helper2 resources removed, and the GitHub repository renamed to searchavo.ai](https://github.com/silvioincalza/searchavo.ai/issues/1076)
+- [S12.1.7 Old helper2 resources removed](https://github.com/silvioincalza/searchavo.ai/issues/1076)
