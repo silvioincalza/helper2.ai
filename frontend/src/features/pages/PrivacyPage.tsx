@@ -4,7 +4,7 @@ import { useTitle } from '@/hooks/useTitle';
 import { TextPage } from './TextPage';
 import { usePolicyText } from '@/hooks/usePolicy';
 
-export const PRIVACY_CONTACT = 'helper2ai@incalza.me';
+export const PRIVACY_CONTACT = 'searchavo@incalza.me';
 
 export default function PrivacyPage() {
   const { t } = useTranslation();
