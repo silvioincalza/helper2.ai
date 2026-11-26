@@ -40,7 +40,9 @@ describe('home', () => {
     const h1 = await screen.findByRole('heading', { level: 1 });
     expect(h1).toHaveAccessibleName('searchavo.ai The metasearch for the AI ecosystem.');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
-    expect(within(h1).getByText('searchavo.ai')).toHaveClass('h2-hero__name');
+    const name = h1.querySelector('.h2-hero__name');
+    expect(name).toHaveTextContent(/^searchavo\.ai$/);
+    expect(within(h1).getByText('avo')).toHaveClass('h2-hero__avo');
     expect(screen.queryByText(/AI sources$/)).not.toBeInTheDocument();
     expect(await screen.findByText(/^5-10 of 13 sources at a time/)).toBeInTheDocument();
     expect(

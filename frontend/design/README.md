@@ -34,7 +34,7 @@ The design system for every part of Searchavo.ai: the search box, results, the A
 | Controls | `border-strong` | Inputs, selects, ghost buttons, chips, toggles. 3:1 on `bg`. |
 | Selected | `selected` + `on-selected` | The active chip or view (List, Timeline). |
 | Primary action | `accent` + `on-accent` | One per area: Search, Open on source ↗, Send report. |
-| Links | `accent-ink` | Text links, dates, ranks, "searchavo.ai" in the home title. Saffron `accent` is never used for small text on `bg` (3:1 only). |
+| Links | `accent-ink` | Text links, dates, ranks, "avo" of "searchavo.ai" in the home title. Saffron `accent` is never used for small text on `bg` (3:1 only). |
 | Checked | `quote-bg`, `status-ok-ink` | Checked quotes, answered sources. |
 | Caution | `status-warn-ink` | Not stated, sources disagree, slow, rate limited, timed out. |
 | Error | `danger` | Failed sources and requests, form errors, delete. |
@@ -137,7 +137,7 @@ Apart from the radar mark, icons are small stroke glyphs beside words, never alo
 
 ## Home page
 
-1. **Hero**, centred, with no line above it: the title, one `h1` on two lines: "searchavo.ai" in `accent-ink` (same size and weight), then "The metasearch for the AI ecosystem."; one line on what it does. Around it the radar (see Radar).
+1. **Hero**, centred, with no line above it: the title, one `h1` on two lines: "searchavo.ai" written like the wordmark ("avo" in `accent-ink`, then the saffron cursor; same size and weight), then "The metasearch for the AI ecosystem."; one line on what it does. Around it the radar (see Radar).
 2. **Pinned search box**, full width up to 820px: box, Search, Ask the guide, one hint line (the keys with a mouse; "Search, or tap Ask for picks with proof." on a touch screen), the "Try:" chips, the radar legend ("5-10 of N sources at a time", the three colours, a link to the Sources page). It sticks under the header while the page scrolls; once the title is gone, the hints and legend fold away and it gets `shadow-pinned`.
 3. **New in the catalog** and **Coming up**: two lists of log rows side by side, stacked below 920px; tabs with the same log rows below 768px. See HomeLists.
 4. **What searchavo does for you**: a quiet strip of three steps.
@@ -338,7 +338,7 @@ What each page adds to the rules above.
 
 ### Radar
 
-- No line above the title. The title is one `h1` on two lines: "searchavo.ai" in accent ink, then "The metasearch for the AI ecosystem."
+- No line above the title. The title is one `h1` on two lines: "searchavo.ai" written like the wordmark, then "The metasearch for the AI ecosystem."
 - Like a navigation radar: full rings around the title, and a beam that turns once every 5 s.
 - Only external sources. Our own index, the search by meaning and the curated list are not on it. The legend
   counts the same sources.
