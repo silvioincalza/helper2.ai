@@ -199,6 +199,16 @@ class PageHtmlTest {
   }
 
   @Test
+  void theHomeDescriptionIsTheHomeLede() throws IOException {
+    String lede =
+        "Models, apps, MCP servers and papers from every corner of AI, in one search."
+            + " Picks come with proof.";
+    assertThat(html(SHELL).render(new Pages("https://searchavo.ai").home(), "n0nce"))
+        .contains("<meta data-h2-head name=\"description\" content=\"" + lede + "\">")
+        .contains("<meta data-h2-head property=\"og:description\" content=\"" + lede + "\">");
+  }
+
+  @Test
   void everyPageWithACanonicalNamesTheLinkPreviewImageAndItsSize() throws IOException {
     Pages pages = new Pages("https://searchavo.ai");
     for (PageHead head : List.of(pages.home(), pages.of(PageKind.SOURCES))) {
