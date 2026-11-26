@@ -38,11 +38,12 @@ describe('home', () => {
     mockApi({ 'GET /sources': () => STAGING_SOURCES });
     renderApp('/');
     const h1 = await screen.findByRole('heading', { level: 1 });
-    expect(h1).toHaveAccessibleName('searchavo.ai The metasearch for the AI ecosystem.');
+    expect(h1).toHaveAccessibleName('searchavo The metasearch for the AI ecosystem.');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     const name = h1.querySelector('.h2-hero__name');
-    expect(name).toHaveTextContent(/^searchavo\.ai$/);
+    expect(name).toHaveTextContent(/^searchavo$/);
     expect(within(h1).getByText('avo')).toHaveClass('h2-hero__avo');
+    expect(h1.querySelector('.h2-hero__cursor')).toHaveAttribute('aria-hidden', 'true');
     expect(screen.queryByText(/AI sources$/)).not.toBeInTheDocument();
     expect(await screen.findByText(/^5-10 of 13 sources at a time/)).toBeInTheDocument();
     expect(

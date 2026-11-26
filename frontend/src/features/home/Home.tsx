@@ -120,7 +120,7 @@ export default function Home() {
         <div ref={titleBlock} className="h2-wrap h2-hero__text">
           <h1 id="home-h" className="h2-hero__title">
             <span className="h2-hero__name">
-              search<span className="h2-hero__avo">avo</span>.ai
+              search<span className="h2-hero__avo">avo</span>
               <span className="h2-hero__cursor" aria-hidden="true" />
             </span>{' '}
             <span className="h2-hero__what">{t('home.title')}</span>
