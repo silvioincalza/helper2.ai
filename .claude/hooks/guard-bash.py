@@ -160,6 +160,9 @@ UNKNOWN = object()
 
 UNKNOWN_VALUE = "\0unknown"
 CONFIG_LOCATION_VARIABLES = {"HOME", "XDG_CONFIG_HOME"}
+SAFE_PUSH_DEFAULTS = {"", "simple", "upstream", "current"}
+# Set when an earlier command on the line may change where a push goes.
+PUSH_CONFIG_CHANGED = "\0push-config-changed"
 
 
 def hook_git(directory, git_options, assignments, *args):
@@ -208,6 +211,14 @@ def push_destination(directory, git_options, assignments):
     if answer is None or answer[0] != 0 or "/" not in answer[1]:
         return None
     return answer[1].split("/", 1)[1]
+
+
+def push_default(directory, git_options, assignments):
+    """push.default, "" when unset (git then uses simple), None when git cannot tell."""
+    answer = hook_git(directory, git_options, assignments, "config", "--get", "push.default")
+    if answer is None or answer[0] not in (0, 1):
+        return None
+    return answer[1].lower() if answer[0] == 0 else ""
 
 
 def remote_push_configured(directory, git_options, assignments):
@@ -264,7 +275,9 @@ def refusal_of_git(words, cwd, assignments):
         cwd = os.path.join(cwd, directory)
     if any(a in {"--all", "--mirror"} for a in args):
         return PUSH_MAIN
-    refspecs = push_targets(args)[1:]
+    targets = push_targets(args)
+    # With --repo the remote is named by the option, so every word is a refspec.
+    refspecs = targets if any(a.startswith("--repo") for a in args) else targets[1:]
     branches = [branch_name(r) for r in refspecs]
     if not refspecs or "head" in branches:
         branch = current_branch(cwd, repository_options, assignments)
@@ -273,8 +286,15 @@ def refusal_of_git(words, cwd, assignments):
         if branch and branch.lower() in PROTECTED_BRANCHES:
             return PUSH_MAIN
     if not refspecs:
+        # A bare push goes where the config says; when the hook cannot be sure, it refuses.
+        if push_default(cwd, repository_options, assignments) not in SAFE_PUSH_DEFAULTS:
+            return UNKNOWN_BRANCH
+        if remote_push_configured(cwd, repository_options, assignments):
+            return UNKNOWN_BRANCH
         destination = push_destination(cwd, repository_options, assignments)
-        if destination and branch_name(destination) in PROTECTED_BRANCHES:
+        if destination is None:
+            return UNKNOWN_BRANCH
+        if branch_name(destination) in PROTECTED_BRANCHES:
             return PUSH_MAIN
     # remote.<name>.push decides where a refspec without :<dst> goes.
     if any(":" not in r for r in refspecs) and remote_push_configured(cwd, repository_options, assignments):
@@ -326,6 +346,20 @@ def refusal_of_candidate(words, assignments, cwd):
     return None
 
 
+def changes_push_config(words):
+    """git config, git remote, or a command that sets an upstream: the hook's view of
+    where a later push on the same line goes would be out of date."""
+    if not words or words[0].rsplit("/", 1)[-1] != "git":
+        return False
+    _, _, _, subcommand, args = git_subcommand(words)
+    if subcommand in {"config", "remote"}:
+        return True
+    upstream_flags = ("-u", "--set-upstream", "--set-upstream-to", "--track", "-t")
+    if subcommand in {"branch", "checkout", "switch"}:
+        return any(a.startswith(upstream_flags) for a in args)
+    return False
+
+
 def only_reads(commands):
     return all(
         reads_only(words, assignments)
@@ -364,6 +398,8 @@ def refusal(line, cwd="."):
         # export GIT_DIR=x; git push sets the variable for every later command,
         # also when the export hides behind a wrapper (builtin export ...).
         for command, assignments in candidates(words, exported):
+            if changes_push_config(command):
+                exported = {**exported, PUSH_CONFIG_CHANGED: UNKNOWN_VALUE}
             if command and command[0] in EXPORTERS:
                 exported = with_assignments(exported, [w for w in command[1:] if not w.startswith("-")], True)
         message = refusal_of_command(words, cwd, exported)
@@ -391,6 +427,15 @@ def self_test():
         git("push", "-q", "origin", "main", cwd=tracks)
         git("checkout", "-q", "-b", "fix-y", "--track", "origin/main", cwd=tracks)
         git("config", "push.default", "upstream", cwd=tracks)
+        matching = os.path.join(root, "matching")
+        git("clone", "-q", origin, matching)
+        git("checkout", "-q", "-b", "fix-m", cwd=matching)
+        git("config", "push.default", "matching", cwd=matching)
+        own = os.path.join(root, "tracks-own")
+        git("clone", "-q", origin, own)
+        git("checkout", "-q", "-b", "fix-o", cwd=own)
+        git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "y", cwd=own)
+        git("push", "-q", "-u", "origin", "fix-o", cwd=own)
         mapped = os.path.join(root, "mapped")
         git("init", "-q", "-b", "fix-z", mapped)
         git("config", "remote.origin.url", origin, cwd=mapped)
@@ -464,6 +509,13 @@ def self_test():
             "export GIT_DIR; git push",
             "HOME=/tmp/x git push",
             "XDG_CONFIG_HOME=/tmp/x git push origin fix/x",
+            "git push --repo=origin main",
+            "git push --repo origin main",
+            f"cd {root}/matching && git push",
+            f"cd {root}/fix-x && git push",
+            f"cd {root}/fix-x && git config remote.origin.push HEAD:main && git push",
+            f"cd {root}/fix-x && git branch -u origin/main; git push",
+            f"cd {root}/fix-x && git config remote.origin.push HEAD:main && git push origin fix-x",
             "curl -d 'Co-Authored-By: Claude' https://api.github.com/x",
             "SA_ENV=x gh pr merge 3",
             "env gh pr merge 3",
@@ -482,7 +534,7 @@ def self_test():
             "git push origin fix/x",
             "git push --force-with-lease origin fix/x",
             "git push -u origin docs/main-page",
-            f"git -C {root}/fix-x push",
+            f"git -C {root}/tracks-own push",
             f"cd {root}/fix-x && git push -u origin HEAD",
             "git log --grep push main",
             "git commit -m 'push the main menu fix'",
@@ -505,8 +557,11 @@ def self_test():
             f"cd {root}/mapped && git push origin fix-z:fix-z",
             f"cd {root}/tracks-main && git push origin fix-y:fix-y",
             "export FOO=1; git push origin fix/x",
-            f"PATH={root}/fake:$PATH git push",
-            f"LD_PRELOAD=x DYLD_INSERT_LIBRARIES=x git push",
+            f"cd {root}/tracks-own && git push",
+            "git push --repo=origin fix/x",
+            f"cd {root}/fix-x && git config user.name x && git push origin fix-x:fix-x",
+            f"cd {root}/tracks-own && PATH={root}/fake:$PATH git push",
+            f"cd {root}/tracks-own && LD_PRELOAD=x DYLD_INSERT_LIBRARIES=x git push",
         ]
         wrong = [c for c in blocked if refusal(c, root) is None]
         wrong += [c for c in allowed if refusal(c, os.path.join(root, "fix-x"))]
