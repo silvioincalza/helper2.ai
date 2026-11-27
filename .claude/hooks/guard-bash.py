@@ -24,10 +24,10 @@ PROD_VERBS = {
 }
 SHELLS = {"bash", "sh", "zsh", "dash", "ksh"}
 WRAPPERS = {
-    "env", "sudo", "command", "nohup", "time", "exec", "nice", "xargs", "builtin",
+    "env", "sudo", "command", "nohup", "time", "exec", "nice", "xargs", "builtin", "eval",
     "timeout", "stdbuf", "ionice", "doas", "caffeinate",
 }
-GUARDED = {"git", "gh", "helm", "kubectl"} | {"bash", "sh", "zsh", "dash", "ksh"}
+GUARDED = {"git", "gh", "helm", "kubectl"} | {"bash", "sh", "zsh", "dash", "ksh"} | {"export", "declare", "typeset", "local", "readonly"}
 READ_ONLY_PROGRAMS = {"grep", "rg", "ag", "ack", "egrep", "fgrep"}
 READ_ONLY_GIT = {"log", "show", "grep", "shortlog", "blame"}
 GIT_OPTIONS_WITH_VALUE = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
@@ -85,12 +85,15 @@ def split_words(words):
     return result
 
 
-def with_assignments(assignments, words):
+def with_assignments(assignments, words, exporting=False):
     assignments = dict(assignments)
     for word in words:
         if ASSIGNMENT.fullmatch(word):
             name, value = word.split("=", 1)
             assignments[name] = value
+        elif exporting and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", word) and word not in assignments:
+            # export GIT_DIR: the hook does not know the value.
+            assignments[word] = UNKNOWN_VALUE
     return assignments
 
 
@@ -155,14 +158,20 @@ def git_subcommand(words):
 UNKNOWN = object()
 
 
-def current_branch(directory, git_options, assignments):
-    """The checked-out branch, None when HEAD is detached, UNKNOWN when git cannot tell.
+UNKNOWN_VALUE = "\0unknown"
+CONFIG_LOCATION_VARIABLES = {"HOME", "XDG_CONFIG_HOME"}
+
+
+def hook_git(directory, git_options, assignments, *args):
+    """Runs the hook's own git, returns (exit code, output) or None when it cannot run.
 
     The command's own variables never reach this git: they could make the hook run
     code (PATH, LD_PRELOAD, GIT_CONFIG_*). Only GIT_DIR and GIT_WORK_TREE are taken,
-    as options."""
-    if "GIT_COMMON_DIR" in assignments:
-        return UNKNOWN
+    as options; a variable the hook cannot read makes the answer unknown."""
+    if "GIT_COMMON_DIR" in assignments or UNKNOWN_VALUE in assignments.values():
+        return None
+    if CONFIG_LOCATION_VARIABLES & assignments.keys():
+        return None
     from_variables = []
     if "GIT_DIR" in assignments:
         from_variables += ["--git-dir", assignments["GIT_DIR"]]
@@ -170,17 +179,41 @@ def current_branch(directory, git_options, assignments):
         from_variables += ["--work-tree", assignments["GIT_WORK_TREE"]]
     try:
         result = subprocess.run(
-            [GIT, "-C", directory, *from_variables, *git_options,
-             "symbolic-ref", "--short", "-q", "HEAD"],
+            [GIT, "-C", directory, *from_variables, *git_options, *args],
             capture_output=True, text=True, timeout=3,
         )
     except (OSError, subprocess.SubprocessError):
-        return UNKNOWN
-    if result.returncode == 1:
         return None
-    if result.returncode != 0:
+    return result.returncode, result.stdout.strip()
+
+
+def current_branch(directory, git_options, assignments):
+    """The checked-out branch, None when HEAD is detached, UNKNOWN when git cannot tell."""
+    answer = hook_git(directory, git_options, assignments, "symbolic-ref", "--short", "-q", "HEAD")
+    if answer is None:
         return UNKNOWN
-    return result.stdout.strip() or None
+    code, output = answer
+    if code == 1:
+        return None
+    if code != 0:
+        return UNKNOWN
+    return output or None
+
+
+def push_destination(directory, git_options, assignments):
+    """The branch a bare git push updates, as push.default, the upstream and
+    remote.*.push decide; None when git has no answer (a new branch without upstream)."""
+    answer = hook_git(directory, git_options, assignments,
+                      "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{push}")
+    if answer is None or answer[0] != 0 or "/" not in answer[1]:
+        return None
+    return answer[1].split("/", 1)[1]
+
+
+def remote_push_configured(directory, git_options, assignments):
+    answer = hook_git(directory, git_options, assignments,
+                      "config", "--get-regexp", r"^remote\..*\.push$")
+    return answer is None or answer[0] == 0
 
 
 def branch_name(refspec):
@@ -239,6 +272,13 @@ def refusal_of_git(words, cwd, assignments):
             return UNKNOWN_BRANCH
         if branch and branch.lower() in PROTECTED_BRANCHES:
             return PUSH_MAIN
+    if not refspecs:
+        destination = push_destination(cwd, repository_options, assignments)
+        if destination and branch_name(destination) in PROTECTED_BRANCHES:
+            return PUSH_MAIN
+    # remote.<name>.push decides where a refspec without :<dst> goes.
+    if any(":" not in r for r in refspecs) and remote_push_configured(cwd, repository_options, assignments):
+        return UNKNOWN_BRANCH
     if any(b in PROTECTED_BRANCHES for b in branches):
         return PUSH_MAIN
     if any(is_force_flag(a) for a in args) or any(r.startswith("+") for r in refspecs):
@@ -318,10 +358,14 @@ def refusal(line, cwd="."):
         if words and words[0] == "cd" and len(words) > 1:
             cwd = os.path.join(cwd, os.path.expanduser(words[1]))
             continue
-        if words and (words[0] in EXPORTERS or all(ASSIGNMENT.fullmatch(w) for w in words)):
-            # export GIT_DIR=x; git push sets the variable for every later command.
+        if words and all(ASSIGNMENT.fullmatch(w) for w in words):
             exported = with_assignments(exported, words)
             continue
+        # export GIT_DIR=x; git push sets the variable for every later command,
+        # also when the export hides behind a wrapper (builtin export ...).
+        for command, assignments in candidates(words, exported):
+            if command and command[0] in EXPORTERS:
+                exported = with_assignments(exported, [w for w in command[1:] if not w.startswith("-")], True)
         message = refusal_of_command(words, cwd, exported)
         if message:
             return message
@@ -335,6 +379,22 @@ def self_test():
         for branch in ("main", "fix-x"):
             repo = os.path.join(root, branch)
             subprocess.run(["git", "init", "-q", "-b", branch, repo], check=True)
+        def git(*args, cwd=None):
+            subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True)
+
+        origin = os.path.join(root, "origin.git")
+        git("init", "-q", "--bare", "-b", "main", origin)
+        tracks = os.path.join(root, "tracks-main")
+        git("init", "-q", "-b", "main", tracks)
+        git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "x", cwd=tracks)
+        git("remote", "add", "origin", origin, cwd=tracks)
+        git("push", "-q", "origin", "main", cwd=tracks)
+        git("checkout", "-q", "-b", "fix-y", "--track", "origin/main", cwd=tracks)
+        git("config", "push.default", "upstream", cwd=tracks)
+        mapped = os.path.join(root, "mapped")
+        git("init", "-q", "-b", "fix-z", mapped)
+        git("config", "remote.origin.url", origin, cwd=mapped)
+        git("config", "remote.origin.push", "refs/heads/*:refs/heads/main", cwd=mapped)
         fake = os.path.join(root, "fake")
         os.mkdir(fake)
         with open(os.path.join(fake, "git"), "w") as planted:
@@ -396,6 +456,14 @@ def self_test():
             "git -c url.x.insteadOf=y push origin fix/x",
             "git -c include.path=/tmp/x log --grep Co-Authored-By",
             f"GIT_COMMON_DIR={root}/main/.git git push",
+            f"cd {root}/tracks-main && git push",
+            f"git -C {root}/tracks-main push origin",
+            f"cd {root}/mapped && git push origin fix-z",
+            f"builtin export GIT_DIR={root}/main/.git; git push",
+            f"command export GIT_DIR={root}/main/.git; git push",
+            "export GIT_DIR; git push",
+            "HOME=/tmp/x git push",
+            "XDG_CONFIG_HOME=/tmp/x git push origin fix/x",
             "curl -d 'Co-Authored-By: Claude' https://api.github.com/x",
             "SA_ENV=x gh pr merge 3",
             "env gh pr merge 3",
@@ -434,6 +502,9 @@ def self_test():
             "git -c color.ui=always log --grep Co-Authored-By",
             "git push origin @:fix/x",
             "git -c color.ui=always push origin fix/x",
+            f"cd {root}/mapped && git push origin fix-z:fix-z",
+            f"cd {root}/tracks-main && git push origin fix-y:fix-y",
+            "export FOO=1; git push origin fix/x",
             f"PATH={root}/fake:$PATH git push",
             f"LD_PRELOAD=x DYLD_INSERT_LIBRARIES=x git push",
         ]
