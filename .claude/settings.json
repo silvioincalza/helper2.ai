@@ -29,11 +29,18 @@
       "Read(./.secrets)",
       "Read(./.secrets/**)",
       "Read(./deploy/k8s/*/app.env)",
+      "Read(./**/.env)",
+      "Read(./**/*app.env*)",
       "Bash(gh pr merge:*)",
       "Bash(gh stack merge:*)",
       "Bash(git push origin main:*)",
       "Bash(git push * main)",
-      "Bash(git push *:main)"
+      "Bash(git push *:main)",
+      "Bash(git diff *--output*)",
+      "Bash(git log *--output*)",
+      "Bash(git diff *--ext-diff*)",
+      "Bash(git log *--ext-diff*)",
+      "Bash(git fetch *--upload-pack*)"
     ]
   },
   "hooks": {
@@ -43,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.py\""
+            "command": "python3 -I \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.py\""
           }
         ]
       }
