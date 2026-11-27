@@ -3,6 +3,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 
@@ -32,14 +33,18 @@ READ_ONLY_GIT = {"log", "show", "grep", "shortlog", "blame"}
 GIT_OPTIONS_WITH_VALUE = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
 PUSH_OPTIONS_WITH_VALUE = {"--repo", "-o", "--push-option", "--receive-pack", "--exec"}
 HIDDEN_COMMAND_CONFIG = re.compile(
-    r"^(alias\.|pager\.|credential|core\.(pager|sshcommand|editor|askpass|fsmonitor|hookspath)$"
+    r"^(alias\.|pager\.|credential|url\.|remote\.|include|protocol\.|core\.(pager|sshcommand|editor|askpass|fsmonitor|hookspath|gitproxy)$"
     r"|sequence\.editor$|diff\.external$|gpg\.program$|.*\.(textconv|command|cmd|helper|program)$)",
     re.IGNORECASE,
 )
 HIDDEN_COMMAND_VARIABLES = {
     "GIT_PAGER", "GIT_EDITOR", "GIT_SSH", "GIT_SSH_COMMAND", "GIT_ASKPASS",
-    "GIT_EXTERNAL_DIFF", "GIT_SEQUENCE_EDITOR", "GIT_EXEC_PATH",
+    "GIT_EXTERNAL_DIFF", "GIT_SEQUENCE_EDITOR", "GIT_EXEC_PATH", "GIT_PROXY_COMMAND",
 }
+PUSH_CONFIG_ALLOWED = re.compile(r"^(color|advice)\.", re.IGNORECASE)
+EXPORTERS = {"export", "declare", "typeset", "local", "readonly"}
+# The hook's own git, found before any command on the line can change PATH.
+GIT = shutil.which("git") or "/usr/bin/git"
 ATTRIBUTION_TEXT = re.compile(r"co-authored-by|generated (with|by) \[?claude", re.IGNORECASE)
 ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=.*")
 SEPARATORS = "();<>|&`\n"
@@ -151,11 +156,23 @@ UNKNOWN = object()
 
 
 def current_branch(directory, git_options, assignments):
-    """The checked-out branch, None when HEAD is detached, UNKNOWN when git cannot tell."""
+    """The checked-out branch, None when HEAD is detached, UNKNOWN when git cannot tell.
+
+    The command's own variables never reach this git: they could make the hook run
+    code (PATH, LD_PRELOAD, GIT_CONFIG_*). Only GIT_DIR and GIT_WORK_TREE are taken,
+    as options."""
+    if "GIT_COMMON_DIR" in assignments:
+        return UNKNOWN
+    from_variables = []
+    if "GIT_DIR" in assignments:
+        from_variables += ["--git-dir", assignments["GIT_DIR"]]
+    if "GIT_WORK_TREE" in assignments:
+        from_variables += ["--work-tree", assignments["GIT_WORK_TREE"]]
     try:
         result = subprocess.run(
-            ["git", "-C", directory, *git_options, "symbolic-ref", "--short", "-q", "HEAD"],
-            capture_output=True, text=True, timeout=3, env={**os.environ, **assignments},
+            [GIT, "-C", directory, *from_variables, *git_options,
+             "symbolic-ref", "--short", "-q", "HEAD"],
+            capture_output=True, text=True, timeout=3,
         )
     except (OSError, subprocess.SubprocessError):
         return UNKNOWN
@@ -208,6 +225,8 @@ def refusal_of_git(words, cwd, assignments):
         return HIDDEN_COMMAND
     if subcommand != "push":
         return None
+    if any(not PUSH_CONFIG_ALLOWED.match(key) for key in config_keys):
+        return HIDDEN_COMMAND
     if directory:
         cwd = os.path.join(cwd, directory)
     if any(a in {"--all", "--mirror"} for a in args):
@@ -241,8 +260,8 @@ def refusal_of_cluster(words):
     return None
 
 
-def refusal_of_command(words, cwd):
-    for command, assignments in candidates(words):
+def refusal_of_command(words, cwd, exported):
+    for command, assignments in candidates(words, exported):
         message = refusal_of_candidate(command, assignments, cwd)
         if message:
             return message
@@ -294,11 +313,16 @@ def refusal(line, cwd="."):
         return UNREADABLE
     if ATTRIBUTION_TEXT.search(line) and not only_reads(commands):
         return ATTRIBUTION
+    exported = {}
     for words in commands:
         if words and words[0] == "cd" and len(words) > 1:
             cwd = os.path.join(cwd, os.path.expanduser(words[1]))
             continue
-        message = refusal_of_command(words, cwd)
+        if words and (words[0] in EXPORTERS or all(ASSIGNMENT.fullmatch(w) for w in words)):
+            # export GIT_DIR=x; git push sets the variable for every later command.
+            exported = with_assignments(exported, words)
+            continue
+        message = refusal_of_command(words, cwd, exported)
         if message:
             return message
     return None
@@ -311,6 +335,11 @@ def self_test():
         for branch in ("main", "fix-x"):
             repo = os.path.join(root, branch)
             subprocess.run(["git", "init", "-q", "-b", branch, repo], check=True)
+        fake = os.path.join(root, "fake")
+        os.mkdir(fake)
+        with open(os.path.join(fake, "git"), "w") as planted:
+            planted.write(f"#!/bin/sh\ntouch {root}/planted-git-ran\n")
+        os.chmod(os.path.join(fake, "git"), 0o755)
         blocked = [
             "gh pr merge 12 --squash",
             "cd x && gh stack merge",
@@ -360,6 +389,13 @@ def self_test():
             "git --config-env=alias.p=X p",
             "GIT_SSH_COMMAND='sh -c x' git fetch",
             "git grep -Ocat Co-Authored-By",
+            f"export GIT_DIR={root}/main/.git; git push",
+            f"declare -x GIT_DIR={root}/main/.git && git push origin HEAD",
+            f"GIT_DIR={root}/main/.git; export GIT_DIR; git push",
+            "git -c remote.origin.push=HEAD:refs/heads/main push origin",
+            "git -c url.x.insteadOf=y push origin fix/x",
+            "git -c include.path=/tmp/x log --grep Co-Authored-By",
+            f"GIT_COMMON_DIR={root}/main/.git git push",
             "curl -d 'Co-Authored-By: Claude' https://api.github.com/x",
             "SA_ENV=x gh pr merge 3",
             "env gh pr merge 3",
@@ -397,9 +433,14 @@ def self_test():
             "env FOO=1 git status",
             "git -c color.ui=always log --grep Co-Authored-By",
             "git push origin @:fix/x",
+            "git -c color.ui=always push origin fix/x",
+            f"PATH={root}/fake:$PATH git push",
+            f"LD_PRELOAD=x DYLD_INSERT_LIBRARIES=x git push",
         ]
         wrong = [c for c in blocked if refusal(c, root) is None]
         wrong += [c for c in allowed if refusal(c, os.path.join(root, "fix-x"))]
+        if os.path.exists(os.path.join(root, "planted-git-ran")):
+            wrong.append("the hook ran a git from the command's PATH")
     for command in wrong:
         print("WRONG:", repr(command))
     print("self-test:", "failed" if wrong else "passed")
