@@ -32,6 +32,7 @@ READ_ONLY_PROGRAMS = {"grep", "rg", "ag", "ack", "egrep", "fgrep"}
 READ_ONLY_GIT = {"log", "show", "grep", "shortlog", "blame"}
 GIT_OPTIONS_WITH_VALUE = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
 PUSH_OPTIONS_WITH_VALUE = {"--repo", "-o", "--push-option", "--receive-pack", "--exec"}
+PUSH_LONG_OPTIONS_WITH_VALUE = ("--repo", "--push-option", "--receive-pack", "--exec")
 HIDDEN_COMMAND_CONFIG = re.compile(
     r"^(alias\.|pager\.|credential|url\.|remote\.|include|protocol\.|core\.(pager|sshcommand|editor|askpass|fsmonitor|hookspath|gitproxy)$"
     r"|sequence\.editor$|diff\.external$|gpg\.program$|.*\.(textconv|command|cmd|helper|program)$)",
@@ -242,13 +243,22 @@ def is_force_flag(arg):
     return arg.startswith("-") and not arg.startswith("--") and "f" in arg[1:]
 
 
+def takes_value(arg):
+    """-o, or a long push option that takes a value, also abbreviated (--rep, --push-o)."""
+    if arg in PUSH_OPTIONS_WITH_VALUE:
+        return True
+    if not arg.startswith("--") or "=" in arg or len(arg) < 4:
+        return False
+    return any(option.startswith(arg) for option in PUSH_LONG_OPTIONS_WITH_VALUE)
+
+
 def push_targets(args):
     targets = []
     skip = False
     for arg in args:
         if skip:
             skip = False
-        elif arg in PUSH_OPTIONS_WITH_VALUE:
+        elif takes_value(arg):
             skip = True
         elif not arg.startswith("-"):
             targets.append(arg)
@@ -350,7 +360,7 @@ def refusal_of_candidate(words, assignments, cwd, exported):
     return None
 
 
-SAFE_BEFORE_PUSH_GIT = {"add", "commit", "status", "diff", "log", "show", "fetch", "rev-parse", "ls-files"}
+SAFE_BEFORE_PUSH_GIT = {"add", "commit", "status", "diff", "log", "show", "rev-parse", "ls-files"}
 
 
 def refers_to_push(words):
@@ -371,6 +381,7 @@ def may_change_push_config(words, assignments):
         _, _, config_keys, subcommand, args = git_subcommand(words)
         return not (subcommand in SAFE_BEFORE_PUSH_GIT
                     and not config_keys
+                    and not any(a.startswith("--out") for a in args)
                     and not hides_a_command(config_keys, assignments, args))
     return True
 
@@ -391,7 +402,9 @@ def reads_only(words, assignments):
         return not any(w.startswith("--pre") for w in words)
     if program == "git":
         _, _, config_keys, subcommand, args = git_subcommand(words)
-        return subcommand in READ_ONLY_GIT and not hides_a_command(config_keys, assignments, args)
+        return (subcommand in READ_ONLY_GIT
+                and not any(a.startswith("--out") for a in args)
+                and not hides_a_command(config_keys, assignments, args))
     return False
 
 
@@ -411,6 +424,12 @@ def refusal(line, cwd=".", exported=None):
             exported = with_assignments(exported, words)
             continue
         found = candidates(words, exported)
+        pushes = [c for c, _ in found if refers_to_push(c)]
+        others = [(c, a) for c, a in found
+                  if c not in pushes and not any(c[len(c) - len(p):] == p for p in pushes)]
+        if pushes and any(may_change_push_config(c, a) for c, a in others):
+            # One command holds both a push and something that may change where it goes.
+            exported = {**exported, PUSH_CONFIG_CHANGED: UNKNOWN_VALUE}
         message = refusal_of_command(words, cwd, exported)
         if message:
             return message
@@ -533,6 +552,11 @@ def self_test():
             "git push --repo origin main",
             "git push --rep=origin main",
             "git push --re=origin main",
+            f"cd {root}/main && git push --rep origin",
+            f"cd {root}/main && git push --repo origin",
+            f"cd {root}/tracks-own && git fetch --set-upstream origin main; git push",
+            f"cd {root}/tracks-own && git log --output=.git/config; git push",
+            f"cd {root}/tracks-own && git diff --outp=.git/config && git push origin fix-o",
             f"cd {root}/tracks-own && git config remote.origin.push HEAD:main; bash -c 'git push'",
             f"cd {root}/tracks-own && git branch -ut origin/main; git push",
             f"cd {root}/tracks-own && git checkout -q fix-o; git push",
@@ -587,6 +611,8 @@ def self_test():
             f"cd {root}/tracks-own && git push",
             f"cd {root}/tracks-own && git add -A && git commit -q -m x && git push",
             f"cd {root}/tracks-own && git status && git push origin fix-o",
+            f"cd {root}/tracks-own && git log --oneline -3 && git push origin fix-o",
+            f"cd {root}/tracks-own && git push --repo origin fix-o",
             f"cd {root}/tracks-own && git config user.name x; git push origin fix-o:fix-o",
             "git push --repo=origin fix/x",
             f"cd {root}/fix-x && git config user.name x && git push origin fix-x:fix-x",
