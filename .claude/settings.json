@@ -36,11 +36,12 @@
       "Bash(git push origin main:*)",
       "Bash(git push * main)",
       "Bash(git push *:main)",
-      "Bash(git diff *--output*)",
-      "Bash(git log *--output*)",
-      "Bash(git diff *--ext-diff*)",
-      "Bash(git log *--ext-diff*)",
-      "Bash(git fetch *--upload-pack*)"
+      "Bash(git diff *--ou*)",
+      "Bash(git log *--ou*)",
+      "Bash(git diff *--ext*)",
+      "Bash(git log *--ext*)",
+      "Bash(git diff *--no-i*)",
+      "Bash(git fetch *--upl*)"
     ]
   },
   "hooks": {
