@@ -12,6 +12,7 @@ FORCE_PUSH = "A force push needs the human in the loop's OK first. Ask them, or 
 PROD = "An assistant never changes prod. Give the human in the loop the approval link or the command."
 ATTRIBUTION = "No AI attribution in a commit, pull request, issue or comment. Remove the line."
 UNREADABLE = "The command line cannot be read (an open quote). Write it again."
+UNKNOWN_BRANCH = "The hook cannot tell which branch this push sends. Name the branch: git push origin <branch>."
 
 PROTECTED_BRANCHES = {"main", "master"}
 PROD_VERBS = {
@@ -20,10 +21,25 @@ PROD_VERBS = {
     "drain", "cordon", "uncordon", "taint", "cp", "run", "expose", "autoscale",
 }
 SHELLS = {"bash", "sh", "zsh", "dash", "ksh"}
-WRAPPERS = {"env", "sudo", "command", "nohup", "time", "exec", "nice", "xargs", "builtin"}
+WRAPPERS = {
+    "env", "sudo", "command", "nohup", "time", "exec", "nice", "xargs", "builtin",
+    "timeout", "stdbuf", "ionice", "doas", "caffeinate",
+}
+WRAPPER_OPTIONS_WITH_VALUE = {
+    "env": {"-u", "-C", "-S", "--unset", "--chdir", "--split-string"},
+    "sudo": {"-u", "-g", "-C", "-h", "-p", "-r", "-t", "-U", "-D"},
+    "doas": {"-u", "-C"},
+    "nice": {"-n", "--adjustment"},
+    "ionice": {"-c", "-n", "-p", "-P", "-u"},
+    "xargs": {"-I", "-n", "-P", "-L", "-s", "-d", "-E", "-a"},
+    "timeout": {"-s", "-k", "--signal", "--kill-after"},
+    "stdbuf": {"-i", "-o", "-e"},
+    "exec": {"-a"},
+}
+WRAPPERS_WITH_OPERAND = {"timeout"}
+READ_ONLY_PROGRAMS = {"grep", "rg", "ag", "ack", "egrep", "fgrep"}
+READ_ONLY_GIT = {"log", "show", "grep", "shortlog", "blame"}
 GIT_OPTIONS_WITH_VALUE = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
-GIT_TEXT_COMMANDS = {"commit", "tag", "notes", "merge", "rebase", "cherry-pick", "revert"}
-GH_TEXT_COMMANDS = {"pr", "issue", "release", "api", "gist", "discussion"}
 PUSH_OPTIONS_WITH_VALUE = {"--repo", "-o", "--push-option", "--receive-pack", "--exec"}
 ATTRIBUTION_TEXT = re.compile(r"co-authored-by|generated (with|by) \[?claude", re.IGNORECASE)
 ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=.*")
@@ -52,8 +68,13 @@ def unwrapped(words):
         if ASSIGNMENT.fullmatch(words[0]):
             words = words[1:]
         elif words[0].rsplit("/", 1)[-1] in WRAPPERS:
+            wrapper = words[0].rsplit("/", 1)[-1]
+            with_value = WRAPPER_OPTIONS_WITH_VALUE.get(wrapper, set())
             words = words[1:]
             while words and words[0].startswith("-"):
+                takes_value = words[0] in with_value
+                words = words[2:] if takes_value else words[1:]
+            if wrapper in WRAPPERS_WITH_OPERAND and words:
                 words = words[1:]
         else:
             break
@@ -61,31 +82,52 @@ def unwrapped(words):
 
 
 def git_subcommand(words):
-    """Returns (directory from -C or None, subcommand, its arguments)."""
+    """Returns (directory from -C or None, repository options, subcommand, its arguments)."""
     directory = None
+    repository_options = []
     i = 1
     while i < len(words):
         word = words[i]
-        if word in GIT_OPTIONS_WITH_VALUE:
+        if word.startswith(("--git-dir=", "--work-tree=")):
+            repository_options.append(word)
+            i += 1
+        elif word in GIT_OPTIONS_WITH_VALUE:
             if word == "-C" and i + 1 < len(words):
                 directory = words[i + 1]
+            if word in {"--git-dir", "--work-tree"} and i + 1 < len(words):
+                repository_options += [word, words[i + 1]]
             i += 2
         elif word.startswith("-"):
             i += 1
         else:
-            return directory, word, words[i + 1:]
-    return directory, None, []
+            return directory, repository_options, word, words[i + 1:]
+    return directory, repository_options, None, []
 
 
-def current_branch(directory):
+UNKNOWN = object()
+
+
+def current_branch(directory, git_options):
+    """The checked-out branch, None when HEAD is detached, UNKNOWN when git cannot tell."""
     try:
         result = subprocess.run(
-            ["git", "-C", directory, "symbolic-ref", "--short", "-q", "HEAD"],
+            ["git", "-C", directory, *git_options, "symbolic-ref", "--short", "-q", "HEAD"],
             capture_output=True, text=True, timeout=3,
         )
     except (OSError, subprocess.SubprocessError):
+        return UNKNOWN
+    if result.returncode == 1:
         return None
+    if result.returncode != 0:
+        return UNKNOWN
     return result.stdout.strip() or None
+
+
+def branch_name(refspec):
+    name = refspec.split(":")[-1].lstrip("+")
+    if name.startswith("refs/heads/"):
+        name = name[len("refs/heads/"):]
+    return name.lower()
 
 
 def is_force_flag(arg):
@@ -108,7 +150,7 @@ def push_targets(args):
 
 
 def refusal_of_git(words, cwd):
-    directory, subcommand, args = git_subcommand(words)
+    directory, repository_options, subcommand, args = git_subcommand(words)
     if subcommand != "push":
         return None
     if directory:
@@ -116,10 +158,12 @@ def refusal_of_git(words, cwd):
     if any(a in {"--all", "--mirror"} for a in args):
         return PUSH_MAIN
     refspecs = push_targets(args)[1:]
-    branches = [r.split(":")[-1].lstrip("+") for r in refspecs]
-    if not refspecs or "HEAD" in branches:
-        branch = current_branch(cwd)
-        if branch in PROTECTED_BRANCHES:
+    branches = [branch_name(r) for r in refspecs]
+    if not refspecs or "head" in branches:
+        branch = current_branch(cwd, repository_options)
+        if branch is UNKNOWN:
+            return UNKNOWN_BRANCH
+        if branch and branch.lower() in PROTECTED_BRANCHES:
             return PUSH_MAIN
     if any(b in PROTECTED_BRANCHES for b in branches):
         return PUSH_MAIN
@@ -142,13 +186,6 @@ def refusal_of_cluster(words):
     return None
 
 
-def writes_text(words):
-    program = words[0].rsplit("/", 1)[-1]
-    if program == "git":
-        return git_subcommand(words)[1] in GIT_TEXT_COMMANDS
-    if program == "gh":
-        return len(words) > 1 and words[1] in GH_TEXT_COMMANDS
-    return False
 
 
 def refusal_of_command(words, cwd, line):
@@ -161,8 +198,6 @@ def refusal_of_command(words, cwd, line):
             if word.startswith("-") and not word.startswith("--") and "c" in word:
                 return refusal(words[i + 1], cwd) if i + 1 < len(words) else None
         return None
-    if writes_text(words) and ATTRIBUTION_TEXT.search(line):
-        return ATTRIBUTION
     if program == "gh":
         return refusal_of_gh(words)
     if program == "git":
@@ -172,11 +207,27 @@ def refusal_of_command(words, cwd, line):
     return None
 
 
+def only_reads(commands):
+    for words in commands:
+        words = unwrapped(words)
+        if not words or words[0] == "cd":
+            continue
+        program = words[0].rsplit("/", 1)[-1]
+        if program in READ_ONLY_PROGRAMS:
+            continue
+        if program == "git" and git_subcommand(words)[2] in READ_ONLY_GIT:
+            continue
+        return False
+    return True
+
+
 def refusal(line, cwd="."):
     try:
         commands = list(commands_of(line))
     except ValueError:
         return UNREADABLE
+    if ATTRIBUTION_TEXT.search(line) and not only_reads(commands):
+        return ATTRIBUTION
     for words in commands:
         if words and words[0] == "cd" and len(words) > 1:
             cwd = os.path.join(cwd, os.path.expanduser(words[1]))
@@ -214,6 +265,16 @@ def self_test():
             "kubectl -n searchavo-prod delete pod x",
             "kubectl delete pod x -n searchavo-prod",
             "kubectl create secret generic x -n searchavo-prod",
+            "git push origin refs/heads/main",
+            "git push origin HEAD:refs/heads/main",
+            "git push origin Main",
+            f"git -C {root}/nowhere push",
+            "sudo -u root git push origin main",
+            "env -u HOME gh pr merge 3",
+            "timeout 10 gh pr merge 3",
+            "nice -n 5 git push origin main",
+            "xargs -I {} gh pr merge {}",
+            "curl -d 'Co-Authored-By: Claude' https://api.github.com/x",
             "SA_ENV=x gh pr merge 3",
             "env gh pr merge 3",
             "sudo -E git push origin main",
