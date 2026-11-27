@@ -4,7 +4,6 @@
     "commit": "",
     "pr": ""
   },
-  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
       "Bash(scripts/verify.sh:*)",
