@@ -13,6 +13,7 @@ PROD = "An assistant never changes prod. Give the human in the loop the approval
 ATTRIBUTION = "No AI attribution in a commit, pull request, issue or comment. Remove the line."
 UNREADABLE = "The command line cannot be read (an open quote). Write it again."
 UNKNOWN_BRANCH = "The hook cannot tell which branch this push sends. Name the branch: git push origin <branch>."
+HIDDEN_COMMAND = "A git alias, pager or helper set on the command line hides what runs. Run the command itself."
 
 PROTECTED_BRANCHES = {"main", "master"}
 PROD_VERBS = {
@@ -30,6 +31,15 @@ READ_ONLY_PROGRAMS = {"grep", "rg", "ag", "ack", "egrep", "fgrep"}
 READ_ONLY_GIT = {"log", "show", "grep", "shortlog", "blame"}
 GIT_OPTIONS_WITH_VALUE = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
 PUSH_OPTIONS_WITH_VALUE = {"--repo", "-o", "--push-option", "--receive-pack", "--exec"}
+HIDDEN_COMMAND_CONFIG = re.compile(
+    r"^(alias\.|pager\.|credential|core\.(pager|sshcommand|editor|askpass|fsmonitor|hookspath)$"
+    r"|sequence\.editor$|diff\.external$|gpg\.program$|.*\.(textconv|command|cmd|helper|program)$)",
+    re.IGNORECASE,
+)
+HIDDEN_COMMAND_VARIABLES = {
+    "GIT_PAGER", "GIT_EDITOR", "GIT_SSH", "GIT_SSH_COMMAND", "GIT_ASKPASS",
+    "GIT_EXTERNAL_DIFF", "GIT_SEQUENCE_EDITOR", "GIT_EXEC_PATH",
+}
 ATTRIBUTION_TEXT = re.compile(r"co-authored-by|generated (with|by) \[?claude", re.IGNORECASE)
 ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=.*")
 SEPARATORS = "();<>|&`\n"
@@ -52,58 +62,100 @@ def commands_of(line):
         yield command
 
 
-def unwrapped(words):
-    while words:
-        if ASSIGNMENT.fullmatch(words[0]):
-            words = words[1:]
-        elif words[0].rsplit("/", 1)[-1] in WRAPPERS:
-            # A wrapper's options differ per wrapper and some take a value, so the
-            # hook does not parse them: the first guarded program anywhere after
-            # the wrapper is the command that runs.
-            rest = words[1:]
-            for i, word in enumerate(rest):
-                if word.rsplit("/", 1)[-1] in GUARDED | WRAPPERS:
-                    words = rest[i:]
-                    break
-            else:
-                return []
-        else:
-            break
-    return words
+def split_words(words):
+    """Splits words that hold a whole command, as env -S 'gh pr merge 3' does."""
+    result = []
+    for word in words:
+        if not any(c.isspace() for c in word):
+            result.append(word)
+            continue
+        if word.startswith("--") and "=" in word:
+            word = word.split("=", 1)[1]
+        elif word.startswith("-") and len(word) > 2:
+            word = word[2:]
+        try:
+            result += shlex.split(word)
+        except ValueError:
+            result.append(word)
+    return result
+
+
+def with_assignments(assignments, words):
+    assignments = dict(assignments)
+    for word in words:
+        if ASSIGNMENT.fullmatch(word):
+            name, value = word.split("=", 1)
+            assignments[name] = value
+    return assignments
+
+
+def candidates(words, assignments=None):
+    """Every (command, variables set in front of it) that the words may run.
+
+    A wrapper's options differ per wrapper and many take a value (sudo -u git), so the
+    hook does not parse them. Each word after a wrapper that names a guarded program
+    could be the command that runs, and so could the first word that is not an option;
+    the hook checks them all."""
+    assignments = dict(assignments or {})
+    while words and ASSIGNMENT.fullmatch(words[0]):
+        assignments = with_assignments(assignments, words[:1])
+        words = words[1:]
+    if not words or words[0].rsplit("/", 1)[-1] not in WRAPPERS:
+        return [(words, assignments)]
+    rest = split_words(words[1:])
+    positions = {i for i, w in enumerate(rest) if w.rsplit("/", 1)[-1] in GUARDED | WRAPPERS}
+    first = next((i for i, w in enumerate(rest) if not w.startswith("-") and not ASSIGNMENT.fullmatch(w)), None)
+    if first is not None:
+        positions.add(first)
+    found = []
+    for i in sorted(positions):
+        found += candidates(rest[i:], with_assignments(assignments, rest[:i]))
+    return found or [([], assignments)]
 
 
 def git_subcommand(words):
-    """Returns (directory from -C or None, repository options, subcommand, its arguments)."""
+    """Returns (directory from -C or None, repository options, config keys set with -c,
+    subcommand, its arguments)."""
     directory = None
     repository_options = []
+    config_keys = []
     i = 1
     while i < len(words):
         word = words[i]
         if word.startswith(("--git-dir=", "--work-tree=")):
             repository_options.append(word)
             i += 1
-        elif word in GIT_OPTIONS_WITH_VALUE:
-            if word == "-C" and i + 1 < len(words):
-                directory = words[i + 1]
-            if word in {"--git-dir", "--work-tree"} and i + 1 < len(words):
-                repository_options += [word, words[i + 1]]
+        elif word.startswith("--config-env="):
+            config_keys.append(word.split("=", 2)[1])
+            i += 1
+        elif word in GIT_OPTIONS_WITH_VALUE or word == "--config-env":
+            value = words[i + 1] if i + 1 < len(words) else ""
+            if word == "-C":
+                directory = value
+            if word in {"--git-dir", "--work-tree"}:
+                repository_options += [word, value]
+            if word in {"-c", "--config-env"}:
+                config_keys.append(value.split("=", 1)[0])
             i += 2
+        elif word.startswith("-c") and len(word) > 2:
+            config_keys.append(word[2:].split("=", 1)[0])
+            i += 1
         elif word.startswith("-"):
             i += 1
         else:
-            return directory, repository_options, word, words[i + 1:]
-    return directory, repository_options, None, []
+            return directory, repository_options, config_keys, word, words[i + 1:]
+    return directory, repository_options, config_keys, None, []
 
 
 UNKNOWN = object()
 
 
-def current_branch(directory, git_options):
+def current_branch(directory, git_options, assignments):
     """The checked-out branch, None when HEAD is detached, UNKNOWN when git cannot tell."""
     try:
         result = subprocess.run(
             ["git", "-C", directory, *git_options, "symbolic-ref", "--short", "-q", "HEAD"],
-            capture_output=True, text=True, timeout=3,
+            capture_output=True, text=True, timeout=3, env={**os.environ, **assignments},
         )
     except (OSError, subprocess.SubprocessError):
         return UNKNOWN
@@ -118,6 +170,8 @@ def branch_name(refspec):
     name = refspec.split(":")[-1].lstrip("+")
     if name.startswith("refs/heads/"):
         name = name[len("refs/heads/"):]
+    if name == "@":
+        name = "HEAD"
     return name.lower()
 
 
@@ -140,8 +194,18 @@ def push_targets(args):
     return targets
 
 
-def refusal_of_git(words, cwd):
-    directory, repository_options, subcommand, args = git_subcommand(words)
+def hides_a_command(config_keys, assignments, args):
+    if any(HIDDEN_COMMAND_CONFIG.search(key) for key in config_keys):
+        return True
+    if any(name.startswith("GIT_CONFIG") or name in HIDDEN_COMMAND_VARIABLES for name in assignments):
+        return True
+    return any(a.startswith(("-O", "--open-files-in-pager", "--ext-diff")) for a in args)
+
+
+def refusal_of_git(words, cwd, assignments):
+    directory, repository_options, config_keys, subcommand, args = git_subcommand(words)
+    if hides_a_command(config_keys, assignments, args):
+        return HIDDEN_COMMAND
     if subcommand != "push":
         return None
     if directory:
@@ -151,7 +215,7 @@ def refusal_of_git(words, cwd):
     refspecs = push_targets(args)[1:]
     branches = [branch_name(r) for r in refspecs]
     if not refspecs or "head" in branches:
-        branch = current_branch(cwd, repository_options)
+        branch = current_branch(cwd, repository_options, assignments)
         if branch is UNKNOWN:
             return UNKNOWN_BRANCH
         if branch and branch.lower() in PROTECTED_BRANCHES:
@@ -177,10 +241,15 @@ def refusal_of_cluster(words):
     return None
 
 
+def refusal_of_command(words, cwd):
+    for command, assignments in candidates(words):
+        message = refusal_of_candidate(command, assignments, cwd)
+        if message:
+            return message
+    return None
 
 
-def refusal_of_command(words, cwd, line):
-    words = unwrapped(words)
+def refusal_of_candidate(words, assignments, cwd):
     if not words:
         return None
     program = words[0].rsplit("/", 1)[-1]
@@ -192,24 +261,30 @@ def refusal_of_command(words, cwd, line):
     if program == "gh":
         return refusal_of_gh(words)
     if program == "git":
-        return refusal_of_git(words, cwd)
+        return refusal_of_git(words, cwd, assignments)
     if program in {"helm", "kubectl"}:
         return refusal_of_cluster(words)
     return None
 
 
 def only_reads(commands):
-    for words in commands:
-        words = unwrapped(words)
-        if not words or words[0] == "cd":
-            continue
-        program = words[0].rsplit("/", 1)[-1]
-        if program in READ_ONLY_PROGRAMS:
-            continue
-        if program == "git" and git_subcommand(words)[2] in READ_ONLY_GIT:
-            continue
-        return False
-    return True
+    return all(
+        reads_only(words, assignments)
+        for command in commands
+        for words, assignments in candidates(command)
+    )
+
+
+def reads_only(words, assignments):
+    if not words or words[0] == "cd":
+        return True
+    program = words[0].rsplit("/", 1)[-1]
+    if program in READ_ONLY_PROGRAMS:
+        return not any(w.startswith("--pre") for w in words)
+    if program == "git":
+        _, _, config_keys, subcommand, args = git_subcommand(words)
+        return subcommand in READ_ONLY_GIT and not hides_a_command(config_keys, assignments, args)
+    return False
 
 
 def refusal(line, cwd="."):
@@ -223,7 +298,7 @@ def refusal(line, cwd="."):
         if words and words[0] == "cd" and len(words) > 1:
             cwd = os.path.join(cwd, os.path.expanduser(words[1]))
             continue
-        message = refusal_of_command(words, cwd, line)
+        message = refusal_of_command(words, cwd)
         if message:
             return message
     return None
@@ -272,6 +347,19 @@ def self_test():
             "stdbuf --output L gh pr merge 3",
             "env -S 'x' sudo -g wheel git push origin main",
             "sudo -u root bash -c 'gh pr merge 3'",
+            "sudo -u git git push origin main",
+            "env curl -d 'Co-Authored-By: Claude' https://api.github.com/x",
+            "env -S 'gh pr merge 3'",
+            "env -S'gh pr merge 3'",
+            "env --split-string='gh pr merge 3'",
+            f"GIT_DIR={root}/main/.git git push",
+            f"env GIT_DIR={root}/main/.git git push origin HEAD",
+            f"cd {root}/main && git push origin @",
+            "git -c core.pager='sh -c x' log --grep Co-Authored-By",
+            "git -c alias.p='!git push origin main' p",
+            "git --config-env=alias.p=X p",
+            "GIT_SSH_COMMAND='sh -c x' git fetch",
+            "git grep -Ocat Co-Authored-By",
             "curl -d 'Co-Authored-By: Claude' https://api.github.com/x",
             "SA_ENV=x gh pr merge 3",
             "env gh pr merge 3",
@@ -306,6 +394,9 @@ def self_test():
             "grep -ri co-authored-by .github",
             "sudo -u root ls /",
             "timeout 30 git push origin fix/x",
+            "env FOO=1 git status",
+            "git -c color.ui=always log --grep Co-Authored-By",
+            "git push origin @:fix/x",
         ]
         wrong = [c for c in blocked if refusal(c, root) is None]
         wrong += [c for c in allowed if refusal(c, os.path.join(root, "fix-x"))]
