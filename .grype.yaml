@@ -1,1 +1,8 @@
-ignore: []
+ignore:
+  # CVE-2026-133325 (Critical) in Tomcat 11.0.29, fixed in 11.0.30, which is not on Maven Central yet.
+  # Accepted for a short time so prod can take a release. Only 11.0.29 is excused: the bump to 11.0.30 ends it.
+  # Issue #1107. Review date: 2026-12-04.
+  - vulnerability: CVE-2026-133325
+    package:
+      name: tomcat-embed-core
+      version: 11.0.29

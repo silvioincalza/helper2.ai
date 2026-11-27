@@ -304,7 +304,7 @@ Harbor could put an image under a tag first.
     a failed `scan` job fails the CD run, and prod needs the CD run of its commit to have succeeded. A release checks
     it (`staged`), and the deploy job checks it again on every prod deploy, a manual one too (§5). The weekly
     scan stays report-only: it reads what already runs, and has nothing to stop.
-16. **Exceptions** live in `.grype.yaml`, empty today: each one names the vulnerability, the package if it can, the
+16. **Exceptions** live in `.grype.yaml`: each one names the vulnerability, the package if it can, the
     reason and a review date.
 
 ### Signed images, deployed by digest
