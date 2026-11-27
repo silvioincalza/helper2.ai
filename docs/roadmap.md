@@ -216,12 +216,6 @@ Replay is built and is closed by its pull request: it is not listed.
 
 ## E12 Rename helper2.ai to searchavo.ai
 
-### Next
-
-- [S12.1.2 Infrastructure for searchavo.ai added beside the helper2.ai one](https://github.com/silvioincalza/searchavo.ai/issues/1071)
-- [S12.1.5 Staging runs on searchavo.incalza.me with the searchavo names](https://github.com/silvioincalza/searchavo.ai/issues/1074)
-- [S12.1.6 Production moves to searchavo.ai, and helper2.ai redirects to it](https://github.com/silvioincalza/searchavo.ai/issues/1075)
-
 ### Later
 
 - [S12.1.7 Old helper2 resources removed](https://github.com/silvioincalza/searchavo.ai/issues/1076)
