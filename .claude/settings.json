@@ -4,7 +4,6 @@
     "commit": "",
     "pr": ""
   },
-  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
       "Bash(scripts/verify.sh:*)",
@@ -13,8 +12,16 @@
       "Bash(python3 scripts/adr-check.py:*)",
       "Bash(python3 scripts/backlog.py roadmap:*)",
       "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
+      "Bash(git diff)",
+      "Bash(git diff --stat)",
+      "Bash(git diff --name-only)",
+      "Bash(git diff --name-status)",
+      "Bash(git diff --cached)",
+      "Bash(git diff --cached --stat)",
+      "Bash(git diff --staged)",
+      "Bash(git diff --staged --stat)",
+      "Bash(git log --oneline:*)",
+      "Bash(git log -1:*)",
       "Bash(git fetch:*)",
       "Bash(gh pr view:*)",
       "Bash(gh pr checks:*)",
@@ -30,11 +37,19 @@
       "Read(./.secrets)",
       "Read(./.secrets/**)",
       "Read(./deploy/k8s/*/app.env)",
+      "Read(./**/.env)",
+      "Read(./**/*app.env*)",
       "Bash(gh pr merge:*)",
       "Bash(gh stack merge:*)",
       "Bash(git push origin main:*)",
       "Bash(git push * main)",
-      "Bash(git push *:main)"
+      "Bash(git push *:main)",
+      "Bash(git diff *--ou*)",
+      "Bash(git log *--ou*)",
+      "Bash(git diff *--ext*)",
+      "Bash(git log *--ext*)",
+      "Bash(git diff *--no-i*)",
+      "Bash(git fetch *--upl*)"
     ]
   },
   "hooks": {
@@ -44,7 +59,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.py\""
+            "command": "python3 -I \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.py\""
           }
         ]
       }
