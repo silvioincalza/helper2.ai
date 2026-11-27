@@ -25,18 +25,7 @@ WRAPPERS = {
     "env", "sudo", "command", "nohup", "time", "exec", "nice", "xargs", "builtin",
     "timeout", "stdbuf", "ionice", "doas", "caffeinate",
 }
-WRAPPER_OPTIONS_WITH_VALUE = {
-    "env": {"-u", "-C", "-S", "--unset", "--chdir", "--split-string"},
-    "sudo": {"-u", "-g", "-C", "-h", "-p", "-r", "-t", "-U", "-D"},
-    "doas": {"-u", "-C"},
-    "nice": {"-n", "--adjustment"},
-    "ionice": {"-c", "-n", "-p", "-P", "-u"},
-    "xargs": {"-I", "-n", "-P", "-L", "-s", "-d", "-E", "-a"},
-    "timeout": {"-s", "-k", "--signal", "--kill-after"},
-    "stdbuf": {"-i", "-o", "-e"},
-    "exec": {"-a"},
-}
-WRAPPERS_WITH_OPERAND = {"timeout"}
+GUARDED = {"git", "gh", "helm", "kubectl"} | {"bash", "sh", "zsh", "dash", "ksh"}
 READ_ONLY_PROGRAMS = {"grep", "rg", "ag", "ack", "egrep", "fgrep"}
 READ_ONLY_GIT = {"log", "show", "grep", "shortlog", "blame"}
 GIT_OPTIONS_WITH_VALUE = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path"}
@@ -68,14 +57,16 @@ def unwrapped(words):
         if ASSIGNMENT.fullmatch(words[0]):
             words = words[1:]
         elif words[0].rsplit("/", 1)[-1] in WRAPPERS:
-            wrapper = words[0].rsplit("/", 1)[-1]
-            with_value = WRAPPER_OPTIONS_WITH_VALUE.get(wrapper, set())
-            words = words[1:]
-            while words and words[0].startswith("-"):
-                takes_value = words[0] in with_value
-                words = words[2:] if takes_value else words[1:]
-            if wrapper in WRAPPERS_WITH_OPERAND and words:
-                words = words[1:]
+            # A wrapper's options differ per wrapper and some take a value, so the
+            # hook does not parse them: the first guarded program anywhere after
+            # the wrapper is the command that runs.
+            rest = words[1:]
+            for i, word in enumerate(rest):
+                if word.rsplit("/", 1)[-1] in GUARDED | WRAPPERS:
+                    words = rest[i:]
+                    break
+            else:
+                return []
         else:
             break
     return words
@@ -274,6 +265,13 @@ def self_test():
             "timeout 10 gh pr merge 3",
             "nice -n 5 git push origin main",
             "xargs -I {} gh pr merge {}",
+            "sudo --user root git push origin main",
+            "sudo --user=root git push origin main",
+            "xargs --max-procs 4 gh pr merge",
+            "caffeinate -t 60 git push origin main",
+            "stdbuf --output L gh pr merge 3",
+            "env -S 'x' sudo -g wheel git push origin main",
+            "sudo -u root bash -c 'gh pr merge 3'",
             "curl -d 'Co-Authored-By: Claude' https://api.github.com/x",
             "SA_ENV=x gh pr merge 3",
             "env gh pr merge 3",
@@ -306,6 +304,8 @@ def self_test():
             "git merge --no-edit origin/main",
             "git log --grep Co-Authored-By",
             "grep -ri co-authored-by .github",
+            "sudo -u root ls /",
+            "timeout 30 git push origin fix/x",
         ]
         wrong = [c for c in blocked if refusal(c, root) is None]
         wrong += [c for c in allowed if refusal(c, os.path.join(root, "fix-x"))]
